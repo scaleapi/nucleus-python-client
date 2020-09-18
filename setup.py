@@ -46,5 +46,3 @@ setuptools.setup(
     dependency_links=links,
     python_requires='>=3.6',
 )
-
-install_requires = ['requests>=2.4.2']
