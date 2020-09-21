@@ -119,7 +119,7 @@ class NucleusClient:
         """
         return self._make_request(payload, "dataset/create")
 
-    def populate_dataset(self, dataset_id: str, payload: dict):
+    def populate_dataset(self, dataset_id: str, payload: dict, local=False):
         """
         Appends images to a dataset with given dataset_id. Overwrites images on collision if forced.
         :param dataset_id: id of a dataset
@@ -132,57 +132,45 @@ class NucleusClient:
             "ignored_items": int,
         }
         """
-        return self._make_request(payload, f"dataset/{dataset_id}/append")
+        def local_upload(dataset_id: str, payload: dict):
+            async_requests = []
+            session = requests.session()
+            items = payload.get("items", [])
+            for item in items:
+                image = open(item.get("image_url"), "rb")
+                img_name = os.path.basename(image.name)
+                img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
 
-    def populate_local_dataset(self, dataset_id: str, payload: dict):
-        """
-        Appends local images from a path to a dataset with given dataset_id. Overwrites images on collision if forced.
-        :param dataset_id: id of a dataset
-        :param items: [{"item": DatasetItem, "image": str}]
-        :return:
-        {
-            "dataset_id: str,
-            "new_items": int,
-            "updated_items": int,
-            "ignored_items": int,
-        }
-        """
-        async_requests = []
-        session = requests.session()
-        items = payload.get("items", [])
-        for item in items:
-            image = open(item.get("image"), "rb")
-            img_name = os.path.basename(image.name)
-            img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
+                files = {
+                    "image": (img_name, image, img_type),
+                    "item": (None, json.dumps(item), "application/json")
+                }
+                async_requests.append(self._make_grequest(
+                    files, f"dataset/{dataset_id}/append", session=session))
 
-            files = {
-                "image": (img_name, image, img_type),
-                "item": (None, json.dumps(item), "application/json")
+            # Handle an exception during async requests mapping
+            def exception_handler(request, exception):
+                logger.error(exception)
+
+            async_responses = grequests.map(
+                async_requests, exception_handler=exception_handler)
+
+            new_items, updated_items, ignored_items = 0, 0, 0
+            
+            for response in async_responses:
+                logger.info(response.status_code, response.json())
+                if response and response.status_code == 200:
+                    updated_items += response.json().get("updated_items")
+                    new_items += response.json().get("new_items")
+                    ignored_items += response.json().get("ignored_items")
+
+            return {
+                "dataset_id": dataset_id,
+                "updated_items": updated_items,
+                "new_items": new_items
             }
-            async_requests.append(self._make_grequest(
-                files, f"dataset/{dataset_id}/append", session=session))
 
-        # Handle an exception during async requests mapping
-        def exception_handler(request, exception):
-            logger.error(exception)
-
-        async_responses = grequests.map(
-            async_requests, exception_handler=exception_handler)
-
-        new_items, updated_items, ignored_items = 0, 0, 0
-        
-        for response in async_responses:
-            logger.info(response.status_code, response.json())
-            if response and response.status_code == 200:
-                updated_items += response.json().get("updated_items")
-                new_items += response.json().get("new_items")
-                ignored_items += response.json().get("ignored_items")
-
-        return {
-            "dataset_id": dataset_id,
-            "updated_items": updated_items,
-            "new_items": new_items
-        }
+        return local_upload(dataset_id, payload) if local else self._make_request(payload, f"dataset/{dataset_id}/append")
 
     def annotate_dataset(self, dataset_id: str, payload: dict):
         # TODO batching logic if payload is too large
