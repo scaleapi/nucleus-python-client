@@ -147,7 +147,7 @@ class NucleusClient:
             "ignored_items": int,
         }
         """
-        dataitem_requests = []
+        async_requests = []
         session = requests.session()
         items = payload.get("items", [])
         for item in items:
@@ -159,28 +159,30 @@ class NucleusClient:
                 "image": (img_name, image, img_type),
                 "item": (None, json.dumps(item), "application/json")
             }
-            dataitem_requests.append(self._make_grequest(
+            async_requests.append(self._make_grequest(
                 files, f"dataset/{dataset_id}/append", session=session))
 
+        # Handle an exception during async requests mapping
         def exception_handler(request, exception):
             logger.error(exception)
-        async_responses = grequests.map(
-            dataitem_requests, exception_handler=exception_handler)
 
-        response_data = {
-            "dataset_id": dataset_id,
-            "updated_items": 0,
-            "new_items": 0,
-            "ignored_items": 0
-        }
+        async_responses = grequests.map(
+            async_requests, exception_handler=exception_handler)
+
+        new_items, updated_items, ignored_items = 0, 0, 0
+        
         for response in async_responses:
             logger.info(response.status_code, response.json())
             if response and response.status_code == 200:
-                response_data["updated_items"] += response.json().get("updated_items")
-                response_data["new_items"] += response.json().get("new_items")
-                response_data["ignored_items"] += response.json().get("ignored_items")
+                updated_items += response.json().get("updated_items")
+                new_items += response.json().get("new_items")
+                ignored_items += response.json().get("ignored_items")
 
-        return response_data
+        return {
+            "dataset_id": dataset_id,
+            "updated_items": updated_items,
+            "new_items": new_items
+        }
 
     def annotate_dataset(self, dataset_id: str, payload: dict):
         # TODO batching logic if payload is too large
