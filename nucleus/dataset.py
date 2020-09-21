@@ -79,7 +79,7 @@ class Dataset:
             'ignored_items': int,
         }
         """
-        return self._client.populate_local_dataset(self.dataset_id, payload) if local else self._client.populate_dataset(self.dataset_id, payload)
+        return self._client.populate_dataset(self.dataset_id, payload, local=local)
 
     def iloc(self, i: int) -> dict:
         """
