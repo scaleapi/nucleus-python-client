@@ -51,9 +51,12 @@ height          |   float   |   The height in pixels of the annotation.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
 
+import json
 import logging
+import os
 from typing import List
 
+import grequests
 import requests
 
 from .dataset import Dataset
@@ -70,6 +73,7 @@ class NucleusClient:
     """
     Nucleus client.
        """
+
     def __init__(self, api_key: str):
         self.api_key = api_key
 
@@ -129,6 +133,54 @@ class NucleusClient:
         }
         """
         return self._make_request(payload, f"dataset/{dataset_id}/append")
+
+    def populate_local_dataset(self, dataset_id: str, payload: dict):
+        """
+        Appends local images from a path to a dataset with given dataset_id. Overwrites images on collision if forced.
+        :param dataset_id: id of a dataset
+        :param items: [{"item": DatasetItem, "image": str}]
+        :return:
+        {
+            "dataset_id: str,
+            "new_items": int,
+            "updated_items": int,
+            "ignored_items": int,
+        }
+        """
+        dataitem_requests = []
+        session = requests.session()
+        items = payload.get("items", [])
+        for item in items:
+            image = open(item.get("image"), "rb")
+            img_name = os.path.basename(image.name)
+            img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
+
+            files = {
+                "image": (img_name, image, img_type),
+                "item": (None, json.dumps(item), "application/json")
+            }
+            dataitem_requests.append(self._make_grequest(
+                files, f"dataset/{dataset_id}/append", session=session))
+
+        def exception_handler(request, exception):
+            logger.error(exception)
+        async_responses = grequests.map(
+            dataitem_requests, exception_handler=exception_handler)
+
+        response_data = {
+            "dataset_id": dataset_id,
+            "updated_items": 0,
+            "new_items": 0,
+            "ignored_items": 0
+        }
+        for response in async_responses:
+            logger.info(response.status_code, response.json())
+            if response and response.status_code == 200:
+                response_data["updated_items"] += response.json().get("updated_items")
+                response_data["new_items"] += response.json().get("new_items")
+                response_data["ignored_items"] += response.json().get("ignored_items")
+
+        return response_data
 
     def annotate_dataset(self, dataset_id: str, payload: dict):
         # TODO batching logic if payload is too large
@@ -313,6 +365,27 @@ class NucleusClient:
         return self._make_request(
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
+
+    def _make_grequest(self, files: dict, route: str, session: requests.session):
+        """
+        makes a grequest to Nucleus endpoint
+        :param files: file dict for multipart-formdata
+        :param route: route for the request
+        :param requests_command: requests.post, requests.get, requests.delete
+        :return: An async grequest object
+        """
+
+        endpoint = f"{NUCLEUS_ENDPOINT}/{route}"
+        logger.info('Posting to %s', endpoint)
+
+        post = grequests.post(
+            endpoint,
+            session=session,
+            files=files,
+            auth=(self.api_key, ""),
+
+        )
+        return post
 
     def _make_request(self, payload: dict, route: str, requests_command=requests.post) -> dict:
         """
