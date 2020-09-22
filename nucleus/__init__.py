@@ -60,6 +60,7 @@ import grequests
 import requests
 
 from .dataset import Dataset
+from .upload_response import UploadResponse
 from .model_run import ModelRun
 
 logger = logging.getLogger(__name__)
@@ -155,20 +156,14 @@ class NucleusClient:
             async_responses = grequests.map(
                 async_requests, exception_handler=exception_handler)
 
-            new_items, updated_items, ignored_items = 0, 0, 0
+            upload_response = UploadResponse(json={'dataset_id': dataset_id})
             
             for response in async_responses:
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
-                    updated_items += response.json().get("updated_items")
-                    new_items += response.json().get("new_items")
-                    ignored_items += response.json().get("ignored_items")
+                    upload_response.update_response(response.json)
 
-            return {
-                "dataset_id": dataset_id,
-                "updated_items": updated_items,
-                "new_items": new_items
-            }
+            return upload_response.as_dict()
 
         return local_upload(dataset_id, payload) if local else self._make_request(payload, f"dataset/{dataset_id}/append")
 
