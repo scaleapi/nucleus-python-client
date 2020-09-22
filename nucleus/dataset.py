@@ -66,7 +66,7 @@ class Dataset:
         """
         return self._client.annotate_dataset(self.dataset_id, payload)
 
-    def append(self, payload: dict) -> dict:
+    def append(self, payload: dict, local=False) -> dict:
         """
         Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
 
@@ -79,7 +79,7 @@ class Dataset:
             'ignored_items': int,
         }
         """
-        return self._client.populate_dataset(self.dataset_id, payload)
+        return self._client.populate_dataset(self.dataset_id, payload, local=local)
 
     def iloc(self, i: int) -> dict:
         """
