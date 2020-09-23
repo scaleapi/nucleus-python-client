@@ -157,11 +157,11 @@ class NucleusClient:
                 async_requests, exception_handler=exception_handler)
 
             upload_response = UploadResponse(json={'dataset_id': dataset_id})
-            
+
             for response in async_responses:
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
-                    upload_response.update_response(response.json)
+                    upload_response.update_response(response.json())
 
             return upload_response.as_dict()
 
