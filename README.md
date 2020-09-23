@@ -25,6 +25,30 @@ response = client.create_dataset({"name": "My Dataset"})
 dataset = client.get_dataset(response["dataset_id"])
 ```
 
+### Append Items to a Dataset
+You can append both local images and images from the web.
+Each image object is a dictionary with three fields, like this:
+```python
+datasetItem1 = {'image_url': 'http://<my_image_url>', 'reference_id': 'my_image_name.jpg', 'metadata': {'label': '0'}}
+```
+
+The append function expects a list of datasetItems to upload, like this:
+```python
+response = dataset.append([datasetItem2], local = True)
+```
+
+If you're uploading a local image, you can specify a filepath as the image_url.
+```python
+datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my_img_001.png', 'metadata': {'label': '1'}}
+response = dataset.append([datasetItem2], local = True)
+```
+
+### Get Dataset Info
+Tells us the dataset name, number of dataset items, model_runs, and slice_ids
+```python
+dataset.info()
+```
+
 ### Add Model
 
 ```python
