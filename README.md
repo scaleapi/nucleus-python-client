@@ -27,24 +27,39 @@ dataset = client.get_dataset(response["dataset_id"])
 
 ### Append Items to a Dataset
 You can append both local images and images from the web.
-Each image object is a dictionary with three fields, like this:
+Each image object is a dictionary with three fields:
 ```python
-datasetItem1 = {'image_url': 'http://<my_image_url>', 'reference_id': 'my_image_name.jpg', 'metadata': {'label': '0'}}
+datasetItem1 = {'image_url': 'http://<my_image_url>', 'reference_id': 'my_image_name.jpg',
+  'metadata': {'label': '0'}}
 ```
 
 The append function expects a list of datasetItems to upload, like this:
 ```python
-response = dataset.append([datasetItem2], local = True)
+response = dataset.append([datasetItem1])
 ```
 
 If you're uploading a local image, you can specify a filepath as the image_url.
 ```python
-datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my_img_001.png', 'metadata': {'label': '1'}}
+datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my_img_001.png',
+  'metadata': {'label': '1'}}
 response = dataset.append([datasetItem2], local = True)
 ```
 
+### Access Dataset Items
+DatasetItems are accessible by reference id
+```python
+# returns datasetItem2 (above)
+item = dataset.refloc('my_img_001.png')
+```
+
+### Add Annotations
+Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#add-ground-truth
+```python
+response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]});
+```
+
 ### Get Dataset Info
-Tells us the dataset name, number of dataset items, model_runs, and slice_ids
+Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
 ```python
 dataset.info()
 ```
