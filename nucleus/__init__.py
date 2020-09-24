@@ -139,6 +139,7 @@ class NucleusClient:
             logger.error(exception)
 
         def local_upload(dataset_id: str, payload: dict):
+            print("LOCAL")
             async_requests = []
             session = requests.session()
             items = payload.get("items", [])
@@ -161,36 +162,46 @@ class NucleusClient:
             upload_response = UploadResponse(json={'dataset_id': dataset_id})
 
             for response in async_responses:
+                print("printing response...")
+                print(response.status_code)
+                print(response.json())
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
-                    upload_response.update_response(response.json)
+                    upload_response.update_response(response.json())
 
             return upload_response.as_dict()
 
-        if local:
-            return local_upload(dataset_id, payload)
+        def batch_upload(dataset_id: str, payload: dict):
+            print("batch")
+            items = payload.get("items", [])
+            num_uploads = len(items)
+            if num_uploads <= BATCH_SIZE:
+                return self._make_request(payload, f"dataset/{dataset_id}/append")
+            else: #Init batching
+                async_requests = []
+                session = requests.session()
+                num_batches = (num_uploads//BATCH_SIZE) if num_uploads%BATCH_SIZE == 0 else (num_uploads//BATCH_SIZE + 1)
+                # upload_response = UploadResponse(json={'dataset_id': dataset_id})
+                for i in range(num_batches):
+                    end_index = min(len(items), (i+1)*BATCH_SIZE)
+                    curr_batch = items[i*BATCH_SIZE:end_index]
+                    payload = {"items": curr_batch}
+                    request = self._make_grequest(
+                        payload, f"dataset/{dataset_id}/append", session=session, local = False)
+                    async_requests.append(request)
 
-        #Batch uploads for traditional uploads
-        items = payload.get("items", [])
-        num_uploads = len(items)
-        if num_uploads <= BATCH_SIZE:
-            return self._make_request(payload, f"dataset/{dataset_id}/append")
-        else: #Init batching
-            async_requests = []
-            session = requests.session()
-            num_batches = (num_uploads//BATCH_SIZE) if num_uploads%BATCH_SIZE == 0 else (num_uploads//BATCH_SIZE + 1)
-            upload_response = UploadResponse(json={'dataset_id': dataset_id})
-            for i in range(num_batches):
-                end_index = min(len(items), (i+1)*BATCH_SIZE)
-                curr_batch = items[i*BATCH_SIZE:end_index]
-                payload = {"items": curr_batch}
-                response = self._make_request(
-                    payload, f"dataset/{dataset_id}/append")#, session=session)
-                logger.info(response)
-                if response: #and response['status_code'] == 200:
-                    upload_response.update_response(response)
+                async_responses = grequests.map(
+                    async_requests, exception_handler=exception_handler)
 
-            return upload_response.as_dict()
+                upload_response = UploadResponse(json={'dataset_id': dataset_id})
+
+                for response in async_responses:
+                    logger.info(response.status_code, response.json())
+                    if response and response.status_code == 200:
+                        upload_response.update_response(response.json())
+
+                return upload_response.as_dict()
+        return local_upload(dataset_id, payload) if local else batch_upload(dataset_id, payload)
 
 
     def annotate_dataset(self, dataset_id: str, payload: dict):
@@ -377,7 +388,7 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
 
-    def _make_grequest(self, files: dict, route: str, session: requests.session):
+    def _make_grequest(self, payload: dict, route: str, session: requests.session, local = True):
         """
         makes a grequest to Nucleus endpoint
         :param files: file dict for multipart-formdata
@@ -389,13 +400,21 @@ class NucleusClient:
         endpoint = f"{NUCLEUS_ENDPOINT}/{route}"
         logger.info('Posting to %s', endpoint)
 
-        post = grequests.post(
-            endpoint,
-            session=session,
-            files=files,
-            auth=(self.api_key, ""),
-
-        )
+        if local:
+            post = grequests.post(
+                endpoint,
+                session=session,
+                files=payload,
+                auth=(self.api_key, ""),
+            )
+        else:
+            post = grequests.post(
+                endpoint,
+                session=session,
+                json=payload,
+                headers = {"Content-Type": "application/json"},
+                auth=(self.api_key, ""),
+            )
         return post
 
     def _make_request(self, payload: dict, route: str, requests_command=requests.post) -> dict:
