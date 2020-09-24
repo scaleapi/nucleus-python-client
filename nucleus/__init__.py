@@ -135,72 +135,65 @@ class NucleusClient:
             "ignored_items": int,
         }
         """
+        #TODO: maybe do more robust error handling here
         def exception_handler(request, exception):
             logger.error(exception)
 
-        def local_upload(dataset_id: str, payload: dict):
-            print("LOCAL")
-            async_requests = []
-            session = requests.session()
-            items = payload.get("items", [])
-            for item in items:
-                image = open(item.get("image_url"), "rb")
-                img_name = os.path.basename(image.name)
-                img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
+        def format_payload_local(item):
+            image = open(item.get("image_url"), "rb")
+            img_name = os.path.basename(image.name)
+            img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
 
-                files = {
-                    "image": (img_name, image, img_type),
-                    "item": (None, json.dumps(item), "application/json")
-                }
-                async_requests.append(self._make_grequest(
-                    files, f"dataset/{dataset_id}/append", session=session))
+            files = {
+                "image": (img_name, image, img_type),
+                "item": (None, json.dumps(item), "application/json")
+            }
 
-            # Handle an exception during async requests mapping
-            async_responses = grequests.map(
-                async_requests, exception_handler=exception_handler)
+            return files
+
+        def process_responses(responses: list, dataset_id: str):
 
             upload_response = UploadResponse(json={'dataset_id': dataset_id})
 
-            for response in async_responses:
-                print("printing response...")
-                print(response.status_code)
-                print(response.json())
+            for response in responses:
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
                     upload_response.update_response(response.json())
 
             return upload_response.as_dict()
 
+        def local_upload(dataset_id: str, payload: dict):
+            async_requests = []
+            session = requests.session()
+            items = payload.get("items", [])
+            for item in items:
+                payload = format_payload_local(item)
+                async_requests.append(self._make_grequest(
+                    payload, f"dataset/{dataset_id}/append", session=session))
+            async_responses = grequests.map(
+                async_requests, exception_handler=exception_handler)
+            return process_responses(async_responses, dataset_id)
+
         def batch_upload(dataset_id: str, payload: dict):
-            print("batch")
             items = payload.get("items", [])
             num_uploads = len(items)
-            if num_uploads <= BATCH_SIZE:
-                return self._make_request(payload, f"dataset/{dataset_id}/append")
-            else: #Init batching
-                async_requests = []
-                session = requests.session()
-                num_batches = (num_uploads//BATCH_SIZE) if num_uploads%BATCH_SIZE == 0 else (num_uploads//BATCH_SIZE + 1)
-                # upload_response = UploadResponse(json={'dataset_id': dataset_id})
-                for i in range(num_batches):
-                    end_index = min(len(items), (i+1)*BATCH_SIZE)
-                    curr_batch = items[i*BATCH_SIZE:end_index]
-                    payload = {"items": curr_batch}
-                    request = self._make_grequest(
-                        payload, f"dataset/{dataset_id}/append", session=session, local = False)
-                    async_requests.append(request)
+            async_requests = []
+            session = requests.session()
+            # TODO: make line below cleaner with clever logic
+            num_batches = (num_uploads//BATCH_SIZE) if num_uploads % BATCH_SIZE == 0 else (num_uploads//BATCH_SIZE + 1)
+            for i in range(num_batches):
+                end_index = min(len(items), (i+1)*BATCH_SIZE)
+                curr_batch = items[i*BATCH_SIZE:end_index]
+                payload = {"items": curr_batch}
+                request = self._make_grequest(
+                    payload, f"dataset/{dataset_id}/append", session=session, local = False)
+                async_requests.append(request)
 
-                async_responses = grequests.map(
-                    async_requests, exception_handler=exception_handler)
+            async_responses = grequests.map(
+                async_requests, exception_handler=exception_handler)
 
-                upload_response = UploadResponse(json={'dataset_id': dataset_id})
+            return process_responses(async_responses, dataset_id)
 
-                for response in async_responses:
-                    logger.info(response.status_code, response.json())
-                    if response and response.status_code == 200:
-                        upload_response.update_response(response.json())
-
-                return upload_response.as_dict()
         return local_upload(dataset_id, payload) if local else batch_upload(dataset_id, payload)
 
 
