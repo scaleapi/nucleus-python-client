@@ -68,6 +68,8 @@ logging.basicConfig()
 
 
 NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+# NUCLEUS_ENDPOINT = "http://localhost:3000/v1"
+BATCH_SIZE = 2
 
 
 class NucleusClient:
@@ -133,6 +135,9 @@ class NucleusClient:
             "ignored_items": int,
         }
         """
+        def exception_handler(request, exception):
+            logger.error(exception)
+
         def local_upload(dataset_id: str, payload: dict):
             async_requests = []
             session = requests.session()
@@ -150,14 +155,11 @@ class NucleusClient:
                     files, f"dataset/{dataset_id}/append", session=session))
 
             # Handle an exception during async requests mapping
-            def exception_handler(request, exception):
-                logger.error(exception)
-
             async_responses = grequests.map(
                 async_requests, exception_handler=exception_handler)
 
             upload_response = UploadResponse(json={'dataset_id': dataset_id})
-            
+
             for response in async_responses:
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
@@ -165,7 +167,31 @@ class NucleusClient:
 
             return upload_response.as_dict()
 
-        return local_upload(dataset_id, payload) if local else self._make_request(payload, f"dataset/{dataset_id}/append")
+        if local:
+            return local_upload(dataset_id, payload)
+
+        #Batch uploads for traditional uploads
+        items = payload.get("items", [])
+        num_uploads = len(items)
+        if num_uploads <= BATCH_SIZE:
+            return self._make_request(payload, f"dataset/{dataset_id}/append")
+        else: #Init batching
+            async_requests = []
+            session = requests.session()
+            num_batches = (num_uploads//BATCH_SIZE) if num_uploads%BATCH_SIZE == 0 else (num_uploads//BATCH_SIZE + 1)
+            upload_response = UploadResponse(json={'dataset_id': dataset_id})
+            for i in range(num_batches):
+                end_index = min(len(items), (i+1)*BATCH_SIZE)
+                curr_batch = items[i*BATCH_SIZE:end_index]
+                payload = {"items": curr_batch}
+                response = self._make_request(
+                    payload, f"dataset/{dataset_id}/append")#, session=session)
+                logger.info(response)
+                if response: #and response['status_code'] == 200:
+                    upload_response.update_response(response)
+
+            return upload_response.as_dict()
+
 
     def annotate_dataset(self, dataset_id: str, payload: dict):
         # TODO batching logic if payload is too large
