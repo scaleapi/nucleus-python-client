@@ -68,8 +68,7 @@ logging.basicConfig()
 
 
 NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
-# NUCLEUS_ENDPOINT = "http://localhost:3000/v1"
-BATCH_SIZE = 2
+BATCH_SIZE = 10
 
 
 class NucleusClient:
