@@ -35,20 +35,19 @@ datasetItem1 = {'image_url': 'http://<my_image_url>', 'reference_id': 'my_image_
 
 The append function expects a list of datasetItems to upload, like this:
 ```python
-response = dataset.append([datasetItem1])
+response = dataset.append({'items': [datasetItem2]})
 ```
 
 If you're uploading a local image, you can specify a filepath as the image_url.
 ```python
 datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my_img_001.png',
   'metadata': {'label': '1'}}
-response = dataset.append([datasetItem2], local = True)
+response = dataset.append({'items': [datasetItem2]}, local = True)
 ```
 
 ### Access Dataset Items
 DatasetItems are accessible by reference id
 ```python
-# returns datasetItem2 (above)
 item = dataset.refloc('my_img_001.png')
 ```
 
@@ -61,7 +60,7 @@ response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotati
 ### Get Dataset Info
 Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
 ```python
-dataset.info()
+dataset.info
 ```
 
 ### Add Model
