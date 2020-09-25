@@ -165,7 +165,7 @@ class NucleusClient:
             return upload_response.as_dict()
 
         #TODO (Sasha): refactor to combine local_upload and batch_upload once we
-        # implement batch local image upload for REST API 
+        # implement batch local image upload for REST API
         def local_upload(dataset_id: str, payload: dict):
             async_requests = []
             session = requests.session()
