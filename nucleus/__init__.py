@@ -151,16 +151,16 @@ class NucleusClient:
 
             return files
 
-        def process_responses(responses: list, dataset_id: str):
+        def process_responses(response_tuples: list, dataset_id: str):
 
             upload_response = UploadResponse(json={'dataset_id': dataset_id})
 
-            for response in responses:
+            for (response, num_uploads) in response_tuples:
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
                     upload_response.update_response(response.json())
                 else:
-                    upload_response.record_error(response)
+                    upload_response.record_error(response, num_uploads)
 
             return upload_response.as_dict()
 
@@ -168,6 +168,7 @@ class NucleusClient:
         # implement batch local image upload for REST API
         def local_upload(dataset_id: str, payload: dict):
             async_requests = []
+            num_uploads_per_request = []
             session = requests.session()
             items = payload.get("items", [])
             for item in items:
@@ -176,26 +177,30 @@ class NucleusClient:
                     payload, f"dataset/{dataset_id}/append", session=session, local = True))
             async_responses = grequests.map(
                 async_requests, exception_handler=exception_handler)
-            return process_responses(async_responses, dataset_id)
+            num_uploads_per_request.append(1) # temporary: to use in batching later
+            return process_responses(zip(async_responses, num_uploads_per_request), dataset_id)
 
         def batch_upload(dataset_id: str, payload: dict):
             items = payload.get("items", [])
             num_uploads = len(items)
             async_requests = []
+            num_uploads_per_request = []
             session = requests.session()
             num_batches = (num_uploads//BATCH_SIZE) + (num_uploads % BATCH_SIZE != 0)
             for i in range(num_batches):
+                start_index = i*BATCH_SIZE
                 end_index = min(len(items), (i+1)*BATCH_SIZE)
-                curr_batch = items[i*BATCH_SIZE:end_index]
+                curr_batch = items[start_index:end_index]
                 payload = {"items": curr_batch}
                 request = self._make_grequest(
                     payload, f"dataset/{dataset_id}/append", session=session, local = False)
                 async_requests.append(request)
+                num_uploads_per_request.append(end_index-start_index)
 
             async_responses = grequests.map(
                 async_requests, exception_handler=exception_handler)
 
-            return process_responses(async_responses, dataset_id)
+            return process_responses(zip(async_responses, num_uploads_per_request), dataset_id)
 
         return local_upload(dataset_id, payload) if local else batch_upload(dataset_id, payload)
 
@@ -435,4 +440,4 @@ class NucleusClient:
         if response.status_code != 200:
             logger.warning(response)
 
-        return response.json()
+        return response.json() #TODO: this line fails if response has code == 404
