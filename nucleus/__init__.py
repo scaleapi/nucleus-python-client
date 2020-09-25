@@ -159,9 +159,13 @@ class NucleusClient:
                 logger.info(response.status_code, response.json())
                 if response and response.status_code == 200:
                     upload_response.update_response(response.json())
+                else:
+                    upload_response.record_error(response)
 
             return upload_response.as_dict()
 
+        #TODO (Sasha): refactor to combine local_upload and batch_upload once we
+        # implement batch local image upload for REST API 
         def local_upload(dataset_id: str, payload: dict):
             async_requests = []
             session = requests.session()
@@ -169,7 +173,7 @@ class NucleusClient:
             for item in items:
                 payload = format_payload_local(item)
                 async_requests.append(self._make_grequest(
-                    payload, f"dataset/{dataset_id}/append", session=session))
+                    payload, f"dataset/{dataset_id}/append", session=session, local = True))
             async_responses = grequests.map(
                 async_requests, exception_handler=exception_handler)
             return process_responses(async_responses, dataset_id)
@@ -179,8 +183,7 @@ class NucleusClient:
             num_uploads = len(items)
             async_requests = []
             session = requests.session()
-            # TODO: make line below cleaner with clever logic
-            num_batches = (num_uploads//BATCH_SIZE) if num_uploads % BATCH_SIZE == 0 else (num_uploads//BATCH_SIZE + 1)
+            num_batches = (num_uploads//BATCH_SIZE) + (num_uploads % BATCH_SIZE != 0)
             for i in range(num_batches):
                 end_index = min(len(items), (i+1)*BATCH_SIZE)
                 curr_batch = items[i*BATCH_SIZE:end_index]
