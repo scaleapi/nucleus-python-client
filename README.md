@@ -70,11 +70,12 @@ response = dataset.append({'items': [datasetItem2]}, local = True)
 
 ### Access Dataset Items
 There are three methods to access individual Dataset Items:
+
 (1) Dataset Items are accessible by reference id
 ```python
 item = dataset.refloc('my_img_001.png')
 ```
-(2) Dataset Items are accessible by index assigned internally
+(2) Dataset Items are accessible by index
 ```python
 item = dataset.iloc(0)
 ```
@@ -84,6 +85,7 @@ item = dataset.loc('dataset_item_id')
 ```
 
 ### Add Annotations
+Upload groundtruth annotations for the items in your dataset.
 Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#add-ground-truth
 ```python
 response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]})
@@ -124,6 +126,7 @@ model_run.predict(payload)
 
 ### Accessing ModelRun Predictions
 You can access the modelRun predictions for an individual dataset_item through three methods:
+
 (1) user specified reference_id
 ```python
 model_run.refloc('my_img_001.png')
