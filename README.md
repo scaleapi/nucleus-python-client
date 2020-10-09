@@ -12,17 +12,40 @@
 
 ## Usage
 
+The first step to using the Nucleus library is instantiating a client object.
+The client abstractions serves to authenticate the user and act as the gateway
+for users to interact with their datasets, models, and model runs.
+
+### Create a client object
 ```python
 import nucleus
-
 client = nucleus.NucleusClient('YOUR_API_KEY_HERE')
 ```
 
-### Create Dataset
+### List Datasets
+```python
+datasets = client.list_datasets()
+```
 
+### Create Dataset
 ```python
 response = client.create_dataset({"name": "My Dataset"})
 dataset = client.get_dataset(response["dataset_id"])
+```
+
+### Delete a Dataset
+By specifying target dataset id.
+A response code of 200 indicates successful deletion.
+```python
+client.delete_dataset('YOUR_DATASET_ID')
+```
+
+### Add Model
+The model abstraction is intended to represent a unique architecture.
+Models are independent of any dataset.
+
+```python
+response = client.add_model({"name": "My Model", "reference_id": "model-0.5", "metadata": {"iou_thr": 0.5}})
 ```
 
 ### Append Items to a Dataset
@@ -46,15 +69,24 @@ response = dataset.append({'items': [datasetItem2]}, local = True)
 ```
 
 ### Access Dataset Items
-DatasetItems are accessible by reference id
+There are three methods to access individual Dataset Items:
+(1) Dataset Items are accessible by reference id
 ```python
 item = dataset.refloc('my_img_001.png')
+```
+(2) Dataset Items are accessible by index assigned internally
+```python
+item = dataset.iloc(0)
+```
+(3) Dataset Items are accessible by the dataset_item_id assigned internally
+```python
+item = dataset.loc('dataset_item_id')
 ```
 
 ### Add Annotations
 Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#add-ground-truth
 ```python
-response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]});
+response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]})
 ```
 
 ### Get Dataset Info
@@ -63,14 +95,52 @@ Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
 dataset.info
 ```
 
-### Add Model
+### Create Model Run
+In contrast to the model abstraction, the model run abstraction
+represents an experiment. A model run is associated with both a model and
+a dataset.  A model run is meant to represent "the predictions of model y on
+dataset x"
 
+Creating a model run returns a ModelRun object.
 ```python
-response = client.add_model({"name": "My Model", "reference_id": "model-0.5", "metadata": {"iou_thr": 0.5}})
+model_run = dataset.create_model_run({"reference_id": "model-0.5"})
 ```
 
-### Add Model Run
-
+### Get ModelRun Info
+Returns the associated model_id, human-readable name of the run, status, and user specified metadata.
 ```python
-dataset.create_model_run({"reference_id": "model-0.5"})
+model_run.info
+```
+
+### Upload Predictions to ModelRun
+This method populates the model_run object with predictions.
+Returns the associated model_id, human-readable name of the run, status, and user specified metadata.
+Takes a list of Box2DPredictions within the payload, where Box2DPrediction
+is formulated as in https://dashboard.scale.com/nucleus/docs/api#upload-model-outputs
+```python
+payload = {"annotations": List[Box2DPrediction]}
+model_run.predict(payload)
+```
+
+### Accessing ModelRun Predictions
+You can access the modelRun predictions for an individual dataset_item through three methods:
+(1) user specified reference_id
+```python
+model_run.refloc('my_img_001.png')
+```
+(2) Index
+```python
+model_run.iloc(0)
+```
+(3) Internally maintained dataset_item_id
+```python
+model_run.loc('dataset_item_id')
+```
+
+### Commit ModelRun
+The commit action indicates that the user is finished uploading predictions associated
+with this model run.  Committing a model run kicks off Nucleus internal processes
+to calculate performance metrics like IoU. After being committed, a ModelRun object becomes immutable.
+```python
+model_run.commit()
 ```
