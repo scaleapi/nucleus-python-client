@@ -62,12 +62,13 @@ import requests
 from .dataset import Dataset
 from .model_run import ModelRun
 from .upload_response import ERROR_ITEMS, UploadResponse
+from constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
 
-NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus" #"https://api.scale.com/v1/nucleus"
 ITEMS_KEY = "items"
 ITEM_KEY = "item"
 DATASET_ID_KEY = "dataset_id"
