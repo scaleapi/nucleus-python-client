@@ -97,7 +97,7 @@ class NucleusClient:
         :return: datasets_ids
         """
         # TODO implement API
-        raise NotImplementedError
+        return self._make_request({}, "dataset/", requests.get)
 
     def get_dataset(self, dataset_id: str) -> Dataset:
         """
@@ -124,6 +124,16 @@ class NucleusClient:
         :return: { "dataset_id": str, "name": str }
         """
         return self._make_request(payload, "dataset/create")
+
+    def delete_dataset(self, dataset_id: str) -> dict:
+        """
+        Deletes a private dataset based on datasetId.
+        Returns an empty payload where response status `200` indicates
+        the dataset has been successfully deleted.
+        :param payload: { "name": str }
+        :return: { "dataset_id": str, "name": str }
+        """
+        return self._make_request({}, f"dataset/{dataset_id}", requests.delete)
 
     # TODO: maybe do more robust error handling here
 
