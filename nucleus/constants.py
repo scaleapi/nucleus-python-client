@@ -1,4 +1,4 @@
-NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus" #"https://api.scale.com/v1/nucleus"
+NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus" 
 ITEMS_KEY = "items"
 ITEM_KEY = "item"
 DATASET_ID_KEY = "dataset_id"
