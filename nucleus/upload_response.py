@@ -1,10 +1,5 @@
-NEW_ITEMS = "new_items"
-UPDATED_ITEMS = "updated_items"
-IGNORED_ITEMS = "ignored_items"
-ERROR_ITEMS = "upload_errors"
-ERROR_CODES = "error_codes"
-DATASET_ID = "dataset_id"
-
+from .constants import NEW_ITEMS, UPDATED_ITEMS, IGNORED_ITEMS, ERROR_ITEMS, \
+ERROR_CODES, DATASET_ID
 
 class UploadResponse:
     def __init__(self, json: dict):
