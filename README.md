@@ -22,15 +22,15 @@ import nucleus
 client = nucleus.NucleusClient('YOUR_API_KEY_HERE')
 ```
 
-### List Datasets
-```python
-datasets = client.list_datasets()
-```
-
 ### Create Dataset
 ```python
 response = client.create_dataset({"name": "My Dataset"})
 dataset = client.get_dataset(response["dataset_id"])
+```
+
+### List Datasets
+```python
+datasets = client.list_datasets()
 ```
 
 ### Delete a Dataset
@@ -38,14 +38,6 @@ By specifying target dataset id.
 A response code of 200 indicates successful deletion.
 ```python
 client.delete_dataset('YOUR_DATASET_ID')
-```
-
-### Add Model
-The model abstraction is intended to represent a unique architecture.
-Models are independent of any dataset.
-
-```python
-response = client.add_model({"name": "My Model", "reference_id": "model-0.5", "metadata": {"iou_thr": 0.5}})
 ```
 
 ### Append Items to a Dataset
@@ -66,6 +58,12 @@ If you're uploading a local image, you can specify a filepath as the image_url.
 datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my_img_001.png',
   'metadata': {'label': '1'}}
 response = dataset.append({'items': [datasetItem2]}, local = True)
+```
+
+### Get Dataset Info
+Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
+```python
+dataset.info
 ```
 
 ### Access Dataset Items
@@ -91,10 +89,12 @@ Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#
 response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]})
 ```
 
-### Get Dataset Info
-Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
+### Add Model
+The model abstraction is intended to represent a unique architecture.
+Models are independent of any dataset.
+
 ```python
-dataset.info
+response = client.add_model({"name": "My Model", "reference_id": "model-0.5", "metadata": {"iou_thr": 0.5}})
 ```
 
 ### Create Model Run

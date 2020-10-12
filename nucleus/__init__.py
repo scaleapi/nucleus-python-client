@@ -62,19 +62,10 @@ import requests
 from .dataset import Dataset
 from .model_run import ModelRun
 from .upload_response import ERROR_ITEMS, UploadResponse
-from constants import *
+from .constants import *
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-
-
-NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
-ITEMS_KEY = "items"
-ITEM_KEY = "item"
-DATASET_ID_KEY = "dataset_id"
-IMAGE_KEY = "image"
-IMAGE_URL_KEY = "image_url"
-
 
 class NucleusClient:
     """
@@ -97,7 +88,6 @@ class NucleusClient:
         Lists available datasets in your repo.
         :return: datasets_ids
         """
-        # TODO implement API
         return self._make_request({}, "dataset/", requests.get)
 
     def get_dataset(self, dataset_id: str) -> Dataset:
