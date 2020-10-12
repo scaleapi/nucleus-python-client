@@ -61,19 +61,12 @@ import requests
 
 from .dataset import Dataset
 from .model_run import ModelRun
-from .upload_response import ERROR_ITEMS, UploadResponse
+from .upload_response import UploadResponse
+from .constants import NUCLEUS_ENDPOINT, ERROR_ITEMS, ITEMS_KEY, ITEM_KEY, \
+IMAGE_KEY, IMAGE_URL_KEY, DATASET_ID_KEY
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-
-
-NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
-ITEMS_KEY = "items"
-ITEM_KEY = "item"
-DATASET_ID_KEY = "dataset_id"
-IMAGE_KEY = "image"
-IMAGE_URL_KEY = "image_url"
-
 
 class NucleusClient:
     """
@@ -96,8 +89,7 @@ class NucleusClient:
         Lists available datasets in your repo.
         :return: datasets_ids
         """
-        # TODO implement API
-        raise NotImplementedError
+        return self._make_request({}, "dataset/", requests.get)
 
     def get_dataset(self, dataset_id: str) -> Dataset:
         """
@@ -124,6 +116,16 @@ class NucleusClient:
         :return: { "dataset_id": str, "name": str }
         """
         return self._make_request(payload, "dataset/create")
+
+    def delete_dataset(self, dataset_id: str) -> dict:
+        """
+        Deletes a private dataset based on datasetId.
+        Returns an empty payload where response status `200` indicates
+        the dataset has been successfully deleted.
+        :param payload: { "name": str }
+        :return: { "dataset_id": str, "name": str }
+        """
+        return self._make_request({}, f"dataset/{dataset_id}", requests.delete)
 
     # TODO: maybe do more robust error handling here
 
