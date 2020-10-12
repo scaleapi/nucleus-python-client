@@ -1,4 +1,5 @@
-from .constants import *
+from .constants import NEW_ITEMS, UPDATED_ITEMS, IGNORED_ITEMS, ERROR_ITEMS, \
+ERROR_CODES, DATASET_ID
 
 class UploadResponse:
     def __init__(self, json: dict):

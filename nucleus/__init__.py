@@ -61,8 +61,9 @@ import requests
 
 from .dataset import Dataset
 from .model_run import ModelRun
-from .upload_response import ERROR_ITEMS, UploadResponse
-from .constants import *
+from .upload_response import UploadResponse
+from .constants import NUCLEUS_ENDPOINT, ERROR_ITEMS, ITEMS_KEY, ITEM_KEY, \
+IMAGE_KEY, IMAGE_URL_KEY, DATASET_ID_KEY
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
