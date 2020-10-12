@@ -1,5 +1,12 @@
-from .constants import NEW_ITEMS, UPDATED_ITEMS, IGNORED_ITEMS, ERROR_ITEMS, \
-ERROR_CODES, DATASET_ID
+from .constants import (
+    NEW_ITEMS,
+    UPDATED_ITEMS,
+    IGNORED_ITEMS,
+    ERROR_ITEMS,
+    ERROR_CODES,
+    DATASET_ID,
+)
+
 
 class UploadResponse:
     def __init__(self, json: dict):
@@ -17,7 +24,7 @@ class UploadResponse:
         self.error_codes = set()
 
     def update_response(self, json):
-        assert (self.dataset_id == json.get(DATASET_ID), True)
+        assert self.dataset_id == json.get(DATASET_ID)
         self.new_items += json.get(NEW_ITEMS, 0)
         self.updated_items += json.get(UPDATED_ITEMS, 0)
         self.ignored_items += json.get(IGNORED_ITEMS, 0)

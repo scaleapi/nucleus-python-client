@@ -12,14 +12,14 @@ def read_requirements_links(fi: str):
         if len(r) == 0 or any(map(lambda x: r.startswith(x), ["#", "."])):
             return None
         if r.startswith(_e):
-            r = r[r.rindex('=')+1:]
+            r = r[r.rindex("=") + 1 :]
         return r
 
     def proc_link(r):
         r = r.strip()
         if len(r) == 0 or not r.startswith(_e):
             return None
-        return r[len(_e):]
+        return r[len(_e) :]
 
     with open(fi, "rt") as rt:
         lines = rt.read().splitlines()
@@ -36,13 +36,13 @@ setuptools.setup(
     name="nucleus",
     version="0.0.1",
     author="Scale AI",
-    author_email='support@scale.com',
-    description='The official Python client library for Nucleus, the Data Platform for AI',
+    author_email="support@scale.com",
+    description="The official Python client library for Nucleus, the Data Platform for AI",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/scaleapi/nucleus-python-client',
+    url="https://github.com/scaleapi/nucleus-python-client",
     packages=setuptools.find_packages(),
     install_requires=requires,
     dependency_links=links,
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )
