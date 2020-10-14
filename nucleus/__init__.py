@@ -538,3 +538,6 @@ class NucleusClient:
         return (
             response.json()
         )  # TODO: this line fails if response has code == 404
+
+    def TEST_FUNCTION(self, arg1, arg2, really_long_variable_name, arg4, arg5, blah):
+        print("This is a super long print statement to test line length functionality")
