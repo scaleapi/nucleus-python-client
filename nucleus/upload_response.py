@@ -1,3 +1,4 @@
+from typing import Set
 from .constants import (
     NEW_ITEMS,
     UPDATED_ITEMS,
@@ -9,6 +10,11 @@ from .constants import (
 
 
 class UploadResponse:
+    """
+    Response for long upload job
+    # TODO refactor
+    """
+
     def __init__(self, json: dict):
         dataset_id = json.get(DATASET_ID)
         new_items = json.get(NEW_ITEMS, 0)
@@ -21,9 +27,12 @@ class UploadResponse:
         self.updated_items = updated_items
         self.ignored_items = ignored_items
         self.upload_errors = upload_errors
-        self.error_codes = set()
+        self.error_codes: Set[str] = set()
 
     def update_response(self, json):
+        """
+        :param json: { new_items: int, updated_items: int, ignored_items: int, upload_errors: int, }
+        """
         assert self.dataset_id == json.get(DATASET_ID)
         self.new_items += json.get(NEW_ITEMS, 0)
         self.updated_items += json.get(UPDATED_ITEMS, 0)
@@ -31,11 +40,18 @@ class UploadResponse:
         self.upload_errors += json.get(ERROR_ITEMS, 0)
 
     def record_error(self, response, num_uploads):
+        """
+        :param response: json response
+        :param num_uploads: len of itemss tried to upload
+        """
         status = response.status_code
         self.error_codes.add(status)
         self.upload_errors += num_uploads
 
-    def json(self):
+    def json(self) -> dict:
+        """
+        return: { new_items: int, updated_items: int, ignored_items: int, upload_errors: int, }
+        """
         result = {
             DATASET_ID: self.dataset_id,
             NEW_ITEMS: self.new_items,

@@ -54,7 +54,7 @@ metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 import json
 import logging
 import os
-from typing import List
+from typing import List, Union, Dict, Callable
 
 import grequests
 import requests
@@ -92,10 +92,10 @@ class NucleusClient:
         # TODO implement API
         raise NotImplementedError
 
-    def list_datasets(self) -> List[str]:
+    def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
         Lists available datasets in your repo.
-        :return: datasets_ids
+        :return: { datasets_ids }
         """
         return self._make_request({}, "dataset/", requests.get)
 
@@ -481,13 +481,19 @@ class NucleusClient:
         )
 
     def _make_grequest(
-        self, payload: dict, route: str, session: requests.session, local=True
+        self,
+        payload: dict,
+        route: str,
+        session,
+        requests_command: Callable = grequests.post,
+        local=True,
     ):
         """
         makes a grequest to Nucleus endpoint
-        :param files: file dict for multipart-formdata
+        :param payload: file dict for multipart-formdata
         :param route: route for the request
-        :param requests_command: requests.post, requests.get, requests.delete
+        :param session: requests.session
+        :param requests_command: grequests.post, grequests.get, grequests.delete
         :return: An async grequest object
         """
 
@@ -495,14 +501,14 @@ class NucleusClient:
         logger.info("Posting to %s", endpoint)
 
         if local:
-            post = grequests.post(
+            post = requests_command(
                 endpoint,
                 session=session,
                 files=payload,
                 auth=(self.api_key, ""),
             )
         else:
-            post = grequests.post(
+            post = requests_command(
                 endpoint,
                 session=session,
                 json=payload,
