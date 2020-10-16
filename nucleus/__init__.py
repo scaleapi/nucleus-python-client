@@ -295,6 +295,19 @@ class NucleusClient:
         """
         return self._make_request(payload, f"dataset/{dataset_id}/annotate")
 
+    def ingest_tasks(self, dataset_id: str, payload: dict):
+        """
+        If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
+        annotated by Scale into your Nucleus Dataset.
+        Right now we support ingestion from Videobox Annotation and 2D Box Annotation projects.
+        :param payload: {"tasks" : List[task_ids]}
+        :param dataset_id: id of the dataset
+        :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
+        """
+        return self._make_request(
+            payload, f"dataset/{dataset_id}/ingest_tasks"
+        )
+
     def add_model(self, payload: dict) -> dict:
         """
         Adds a model info to your repo based on payload params:

@@ -66,11 +66,22 @@ class Dataset:
         """
         return self._client.annotate_dataset(self.dataset_id, payload)
 
+    def ingest_tasks(self, payload: dict):
+        """
+        If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
+        annotated by Scale into your Nucleus Dataset.
+        Right now we support ingestion from Videobox Annotation and 2D Box Annotation projects.
+        :param payload: {"tasks" : List[task_ids]}
+        :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
+        """
+        return self._client.ingest_tasks(self.dataset_id, payload)
+
     def append(self, payload: dict, local: bool = False) -> dict:
         """
         Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
 
         :param payload: {"items": List[DatasetItem], "force": bool}
+        :param local: True if you upload local images
         :return:
         {
             'dataset_id': str,
