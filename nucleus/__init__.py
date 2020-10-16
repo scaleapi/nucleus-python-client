@@ -54,7 +54,7 @@ metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 import json
 import logging
 import os
-from typing import List
+from typing import List, Union, Dict, Callable
 
 import grequests
 import requests
@@ -62,16 +62,24 @@ import requests
 from .dataset import Dataset
 from .model_run import ModelRun
 from .upload_response import UploadResponse
-from .constants import NUCLEUS_ENDPOINT, ERROR_ITEMS, ITEMS_KEY, ITEM_KEY, \
-IMAGE_KEY, IMAGE_URL_KEY, DATASET_ID_KEY
+from .constants import (
+    NUCLEUS_ENDPOINT,
+    ERROR_ITEMS,
+    ITEMS_KEY,
+    ITEM_KEY,
+    IMAGE_KEY,
+    IMAGE_URL_KEY,
+    DATASET_ID_KEY,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
+
 class NucleusClient:
     """
     Nucleus client.
-       """
+    """
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -84,10 +92,10 @@ class NucleusClient:
         # TODO implement API
         raise NotImplementedError
 
-    def list_datasets(self) -> List[str]:
+    def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
         Lists available datasets in your repo.
-        :return: datasets_ids
+        :return: { datasets_ids }
         """
         return self._make_request({}, "dataset/", requests.get)
 
@@ -129,7 +137,13 @@ class NucleusClient:
 
     # TODO: maybe do more robust error handling here
 
-    def populate_dataset(self, dataset_id: str, payload: dict, local: bool = False, batch_size: int = 20):
+    def populate_dataset(
+        self,
+        dataset_id: str,
+        payload: dict,
+        local: bool = False,
+        batch_size: int = 20,
+    ):
         """
         Appends images to a dataset with given dataset_id.
         Overwrites images on collision if forced.
@@ -163,10 +177,19 @@ class NucleusClient:
         return agg_response
 
     def _process_append_requests_local(
-        self, dataset_id: str, payload: dict, batch_size: int = 10, size: int = 10
+        self,
+        dataset_id: str,
+        payload: dict,
+        batch_size: int = 10,
+        size: int = 10,
     ):
         def error() -> UploadResponse:
-            return UploadResponse({DATASET_ID_KEY: dataset_id, ERROR_ITEMS: 1,})
+            return UploadResponse(
+                {
+                    DATASET_ID_KEY: dataset_id,
+                    ERROR_ITEMS: 1,
+                }
+            )
 
         def exception_handler(request, exception):
             logger.error(request, exception)
@@ -207,19 +230,26 @@ class NucleusClient:
             # don't forget to close all open files
             map(lambda x: x[IMAGE_KEY][1].close(), payloads)
 
-            async_responses = [response if response.status_code == 200 else error() for response in async_responses]
+            async_responses = [
+                response if response.status_code == 200 else error()
+                for response in async_responses
+            ]
             responses.extend(async_responses)
 
         return responses
 
     def _process_append_requests(
-        self, dataset_id: str, payload: dict, batch_size: int = 100, size: int = 10
+        self,
+        dataset_id: str,
+        payload: dict,
+        batch_size: int = 100,
+        size: int = 10,
     ):
         def default_error(payload: dict) -> UploadResponse:
             return UploadResponse(
                 {
                     DATASET_ID_KEY: dataset_id,
-                    ERROR_ITEMS: len(payload[ITEMS_KEY])
+                    ERROR_ITEMS: len(payload[ITEMS_KEY]),
                 }
             )
 
@@ -230,13 +260,16 @@ class NucleusClient:
         session = requests.session()
         items = payload[ITEMS_KEY]
         payloads = [
-            {ITEMS_KEY: items[i: i + batch_size]}
+            {ITEMS_KEY: items[i : i + batch_size]}
             for i in range(0, len(items), batch_size)
         ]
 
         async_requests = [
             self._make_grequest(
-                payload, f"dataset/{dataset_id}/append", session=session, local=False
+                payload,
+                f"dataset/{dataset_id}/append",
+                session=session,
+                local=False,
             )
             for payload in payloads
         ]
@@ -307,7 +340,9 @@ class NucleusClient:
           "model_run_id": str,
         }
         """
-        return self._make_request(payload, f"dataset/{dataset_id}/modelRun/create")
+        return self._make_request(
+            payload, f"dataset/{dataset_id}/modelRun/create"
+        )
 
     def predict(self, model_run_id: str, payload: dict):
         """
@@ -344,7 +379,9 @@ class NucleusClient:
                 'slice_ids': List[str]
             }
         """
-        return self._make_request({}, f"dataset/{dataset_id}/info", requests.get)
+        return self._make_request(
+            {}, f"dataset/{dataset_id}/info", requests.get
+        )
 
     def model_run_info(self, model_run_id: str):
         """
@@ -361,7 +398,9 @@ class NucleusClient:
             "metadata": Dict[str, Any],
         }
         """
-        return self._make_request({}, f"modelRun/{model_run_id}/info", requests.get)
+        return self._make_request(
+            {}, f"modelRun/{model_run_id}/info", requests.get
+        )
 
     def dataitem_ref_id(self, dataset_id: str, reference_id: str):
         """
@@ -394,7 +433,9 @@ class NucleusClient:
         :param i: absolute number of the dataset_item
         :return:
         """
-        return self._make_request({}, f"dataset/{dataset_id}/iloc/{i}", requests.get)
+        return self._make_request(
+            {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
+        )
 
     def predictions_iloc(self, model_run_id: str, i: int):
         """
@@ -406,7 +447,9 @@ class NucleusClient:
             "annotations": List[Box2DPrediction],
         }
         """
-        return self._make_request({}, f"modelRun/{model_run_id}/iloc/{i}", requests.get)
+        return self._make_request(
+            {}, f"modelRun/{model_run_id}/iloc/{i}", requests.get
+        )
 
     def dataitem_loc(self, dataset_id: str, dataset_item_id: str):
         """
@@ -437,12 +480,20 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
 
-    def _make_grequest(self, payload: dict, route: str, session: requests.session, local=True):
+    def _make_grequest(
+        self,
+        payload: dict,
+        route: str,
+        session,
+        requests_command: Callable = grequests.post,
+        local=True,
+    ):
         """
         makes a grequest to Nucleus endpoint
-        :param files: file dict for multipart-formdata
+        :param payload: file dict for multipart-formdata
         :param route: route for the request
-        :param requests_command: requests.post, requests.get, requests.delete
+        :param session: requests.session
+        :param requests_command: grequests.post, grequests.get, grequests.delete
         :return: An async grequest object
         """
 
@@ -450,11 +501,14 @@ class NucleusClient:
         logger.info("Posting to %s", endpoint)
 
         if local:
-            post = grequests.post(
-                endpoint, session=session, files=payload, auth=(self.api_key, ""),
+            post = requests_command(
+                endpoint,
+                session=session,
+                files=payload,
+                auth=(self.api_key, ""),
             )
         else:
-            post = grequests.post(
+            post = requests_command(
                 endpoint,
                 session=session,
                 json=payload,
@@ -463,7 +517,9 @@ class NucleusClient:
             )
         return post
 
-    def _make_request(self, payload: dict, route: str, requests_command=requests.post) -> dict:
+    def _make_request(
+        self, payload: dict, route: str, requests_command=requests.post
+    ) -> dict:
         """
         makes a request to Nucleus endpoint
         :param payload: given payload
@@ -485,4 +541,6 @@ class NucleusClient:
         if response.status_code != 200:
             logger.warning(response)
 
-        return response.json()  # TODO: this line fails if response has code == 404
+        return (
+            response.json()
+        )  # TODO: this line fails if response has code == 404
