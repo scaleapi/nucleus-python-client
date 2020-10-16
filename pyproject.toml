@@ -37,6 +37,7 @@ disable="""
     R0914,
     R0913,
     C0114,
+    R0904,
 """
 
 [tool.pylint.REPORTS]
