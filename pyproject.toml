@@ -22,28 +22,5 @@ exclude = '''
 )
 '''
 
-[tool.pylint.MESSAGE_CONTROL]
-disable="""
-    bad-continuation,
-    no-else-return,
-    too-few-public-methods,
-    line-too-long,
-    duplicate-code,
-    import-error,
-    unused-argument,
-    no-self-use,
-    import-outside-toplevel,
-    W0511,
-    R0914,
-    R0913,
-    C0114,
-    R0904,
-"""
-
-[tool.pylint.REPORTS]
-reports="no"
-
-[tool.pylint.FORMAT]
-max-line-length="79"
 
 
