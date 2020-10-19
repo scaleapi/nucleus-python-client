@@ -1,23 +1,53 @@
 # Example usage of batching helper_functions
-import json
-from utils import batch_upload_append
-import nucleus
+import argparse
+from utils import batch_upload_append, batch_upload_annotation
 
-DATA_DIR = "pandaset"
+commands_dict = {
+    "append": batch_upload_append,
+    "annotate": batch_upload_annotation,
+}
 
 
-def main():
-    client = nucleus.NucleusClient("live_b45ddcc2159a4cadb0fb5ab9b3b0f246")
-    response = client.create_dataset({"name": "upload_test"})
-    dataset = client.get_dataset(response["dataset_id"])
-    file = open(
-        DATA_DIR + "/" + "pandaset_items.json", "r"
-    )  # open in read mode
-    items = json.load(file)
-
+def main(args):
     # Use batching helper!
-    batch_upload_append(dataset, items)
+    if args.action not in commands_dict:
+        raise Exception(
+            "invalid argument", "Invalid Command specified by action flag"
+        )
+    command = commands_dict[args.action]
+    response = command(args)
+    print(response.json())
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--action",
+        type=str,
+        required=True,
+        help="Which dataset operation to perform (append, annotate)",
+    )
+    parser.add_argument(
+        "--api_key", type=str, required=True, help="Scale API key"
+    )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=1000,
+        help="Number of items to upload per request",
+    )
+    parser.add_argument(
+        "--dataset_id",
+        type=str,
+        required=True,
+        help="ID of Nucleus dataset being updated.",
+    )
+    parser.add_argument(
+        "--payload_json_file",
+        type=str,
+        required=True,
+        help="Path to file containing JSON payload",
+    )
+    main_args = parser.parse_args()
+    print(main_args)
+    main(main_args)

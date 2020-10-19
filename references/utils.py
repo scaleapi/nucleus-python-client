@@ -1,18 +1,61 @@
+import json
 import tqdm
+import nucleus
+from nucleus.upload_response import UploadResponse
+from nucleus.constants import (
+    ITEMS_KEY,
+    ANNOTATIONS_KEY,
+    ANNOTATIONS_PROCESSED_KEY,
+    STATUS_CODE_KEY,
+    ERRORS_KEY,
+)
 
 
-# TODO: add tqdm for progress updates.
-def batch_upload_append(dataset, payload, batch_size=100):
+def batch_upload_append(args, batch_size=1000):
     """
     Takes large payload, splits it into batches, and calls append sequentially.
     """
-    batches = get_batches(payload["items"], batch_size)
-    for batch in tqdm(batches):
-        dataset.append({"items": batch})
+    client = nucleus.NucleusClient(args.api_key)
+    file = open(args.payload_json_file, "r")  # open in read mode
+    payload = json.load(file)
+    items = payload[ITEMS_KEY]
+    dataset = client.get_dataset(args.dataset_id)
+
+    print("uploading {} items...".format(len(items)))
+    batches = [
+        items[i : i + batch_size] for i in range(0, len(items), batch_size)
+    ]
+    agg_response = UploadResponse(json={"dataset_id": args.dataset_id})
+    for batch in tqdm.tqdm(batches):
+        response = dataset.append({ITEMS_KEY: batch})
+        agg_response.update_response(response.json())
+    print("upload complete!")
+    return agg_response
 
 
-def get_batches(items_list, batch_size):
+def batch_upload_annotation(args, batch_size=10):
     """
-    TODO: add docstring
+    Takes large payload, splits it into batches, and calls append sequentially.
     """
-    return items_list
+    client = nucleus.NucleusClient(args.api_key)
+    file = open(args.payload_json_file, "r")  # open in read mode
+    payload = json.load(file)
+    items = payload[ANNOTATIONS_KEY]
+    print("len items is: ", len(items))
+    dataset = client.get_dataset(args.dataset_id)
+    batches = [
+        items[i : i + batch_size] for i in range(0, len(items), batch_size)
+    ]
+    agg_response = {
+        "dataset_id": args.dataset_id,
+        ANNOTATIONS_PROCESSED_KEY: 0,
+    }
+    for batch in tqdm.tqdm(batches):
+        response = dataset.annotate({ANNOTATIONS_KEY: batch})
+        if STATUS_CODE_KEY in response:
+            agg_response[ERRORS_KEY] = response
+        else:
+            agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
+                ANNOTATIONS_PROCESSED_KEY
+            ]
+    return agg_response
