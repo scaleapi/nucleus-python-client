@@ -15,7 +15,11 @@ def main(args):
             "invalid argument", "Invalid Command specified by action flag"
         )
     command = commands_dict[args.action]
-    response = command(args)
+    api_key = args.api_key
+    batch_size = args.batch_size
+    dataset_id = args.dataset_id
+    payload_json_file = args.payload_json_file
+    response = command(api_key, dataset_id, payload_json_file, batch_size)
     print(response.json())
 
 
