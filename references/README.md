@@ -4,6 +4,8 @@
 Helper functions for batching uploads.  Invoke these functions through the run_batching.py script, or
 use them in your own code.
 
+Use the use_notebook argument to toggle between command line and ipython notebook versions of the tqdm progress bar.
+
 ### run_batching.py
 Supports uploading dataset items or annotations in batch, using command line arguments.
 
