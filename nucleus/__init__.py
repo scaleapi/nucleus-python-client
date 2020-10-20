@@ -54,7 +54,7 @@ metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 import json
 import logging
 import os
-from typing import List, Union, Dict, Callable
+from typing import List, Union, Dict, Callable, Any
 
 import grequests
 import requests
@@ -206,7 +206,7 @@ class NucleusClient:
 
         session = requests.session()
         items = payload[ITEMS_KEY]
-        responses = []
+        responses: List[Any] = []
         for i in range(0, len(items), batch_size):
             batch = items[i : i + batch_size]
             payloads = [preprocess_payload(item) for item in batch]

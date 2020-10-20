@@ -60,6 +60,9 @@ datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my
 response = dataset.append({'items': [datasetItem2]}, local = True)
 ```
 
+For particularly large item uploads, consider using one of the example scripts located in **references**
+These scripts upload items in batches for easier debugging.
+
 ### Get Dataset Info
 Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
 ```python
@@ -88,6 +91,8 @@ Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#
 ```python
 response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]})
 ```
+
+For particularly large payloads, please reference the accompanying scripts in **references**
 
 ### Add Model
 The model abstraction is intended to represent a unique architecture.
