@@ -20,12 +20,21 @@ def batch_upload_append(
     """
     Takes large payload, splits it into batches, and calls append sequentially.
     :param api_key: Scale API_KEY used to authenticate user.
-    :param dataset_id: unique identifier of Nucleus dataset to which the items in payload will be uploaded.
-    :param payload: json object representing payload to append operation.  Format should be consistent with
-    dataset.append() input documented in nucleus folder.
-    :param batch_size: (optional) number of payload items to be uploaded per batch, defaults to 1000.
-    :param use_notebook: toggles between normal tqdm bar and tqdm bar for ipynb notebook.  User should specify
+    :param dataset_id: Unique identifier of Nucleus dataset to which the items in payload will be uploaded.
+    :param payload: JSON object representing payload to append operation.  Format should be consistent with
+    dataset.append() nput documented in nucleus folder.
+    :param batch_size: (optional) Number of payload items to be uploaded per batch, defaults to 1000.
+    :param use_notebook: (optional) Toggles between normal tqdm bar and tqdm bar for ipynb notebook.  User should specify
     use_notebook=True when invoking this function from a notebook environment.
+    Defaults to False.
+
+    :return: dictionary of the form
+        {
+            new_items: int,
+            updated_items: int,
+            ignored_items: int,
+            upload_errors: int,
+        }
     """
     client = nucleus.NucleusClient(api_key)
     items = payload[ITEMS_KEY]
@@ -53,11 +62,18 @@ def batch_upload_annotation(
     Takes large annotation payload, splits it into batches, and calls append sequentially.
     :param api_key: Scale API_KEY used to authenticate user.
     :param dataset_id: unique identifier of Nucleus dataset to which the annotations in payload will be uploaded.
-    :param payload: json object representing payload to append operation.  Format should be consistent with
+    :param payload: JSON object representing payload to append operation.  Format should be consistent with
     dataset.annotate() input documented in nucleus folder.
     :param batch_size: (optional) number of payload items to be uploaded per batch, defaults to 1000.
-    :param use_notebook: toggles between normal tqdm bar and tqdm bar for ipynb notebook.  User should specify
+    :param use_notebook: (optional) Toggles between normal tqdm bar and tqdm bar for ipynb notebook.  User should specify
     use_notebook=True when invoking this function from a notebook environment.
+    Defaults to False.
+
+    :return: dictionary of the form
+        {
+            dataset_id: string,
+            annotations_processed: int,
+        }
     """
     client = nucleus.NucleusClient(api_key)
     items = payload[ANNOTATIONS_KEY]
@@ -84,7 +100,6 @@ def batch_upload_annotation(
 
 def batch_upload_prediction(
     api_key,
-    dataset_id,
     model_run_id,
     payload,
     batch_size=1000,
@@ -93,13 +108,19 @@ def batch_upload_prediction(
     """
     Takes large model prediction, splits it into batches, and calls append sequentially.
     :param api_key: Scale API_KEY used to authenticate user.
-    :param dataset_id: unique identifier of Nucleus dataset associated with model_run.
-    :param model_id: unique identifier of Model Run to which the predictions will be uploaded.
-    :param payload: json object representing payload to append operation.  Format should be consistent with
+    :param model_id: Unique identifier of Model Run to which the predictions will be uploaded.
+    :param payload: JSON object representing payload to append operation.  Format should be consistent with
     dataset.append() input documented in nucleus folder.
-    :param batch_size: (optional) number of payload items to be uploaded per batch, defaults to 1000.
-    :param use_notebook: toggles between normal tqdm bar and tqdm bar for ipynb notebook.
+    :param batch_size: (optional) Number of payload items to be uploaded per batch, defaults to 1000.
+    :param use_notebook: (optional) Toggles between normal tqdm bar and tqdm bar for ipynb notebook.
     User should specify use_notebook=True when invoking this function from a notebook environment.
+    Defaults to False.
+
+    :return: dictionary of the form
+        {
+            model_run_id: string,
+            predictions_processed: int,
+        }
     """
     client = nucleus.NucleusClient(api_key)
     items = payload[ANNOTATIONS_KEY]
@@ -109,7 +130,6 @@ def batch_upload_prediction(
         items[i : i + batch_size] for i in range(0, len(items), batch_size)
     ]
     agg_response = {
-        DATASET_ID_KEY: dataset_id,
         MODEL_RUN_ID_KEY: model_run_id,
         PREDICTIONS_PROCESSED_KEY: 0,
     }
