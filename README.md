@@ -1,5 +1,20 @@
 # Nucleus
 
+https://dashboard.scale.com/nucleus
+
+Aggregate metrics in ML are not good enough. To improve production ML, you need to understand their qualitative failure modes, fix them by gathering more data, and curate diverse scenarios.
+
+Scale Nucleus helps you:
+
+* Visualize your data
+* Curate interesting slices within your dataset
+* Review and manage annotations
+* Measure and debug your model performance
+
+Nucleus is a new way—the right way—to develop ML models, helping us move away from the concept of one dataset and towards a paradigm of collections of scenarios.
+
+
+
 ## Installation
 
 ### Editable mode
@@ -19,7 +34,7 @@ for users to interact with their datasets, models, and model runs.
 ### Create a client object
 ```python
 import nucleus
-client = nucleus.NucleusClient('YOUR_API_KEY_HERE')
+client = nucleus.NucleusClient("YOUR_API_KEY_HERE")
 ```
 
 ### Create Dataset
@@ -37,27 +52,27 @@ datasets = client.list_datasets()
 By specifying target dataset id.
 A response code of 200 indicates successful deletion.
 ```python
-client.delete_dataset('YOUR_DATASET_ID')
+client.delete_dataset("YOUR_DATASET_ID")
 ```
 
 ### Append Items to a Dataset
 You can append both local images and images from the web.
 Each image object is a dictionary with three fields:
 ```python
-datasetItem1 = {'image_url': 'http://<my_image_url>', 'reference_id': 'my_image_name.jpg',
-  'metadata': {'label': '0'}}
+datasetItem1 = {"image_url": "http://<my_image_url>", "reference_id": "my_image_name.jpg",
+  "metadata": {"label": "0"}}
 ```
 
 The append function expects a list of datasetItems to upload, like this:
 ```python
-response = dataset.append({'items': [datasetItem2]})
+response = dataset.append({"items": [datasetItem2]})
 ```
 
 If you're uploading a local image, you can specify a filepath as the image_url.
 ```python
-datasetItem2 = {'image_url': './data_folder/my_img_001.png', 'reference_id': 'my_img_001.png',
-  'metadata': {'label': '1'}}
-response = dataset.append({'items': [datasetItem2]}, local = True)
+datasetItem2 = {"image_url": "./data_folder/my_img_001.png", "reference_id": "my_img_001.png",
+  "metadata": {"label": "1"}}
+response = dataset.append({"items": [datasetItem2]}, local = True)
 ```
 
 For particularly large item uploads, consider using one of the example scripts located in **references**
@@ -74,7 +89,7 @@ There are three methods to access individual Dataset Items:
 
 (1) Dataset Items are accessible by reference id
 ```python
-item = dataset.refloc('my_img_001.png')
+item = dataset.refloc("my_img_001.png")
 ```
 (2) Dataset Items are accessible by index
 ```python
@@ -82,14 +97,14 @@ item = dataset.iloc(0)
 ```
 (3) Dataset Items are accessible by the dataset_item_id assigned internally
 ```python
-item = dataset.loc('dataset_item_id')
+item = dataset.loc("dataset_item_id")
 ```
 
 ### Add Annotations
 Upload groundtruth annotations for the items in your dataset.
 Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#add-ground-truth
 ```python
-response = dataset.annotate({'annotations:' [Box2DAnnotation, ..., Box2DAnnotation]})
+response = dataset.annotate({"annotations:" [Box2DAnnotation, ..., Box2DAnnotation]})
 ```
 
 For particularly large payloads, please reference the accompanying scripts in **references**
@@ -134,7 +149,7 @@ You can access the modelRun predictions for an individual dataset_item through t
 
 (1) user specified reference_id
 ```python
-model_run.refloc('my_img_001.png')
+model_run.refloc("my_img_001.png")
 ```
 (2) Index
 ```python
@@ -142,7 +157,7 @@ model_run.iloc(0)
 ```
 (3) Internally maintained dataset_item_id
 ```python
-model_run.loc('dataset_item_id')
+model_run.loc("dataset_item_id")
 ```
 
 ### Commit ModelRun
