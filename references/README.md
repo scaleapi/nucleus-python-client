@@ -18,5 +18,5 @@ Arguments:
 
 Example usage
 ```python
-python3 references/run_batching.py --api_key 'YOUR_API_KEY' --payload_json_file ../payload_append.json --action append --dataset_id ds_by6e7z7pf3w0040d
-```
+python3 references/run_batching.py --api_key "YOUR_API_KEY" --payload_json_file ../payload_append.json --action append --dataset_id ds_by6e7z7pf3w0040d
+``
