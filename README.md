@@ -1,5 +1,20 @@
 # Nucleus
 
+https://dashboard.scale.com/nucleus
+
+Aggregate metrics in ML are not good enough. To improve production ML, you need to understand their qualitative failure modes, fix them by gathering more data, and curate diverse scenarios.
+
+Scale Nucleus helps you:
+
+* Visualize your data
+* Curate interesting slices within your dataset
+* Review and manage annotations
+* Measure and debug your model performance
+
+Nucleus is a new way—the right way—to develop ML models, helping us move away from the concept of one dataset and towards a paradigm of collections of scenarios.
+
+
+
 ## Installation
 
 ### Editable mode
