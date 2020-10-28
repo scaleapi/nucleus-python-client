@@ -14,6 +14,16 @@ metadata        |   dict    |   All of column definitions for this item.
                 |           |   and the corresponding values will populate the cell under the column.\n
 _____________________________________________________________________________________________________
 
+
+Box2DGeometry:
+
+x               |   float   |   The distance, in pixels, between the left border of the bounding box
+                |           |   and the left border of the image.\n
+y               |   float   |   The distance, in pixels, between the top border of the bounding box
+                |           |   and the top border of the image.\n
+width	        |   float   |   The width in pixels of the annotation.\n
+height	        |   float   |   The height in pixels of the annotation.\n
+
 Box2DAnnotation:
 
 item_id         |   str     |   The internally-controlled item identifier to associate this annotation with.
@@ -22,12 +32,7 @@ reference_id    |   str     |   The user-specified reference identifier to assoc
                 |           |   The item_id field should be empty if this field is populated.
 label	        |   str     |	The label for this annotation (e.g. car, pedestrian, bicycle).\n
 type	        |   str     |   The type of this annotation. It should always be the box string literal.\n
-x               |   float   |   The distance, in pixels, between the left border of the bounding box
-                |           |   and the left border of the image.\n
-y               |   float   |   The distance, in pixels, between the top border of the bounding box
-                |           |   and the top border of the image.\n
-width	        |   float   |   The width in pixels of the annotation.\n
-height	        |   float   |   The height in pixels of the annotation.\n
+geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 
 _____________________________________________________________________________________________________
@@ -42,12 +47,7 @@ label	        |   str     |	The label for this annotation (e.g. car, pedestrian,
 type	        |   str     |   The type of this annotation. It should always be the box string literal.\n
 confidence      |   float   |   The optional confidence level of this annotation.
                 |           |   It should be between 0 and 1 (inclusive).\n
-x               |   float   |   The distance, in pixels, between the left border of the bounding box
-                |           |   and the left border of the image.\n
-y               |   float   |   The distance, in pixels, between the top border of the bounding box
-                |           |   and the top border of the image.\n
-width           |   float   |   The width in pixels of the annotation.\n
-height          |   float   |   The height in pixels of the annotation.\n
+geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
 
