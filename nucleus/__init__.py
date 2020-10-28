@@ -70,6 +70,7 @@ from .constants import (
     IMAGE_KEY,
     IMAGE_URL_KEY,
     DATASET_ID_KEY,
+    MODEL_RUN_ID_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -115,15 +116,16 @@ class NucleusClient:
         """
         return ModelRun(model_run_id, self)
 
-    def create_dataset(self, payload: dict) -> dict:
+    def create_dataset(self, payload: dict) -> Dataset:
         """
         Creates a new dataset based on payload params:
         name -- A human-readable name of the dataset.
         Returns a response with internal id and name for a new dataset.
         :param payload: { "name": str }
-        :return: { "dataset_id": str, "name": str }
+        :return: new Dataset object
         """
-        return self._make_request(payload, "dataset/create")
+        response = self._make_request(payload, "dataset/create")
+        return Dataset(response[DATASET_ID_KEY], self)
 
     def delete_dataset(self, dataset_id: str) -> dict:
         """
@@ -324,7 +326,7 @@ class NucleusClient:
         """
         return self._make_request(payload, "models/add")
 
-    def create_model_run(self, dataset_id: str, payload: dict):
+    def create_model_run(self, dataset_id: str, payload: dict) -> ModelRun:
         """
         Creates model run for dataset_id based on the given parameters specified in the payload:
 
@@ -347,15 +349,12 @@ class NucleusClient:
             "name": Optional[str],
             "metadata": Optional[Dict[str, Any]],
         }
-        :return:
-        {
-          "model_id": str,
-          "model_run_id": str,
-        }
+        :return: new ModelRun object
         """
-        return self._make_request(
+        response = self._make_request(
             payload, f"dataset/{dataset_id}/modelRun/create"
         )
+        return ModelRun(response[MODEL_RUN_ID_KEY], self)
 
     def predict(self, model_run_id: str, payload: dict):
         """
