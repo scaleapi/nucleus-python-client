@@ -1,3 +1,6 @@
+from .constants import DATASET_ITEM_ID_KEY
+
+
 class Slice:
     """
     Slice respesents a subset of your Dataset.
@@ -7,8 +10,7 @@ class Slice:
         self.slice_id = slice_id
         self._client = client
 
-    @property
-    def info(self) -> dict:
+    def info(self, id_type: str = DATASET_ITEM_ID_KEY) -> dict:
         """
         This endpoint provides information about specified slice.
 
@@ -24,4 +26,4 @@ class Slice:
             "dataset_item_ids": List[str],
         }
         """
-        return self._client.slice_info(self.slice_id)
+        return self._client.slice_info(self.slice_id, id_type)

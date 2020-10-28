@@ -522,6 +522,16 @@ class NucleusClient:
         )
         return Slice(response[SLICE_ID_KEY], self)
 
+    def get_slice(self, slice_id: str) -> Slice:
+        """
+        Returns a slice object by specified id.
+
+        :param
+        slice_id: id of the slice
+        :return: a Slice object
+        """
+        return Slice(slice_id, self)
+
     def slice_info(
         self, slice_id: str, id_type: str = DATASET_ITEM_ID_KEY
     ) -> dict:
@@ -543,7 +553,7 @@ class NucleusClient:
         response = self._make_request(
             {},
             f"slice/{slice_id}?idType={id_type}",
-            requests_command=requests.post,
+            requests_command=requests.get,
         )
         return response
 
