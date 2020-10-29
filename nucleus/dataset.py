@@ -130,3 +130,26 @@ class Dataset:
         }
         """
         return self._client.dataitem_loc(self.dataset_id, dataset_item_id)
+
+    def create_slice(self, payload: dict):
+        """
+        Creates a slice from items already present in a dataset.
+        The caller must exclusively use either datasetItemIds or reference_ids
+        as a means of identifying items in the dataset.
+
+        "name" -- The human-readable name of the slice.
+
+        "dataset_item_ids" -- An optional list of dataset item ids for the items in the slice
+
+        "reference_ids" -- An optional list of user-specified identifier for the items in the slice
+
+        :param
+        payload:
+        {
+            "name": str,
+            "dataset_item_ids": List[str],
+            "reference_ids": List[str],
+        }
+        :return: new Slice object
+        """
+        return self._client.create_slice(self.dataset_id, payload)
