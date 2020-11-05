@@ -82,6 +82,8 @@ class NucleusClient:
     """
 
     def __init__(self, api_key: str):
+        print("HERE")
+        print(NUCLEUS_ENDPOINT)
         self.api_key = api_key
 
     def list_models(self) -> List[str]:
@@ -114,6 +116,16 @@ class NucleusClient:
         :return: model_run
         """
         return ModelRun(model_run_id, self)
+
+    def delete_model_run(self, model_run_id: str):
+        """
+        Fetches a model_run for given id
+        :param model_run_id: internally controlled model_run_id
+        :return: model_run
+        """
+        return self._make_request(
+            {}, f"modelRun/{model_run_id}", requests.delete
+        )
 
     def create_dataset(self, payload: dict) -> dict:
         """
