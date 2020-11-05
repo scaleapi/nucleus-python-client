@@ -154,7 +154,8 @@ model_run.commit()
 ```
 
 ### Delete ModelRun
-Delete a model run using the target model_run_id
+Delete a model run using the target model_run_id.
+
 A response code of 200 indicates successful deletion.
 ```python
 client.delete_model_run("model_run_id")
