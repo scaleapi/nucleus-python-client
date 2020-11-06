@@ -1,3 +1,6 @@
+from typing import Optional
+
+
 class ModelRun:
     """
     Model runs represent detections of a specific model on your dataset.
@@ -26,12 +29,34 @@ class ModelRun:
         """
         return self._client.model_run_info(self.model_run_id)
 
-    def commit(self) -> dict:
+    def commit(self, payload: Optional[dict] = None) -> dict:
         """
-        Commits the model run.
+        Commits the model run. Starts matching algorithm defined by payload.
+        class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
+                          Default value: True
+
+        allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
+                                 for ground truth and model predictions.
+                                 If specified, 'class_agnostic' flag is assumed to be False
+
+        Type 'AllowedMatch':
+        {
+            ground_truth_label: string,       # A label for ground truth annotation.
+            model_prediction_label: string,   # A label for model prediction that can be matched with
+                                              # corresponding ground truth label.
+        }
+
+        payload:
+        {
+            "class_agnostic": boolean,
+            "allowed_label_matches": List[AllowedMatch],
+        }
+
         :return: {"model_run_id": str}
         """
-        return self._client.commit_model_run(self.model_run_id)
+        if payload is None:
+            payload = {}
+        return self._client.commit_model_run(self.model_run_id, payload)
 
     def predict(self, payload: dict) -> dict:
         """

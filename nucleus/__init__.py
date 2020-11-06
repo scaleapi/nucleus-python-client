@@ -54,7 +54,7 @@ metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 import json
 import logging
 import os
-from typing import List, Union, Dict, Callable, Any
+from typing import List, Union, Dict, Callable, Any, Optional
 
 import grequests
 import requests
@@ -375,12 +375,36 @@ class NucleusClient:
         """
         return self._make_request(payload, f"modelRun/{model_run_id}/predict")
 
-    def commit_model_run(self, model_run_id: str):
+    def commit_model_run(
+        self, model_run_id: str, payload: Optional[dict] = None
+    ):
         """
-        Commits the model run.
+        Commits the model run. Starts matching algorithm defined by payload.
+        class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
+                          Default value: True
+
+        allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
+                                 for ground truth and model predictions.
+                                 If specified, 'class_agnostic' flag is assumed to be False
+
+        Type 'AllowedMatch':
+        {
+            ground_truth_label: string,       # A label for ground truth annotation.
+            model_prediction_label: string,   # A label for model prediction that can be matched with
+                                              # corresponding ground truth label.
+        }
+
+        payload:
+        {
+            "class_agnostic": boolean,
+            "allowed_label_matches": List[AllowedMatch],
+        }
+
         :return: {"model_run_id": str}
         """
-        return self._make_request({}, f"modelRun/{model_run_id}/commit")
+        if payload is None:
+            payload = {}
+        return self._make_request(payload, f"modelRun/{model_run_id}/commit")
 
     def dataset_info(self, dataset_id: str):
         """
