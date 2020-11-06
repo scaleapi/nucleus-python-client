@@ -82,8 +82,6 @@ class NucleusClient:
     """
 
     def __init__(self, api_key: str):
-        print("HERE")
-        print(NUCLEUS_ENDPOINT)
         self.api_key = api_key
 
     def list_models(self) -> List[str]:
