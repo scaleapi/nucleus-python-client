@@ -14,6 +14,16 @@ metadata        |   dict    |   All of column definitions for this item.
                 |           |   and the corresponding values will populate the cell under the column.\n
 _____________________________________________________________________________________________________
 
+
+Box2DGeometry:
+
+x               |   float   |   The distance, in pixels, between the left border of the bounding box
+                |           |   and the left border of the image.\n
+y               |   float   |   The distance, in pixels, between the top border of the bounding box
+                |           |   and the top border of the image.\n
+width	        |   float   |   The width in pixels of the annotation.\n
+height	        |   float   |   The height in pixels of the annotation.\n
+
 Box2DAnnotation:
 
 item_id         |   str     |   The internally-controlled item identifier to associate this annotation with.
@@ -22,12 +32,7 @@ reference_id    |   str     |   The user-specified reference identifier to assoc
                 |           |   The item_id field should be empty if this field is populated.
 label	        |   str     |	The label for this annotation (e.g. car, pedestrian, bicycle).\n
 type	        |   str     |   The type of this annotation. It should always be the box string literal.\n
-x               |   float   |   The distance, in pixels, between the left border of the bounding box
-                |           |   and the left border of the image.\n
-y               |   float   |   The distance, in pixels, between the top border of the bounding box
-                |           |   and the top border of the image.\n
-width	        |   float   |   The width in pixels of the annotation.\n
-height	        |   float   |   The height in pixels of the annotation.\n
+geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 
 _____________________________________________________________________________________________________
@@ -42,12 +47,7 @@ label	        |   str     |	The label for this annotation (e.g. car, pedestrian,
 type	        |   str     |   The type of this annotation. It should always be the box string literal.\n
 confidence      |   float   |   The optional confidence level of this annotation.
                 |           |   It should be between 0 and 1 (inclusive).\n
-x               |   float   |   The distance, in pixels, between the left border of the bounding box
-                |           |   and the left border of the image.\n
-y               |   float   |   The distance, in pixels, between the top border of the bounding box
-                |           |   and the top border of the image.\n
-width           |   float   |   The width in pixels of the annotation.\n
-height          |   float   |   The height in pixels of the annotation.\n
+geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
 
@@ -61,6 +61,7 @@ import requests
 
 from .dataset import Dataset
 from .model_run import ModelRun
+from .slice import Slice
 from .upload_response import UploadResponse
 from .constants import (
     NUCLEUS_ENDPOINT,
@@ -70,6 +71,9 @@ from .constants import (
     IMAGE_KEY,
     IMAGE_URL_KEY,
     DATASET_ID_KEY,
+    MODEL_RUN_ID_KEY,
+    DATASET_ITEM_ID_KEY,
+    SLICE_ID_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -115,6 +119,7 @@ class NucleusClient:
         """
         return ModelRun(model_run_id, self)
 
+
     def delete_model_run(self, model_run_id: str):
         """
         Fetches a model_run for given id
@@ -125,15 +130,16 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}", requests.delete
         )
 
-    def create_dataset(self, payload: dict) -> dict:
+    def create_dataset(self, payload: dict) -> Dataset:
         """
         Creates a new dataset based on payload params:
         name -- A human-readable name of the dataset.
         Returns a response with internal id and name for a new dataset.
         :param payload: { "name": str }
-        :return: { "dataset_id": str, "name": str }
+        :return: new Dataset object
         """
-        return self._make_request(payload, "dataset/create")
+        response = self._make_request(payload, "dataset/create")
+        return Dataset(response[DATASET_ID_KEY], self)
 
     def delete_dataset(self, dataset_id: str) -> dict:
         """
@@ -334,7 +340,7 @@ class NucleusClient:
         """
         return self._make_request(payload, "models/add")
 
-    def create_model_run(self, dataset_id: str, payload: dict):
+    def create_model_run(self, dataset_id: str, payload: dict) -> ModelRun:
         """
         Creates model run for dataset_id based on the given parameters specified in the payload:
 
@@ -357,15 +363,12 @@ class NucleusClient:
             "name": Optional[str],
             "metadata": Optional[Dict[str, Any]],
         }
-        :return:
-        {
-          "model_id": str,
-          "model_run_id": str,
-        }
+        :return: new ModelRun object
         """
-        return self._make_request(
+        response = self._make_request(
             payload, f"dataset/{dataset_id}/modelRun/create"
         )
+        return ModelRun(response[MODEL_RUN_ID_KEY], self)
 
     def predict(self, model_run_id: str, payload: dict):
         """
@@ -502,6 +505,85 @@ class NucleusClient:
         return self._make_request(
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
+
+    def create_slice(self, dataset_id: str, payload: dict) -> Slice:
+        """
+        Creates a slice from items already present in a dataset.
+        The caller must exclusively use either datasetItemIds or reference_ids
+        as a means of identifying items in the dataset.
+
+        "name" -- The human-readable name of the slice.
+
+        "dataset_item_ids" -- An optional list of dataset item ids for the items in the slice
+
+        "reference_ids" -- An optional list of user-specified identifier for the items in the slice
+
+        :param
+        dataset_id: id of the dataset
+        payload:
+        {
+            "name": str,
+            "dataset_item_ids": List[str],
+            "reference_ids": List[str],
+        }
+        :return: new Slice object
+        """
+        response = self._make_request(
+            payload, f"dataset/{dataset_id}/create_slice"
+        )
+        return Slice(response[SLICE_ID_KEY], self)
+
+    def get_slice(self, slice_id: str) -> Slice:
+        """
+        Returns a slice object by specified id.
+
+        :param
+        slice_id: id of the slice
+        :return: a Slice object
+        """
+        return Slice(slice_id, self)
+
+    def slice_info(
+        self, slice_id: str, id_type: str = DATASET_ITEM_ID_KEY
+    ) -> dict:
+        """
+        This endpoint provides information about specified slice.
+
+        :param
+        slice_id: id of the slice
+        id_type: the type of IDs you want in response (either "reference_id" or "dataset_item_id")
+        to identify the DatasetItems
+
+        :return:
+        {
+            "name": str,
+            "dataset_id": str,
+            "dataset_item_ids": List[str],
+        }
+        """
+        response = self._make_request(
+            {},
+            f"slice/{slice_id}?idType={id_type}",
+            requests_command=requests.get,
+        )
+        return response
+
+    def delete_slice(self, slice_id: str) -> dict:
+        """
+        This endpoint deletes specified slice.
+
+        :param
+        slice_id: id of the slice
+
+        :return:
+        {}
+        """
+        response = self._make_request(
+            {},
+            f"slice/{slice_id}",
+            requests_command=requests.delete,
+        )
+        return response
 
     def _make_grequest(
         self,
