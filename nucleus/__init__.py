@@ -441,7 +441,7 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/info", requests.get
         )
 
-    def dataitem_ref_id(self, dataset_id: str, reference_id: str):
+    def dataitem_ref_id(self, dataset_id: str, reference_id: str, return_image=False, session=None):
         """
         :param dataset_id: internally controlled dataset id
         :param reference_id: reference_id of a dataset_item
@@ -449,6 +449,12 @@ class NucleusClient:
         """
         return self._make_request(
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
+        ) if not return_image else self._make_grequest(
+            payload={}, 
+            route=f"dataset/{dataset_id}/refloc/{reference_id}?format=image", 
+            requests_command=grequests.get, 
+            session=session, 
+            local=False
         )
 
     def predictions_ref_id(self, model_run_id: str, ref_id: str):
@@ -465,7 +471,7 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/refloc/{ref_id}", requests.get
         )
 
-    def dataitem_iloc(self, dataset_id: str, i: int):
+    def dataitem_iloc(self, dataset_id: str, i: int, return_image=False, session=None):
         """
         Returns Dataset Item info by dataset_id and absolute number of the dataset item.
         :param dataset_id:  internally controlled dataset id
@@ -474,6 +480,12 @@ class NucleusClient:
         """
         return self._make_request(
             {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
+        ) if not return_image else self._make_grequest(
+            payload={}, 
+            route=f"dataset/{dataset_id}/iloc/{i}?format=image", 
+            requests_command=grequests.get, 
+            session=session,
+            local=False
         )
 
     def predictions_iloc(self, model_run_id: str, i: int):
@@ -490,7 +502,7 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/iloc/{i}", requests.get
         )
 
-    def dataitem_loc(self, dataset_id: str, dataset_item_id: str):
+    def dataitem_loc(self, dataset_id: str, dataset_item_id: str, return_image=False, session=None):
         """
         Returns Dataset Item Info By dataset_item_id and dataset_id
         :param dataset_id: internally controlled id for the dataset.
@@ -503,6 +515,12 @@ class NucleusClient:
         """
         return self._make_request(
             {}, f"dataset/{dataset_id}/loc/{dataset_item_id}", requests.get
+        ) if not return_image else self._make_grequest(
+            payload={},
+            route=f"dataset/{dataset_id}/loc/{dataset_item_id}?format=image",
+            requests_command=grequests.get,
+            session=session, 
+            local=False
         )
 
     def predictions_loc(self, model_run_id: str, dataset_item_id: str):
@@ -636,7 +654,7 @@ class NucleusClient:
         return post
 
     def _make_request(
-        self, payload: dict, route: str, requests_command=requests.post
+        self, payload: dict, route: str, requests_command=requests.post, return_content=False
     ) -> dict:
         """
         makes a request to Nucleus endpoint
