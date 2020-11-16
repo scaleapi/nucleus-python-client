@@ -654,7 +654,7 @@ class NucleusClient:
         return post
 
     def _make_request(
-        self, payload: dict, route: str, requests_command=requests.post, return_content=False
+        self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
         """
         makes a request to Nucleus endpoint
