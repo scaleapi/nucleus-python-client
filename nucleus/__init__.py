@@ -119,7 +119,6 @@ class NucleusClient:
         """
         return ModelRun(model_run_id, self)
 
-
     def delete_model_run(self, model_run_id: str):
         """
         Fetches a model_run for given id
@@ -220,7 +219,6 @@ class NucleusClient:
             }
             return payload
 
-        session = None
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
         for i in range(0, len(items), batch_size):
@@ -231,7 +229,6 @@ class NucleusClient:
                 self._make_grequest(
                     payload,
                     f"dataset/{dataset_id}/append",
-                    session=session,
                     local=True,
                 )
                 for payload in payloads
@@ -273,7 +270,6 @@ class NucleusClient:
             logger.error(request, exception)
             return default_error(request.json())
 
-        session = None
         items = payload[ITEMS_KEY]
         payloads = [
             {ITEMS_KEY: items[i : i + batch_size]}
@@ -284,7 +280,6 @@ class NucleusClient:
             self._make_grequest(
                 payload,
                 f"dataset/{dataset_id}/append",
-                session=session,
                 local=False,
             )
             for payload in payloads
@@ -613,7 +608,7 @@ class NucleusClient:
         self,
         payload: dict,
         route: str,
-        session,
+        session=None,
         requests_command: Callable = grequests.post,
         local=True,
     ):
