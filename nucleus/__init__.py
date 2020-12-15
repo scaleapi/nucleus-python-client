@@ -209,7 +209,7 @@ class NucleusClient:
             }
             return payload
 
-        session = requests.session()
+        session = None
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
         for i in range(0, len(items), batch_size):
