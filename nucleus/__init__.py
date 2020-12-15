@@ -262,7 +262,7 @@ class NucleusClient:
             logger.error(request, exception)
             return default_error(request.json())
 
-        session = requests.session()
+        session = None
         items = payload[ITEMS_KEY]
         payloads = [
             {ITEMS_KEY: items[i : i + batch_size]}
