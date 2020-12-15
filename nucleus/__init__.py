@@ -220,7 +220,7 @@ class NucleusClient:
             }
             return payload
 
-        session = requests.session()
+        session = None
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
         for i in range(0, len(items), batch_size):
@@ -273,7 +273,7 @@ class NucleusClient:
             logger.error(request, exception)
             return default_error(request.json())
 
-        session = requests.session()
+        session = None
         items = payload[ITEMS_KEY]
         payloads = [
             {ITEMS_KEY: items[i : i + batch_size]}
