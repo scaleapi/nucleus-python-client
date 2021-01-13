@@ -207,7 +207,7 @@ class NucleusClient:
             )
 
         def exception_handler(request, exception):
-            logger.error(request, exception)
+            logger.error(exception)
 
         def preprocess_payload(item):
             image = open(item.get(IMAGE_URL_KEY), "rb")
@@ -243,8 +243,11 @@ class NucleusClient:
             # don't forget to close all open files
             map(lambda x: x[IMAGE_KEY][1].close(), payloads)
 
+            # response object will be None if an error occurred
             async_responses = [
-                response if response.status_code == 200 else error()
+                response
+                if (response and response.status_code == 200)
+                else error()
                 for response in async_responses
             ]
             responses.extend(async_responses)
@@ -267,8 +270,7 @@ class NucleusClient:
             )
 
         def exception_handler(request, exception):
-            logger.error(request, exception)
-            return default_error(request.json())
+            logger.error(exception)
 
         items = payload[ITEMS_KEY]
         payloads = [
@@ -290,7 +292,9 @@ class NucleusClient:
         )
 
         async_responses = [
-            response if response.status_code == 200 else default_error(payload)
+            response
+            if (response and response.status_code == 200)
+            else default_error(payload)
             for response, payload in zip(async_responses, payloads)
         ]
 
