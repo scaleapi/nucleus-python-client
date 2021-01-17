@@ -1,3 +1,7 @@
+from .dataset_item import DatasetItem
+from .annotation import BoxAnnotation
+from typing import List, Union, Dict, Callable, Any, Optional
+
 class Dataset:
     """
     Nucleus Dataset. You can append images with metadata to your dataset,
@@ -6,11 +10,26 @@ class Dataset:
     """
 
     def __init__(self, dataset_id: str, client):
-        self.dataset_id = dataset_id
+        self.id = dataset_id
         self._client = client
 
     @property
-    def info(self) -> dict:
+    def name(self) -> str:
+        return self._info().get("name", "")
+
+    @property
+    def model_runs(self) -> List[str]:
+        return self._info().get("model_run_ids", [])
+
+    @property
+    def slices(self) -> List[str]:
+        return self._info().get("slice_ids", [])
+
+    @property
+    def size(self) -> int:
+        return self._info().get("length", 0)
+
+    def _info(self) -> dict:
         """
         Returns information about existing dataset
         :return: dictionary of the form
@@ -21,7 +40,7 @@ class Dataset:
                 'slice_ids': List[str]
             }
         """
-        return self._client.dataset_info(self.dataset_id)
+        return self._client.dataset_info(self.id)
 
     def create_model_run(self, payload: dict):
         """
@@ -50,9 +69,9 @@ class Dataset:
           "model_run_id": str,
         }
         """
-        return self._client.create_model_run(self.dataset_id, payload)
+        return self._client.create_model_run(self.id, payload)
 
-    def annotate(self, payload: dict) -> dict:
+    def annotate(self, annotations: List[BoxAnnotation], batch_size=20) -> dict:
         """
         Uploads ground truth annotations for a given dataset.
         :param payload: {"annotations" : List[Box2DAnnotation]}
@@ -64,8 +83,8 @@ class Dataset:
             "ignored_items": int,
         }
         """
-        return self._client.annotate_dataset(self.dataset_id, payload)
-
+        return self._client.annotate_dataset(self.id, annotations, batch_size=batch_size)
+    
     def ingest_tasks(self, payload: dict):
         """
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
@@ -75,9 +94,9 @@ class Dataset:
         :param payload: {"tasks" : List[task_ids]}
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
-        return self._client.ingest_tasks(self.dataset_id, payload)
+        return self._client.ingest_tasks(self.id, payload)
 
-    def append(self, payload: dict, local: bool = False) -> dict:
+    def append(self, dataset_items: List[DatasetItem], batch_size=20) -> dict:
         """
         Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
 
@@ -92,7 +111,7 @@ class Dataset:
         }
         """
         return self._client.populate_dataset(
-            self.dataset_id, payload, local=local
+            self.id, dataset_items, batch_size=batch_size
         )
 
     def iloc(self, i: int) -> dict:
@@ -105,7 +124,7 @@ class Dataset:
             "annotations": List[Box2DAnnotation],
         }
         """
-        return self._client.dataitem_iloc(self.dataset_id, i)
+        return self._client.dataitem_iloc(self.id, i)
 
     def refloc(self, reference_id: str) -> dict:
         """
@@ -117,7 +136,7 @@ class Dataset:
             "annotations": List[Box2DAnnotation],
         }
         """
-        return self._client.dataitem_ref_id(self.dataset_id, reference_id)
+        return self._client.dataitem_ref_id(self.id, reference_id)
 
     def loc(self, dataset_item_id: str) -> dict:
         """
@@ -129,7 +148,7 @@ class Dataset:
             "annotations": List[Box2DAnnotation],
         }
         """
-        return self._client.dataitem_loc(self.dataset_id, dataset_item_id)
+        return self._client.dataitem_loc(self.id, dataset_item_id)
 
     def create_slice(self, payload: dict):
         """
@@ -152,4 +171,4 @@ class Dataset:
         }
         :return: new Slice object
         """
-        return self._client.create_slice(self.dataset_id, payload)
+        return self._client.create_slice(self.id, payload)

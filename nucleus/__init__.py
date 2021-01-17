@@ -56,13 +56,19 @@ import logging
 import os
 from typing import List, Union, Dict, Callable, Any, Optional
 
+from .dataset_item import DatasetItem
+import tqdm
+
 import grequests
 import requests
 
 from .dataset import Dataset
+from .annotation import BoxAnnotation
+from .prediction import BoxPrediction
 from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
+from .payload_constructor import (construct_append_payload, construct_box_annotation_payload, construct_model_creation_payload)
 from .constants import (
     NUCLEUS_ENDPOINT,
     ERROR_ITEMS,
@@ -74,7 +80,11 @@ from .constants import (
     MODEL_RUN_ID_KEY,
     DATASET_ITEM_ID_KEY,
     SLICE_ID_KEY,
+    ANNOTATIONS_PROCESSED_KEY,
+    STATUS_CODE_KEY,
 )
+from .model import Model
+from .errors import ModelCreationError, ModelRunCreationError
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -129,7 +139,7 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}", requests.delete
         )
 
-    def create_dataset(self, payload: dict) -> Dataset:
+    def create_dataset(self, name: str) -> Dataset:
         """
         Creates a new dataset based on payload params:
         name -- A human-readable name of the dataset.
@@ -137,8 +147,8 @@ class NucleusClient:
         :param payload: { "name": str }
         :return: new Dataset object
         """
-        response = self._make_request(payload, "dataset/create")
-        return Dataset(response[DATASET_ID_KEY], self)
+        response = self._make_request({"name": name}, "dataset/create")
+        return Dataset(response[DATASET_ID_KEY], self, name=name)
 
     def delete_dataset(self, dataset_id: str) -> dict:
         """
@@ -155,8 +165,7 @@ class NucleusClient:
     def populate_dataset(
         self,
         dataset_id: str,
-        payload: dict,
-        local: bool = False,
+        dataset_items: List[DatasetItem],
         batch_size: int = 20,
     ):
         """
@@ -175,17 +184,42 @@ class NucleusClient:
             "upload_errors": int
         }
         """
+        local_items = []
+        remote_items = []
 
-        if local:
-            async_responses = self._process_append_requests_local(
-                dataset_id, payload, batch_size=batch_size
-            )
-        else:
-            async_responses = self._process_append_requests(
-                dataset_id, payload, batch_size=batch_size
-            )
+        for item in dataset_items:
+            local_items.append(item) if item.local else remote_items.append(item)
+
+        local_batches = [
+            local_items[i : i + batch_size] for i in range(0, len(local_items), batch_size)
+        ]
+
+        remote_batches = [
+            remote_items[i: i + batch_size] for i in range(0, len(remote_items), batch_size)
+        ]
 
         agg_response = UploadResponse(json={DATASET_ID_KEY: dataset_id})
+
+        tqdm_local_batches = (
+            tqdm.tqdm(local_batches)
+        )
+
+        tqdm_remote_batches = (
+            tqdm.tqdm(remote_batches)
+        )
+
+        async_responses = []
+
+        for batch in tqdm_local_batches:
+            payload = construct_append_payload(batch)
+            responses = self._process_append_requests_local(dataset_id, payload, batch_size, batch_size)
+            async_responses.extend(responses)
+
+        for batch in tqdm_remote_batches:
+            payload = self.construct_append_payload(batch)
+            responses = self._process_append_requests(dataset_id, payload, batch_size, batch_size)
+            async_responses.extend(responses)
+
         for response in async_responses:
             agg_response.update_response(response.json())
 
@@ -223,6 +257,7 @@ class NucleusClient:
         responses: List[Any] = []
         for i in range(0, len(items), batch_size):
             batch = items[i : i + batch_size]
+            print(batch)
             payloads = [preprocess_payload(item) for item in batch]
 
             async_requests = [
@@ -249,6 +284,7 @@ class NucleusClient:
             ]
             responses.extend(async_responses)
 
+        print(responses)
         return responses
 
     def _process_append_requests(
@@ -296,15 +332,38 @@ class NucleusClient:
 
         return async_responses
 
-    def annotate_dataset(self, dataset_id: str, payload: dict):
-        # TODO batching logic if payload is too large
+    def annotate_dataset(self, dataset_id: str, annotations: List[DatasetItem], batch_size: int = 20):
         """
         Uploads ground truth annotations for a given dataset.
         :param payload: {"annotations" : List[Box2DAnnotation]}
         :param dataset_id: id of the dataset
         :return: {"dataset_id: str, "annotations_processed": int}
         """
-        return self._make_request(payload, f"dataset/{dataset_id}/annotate")
+
+        batches = [
+            annotations[i: i + batch_size] for i in range(0, len(annotations), batch_size)
+        ]
+
+        agg_response = {DATASET_ID_KEY: dataset_id, ANNOTATIONS_PROCESSED_KEY: 0}
+
+        tqdm_batches = (
+            tqdm.tqdm(batches)
+        )
+
+        for batch in tqdm_batches:
+            payload = construct_box_annotation_payload(batch)
+            response = self._make_request(
+                payload,
+                f"dataset/{dataset_id}/annotate"
+            )
+            if STATUS_CODE_KEY in response:
+                agg_response[ERRORS_KEY] = response
+            else:
+                agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
+                        ANNOTATIONS_PROCESSED_KEY
+                    ]
+
+        return agg_response
 
     def ingest_tasks(self, dataset_id: str, payload: dict):
         """
@@ -319,7 +378,7 @@ class NucleusClient:
             payload, f"dataset/{dataset_id}/ingest_tasks"
         )
 
-    def add_model(self, payload: dict) -> dict:
+    def add_model(self, name: str, reference_id: str, metadata: dict) -> Model:
         """
         Adds a model info to your repo based on payload params:
         name -- A human-readable name of the model project.
@@ -333,7 +392,12 @@ class NucleusClient:
         }
         :return: { "model_id": str }
         """
-        return self._make_request(payload, "models/add")
+        response = self._make_request(construct_model_creation_payload(name, reference_id, metadata), "models/add")
+        model_id = response.get("model_id", None)
+        if not model_id:
+            raise ModelCreationError(response.get("error"))
+
+        return Model(model_id, name, reference_id, metadata, self)
 
     def create_model_run(self, dataset_id: str, payload: dict) -> ModelRun:
         """
@@ -363,6 +427,9 @@ class NucleusClient:
         response = self._make_request(
             payload, f"dataset/{dataset_id}/modelRun/create"
         )
+        if response.get(STATUS_CODE_KEY, None):
+            raise ModelRunCreationError(response.get("error"))
+            
         return ModelRun(response[MODEL_RUN_ID_KEY], self)
 
     def predict(self, model_run_id: str, payload: dict):
