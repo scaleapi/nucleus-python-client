@@ -1,4 +1,5 @@
 import os.path
+from .errors import FileNotFoundError
 
 class DatasetItem:
 
@@ -9,12 +10,12 @@ class DatasetItem:
         self.reference_id = reference_id
         self.metadata = metadata
 
-        if self.local:
-            assert(self._local_file_exists(image_location))
+        if self.local and not self._local_file_exists(image_location):
+            raise FileNotFoundError()
 
     def _is_local_path(self, path: str) -> bool:
         path_components = path.split('/')
-        return not ('https:' in path_components  or 'http:' in path_components or 's3' in path_components)
+        return not ('https:' in path_components  or 'http:' in path_components or 's3:' in path_components)
 
     def _local_file_exists(self, path):
         return os.path.isfile(path)

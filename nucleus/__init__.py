@@ -68,7 +68,11 @@ from .prediction import BoxPrediction
 from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
-from .payload_constructor import (construct_append_payload, construct_box_annotation_payload, construct_model_creation_payload)
+from .payload_constructor import (
+    construct_append_payload, 
+    construct_box_annotation_payload, 
+    construct_model_creation_payload,
+)
 from .constants import (
     NUCLEUS_ENDPOINT,
     ERROR_ITEMS,
@@ -84,7 +88,7 @@ from .constants import (
     STATUS_CODE_KEY,
 )
 from .model import Model
-from .errors import ModelCreationError, ModelRunCreationError
+from .errors import ModelCreationError, ModelRunCreationError, DatasetItemRetrievalError
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -112,6 +116,25 @@ class NucleusClient:
         :return: { datasets_ids }
         """
         return self._make_request({}, "dataset/", requests.get)
+
+    def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
+        response = self._make_request({}, f'dataset/{dataset_id}/datasetItems')
+        dataset_items = response.get("dataset_items", None)
+        error = response.get("error", None)
+        constructed_dataset_items = []
+        if dataset_items:
+            for item in dataset_items:
+                image_url = item.get("original_image_url")
+                metadata = item.get("metadata")
+                item_id = item.get("id")
+                ref_id = item.get("ref_id")
+                dataset_item = DatasetItem(image_url, ref_id, metadata)
+                constructed_dataset_items.append(dataset_item)
+        elif error:
+            raise DatasetItemRetrievalError(message=error)
+        else:
+            return []
+
 
     def get_dataset(self, dataset_id: str) -> Dataset:
         """
@@ -148,7 +171,7 @@ class NucleusClient:
         :return: new Dataset object
         """
         response = self._make_request({"name": name}, "dataset/create")
-        return Dataset(response[DATASET_ID_KEY], self, name=name)
+        return Dataset(response[DATASET_ID_KEY], self)
 
     def delete_dataset(self, dataset_id: str) -> dict:
         """
@@ -216,13 +239,14 @@ class NucleusClient:
             async_responses.extend(responses)
 
         for batch in tqdm_remote_batches:
-            payload = self.construct_append_payload(batch)
+            payload = construct_append_payload(batch)
             responses = self._process_append_requests(dataset_id, payload, batch_size, batch_size)
             async_responses.extend(responses)
 
         for response in async_responses:
             agg_response.update_response(response.json())
 
+        print(agg_response.json())
         return agg_response
 
     def _process_append_requests_local(
@@ -284,7 +308,7 @@ class NucleusClient:
             ]
             responses.extend(async_responses)
 
-        print(responses)
+        print("local upload:", responses)
         return responses
 
     def _process_append_requests(
@@ -330,6 +354,7 @@ class NucleusClient:
             for response, payload in zip(async_responses, payloads)
         ]
 
+        print("Remote upload:", async_responses)
         return async_responses
 
     def annotate_dataset(self, dataset_id: str, annotations: List[DatasetItem], batch_size: int = 20):
@@ -429,7 +454,7 @@ class NucleusClient:
         )
         if response.get(STATUS_CODE_KEY, None):
             raise ModelRunCreationError(response.get("error"))
-            
+
         return ModelRun(response[MODEL_RUN_ID_KEY], self)
 
     def predict(self, model_run_id: str, payload: dict):

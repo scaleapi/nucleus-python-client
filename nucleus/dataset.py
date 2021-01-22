@@ -29,6 +29,10 @@ class Dataset:
     def size(self) -> int:
         return self._info().get("length", 0)
 
+    @property
+    def items(self) -> List[DatasetItem]:
+        return self._client.get_dataset_items(self.id)
+
     def _info(self) -> dict:
         """
         Returns information about existing dataset
