@@ -132,8 +132,8 @@ class NucleusClient:
                 constructed_dataset_items.append(dataset_item)
         elif error:
             raise DatasetItemRetrievalError(message=error)
-        else:
-            return []
+            
+        return constructed_dataset_items
 
 
     def get_dataset(self, dataset_id: str) -> Dataset:
