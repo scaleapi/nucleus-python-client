@@ -1,6 +1,9 @@
-NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+#NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus"
+print(NUCLEUS_ENDPOINT)
 ITEMS_KEY = "items"
 ITEM_KEY = "item"
+REFERENCE_ID_KEY = "reference_id"
 DATASET_ID_KEY = "dataset_id"
 IMAGE_KEY = "image"
 IMAGE_URL_KEY = "image_url"
@@ -23,4 +26,5 @@ DATASET_NAME_KEY = "name"
 DATASET_MODEL_RUNS_KEY = "model_run_ids"
 DATASET_SLICES_KEY = "slice_ids"
 DATASET_LENGTH_KEY = "length"
-FORCE_KEY = 'force'
+FORCE_KEY = "force"
+METADATA_KEY = "metadata"

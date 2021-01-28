@@ -1,4 +1,5 @@
 from typing import Set
+from .dataset_item import DatasetItem
 from .constants import (
     NEW_ITEMS,
     UPDATED_ITEMS,

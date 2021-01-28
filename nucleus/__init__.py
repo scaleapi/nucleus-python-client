@@ -128,7 +128,7 @@ class NucleusClient:
         Gets all the dataset items inside your repo as a json blob.
         :return [ DatasetItem ]
         """
-        response = self._make_request({}, f'dataset/{dataset_id}/datasetItems')
+        response = self._make_request({}, f"dataset/{dataset_id}/datasetItems")
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
         constructed_dataset_items = []
@@ -199,7 +199,7 @@ class NucleusClient:
         dataset_id: str,
         dataset_items: List[DatasetItem],
         batch_size: int = 20,
-        force: bool = False
+        force: bool = False,
     ):
         """
         Appends images to a dataset with given dataset_id.
@@ -269,11 +269,13 @@ class NucleusClient:
         batch_size: int = 10,
         size: int = 10,
     ):
-        def error() -> UploadResponse:
+        def error(payload: dict) -> UploadResponse:
+            print("payload: ", payload)
             return UploadResponse(
                 {
                     DATASET_ID_KEY: dataset_id,
                     ERROR_ITEMS: 1,
+                    ERROR_PAYLOAD: payload[ITEMS_KEY],
                 }
             )
 
@@ -320,8 +322,8 @@ class NucleusClient:
             async_responses = [
                 response
                 if (response and response.status_code == 200)
-                else error()
-                for response in async_responses
+                else error(payload)
+                for response, payload in zip(async_responses, payloads)
             ]
             responses.extend(async_responses)
 

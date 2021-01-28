@@ -1,5 +1,10 @@
 import os.path
 from .errors import FileNotFoundError
+from .constants import (
+    IMAGE_URL_KEY,
+    METADATA_KEY,
+    REFERENCE_ID_KEY,
+)
 
 
 class DatasetItem:
@@ -7,6 +12,7 @@ class DatasetItem:
         self,
         image_location: str,
         reference_id: str = None,
+        item_id: str = None,
         metadata: dict = {},
     ):
 
@@ -18,8 +24,12 @@ class DatasetItem:
         if self.local and not self._local_file_exists(image_location):
             raise FileNotFoundError()
 
+    @classmethod
+    def from_payload(cls, payload: dict):
+        return cls(image_location=payload.get(IMAGE_URL_KEY), reference_id=payload.get(REFERENCE_ID_KEY, None), metadata=payload.get(METADATA_KEY, {}))
+
     def __str__(self):
-        return self.to_payload()
+        return str(self.to_payload())
 
     def _is_local_path(self, path: str) -> bool:
         path_components = path.split("/")
@@ -29,11 +39,11 @@ class DatasetItem:
             or "s3:" in path_components
         )
 
-    def _local_file_exists(self, path):
+    def _local_file_exists(self, path: str):
         return os.path.isfile(path)
 
     def to_payload(self) -> dict:
-        payload = {"image_url": self.image_url, "metadata": self.metadata}
+        payload = {IMAGE_URL_KEY: self.image_url, METADATA_KEY: self.metadata}
         if self.reference_id:
-            payload["reference_id"] = self.reference_id
+            payload[REFERENCE_ID_KEY] = self.reference_id
         return payload
