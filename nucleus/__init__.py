@@ -124,7 +124,11 @@ class NucleusClient:
         return self._make_request({}, "dataset/", requests.get)
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
-        response = self._make_request({}, f"dataset/{dataset_id}/datasetItems")
+        """
+        Gets all the dataset items inside your repo as a json blob.
+        :return [ DatasetItem ]
+        """
+        response = self._make_request({}, f'dataset/{dataset_id}/datasetItems')
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
         constructed_dataset_items = []
@@ -195,6 +199,7 @@ class NucleusClient:
         dataset_id: str,
         dataset_items: List[DatasetItem],
         batch_size: int = 20,
+        force: bool = False
     ):
         """
         Appends images to a dataset with given dataset_id.
@@ -290,7 +295,7 @@ class NucleusClient:
         responses: List[Any] = []
         for i in range(0, len(items), batch_size):
             batch = items[i : i + batch_size]
-            print(batch)
+
             payloads = [preprocess_payload(item) for item in batch]
 
             async_requests = [
@@ -320,7 +325,6 @@ class NucleusClient:
             ]
             responses.extend(async_responses)
 
-        print("local upload:", responses)
         return responses
 
     def _process_append_requests(
@@ -368,7 +372,6 @@ class NucleusClient:
             for response, payload in zip(async_responses, payloads)
         ]
 
-        print("Remote upload:", async_responses)
         return async_responses
 
     def annotate_dataset(
@@ -379,8 +382,8 @@ class NucleusClient:
     ):
         """
         Uploads ground truth annotations for a given dataset.
-        :param payload: {"annotations" : List[Box2DAnnotation]}
         :param dataset_id: id of the dataset
+        :param annotations: List[DatasetItem]
         :return: {"dataset_id: str, "annotations_processed": int}
         """
 

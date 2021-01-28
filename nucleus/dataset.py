@@ -1,5 +1,6 @@
 from .dataset_item import DatasetItem
 from .annotation import BoxAnnotation
+from .constants import *
 from typing import List, Union, Dict, Callable, Any, Optional
 
 class Dataset:
@@ -15,19 +16,19 @@ class Dataset:
 
     @property
     def name(self) -> str:
-        return self._info().get("name", "")
+        return self._info().get(DATASET_NAME_KEY, "")
 
     @property
     def model_runs(self) -> List[str]:
-        return self._info().get("model_run_ids", [])
+        return self._info().get(DATASET_MODEL_RUNS_KEY, [])
 
     @property
     def slices(self) -> List[str]:
-        return self._info().get("slice_ids", [])
+        return self._info().get(DATASET_SLICES_KEY, [])
 
     @property
     def size(self) -> int:
-        return self._info().get("length", 0)
+        return self._info().get(DATASET_LENGTH_KEY, 0)
 
     @property
     def items(self) -> List[DatasetItem]:
@@ -88,7 +89,7 @@ class Dataset:
         }
         """
         return self._client.annotate_dataset(self.id, annotations, batch_size=batch_size)
-    
+
     def ingest_tasks(self, payload: dict):
         """
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
