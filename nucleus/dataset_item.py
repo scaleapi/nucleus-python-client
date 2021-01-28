@@ -1,10 +1,15 @@
 import os.path
 from .errors import FileNotFoundError
 
-class DatasetItem:
 
-    def __init__(self, image_location: str, reference_id: str, metadata: dict):
-        
+class DatasetItem:
+    def __init__(
+        self,
+        image_location: str,
+        reference_id: str = None,
+        metadata: dict = {},
+    ):
+
         self.image_url = image_location
         self.local = self._is_local_path(image_location)
         self.reference_id = reference_id
@@ -14,15 +19,18 @@ class DatasetItem:
             raise FileNotFoundError()
 
     def _is_local_path(self, path: str) -> bool:
-        path_components = path.split('/')
-        return not ('https:' in path_components  or 'http:' in path_components or 's3:' in path_components)
+        path_components = path.split("/")
+        return not (
+            "https:" in path_components
+            or "http:" in path_components
+            or "s3:" in path_components
+        )
 
     def _local_file_exists(self, path):
         return os.path.isfile(path)
 
     def to_payload(self) -> dict:
-        return {
-            "image_url": self.image_url,
-            "reference_id": self.reference_id,
-            "metadata": self.metadata
-        }
+        payload = {"image_url": self.image_url, "metadata": self.metadata}
+        if self.reference_id:
+            payload["reference_id"] = self.reference_id
+        return payload

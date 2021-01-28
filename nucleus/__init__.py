@@ -56,26 +56,28 @@ import logging
 import os
 from typing import List, Union, Dict, Callable, Any, Optional
 
-from .dataset_item import DatasetItem
 import tqdm
 
 import grequests
 import requests
 
 from .dataset import Dataset
+from .dataset_item import DatasetItem
 from .annotation import BoxAnnotation
 from .prediction import BoxPrediction
 from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
 from .payload_constructor import (
-    construct_append_payload, 
-    construct_box_annotation_payload, 
+    construct_append_payload,
+    construct_box_annotation_payload,
     construct_model_creation_payload,
 )
 from .constants import (
     NUCLEUS_ENDPOINT,
+    ERRORS_KEY,
     ERROR_ITEMS,
+    ERROR_PAYLOAD,
     ITEMS_KEY,
     ITEM_KEY,
     IMAGE_KEY,
@@ -88,7 +90,11 @@ from .constants import (
     STATUS_CODE_KEY,
 )
 from .model import Model
-from .errors import ModelCreationError, ModelRunCreationError, DatasetItemRetrievalError
+from .errors import (
+    ModelCreationError,
+    ModelRunCreationError,
+    DatasetItemRetrievalError,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -118,7 +124,7 @@ class NucleusClient:
         return self._make_request({}, "dataset/", requests.get)
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
-        response = self._make_request({}, f'dataset/{dataset_id}/datasetItems')
+        response = self._make_request({}, f"dataset/{dataset_id}/datasetItems")
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
         constructed_dataset_items = []
@@ -132,9 +138,8 @@ class NucleusClient:
                 constructed_dataset_items.append(dataset_item)
         elif error:
             raise DatasetItemRetrievalError(message=error)
-            
-        return constructed_dataset_items
 
+        return constructed_dataset_items
 
     def get_dataset(self, dataset_id: str) -> Dataset:
         """
@@ -211,42 +216,45 @@ class NucleusClient:
         remote_items = []
 
         for item in dataset_items:
-            local_items.append(item) if item.local else remote_items.append(item)
+            local_items.append(item) if item.local else remote_items.append(
+                item
+            )
 
         local_batches = [
-            local_items[i : i + batch_size] for i in range(0, len(local_items), batch_size)
+            local_items[i : i + batch_size]
+            for i in range(0, len(local_items), batch_size)
         ]
 
         remote_batches = [
-            remote_items[i: i + batch_size] for i in range(0, len(remote_items), batch_size)
+            remote_items[i : i + batch_size]
+            for i in range(0, len(remote_items), batch_size)
         ]
 
         agg_response = UploadResponse(json={DATASET_ID_KEY: dataset_id})
 
-        tqdm_local_batches = (
-            tqdm.tqdm(local_batches)
-        )
+        tqdm_local_batches = tqdm.tqdm(local_batches)
 
-        tqdm_remote_batches = (
-            tqdm.tqdm(remote_batches)
-        )
+        tqdm_remote_batches = tqdm.tqdm(remote_batches)
 
         async_responses = []
 
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch)
-            responses = self._process_append_requests_local(dataset_id, payload, batch_size, batch_size)
+            responses = self._process_append_requests_local(
+                dataset_id, payload, batch_size, batch_size
+            )
             async_responses.extend(responses)
 
         for batch in tqdm_remote_batches:
             payload = construct_append_payload(batch)
-            responses = self._process_append_requests(dataset_id, payload, batch_size, batch_size)
+            responses = self._process_append_requests(
+                dataset_id, payload, batch_size, batch_size
+            )
             async_responses.extend(responses)
 
         for response in async_responses:
             agg_response.update_response(response.json())
 
-        print(agg_response.json())
         return agg_response
 
     def _process_append_requests_local(
@@ -265,6 +273,7 @@ class NucleusClient:
             )
 
         def exception_handler(request, exception):
+            print("Exception handler request local: ", request)
             logger.error(exception)
 
         def preprocess_payload(item):
@@ -326,6 +335,7 @@ class NucleusClient:
                 {
                     DATASET_ID_KEY: dataset_id,
                     ERROR_ITEMS: len(payload[ITEMS_KEY]),
+                    ERROR_PAYLOAD: payload[ITEMS_KEY],
                 }
             )
 
@@ -361,7 +371,12 @@ class NucleusClient:
         print("Remote upload:", async_responses)
         return async_responses
 
-    def annotate_dataset(self, dataset_id: str, annotations: List[DatasetItem], batch_size: int = 20):
+    def annotate_dataset(
+        self,
+        dataset_id: str,
+        annotations: List[DatasetItem],
+        batch_size: int = 20,
+    ):
         """
         Uploads ground truth annotations for a given dataset.
         :param payload: {"annotations" : List[Box2DAnnotation]}
@@ -370,27 +385,28 @@ class NucleusClient:
         """
 
         batches = [
-            annotations[i: i + batch_size] for i in range(0, len(annotations), batch_size)
+            annotations[i : i + batch_size]
+            for i in range(0, len(annotations), batch_size)
         ]
 
-        agg_response = {DATASET_ID_KEY: dataset_id, ANNOTATIONS_PROCESSED_KEY: 0}
+        agg_response = {
+            DATASET_ID_KEY: dataset_id,
+            ANNOTATIONS_PROCESSED_KEY: 0,
+        }
 
-        tqdm_batches = (
-            tqdm.tqdm(batches)
-        )
+        tqdm_batches = tqdm.tqdm(batches)
 
         for batch in tqdm_batches:
             payload = construct_box_annotation_payload(batch)
             response = self._make_request(
-                payload,
-                f"dataset/{dataset_id}/annotate"
+                payload, f"dataset/{dataset_id}/annotate"
             )
             if STATUS_CODE_KEY in response:
                 agg_response[ERRORS_KEY] = response
             else:
                 agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
-                        ANNOTATIONS_PROCESSED_KEY
-                    ]
+                    ANNOTATIONS_PROCESSED_KEY
+                ]
 
         return agg_response
 
@@ -421,7 +437,10 @@ class NucleusClient:
         }
         :return: { "model_id": str }
         """
-        response = self._make_request(construct_model_creation_payload(name, reference_id, metadata), "models/add")
+        response = self._make_request(
+            construct_model_creation_payload(name, reference_id, metadata),
+            "models/add",
+        )
         model_id = response.get("model_id", None)
         if not model_id:
             raise ModelCreationError(response.get("error"))

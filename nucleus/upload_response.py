@@ -5,6 +5,7 @@ from .constants import (
     IGNORED_ITEMS,
     ERROR_ITEMS,
     ERROR_CODES,
+    ERROR_PAYLOAD,
     DATASET_ID,
 )
 
@@ -21,6 +22,7 @@ class UploadResponse:
         updated_items = json.get(UPDATED_ITEMS, 0)
         ignored_items = json.get(IGNORED_ITEMS, 0)
         upload_errors = json.get(ERROR_ITEMS, 0)
+        upload_error_payload = json.get(ERROR_PAYLOAD, [])
 
         self.dataset_id = dataset_id
         self.new_items = new_items
@@ -28,6 +30,7 @@ class UploadResponse:
         self.ignored_items = ignored_items
         self.upload_errors = upload_errors
         self.error_codes: Set[str] = set()
+        self.error_payload = upload_error_payload
 
     def update_response(self, json):
         """
@@ -38,6 +41,8 @@ class UploadResponse:
         self.updated_items += json.get(UPDATED_ITEMS, 0)
         self.ignored_items += json.get(IGNORED_ITEMS, 0)
         self.upload_errors += json.get(ERROR_ITEMS, 0)
+        if json.get(ERROR_PAYLOAD, None):
+            self.error_payload.extend(json.get(ERROR_PAYLOAD, None))
 
     def record_error(self, response, num_uploads):
         """
@@ -59,6 +64,9 @@ class UploadResponse:
             IGNORED_ITEMS: self.ignored_items,
             ERROR_ITEMS: self.upload_errors,
         }
+        if self.error_payload:
+            result[ERROR_PAYLOAD] = self.error_payload
+
         if self.error_codes:
             result[ERROR_ITEMS] = self.upload_errors
             result[ERROR_CODES] = self.error_codes
