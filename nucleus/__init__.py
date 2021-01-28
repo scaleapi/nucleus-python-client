@@ -69,8 +69,8 @@ from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
 from .payload_constructor import (
-    construct_append_payload, 
-    construct_box_annotation_payload, 
+    construct_append_payload,
+    construct_box_annotation_payload,
     construct_model_creation_payload,
 )
 from .constants import (
@@ -118,6 +118,10 @@ class NucleusClient:
         return self._make_request({}, "dataset/", requests.get)
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
+        """
+        Gets all the dataset items inside your repo as a json blob.
+        :return [ DatasetItem ]
+        """
         response = self._make_request({}, f'dataset/{dataset_id}/datasetItems')
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
@@ -132,7 +136,7 @@ class NucleusClient:
                 constructed_dataset_items.append(dataset_item)
         elif error:
             raise DatasetItemRetrievalError(message=error)
-            
+
         return constructed_dataset_items
 
 
@@ -190,6 +194,7 @@ class NucleusClient:
         dataset_id: str,
         dataset_items: List[DatasetItem],
         batch_size: int = 20,
+        force: bool = False
     ):
         """
         Appends images to a dataset with given dataset_id.
@@ -239,14 +244,13 @@ class NucleusClient:
             async_responses.extend(responses)
 
         for batch in tqdm_remote_batches:
-            payload = construct_append_payload(batch)
+            payload = construct_append_payload(batch, force=force)
             responses = self._process_append_requests(dataset_id, payload, batch_size, batch_size)
             async_responses.extend(responses)
 
         for response in async_responses:
             agg_response.update_response(response.json())
 
-        print(agg_response.json())
         return agg_response
 
     def _process_append_requests_local(
@@ -281,7 +285,7 @@ class NucleusClient:
         responses: List[Any] = []
         for i in range(0, len(items), batch_size):
             batch = items[i : i + batch_size]
-            print(batch)
+
             payloads = [preprocess_payload(item) for item in batch]
 
             async_requests = [
@@ -308,7 +312,6 @@ class NucleusClient:
             ]
             responses.extend(async_responses)
 
-        print("local upload:", responses)
         return responses
 
     def _process_append_requests(
@@ -354,14 +357,13 @@ class NucleusClient:
             for response, payload in zip(async_responses, payloads)
         ]
 
-        print("Remote upload:", async_responses)
         return async_responses
 
     def annotate_dataset(self, dataset_id: str, annotations: List[DatasetItem], batch_size: int = 20):
         """
         Uploads ground truth annotations for a given dataset.
-        :param payload: {"annotations" : List[Box2DAnnotation]}
         :param dataset_id: id of the dataset
+        :param annotations: List[DatasetItem]
         :return: {"dataset_id: str, "annotations_processed": int}
         """
 

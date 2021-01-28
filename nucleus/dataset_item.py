@@ -3,8 +3,8 @@ from .errors import FileNotFoundError
 
 class DatasetItem:
 
-    def __init__(self, image_location: str, reference_id: str, metadata: dict):
-        
+    def __init__(self, image_location: str, reference_id: str, metadata: dict = {}):
+
         self.image_url = image_location
         self.local = self._is_local_path(image_location)
         self.reference_id = reference_id
@@ -12,6 +12,9 @@ class DatasetItem:
 
         if self.local and not self._local_file_exists(image_location):
             raise FileNotFoundError()
+
+    def __str__(self):
+        return self.to_payload()
 
     def _is_local_path(self, path: str) -> bool:
         path_components = path.split('/')
