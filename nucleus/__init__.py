@@ -96,6 +96,7 @@ from .constants import (
     DATASET_MODEL_RUNS_KEY,
     DATASET_SLICES_KEY,
     DATASET_LENGTH_KEY,
+    NAME_KEY,
 )
 from .model import Model
 from .errors import (
@@ -197,7 +198,7 @@ class NucleusClient:
         :param payload: { "name": str }
         :return: new Dataset object
         """
-        response = self._make_request({"name": name}, "dataset/create")
+        response = self._make_request({NAME_KEY: name}, "dataset/create")
         return Dataset(response[DATASET_ID_KEY], self)
 
     def delete_dataset(self, dataset_id: str) -> dict:
