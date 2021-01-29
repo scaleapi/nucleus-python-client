@@ -1,4 +1,5 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from .constants import ANNOTATIONS_KEY
 
 
 class ModelRun:
@@ -58,13 +59,10 @@ class ModelRun:
             payload = {}
         return self._client.commit_model_run(self.model_run_id, payload)
 
-    def predict(self, payload: dict) -> dict:
+    def predict(self, annotations: List[Any]) -> dict:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param payload:
-        {
-            "annotations": List[Box2DPrediction],
-        }
+        :param annotations: List[Box2DPrediction],
         :return:
         {
             "dataset_id": str,
@@ -72,6 +70,7 @@ class ModelRun:
             "annotations_processed: int,
         }
         """
+        payload: Dict[str, List[Any]] = {ANNOTATIONS_KEY: annotations}
         return self._client.predict(self.model_run_id, payload)
 
     def iloc(self, i: int) -> dict:

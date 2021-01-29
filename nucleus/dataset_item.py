@@ -13,7 +13,7 @@ class DatasetItem:
         image_location: str,
         reference_id: str = None,
         item_id: str = None,
-        metadata: dict = {},
+        metadata: dict = None,
     ):
 
         self.image_url = image_location
@@ -25,14 +25,18 @@ class DatasetItem:
             raise FileNotFoundError()
 
     @classmethod
-    def from_payload(cls, payload: dict):
-        return cls(image_location=payload.get(IMAGE_URL_KEY), reference_id=payload.get(REFERENCE_ID_KEY, None), metadata=payload.get(METADATA_KEY, {}))
+    def from_json(cls, payload: dict):
+        return cls(
+            image_location=payload.get(IMAGE_URL_KEY, ""),
+            reference_id=payload.get(REFERENCE_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+        )
 
     def __str__(self):
         return str(self.to_payload())
 
     def _is_local_path(self, path: str) -> bool:
-        path_components = path.split("/")
+        path_components = [comp.lower() for comp in path.split("/")]
         return not (
             "https:" in path_components
             or "http:" in path_components

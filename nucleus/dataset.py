@@ -1,7 +1,16 @@
+from typing import List, Dict, Any
 from .dataset_item import DatasetItem
 from .annotation import BoxAnnotation
-from .constants import *
-from typing import List, Union, Dict, Callable, Any, Optional
+from .constants import (
+    DATASET_NAME_KEY,
+    DATASET_MODEL_RUNS_KEY,
+    DATASET_SLICES_KEY,
+    DATASET_LENGTH_KEY,
+    DATASET_ITEM_IDS_KEY,
+    REFERENCE_IDS_KEY,
+    NAME_KEY,
+)
+
 
 class Dataset:
     """
@@ -16,25 +25,25 @@ class Dataset:
 
     @property
     def name(self) -> str:
-        return self._info().get(DATASET_NAME_KEY, "")
+        return self.info().get(DATASET_NAME_KEY, "")
 
     @property
     def model_runs(self) -> List[str]:
-        return self._info().get(DATASET_MODEL_RUNS_KEY, [])
+        return self.info().get(DATASET_MODEL_RUNS_KEY, [])
 
     @property
     def slices(self) -> List[str]:
-        return self._info().get(DATASET_SLICES_KEY, [])
+        return self.info().get(DATASET_SLICES_KEY, [])
 
     @property
     def size(self) -> int:
-        return self._info().get(DATASET_LENGTH_KEY, 0)
+        return self.info().get(DATASET_LENGTH_KEY, 0)
 
     @property
     def items(self) -> List[DatasetItem]:
         return self._client.get_dataset_items(self.id)
 
-    def _info(self) -> dict:
+    def info(self) -> dict:
         """
         Returns information about existing dataset
         :return: dictionary of the form
@@ -76,7 +85,9 @@ class Dataset:
         """
         return self._client.create_model_run(self.id, payload)
 
-    def annotate(self, annotations: List[BoxAnnotation], batch_size=20) -> dict:
+    def annotate(
+        self, annotations: List[BoxAnnotation], batch_size=20
+    ) -> dict:
         """
         Uploads ground truth annotations for a given dataset.
         :param payload: {"annotations" : List[Box2DAnnotation]}
@@ -88,9 +99,11 @@ class Dataset:
             "ignored_items": int,
         }
         """
-        return self._client.annotate_dataset(self.id, annotations, batch_size=batch_size)
+        return self._client.annotate_dataset(
+            self.id, annotations, batch_size=batch_size
+        )
 
-    def ingest_tasks(self, payload: dict):
+    def ingest_tasks(self, task_ids: dict):
         """
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
         annotated by Scale into your Nucleus Dataset.
@@ -99,7 +112,7 @@ class Dataset:
         :param payload: {"tasks" : List[task_ids]}
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
-        return self._client.ingest_tasks(self.id, payload)
+        return self._client.ingest_tasks(self.id, {"tasks": task_ids})
 
     def append(self, dataset_items: List[DatasetItem], batch_size=20) -> dict:
         """
@@ -155,7 +168,12 @@ class Dataset:
         """
         return self._client.dataitem_loc(self.id, dataset_item_id)
 
-    def create_slice(self, payload: dict):
+    def create_slice(
+        self,
+        name: str,
+        dataset_item_ids: List[str] = None,
+        reference_ids: List[str] = None,
+    ):
         """
         Creates a slice from items already present in a dataset.
         The caller must exclusively use either datasetItemIds or reference_ids
@@ -176,4 +194,13 @@ class Dataset:
         }
         :return: new Slice object
         """
+        if dataset_item_ids and reference_ids:
+            raise Exception(
+                "You cannot both dataset_item_ids and reference_ids"
+            )
+        payload: Dict[str, Any] = {NAME_KEY: name}
+        if dataset_item_ids:
+            payload[DATASET_ITEM_IDS_KEY] = dataset_item_ids
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
         return self._client.create_slice(self.id, payload)

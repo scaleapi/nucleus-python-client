@@ -53,13 +53,17 @@ metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 
 import json
 import logging
+import warnings
 import os
 from typing import List, Union, Dict, Callable, Any, Optional
 
 import tqdm
+import tqdm.notebook
 
 import grequests
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from .dataset import Dataset
 from .dataset_item import DatasetItem
@@ -88,6 +92,10 @@ from .constants import (
     SLICE_ID_KEY,
     ANNOTATIONS_PROCESSED_KEY,
     STATUS_CODE_KEY,
+    DATASET_NAME_KEY,
+    DATASET_MODEL_RUNS_KEY,
+    DATASET_SLICES_KEY,
+    DATASET_LENGTH_KEY,
 )
 from .model import Model
 from .errors import (
@@ -98,6 +106,7 @@ from .errors import (
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
+warnings.filterwarnings("ignore")
 
 
 class NucleusClient:
@@ -105,8 +114,11 @@ class NucleusClient:
     Nucleus client.
     """
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, use_notebook: bool = False):
         self.api_key = api_key
+        self.tqdm_bar = tqdm.tqdm
+        if use_notebook:
+            self.tqdm_bar = tqdm.notebook.tqdm
 
     def list_models(self) -> List[str]:
         """
@@ -128,17 +140,23 @@ class NucleusClient:
         Gets all the dataset items inside your repo as a json blob.
         :return [ DatasetItem ]
         """
-        response = self._make_request({}, f"dataset/{dataset_id}/datasetItems")
+        print(dataset_id)
+        response = self._make_request(
+            {}, f"dataset/{dataset_id}/datasetItems", requests.get
+        )
+        print(response)
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
         constructed_dataset_items = []
         if dataset_items:
             for item in dataset_items:
                 image_url = item.get("original_image_url")
-                metadata = item.get("metadata")
-                item_id = item.get("id")
-                ref_id = item.get("ref_id")
-                dataset_item = DatasetItem(image_url, ref_id, metadata)
+                metadata = item.get("metadata", None)
+                item_id = item.get("id", None)
+                ref_id = item.get("ref_id", None)
+                dataset_item = DatasetItem(
+                    image_url, ref_id, item_id, metadata
+                )
                 constructed_dataset_items.append(dataset_item)
         elif error:
             raise DatasetItemRetrievalError(message=error)
@@ -221,9 +239,10 @@ class NucleusClient:
         remote_items = []
 
         for item in dataset_items:
-            local_items.append(item) if item.local else remote_items.append(
-                item
-            )
+            if item.local:
+                local_items.append(item)
+            else:
+                remote_items.append(item)
 
         local_batches = [
             local_items[i : i + batch_size]
@@ -237,11 +256,11 @@ class NucleusClient:
 
         agg_response = UploadResponse(json={DATASET_ID_KEY: dataset_id})
 
-        tqdm_local_batches = tqdm.tqdm(local_batches)
+        tqdm_local_batches = self.tqdm_bar(local_batches)
 
-        tqdm_remote_batches = tqdm.tqdm(remote_batches)
+        tqdm_remote_batches = self.tqdm_bar(remote_batches)
 
-        async_responses = []
+        async_responses: List[Any] = []
 
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch)
@@ -269,18 +288,16 @@ class NucleusClient:
         batch_size: int = 10,
         size: int = 10,
     ):
-        def error(payload: dict) -> UploadResponse:
-            print("payload: ", payload)
+        def error(batch_item: dict) -> UploadResponse:
             return UploadResponse(
                 {
                     DATASET_ID_KEY: dataset_id,
                     ERROR_ITEMS: 1,
-                    ERROR_PAYLOAD: payload[ITEMS_KEY],
+                    ERROR_PAYLOAD: [batch_item],
                 }
             )
 
         def exception_handler(request, exception):
-            print("Exception handler request local: ", request)
             logger.error(exception)
 
         def preprocess_payload(item):
@@ -322,8 +339,8 @@ class NucleusClient:
             async_responses = [
                 response
                 if (response and response.status_code == 200)
-                else error(payload)
-                for response, payload in zip(async_responses, payloads)
+                else error(item)
+                for response, item in zip(async_responses, items)
             ]
             responses.extend(async_responses)
 
@@ -399,7 +416,7 @@ class NucleusClient:
             ANNOTATIONS_PROCESSED_KEY: 0,
         }
 
-        tqdm_batches = tqdm.tqdm(batches)
+        tqdm_batches = self.tqdm_bar(batches)
 
         for batch in tqdm_batches:
             payload = construct_box_annotation_payload(batch)
@@ -485,7 +502,7 @@ class NucleusClient:
 
         return ModelRun(response[MODEL_RUN_ID_KEY], self)
 
-    def predict(self, model_run_id: str, payload: dict):
+    def predict(self, model_run_id: str, payload: Dict[str, List[Any]]):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
         :param payload:
@@ -740,6 +757,10 @@ class NucleusClient:
         :param requests_command: grequests.post, grequests.get, grequests.delete
         :return: An async grequest object
         """
+        adapter = HTTPAdapter(max_retries=Retry(total=3))
+        sess = requests.Session()
+        sess.mount("https://", adapter)
+        sess.mount("http://", adapter)
 
         endpoint = f"{NUCLEUS_ENDPOINT}/{route}"
         logger.info("Posting to %s", endpoint)
@@ -747,14 +768,14 @@ class NucleusClient:
         if local:
             post = requests_command(
                 endpoint,
-                session=session,
+                session=sess,
                 files=payload,
                 auth=(self.api_key, ""),
             )
         else:
             post = requests_command(
                 endpoint,
-                session=session,
+                session=sess,
                 json=payload,
                 headers={"Content-Type": "application/json"},
                 auth=(self.api_key, ""),
