@@ -70,7 +70,9 @@ class ModelRun:
             "annotations_processed: int,
         }
         """
-        payload: Dict[str, List[Any]] = {ANNOTATIONS_KEY: [ann.to_payload() for ann in annotations]}
+        payload: Dict[str, List[Any]] = {
+            ANNOTATIONS_KEY: [ann.to_payload() for ann in annotations]
+        }
         return self._client.predict(self.model_run_id, payload)
 
     def iloc(self, i: int) -> dict:
