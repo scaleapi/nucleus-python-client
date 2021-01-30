@@ -65,6 +65,9 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+# import urllib3
+# from urllib3.util.retry import Retry
+
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .annotation import BoxAnnotation
@@ -107,7 +110,8 @@ from .errors import (
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-warnings.filterwarnings("ignore")
+logging.getLogger(requests.packages.urllib3.__package__).setLevel(logging.ERROR)
+requests.packages.urllib3.disable_warnings()
 
 
 class NucleusClient:
