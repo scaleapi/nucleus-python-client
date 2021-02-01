@@ -39,8 +39,7 @@ client = nucleus.NucleusClient("YOUR_API_KEY_HERE")
 
 ### Create Dataset
 ```python
-response = client.create_dataset({"name": "My Dataset"})
-dataset = client.get_dataset(response["dataset_id"])
+dataset = client.create_dataset("My Dataset")
 ```
 
 ### List Datasets
@@ -56,27 +55,16 @@ client.delete_dataset("YOUR_DATASET_ID")
 ```
 
 ### Append Items to a Dataset
-You can append both local images and images from the web.
-Each image object is a dictionary with three fields:
+You can append both local images and images from the web. Simply specify the location and Nucleus will automatically infer if it's remote or a local file.
 ```python
-datasetItem1 = {"image_url": "http://<my_image_url>", "reference_id": "my_image_name.jpg",
-  "metadata": {"label": "0"}}
+dataset_item_1 = DatasetItem(image_location="./1.jpeg", reference_id="1", metadata={"key": "value"})
+dataset_item_2 = DatasetItem(image_location="s3://srikanth-nucleus/9-1.jpg", reference_id="2", metadata={"key": "value"})
 ```
 
-The append function expects a list of datasetItems to upload, like this:
+The append function expects a list of `DatasetItem` objects to upload, like this:
 ```python
-response = dataset.append({"items": [datasetItem2]})
+response = dataset.append([dataset_item_1, dataset_item_2])
 ```
-
-If you're uploading a local image, you can specify a filepath as the image_url.
-```python
-datasetItem2 = {"image_url": "./data_folder/my_img_001.png", "reference_id": "my_img_001.png",
-  "metadata": {"label": "1"}}
-response = dataset.append({"items": [datasetItem2]}, local = True)
-```
-
-For particularly large item uploads, consider using one of the example scripts located in **references**
-These scripts upload items in batches for easier debugging.
 
 ### Get Dataset Info
 Tells us the dataset name, number of dataset items, model_runs, and slice_ids.
@@ -104,7 +92,9 @@ item = dataset.loc("dataset_item_id")
 Upload groundtruth annotations for the items in your dataset.
 Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#add-ground-truth
 ```python
-response = dataset.annotate({"annotations:" [Box2DAnnotation, ..., Box2DAnnotation]})
+annotation_1 = BoxAnnotation(reference_id="1", label="label", x=0, y=0, width=10, height=10, metadata={})
+annotation_2 = BoxAnnotation(reference_id="2", label="label", x=0, y=0, width=10, height=10, metadata={})
+response = dataset.annotate([annotation_1, annotation_2])
 ```
 
 For particularly large payloads, please reference the accompanying scripts in **references**
@@ -114,34 +104,33 @@ The model abstraction is intended to represent a unique architecture.
 Models are independent of any dataset.
 
 ```python
-response = client.add_model({"name": "My Model", "reference_id": "model-0.5", "metadata": {"iou_thr": 0.5}})
+model = client.add_model(name="My Model", reference_id="newest-cnn-its-new", metadata={"timestamp": "121012401"})
 ```
 
-### Create Model Run
-In contrast to the model abstraction, the model run abstraction
-represents an experiment. A model run is associated with both a model and
-a dataset.  A model run is meant to represent "the predictions of model y on
-dataset x"
-
-Creating a model run returns a ModelRun object.
+### Upload Predictions to ModelRun
+This method populates the model_run object with predictions. `ModelRun` objects need to reference a `Dataset` that has been created.
+Returns the associated model_id, human-readable name of the run, status, and user specified metadata.
+Takes a list of Box2DPredictions within the payload, where Box2DPrediction
+is formulated as in https://dashboard.scale.com/nucleus/docs/api#upload-model-outputs
 ```python
-model_run = dataset.create_model_run({"reference_id": "model-0.5"})
+prediction_1 = BoxPrediction(reference_id="1", label="label", x=0, y=0, width=10, height=10, confidence=0.9)
+prediction_2 = BoxPrediction(reference_id="2", label="label", x=0, y=0, width=10, height=10, confidence=0.2)
+
+model_run = model.create_run(name="My Model Run", metadata={"timestamp": "121012401"}, dataset=dataset, predictions=[prediction_1, prediction_2])
+```
+
+### Commit ModelRun
+The commit action indicates that the user is finished uploading predictions associated
+with this model run.  Committing a model run kicks off Nucleus internal processes
+to calculate performance metrics like IoU. After being committed, a ModelRun object becomes immutable.
+```python
+model_run.commit()
 ```
 
 ### Get ModelRun Info
 Returns the associated model_id, human-readable name of the run, status, and user specified metadata.
 ```python
 model_run.info
-```
-
-### Upload Predictions to ModelRun
-This method populates the model_run object with predictions.
-Returns the associated model_id, human-readable name of the run, status, and user specified metadata.
-Takes a list of Box2DPredictions within the payload, where Box2DPrediction
-is formulated as in https://dashboard.scale.com/nucleus/docs/api#upload-model-outputs
-```python
-payload = {"annotations": List[Box2DPrediction]}
-model_run.predict(payload)
 ```
 
 ### Accessing ModelRun Predictions
@@ -158,14 +147,6 @@ model_run.iloc(0)
 (3) Internally maintained dataset_item_id
 ```python
 model_run.loc("dataset_item_id")
-```
-
-### Commit ModelRun
-The commit action indicates that the user is finished uploading predictions associated
-with this model run.  Committing a model run kicks off Nucleus internal processes
-to calculate performance metrics like IoU. After being committed, a ModelRun object becomes immutable.
-```python
-model_run.commit()
 ```
 
 ### Delete ModelRun
