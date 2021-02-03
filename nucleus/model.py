@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Dict
 from .dataset import Dataset
 from .prediction import BoxPrediction
 from .model_run import ModelRun
