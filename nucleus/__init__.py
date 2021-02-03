@@ -113,7 +113,6 @@ logging.basicConfig()
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(
     logging.ERROR
 )
-requests.packages.urllib3.disable_warnings()
 
 
 class NucleusClient:
@@ -223,7 +222,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         dataset_items: List[DatasetItem],
-        batch_size: int = 20,
+        batch_size: int = 100,
         force: bool = False,
     ):
         """
@@ -269,6 +268,7 @@ class NucleusClient:
 
         async_responses: List[Any] = []
 
+        # TODO: Probably don't need two rounds of batching here
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch)
             responses = self._process_append_requests_local(
@@ -276,6 +276,7 @@ class NucleusClient:
             )
             async_responses.extend(responses)
 
+        # TODO: Probably don't need two rounds of batching here
         for batch in tqdm_remote_batches:
             payload = construct_append_payload(batch)
             responses = self._process_append_requests(
@@ -295,61 +296,70 @@ class NucleusClient:
         batch_size: int = 10,
         size: int = 10,
     ):
-        def error(batch_item: dict) -> UploadResponse:
+        def error(batch_items: dict) -> UploadResponse:
             return UploadResponse(
                 {
                     DATASET_ID_KEY: dataset_id,
-                    ERROR_ITEMS: 1,
-                    ERROR_PAYLOAD: [batch_item],
+                    ERROR_ITEMS: len(batch_items),
+                    ERROR_PAYLOAD: [batch_items],
                 }
             )
 
         def exception_handler(request, exception):
             logger.error(exception)
 
-        def preprocess_payload(item):
-            image = open(item.get(IMAGE_URL_KEY), "rb")
-            img_name = os.path.basename(image.name)
-            img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
-            payload = {
-                IMAGE_KEY: (img_name, image, img_type),
-                ITEM_KEY: (None, json.dumps(item), "application/json"),
-            }
+        def preprocess_payload(batch):
+            payload = [(ITEMS_KEY, (None, json.dumps(batch), "application/json"))]
+            for item in batch:
+                image = open(item.get(IMAGE_URL_KEY), "rb")
+                img_name = os.path.basename(image.name)
+                img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
+                payload.append((IMAGE_KEY,(img_name, image, img_type)))
+            # payload = {
+            #     IMAGE_KEY: (img_name, image, img_type),
+            #     ITEMS_KEY: (None, json.dumps(item), "application/json"),
+            # }
+            print(payload)
             return payload
 
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
+        payloads = []
         for i in range(0, len(items), batch_size):
             batch = items[i : i + batch_size]
 
-            payloads = [preprocess_payload(item) for item in batch]
+            # payloads = [preprocess_payload(item) for item in batch]
+            payload = preprocess_payload(batch)
+            payloads.append(payload)
 
-            async_requests = [
-                self._make_grequest(
-                    payload,
-                    f"dataset/{dataset_id}/append",
-                    local=True,
-                )
-                for payload in payloads
-            ]
+        print("ALL PAYLOADS: ", payload)
 
-            async_responses = grequests.map(
-                async_requests,
-                exception_handler=exception_handler,
-                size=size,
+        async_requests = [
+            self._make_grequest(
+                payload,
+                f"dataset/{dataset_id}/append",
+                local=True,
             )
+            for payload in payloads
+        ]
 
-            # don't forget to close all open files
-            map(lambda x: x[IMAGE_KEY][1].close(), payloads)
+        async_responses = grequests.map(
+            async_requests,
+            exception_handler=exception_handler,
+            size=size,
+        )
 
-            # response object will be None if an error occurred
-            async_responses = [
-                response
-                if (response and response.status_code == 200)
-                else error(item)
-                for response, item in zip(async_responses, items)
-            ]
-            responses.extend(async_responses)
+        # don't forget to close all open files
+        map(lambda x: x[IMAGE_KEY][1].close(), payloads)
+
+        # response object will be None if an error occurred
+        async_responses = [
+            response
+            if (response and response.status_code == 200)
+            else error(item)
+            for response, item in zip(async_responses, items)
+        ]
+        responses.extend(async_responses)
 
         return responses
 
@@ -357,7 +367,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
-        batch_size: int = 100,
+        batch_size: int = 20,
         size: int = 10,
     ):
         def default_error(payload: dict) -> UploadResponse:
@@ -374,6 +384,7 @@ class NucleusClient:
 
         items = payload[ITEMS_KEY]
         payloads = [
+            # batch_size images per request
             {ITEMS_KEY: items[i : i + batch_size]}
             for i in range(0, len(items), batch_size)
         ]
@@ -452,18 +463,17 @@ class NucleusClient:
             payload, f"dataset/{dataset_id}/ingest_tasks"
         )
 
-    def add_model(self, name: str, reference_id: str, metadata: dict) -> Model:
+    def add_model(
+        self, name: str, reference_id: str, metadata: Optional[Dict] = None
+    ) -> Model:
         """
         Adds a model info to your repo based on payload params:
         name -- A human-readable name of the model project.
         reference_id -- An optional user-specified identifier to reference this given model.
         metadata -- An arbitrary metadata blob for the model.
-        :param payload:
-        {
-            "name": str,
-            "reference_id": str,
-            "metadata": Dict[str, Any],
-        }
+        :param name: A human-readable name of the model project.
+        :param reference_id: An user-specified identifier to reference this given model.
+        :param metadata: An optional arbitrary metadata blob for the model.
         :return: { "model_id": str }
         """
         response = self._make_request(

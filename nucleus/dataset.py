@@ -10,6 +10,7 @@ from .constants import (
     REFERENCE_IDS_KEY,
     NAME_KEY,
 )
+from .payload_constructor import construct_model_run_creation_payload
 
 
 class Dataset:
@@ -56,7 +57,7 @@ class Dataset:
         """
         return self._client.dataset_info(self.id)
 
-    def create_model_run(self, payload: dict):
+    def create_model_run(self, name: str, reference_id: Optional[str] = None, model_id: Optional[str] = None, metadata: Optional[Dict] = None):
         """
         Creates model run for the dataset based on the given parameters:
 
@@ -83,10 +84,11 @@ class Dataset:
           "model_run_id": str,
         }
         """
+        payload = construct_model_run_creation_payload(name, reference_id, model_id, metadata)
         return self._client.create_model_run(self.id, payload)
 
     def annotate(
-        self, annotations: List[BoxAnnotation], batch_size=20
+        self, annotations: List[BoxAnnotation], batch_size: int = 20
     ) -> dict:
         """
         Uploads ground truth annotations for a given dataset.

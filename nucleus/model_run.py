@@ -1,5 +1,7 @@
 from typing import Optional, List, Dict, Any
 from .constants import ANNOTATIONS_KEY
+from .prediction import BoxPrediction
+from .payload_constructor import construct_box_predictions_payload
 
 
 class ModelRun:
@@ -12,7 +14,6 @@ class ModelRun:
         self.model_run_id = model_run_id
         self._client = client
 
-    @property
     def info(self) -> dict:
         """
         provides information about the Model Run:
@@ -70,12 +71,15 @@ class ModelRun:
             "annotations_processed: int,
         }
         """
-        payload: Dict[str, List[Any]] = {
-            ANNOTATIONS_KEY: [ann.to_payload() for ann in annotations]
-        }
+        payload: Dict[str, List[Any]] = construct_box_predictions_payload(
+            annotations
+        )
+        # {
+        #     ANNOTATIONS_KEY: [ann.to_payload() for ann in annotations]
+        # }
         return self._client.predict(self.model_run_id, payload)
 
-    def iloc(self, i: int) -> dict:
+    def iloc(self, i: int) -> List[Any]:
         """
         Returns Model Run Info For Dataset Item by its number.
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
@@ -84,9 +88,14 @@ class ModelRun:
             "annotations": List[Box2DPrediction],
         }
         """
-        return self._client.predictions_iloc(self.model_run_id, i)
+        response = self._client.predictions_iloc(self.model_run_id, i)
+        annotations = response.get(ANNOTATIONS_KEY, None)
+        if annotations:
+            return [BoxPrediction.from_json(ann) for ann in annotations]
+        else:  # An error occurred
+            return response
 
-    def refloc(self, reference_id: str) -> dict:
+    def refloc(self, reference_id: str) -> List[Any]:
         """
         Returns Model Run Info For Dataset Item by its reference_id.
         :param reference_id: reference_id of a dataset item.
@@ -95,9 +104,16 @@ class ModelRun:
             "annotations": List[Box2DPrediction],
         }
         """
-        return self._client.predictions_ref_id(self.model_run_id, reference_id)
+        response = self._client.predictions_ref_id(
+            self.model_run_id, reference_id
+        )
+        annotations = response.get(ANNOTATIONS_KEY, None)
+        if annotations:
+            return [BoxPrediction.from_json(ann) for ann in annotations]
+        else:  # An error occurred
+            return response
 
-    def loc(self, dataset_item_id: str) -> dict:
+    def loc(self, dataset_item_id: str) -> List[Any]:
         """
         Returns Model Run Info For Dataset Item by its id.
         :param dataset_item_id: internally controlled id for dataset item.
@@ -106,4 +122,11 @@ class ModelRun:
             "annotations": List[Box2DPrediction],
         }
         """
-        return self._client.predictions_loc(self.model_run_id, dataset_item_id)
+        response = self._client.predictions_loc(
+            self.model_run_id, dataset_item_id
+        )
+        annotations = response.get(ANNOTATIONS_KEY, None)
+        if annotations:
+            return [BoxPrediction.from_json(ann) for ann in annotations]
+        else:  # An error occurred
+            return response

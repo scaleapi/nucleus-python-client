@@ -1,5 +1,5 @@
 import os.path
-from .errors import FileNotFoundError
+from .errors import NotFoundError
 from .constants import (
     IMAGE_URL_KEY,
     METADATA_KEY,
@@ -22,7 +22,7 @@ class DatasetItem:
         self.metadata = metadata
 
         if self.local and not self._local_file_exists(image_location):
-            raise FileNotFoundError()
+            raise NotFoundError()
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -32,7 +32,7 @@ class DatasetItem:
             metadata=payload.get(METADATA_KEY, {}),
         )
 
-    def __repr__(self):
+    def __str__(self):
         return str(self.to_payload())
 
     def _is_local_path(self, path: str) -> bool:

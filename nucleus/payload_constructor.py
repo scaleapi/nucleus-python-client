@@ -9,6 +9,7 @@ from .constants import (
     ANNOTATIONS_KEY,
     ITEMS_KEY,
     FORCE_KEY,
+    MODEL_ID_KEY,
 )
 
 
@@ -52,5 +53,23 @@ def construct_model_creation_payload(
     return {
         NAME_KEY: name,
         REFERENCE_ID_KEY: reference_id,
-        METADATA_KEY: metadata,
+        METADATA_KEY: metadata if metadata else {},
+    }
+
+
+def construct_model_run_creation_payload(
+    name: str, reference_id: str, model_id: str, metadata: dict
+) -> dict:
+    payload = {
+        NAME_KEY: name,
+        METADATA_KEY: metadata if metadata else {},
+    }
+    if reference_id:
+        payload[REFERENCE_ID_KEY] = reference_id
+    if model_id:
+        payload[MODEL_ID_KEY] = model_id
+    return {
+        NAME_KEY: name,
+        REFERENCE_ID_KEY: reference_id,
+        METADATA_KEY: metadata if metadata else {},
     }
