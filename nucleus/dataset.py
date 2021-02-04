@@ -1,6 +1,6 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Union
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation
+from .annotation import BoxAnnotation, PolygonAnnotation
 from .constants import (
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
@@ -9,6 +9,8 @@ from .constants import (
     DATASET_ITEM_IDS_KEY,
     REFERENCE_IDS_KEY,
     NAME_KEY,
+    ITEM_KEY,
+    ANNOTATIONS_KEY,
 )
 from .payload_constructor import construct_model_run_creation_payload
 
@@ -57,7 +59,13 @@ class Dataset:
         """
         return self._client.dataset_info(self.id)
 
-    def create_model_run(self, name: str, reference_id: Optional[str] = None, model_id: Optional[str] = None, metadata: Optional[Dict] = None):
+    def create_model_run(
+        self,
+        name: str,
+        reference_id: Optional[str] = None,
+        model_id: Optional[str] = None,
+        metadata: Optional[Dict] = None,
+    ):
         """
         Creates model run for the dataset based on the given parameters:
 
@@ -84,11 +92,15 @@ class Dataset:
           "model_run_id": str,
         }
         """
-        payload = construct_model_run_creation_payload(name, reference_id, model_id, metadata)
+        payload = construct_model_run_creation_payload(
+            name, reference_id, model_id, metadata
+        )
         return self._client.create_model_run(self.id, payload)
 
     def annotate(
-        self, annotations: List[BoxAnnotation], batch_size: int = 20
+        self,
+        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        batch_size: int = 20,
     ) -> dict:
         """
         Uploads ground truth annotations for a given dataset.
@@ -141,10 +153,11 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Box2DAnnotation],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
         }
         """
-        return self._client.dataitem_iloc(self.id, i)
+        response = self._client.dataitem_iloc(self.id, i)
+        return self._format_dataset_item_response(response)
 
     def refloc(self, reference_id: str) -> dict:
         """
@@ -156,7 +169,8 @@ class Dataset:
             "annotations": List[Box2DAnnotation],
         }
         """
-        return self._client.dataitem_ref_id(self.id, reference_id)
+        response = self._client.dataitem_ref_id(self.id, reference_id)
+        return self._format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
         """
@@ -165,10 +179,11 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Box2DAnnotation],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
         }
         """
-        return self._client.dataitem_loc(self.id, dataset_item_id)
+        response = self._client.dataitem_loc(self.id, dataset_item_id)
+        return self._format_dataset_item_response(response)
 
     def create_slice(
         self,
@@ -206,3 +221,20 @@ class Dataset:
         if reference_ids:
             payload[REFERENCE_IDS_KEY] = reference_ids
         return self._client.create_slice(self.id, payload)
+
+    def _format_dataset_item_response(self, response: Dict[Any]) -> Dict[Any]:
+        item = response.get(ITEM_KEY, None)
+        annotation_payload = response.get(ANNOTATIONS_KEY, [])
+        if not item or not annotation_payload:
+            # An error occured
+            return response
+        annotations = [
+            BoxAnnotation.from_json(ann)
+            if ann["type"] == "box"
+            else PolygonAnnotation.from_json(ann)
+            for ann in annotation_payload
+        ]
+        return {
+            ITEM_KEY: DatasetItem.from_json(item),
+            ANNOTATIONS_KEY: annotations,
+        }

@@ -1,6 +1,6 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from .constants import ANNOTATIONS_KEY
-from .prediction import BoxPrediction
+from .prediction import BoxPrediction, PolygonPrediction
 from .payload_constructor import construct_box_predictions_payload
 
 
@@ -60,10 +60,12 @@ class ModelRun:
             payload = {}
         return self._client.commit_model_run(self.model_run_id, payload)
 
-    def predict(self, annotations: List[Any]) -> dict:
+    def predict(
+        self, annotations: List[Union[BoxPrediction, PolygonPrediction]]
+    ) -> dict:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param annotations: List[Box2DPrediction],
+        :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
         :return:
         {
             "dataset_id": str,
@@ -74,46 +76,39 @@ class ModelRun:
         payload: Dict[str, List[Any]] = construct_box_predictions_payload(
             annotations
         )
-        # {
-        #     ANNOTATIONS_KEY: [ann.to_payload() for ann in annotations]
-        # }
         return self._client.predict(self.model_run_id, payload)
 
-    def iloc(self, i: int) -> List[Any]:
+    def iloc(self, i: int) -> List[Union[BoxPrediction, PolygonPrediction]]:
         """
         Returns Model Run Info For Dataset Item by its number.
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction]],
         }
         """
         response = self._client.predictions_iloc(self.model_run_id, i)
-        annotations = response.get(ANNOTATIONS_KEY, None)
-        if annotations:
-            return [BoxPrediction.from_json(ann) for ann in annotations]
-        else:  # An error occurred
-            return response
+        return self._format_prediction_response(response)
 
-    def refloc(self, reference_id: str) -> List[Any]:
+    def refloc(
+        self, reference_id: str
+    ) -> List[Union[BoxPrediction, PolygonPrediction]]:
         """
         Returns Model Run Info For Dataset Item by its reference_id.
         :param reference_id: reference_id of a dataset item.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction]],
         }
         """
         response = self._client.predictions_ref_id(
             self.model_run_id, reference_id
         )
-        annotations = response.get(ANNOTATIONS_KEY, None)
-        if annotations:
-            return [BoxPrediction.from_json(ann) for ann in annotations]
-        else:  # An error occurred
-            return response
+        return self._format_prediction_response(response)
 
-    def loc(self, dataset_item_id: str) -> List[Any]:
+    def loc(
+        self, dataset_item_id: str
+    ) -> List[Union[BoxPrediction, PolygonPrediction]]:
         """
         Returns Model Run Info For Dataset Item by its id.
         :param dataset_item_id: internally controlled id for dataset item.
@@ -125,8 +120,16 @@ class ModelRun:
         response = self._client.predictions_loc(
             self.model_run_id, dataset_item_id
         )
+        return self._format_prediction_response(response)
+
+    def _format_prediction_response(self, response: Dict) -> Dict[Any]:
         annotations = response.get(ANNOTATIONS_KEY, None)
         if annotations:
-            return [BoxPrediction.from_json(ann) for ann in annotations]
+            return [
+                BoxPrediction.from_json(ann)
+                if ann["type"] == "box"
+                else PolygonPrediction.from_json(ann)
+                for ann in annotations
+            ]
         else:  # An error occurred
             return response

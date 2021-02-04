@@ -65,13 +65,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-# import urllib3
-# from urllib3.util.retry import Retry
-
 from .dataset import Dataset
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation
-from .prediction import BoxPrediction
+from .annotation import BoxAnnotation, PolygonAnnotation
+from .prediction import BoxPrediction, PolygonPrediction
 from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
@@ -299,7 +296,7 @@ class NucleusClient:
                 {
                     DATASET_ID_KEY: dataset_id,
                     ERROR_ITEMS: len(batch_items),
-                    ERROR_PAYLOAD: [batch_items],
+                    ERROR_PAYLOAD: batch_items,
                 }
             )
 
@@ -307,21 +304,29 @@ class NucleusClient:
             logger.error(exception)
 
         def preprocess_payload(batch):
-            request_payload = [(ITEMS_KEY, (None, json.dumps(batch), "application/json"))]
+            request_payload = [
+                (ITEMS_KEY, (None, json.dumps(batch), "application/json"))
+            ]
             for item in batch:
                 image = open(item.get(IMAGE_URL_KEY), "rb")
                 img_name = os.path.basename(image.name)
-                img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
-                request_payload.append((IMAGE_KEY,(img_name, image, img_type)))
+                img_type = (
+                    f"image/{os.path.splitext(image.name)[1].strip('.')}"
+                )
+                request_payload.append(
+                    (IMAGE_KEY, (img_name, image, img_type))
+                )
             return request_payload
 
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
-        payloads = []
+        request_payloads = []
+        payload_items = []
         for i in range(0, len(items), local_batch_size):
             batch = items[i : i + local_batch_size]
             batch_payload = preprocess_payload(batch)
-            payloads.append(batch_payload)
+            request_payloads.append(batch_payload)
+            payload_items.append(batch)
 
         async_requests = [
             self._make_grequest(
@@ -329,7 +334,7 @@ class NucleusClient:
                 f"dataset/{dataset_id}/append",
                 local=True,
             )
-            for payload in payloads
+            for payload in request_payloads
         ]
 
         async_responses = grequests.map(
@@ -338,15 +343,23 @@ class NucleusClient:
             size=size,
         )
 
+        def close_files(request_items):
+            for item in request_items:
+                # file buffer in location [1][1]
+                if item[0] == IMAGE_KEY:
+                    item[1][1].close()
+
         # don't forget to close all open files
-        map(lambda x: x[IMAGE_KEY][1].close(), payloads)
+        for p in request_payloads:
+            close_files(p)
+        # [close_files(p) for p in request_payloads]
 
         # response object will be None if an error occurred
         async_responses = [
             response
             if (response and response.status_code == 200)
-            else error(item)
-            for response, item in zip(async_responses, items)
+            else error(request_items)
+            for response, request_items in zip(async_responses, payload_items)
         ]
         responses.extend(async_responses)
 
@@ -404,7 +417,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         annotations: List[DatasetItem],
-        batch_size: int = 20,
+        batch_size: int = 100,
     ):
         """
         Uploads ground truth annotations for a given dataset.

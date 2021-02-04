@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional, Dict, Union
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation
-from .prediction import BoxPrediction
+from .annotation import BoxAnnotation, PolygonAnnotation
+from .prediction import BoxPrediction, PolygonPrediction
 from .constants import (
     NAME_KEY,
     METADATA_KEY,
@@ -38,7 +38,7 @@ def construct_box_annotation_payload(
 
 
 def construct_box_predictions_payload(
-    box_predictions: List[BoxPrediction],
+    box_predictions: List[Union[BoxPrediction, PolygonPrediction]],
 ) -> dict:
     predictions = []
     for prediction in box_predictions:
@@ -48,7 +48,7 @@ def construct_box_predictions_payload(
 
 
 def construct_model_creation_payload(
-    name: str, reference_id: str, metadata: dict
+    name: str, reference_id: str, metadata: Optional[Dict]
 ) -> dict:
     return {
         NAME_KEY: name,
@@ -58,7 +58,10 @@ def construct_model_creation_payload(
 
 
 def construct_model_run_creation_payload(
-    name: str, reference_id: str, model_id: str, metadata: dict
+    name: str,
+    reference_id: Optional[str],
+    model_id: Optional[str],
+    metadata: Optional[Dict],
 ) -> dict:
     payload = {
         NAME_KEY: name,

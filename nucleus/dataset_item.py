@@ -4,6 +4,7 @@ from .constants import (
     IMAGE_URL_KEY,
     METADATA_KEY,
     REFERENCE_ID_KEY,
+    ORIGINAL_IMAGE_URL_KEY,
 )
 
 
@@ -21,13 +22,16 @@ class DatasetItem:
         self.reference_id = reference_id
         self.metadata = metadata
 
-        if self.local and not self._local_file_exists(image_location):
-            raise NotFoundError()
+        # if self.local and not self._local_file_exists(image_location):
+        #     raise NotFoundError()
 
     @classmethod
     def from_json(cls, payload: dict):
+        url = payload.get(IMAGE_URL_KEY, "") or payload.get(
+            ORIGINAL_IMAGE_URL_KEY, ""
+        )
         return cls(
-            image_location=payload.get(IMAGE_URL_KEY, ""),
+            image_location=url,  # payload.get(IMAGE_URL_KEY, ""),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )

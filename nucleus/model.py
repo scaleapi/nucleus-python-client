@@ -1,6 +1,6 @@
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 from .dataset import Dataset
-from .prediction import BoxPrediction
+from .prediction import BoxPrediction, PolygonPrediction
 from .model_run import ModelRun
 
 
@@ -24,7 +24,7 @@ class Model:
         name: str,
         metadata: dict,
         dataset: Dataset,
-        predictions: List[BoxPrediction],
+        predictions: List[Union[BoxPrediction, PolygonPrediction]],
     ) -> ModelRun:
         payload = {
             "name": name,
