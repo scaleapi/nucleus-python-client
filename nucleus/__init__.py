@@ -103,6 +103,7 @@ from .errors import (
     ModelCreationError,
     ModelRunCreationError,
     DatasetItemRetrievalError,
+    NotFoundError,
 )
 
 logger = logging.getLogger(__name__)
@@ -241,6 +242,8 @@ class NucleusClient:
 
         for item in dataset_items:
             if item.local:
+                if item._local_file_exists(image_location):
+                    raise NotFoundError()
                 local_items.append(item)
             else:
                 remote_items.append(item)

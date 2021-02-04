@@ -222,7 +222,7 @@ class Dataset:
             payload[REFERENCE_IDS_KEY] = reference_ids
         return self._client.create_slice(self.id, payload)
 
-    def _format_dataset_item_response(self, response: Dict[Any]) -> Dict[Any]:
+    def _format_dataset_item_response(self, response: dict) -> dict:
         item = response.get(ITEM_KEY, None)
         annotation_payload = response.get(ANNOTATIONS_KEY, [])
         if not item or not annotation_payload:
