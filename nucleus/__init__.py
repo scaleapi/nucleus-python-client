@@ -146,11 +146,9 @@ class NucleusClient:
         Gets all the dataset items inside your repo as a json blob.
         :return [ DatasetItem ]
         """
-        print(dataset_id)
         response = self._make_request(
             {}, f"dataset/{dataset_id}/datasetItems", requests.get
         )
-        print(response)
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
         constructed_dataset_items = []
@@ -272,7 +270,7 @@ class NucleusClient:
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch)
             responses = self._process_append_requests_local(
-                dataset_id, payload, batch_size, batch_size
+                dataset_id, payload
             )
             async_responses.extend(responses)
 
@@ -293,7 +291,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
-        batch_size: int = 10,
+        local_batch_size: int = 10,
         size: int = 10,
     ):
         def error(batch_items: dict) -> UploadResponse:
@@ -309,30 +307,21 @@ class NucleusClient:
             logger.error(exception)
 
         def preprocess_payload(batch):
-            payload = [(ITEMS_KEY, (None, json.dumps(batch), "application/json"))]
+            request_payload = [(ITEMS_KEY, (None, json.dumps(batch), "application/json"))]
             for item in batch:
                 image = open(item.get(IMAGE_URL_KEY), "rb")
                 img_name = os.path.basename(image.name)
                 img_type = f"image/{os.path.splitext(image.name)[1].strip('.')}"
-                payload.append((IMAGE_KEY,(img_name, image, img_type)))
-            # payload = {
-            #     IMAGE_KEY: (img_name, image, img_type),
-            #     ITEMS_KEY: (None, json.dumps(item), "application/json"),
-            # }
-            print(payload)
-            return payload
+                request_payload.append((IMAGE_KEY,(img_name, image, img_type)))
+            return request_payload
 
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
         payloads = []
-        for i in range(0, len(items), batch_size):
-            batch = items[i : i + batch_size]
-
-            # payloads = [preprocess_payload(item) for item in batch]
-            payload = preprocess_payload(batch)
-            payloads.append(payload)
-
-        print("ALL PAYLOADS: ", payload)
+        for i in range(0, len(items), local_batch_size):
+            batch = items[i : i + local_batch_size]
+            batch_payload = preprocess_payload(batch)
+            payloads.append(batch_payload)
 
         async_requests = [
             self._make_grequest(
