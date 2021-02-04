@@ -26,7 +26,7 @@ class DatasetItem:
     def from_json(cls, payload: dict):
         url = payload.get(IMAGE_URL_KEY, "") or payload.get(ORIGINAL_IMAGE_URL_KEY, "")
         return cls(
-            image_location=url, #payload.get(IMAGE_URL_KEY, ""),
+            image_location=url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -42,8 +42,8 @@ class DatasetItem:
             or "s3:" in path_components
         )
 
-    def _local_file_exists(self, path: str):
-        return os.path.isfile(path)
+    def _local_file_exists(self):
+        return os.path.isfile(self.image_url)
 
     def to_payload(self) -> dict:
         payload = {IMAGE_URL_KEY: self.image_url, METADATA_KEY: self.metadata}

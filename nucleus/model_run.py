@@ -122,7 +122,7 @@ class ModelRun:
         )
         return self._format_prediction_response(response)
 
-    def _format_prediction_response(self, response: Dict) -> Dict[Any]:
+    def _format_prediction_response(self, response: dict) -> dict:
         annotations = response.get(ANNOTATIONS_KEY, None)
         if annotations:
             return [

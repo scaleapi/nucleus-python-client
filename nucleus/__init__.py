@@ -242,7 +242,7 @@ class NucleusClient:
 
         for item in dataset_items:
             if item.local:
-                if item._local_file_exists(image_location):
+                if not item._local_file_exists():
                     raise NotFoundError()
                 local_items.append(item)
             else:
