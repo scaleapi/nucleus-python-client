@@ -1,18 +1,19 @@
 from typing import Dict, Optional, List, Any
 from .annotation import BoxAnnotation, PolygonAnnotation
 from .constants import (
-DATASET_ITEM_ID_KEY,
-REFERENCE_ID_KEY,
-METADATA_KEY,
-GEOMETRY_KEY,
-LABEL_KEY,
-X_KEY,
-Y_KEY,
-WIDTH_KEY,
-HEIGHT_KEY,
-CONFIDENCE_KEY,
-VERTICES_KEY,
+    DATASET_ITEM_ID_KEY,
+    REFERENCE_ID_KEY,
+    METADATA_KEY,
+    GEOMETRY_KEY,
+    LABEL_KEY,
+    X_KEY,
+    Y_KEY,
+    WIDTH_KEY,
+    HEIGHT_KEY,
+    CONFIDENCE_KEY,
+    VERTICES_KEY,
 )
+
 
 class BoxPrediction(BoxAnnotation):
     def __init__(
@@ -27,7 +28,9 @@ class BoxPrediction(BoxAnnotation):
         confidence: float = None,
         metadata: Optional[Dict] = None,
     ):
-        super().__init__(label, x, y, width, height, reference_id, item_id, metadata)
+        super().__init__(
+            label, x, y, width, height, reference_id, item_id, metadata
+        )
         self.confidence = confidence
 
     def to_payload(self) -> dict:
@@ -54,6 +57,7 @@ class BoxPrediction(BoxAnnotation):
 
     def __str__(self):
         return str(self.to_payload())
+
 
 class PolygonPrediction(PolygonAnnotation):
     def __init__(
