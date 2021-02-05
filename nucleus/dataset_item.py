@@ -15,7 +15,7 @@ class DatasetItem:
         item_id: str = None,
         metadata: dict = None,
     ):
-
+        self.item_id = item_id
         self.image_url = image_location
         self.local = self._is_local_path(image_location)
         self.reference_id = reference_id
