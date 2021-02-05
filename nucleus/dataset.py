@@ -120,7 +120,7 @@ class Dataset:
     def append(
         self,
         dataset_items: List[DatasetItem],
-        force: bool,
+        force: Optional[bool] = False,
         batch_size: Optional[int] = 20,
     ) -> dict:
         """
@@ -211,6 +211,15 @@ class Dataset:
         if reference_ids:
             payload[REFERENCE_IDS_KEY] = reference_ids
         return self._client.create_slice(self.id, payload)
+
+    def delete_item(self, item_id: str = None, reference_id: str = None):
+        if bool(item_id) == bool(reference_id):
+            raise Exception(
+                "You must specify either a reference_id or an item_id for a DatasetItem."
+            )
+        return self._client.delete_dataset_item(
+            self.id, reference_id=reference_id, item_id=item_id
+        )
 
     def _format_dataset_item_response(self, response: dict) -> dict:
         item = response.get(ITEM_KEY, None)

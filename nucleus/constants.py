@@ -1,5 +1,5 @@
-# NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
-NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus"
+NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+# NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus"
 ITEMS_KEY = "items"
 ITEM_KEY = "item"
 REFERENCE_ID_KEY = "reference_id"
@@ -39,9 +39,6 @@ WIDTH_KEY = "width"
 HEIGHT_KEY = "height"
 TYPE_KEY = "type"
 VERTICES_KEY = "vertices"
-<<<<<<< HEAD
 BOX_TYPE = "box"
 POLYGON_TYPE = "polygon"
-=======
->>>>>>> 5adeaa3978216d3300104cc23c6e1af9c9b824eb
 GEOMETRY_KEY = "geometry"

@@ -193,7 +193,9 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}", requests.delete
         )
 
-    def create_dataset_from_project(self, project_id: str, last_n_tasks: int = None, name: str = None) -> Dataset:
+    def create_dataset_from_project(
+        self, project_id: str, last_n_tasks: int = None, name: str = None
+    ) -> Dataset:
         """
         Creates a new dataset based on payload params:
         name -- A human-readable name of the dataset.
@@ -203,7 +205,7 @@ class NucleusClient:
         """
         payload = {"project_id": project_id}
         if last_n_tasks:
-            payload["last_n_tasks"] = last_n_tasks
+            payload["last_n_tasks"] = str(last_n_tasks)
         if name:
             payload["name"] = name
         response = self._make_request(payload, "dataset/create_from_project")
@@ -230,8 +232,28 @@ class NucleusClient:
         """
         return self._make_request({}, f"dataset/{dataset_id}", requests.delete)
 
-    # TODO: maybe do more robust error handling here
+    def delete_dataset_item(
+        self, dataset_id: str, item_id: str = None, reference_id: str = None
+    ) -> dict:
+        """
+        Deletes a private dataset based on datasetId.
+        Returns an empty payload where response status `200` indicates
+        the dataset has been successfully deleted.
+        :param payload: { "name": str }
+        :return: { "dataset_id": str, "name": str }
+        """
+        if item_id:
+            return self._make_request(
+                {}, f"dataset/{dataset_id}/{item_id}", requests.delete
+            )
+        else:  # Assume reference_id is provided
+            return self._make_request(
+                {},
+                f"dataset/{dataset_id}/refloc/{reference_id}",
+                requests.delete,
+            )
 
+    # TODO: maybe do more robust error handling here
     def populate_dataset(
         self,
         dataset_id: str,

@@ -22,15 +22,16 @@ class Model:
     def create_run(
         self,
         name: str,
-        metadata: dict,
         dataset: Dataset,
         predictions: List[Union[BoxPrediction, PolygonPrediction]],
+        metadata: Optional[Dict] = None,
     ) -> ModelRun:
-        payload = {
+        payload: dict = {
             "name": name,
             "reference_id": self.reference_id,
-            "metadata": metadata,
         }
+        if metadata:
+            payload["metadata"] = metadata
         model_run: ModelRun = self._client.create_model_run(
             dataset.id, payload
         )
