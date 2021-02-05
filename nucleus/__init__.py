@@ -63,6 +63,8 @@ import tqdm.notebook
 import grequests
 import requests
 from requests.adapters import HTTPAdapter
+
+# pylint: disable=E1101
 from requests.packages.urllib3.util.retry import Retry
 
 from .dataset import Dataset
@@ -242,7 +244,7 @@ class NucleusClient:
 
         for item in dataset_items:
             if item.local:
-                if not item._local_file_exists():
+                if not item.local_file_exists():
                     raise NotFoundError()
                 local_items.append(item)
             else:

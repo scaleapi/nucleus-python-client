@@ -17,9 +17,9 @@ class BoxPrediction(BoxAnnotation):
         y: int,
         width: int,
         height: int,
-        reference_id: str = None,
-        item_id: str = None,
-        confidence: float = None,
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+        confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ):
         super().__init__(
@@ -58,9 +58,9 @@ class PolygonPrediction(PolygonAnnotation):
         self,
         label: str,
         vertices: List[Any],
-        reference_id: str = None,
-        item_id: str = None,
-        confidence: float = None,
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+        confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
     ):
         super().__init__(label, vertices, reference_id, item_id, metadata)

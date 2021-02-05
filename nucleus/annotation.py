@@ -17,8 +17,8 @@ class BoxAnnotation:
         y: Union[float, int],
         width: Union[float, int],
         height: Union[float, int],
-        reference_id: str = None,
-        item_id: str = None,
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
         if bool(reference_id) == bool(item_id):
@@ -72,8 +72,8 @@ class PolygonAnnotation:
         self,
         label: str,
         vertices: List[Any],
-        reference_id: str = None,
-        item_id: str = None,
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
         if bool(reference_id) == bool(item_id):

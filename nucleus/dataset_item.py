@@ -1,5 +1,4 @@
 import os.path
-from .errors import NotFoundError
 from .constants import (
     IMAGE_URL_KEY,
     METADATA_KEY,
@@ -24,7 +23,9 @@ class DatasetItem:
 
     @classmethod
     def from_json(cls, payload: dict):
-        url = payload.get(IMAGE_URL_KEY, "") or payload.get(ORIGINAL_IMAGE_URL_KEY, "")
+        url = payload.get(IMAGE_URL_KEY, "") or payload.get(
+            ORIGINAL_IMAGE_URL_KEY, ""
+        )
         return cls(
             image_location=url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),
@@ -42,7 +43,7 @@ class DatasetItem:
             or "s3:" in path_components
         )
 
-    def _local_file_exists(self):
+    def local_file_exists(self):
         return os.path.isfile(self.image_url)
 
     def to_payload(self) -> dict:
