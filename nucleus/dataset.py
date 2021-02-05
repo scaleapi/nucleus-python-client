@@ -111,7 +111,7 @@ class Dataset:
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
         annotated by Scale into your Nucleus Dataset.
         Right now we support ingestion from Videobox Annotation and 2D Box Annotation projects.
-        Lated we'll supoport more annotation types.
+        Lated we'll support more annotation types.
         :param task_ids: list of task ids
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
