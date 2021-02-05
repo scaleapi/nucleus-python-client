@@ -2,6 +2,11 @@ from typing import List, Optional, Dict, Union
 from .dataset import Dataset
 from .prediction import BoxPrediction, PolygonPrediction
 from .model_run import ModelRun
+from .constants import (
+    NAME_KEY,
+    REFERENCE_ID_KEY,
+    METADATA_KEY,
+)
 
 
 class Model:
@@ -27,11 +32,11 @@ class Model:
         metadata: Optional[Dict] = None,
     ) -> ModelRun:
         payload: dict = {
-            "name": name,
-            "reference_id": self.reference_id,
+            NAME_KEY: name,
+            REFERENCE_ID_KEY: self.reference_id,
         }
         if metadata:
-            payload["metadata"] = metadata
+            payload[METADATA_KEY] = metadata
         model_run: ModelRun = self._client.create_model_run(
             dataset.id, payload
         )
