@@ -78,7 +78,9 @@ class ModelRun:
         )
         return self._client.predict(self.model_run_id, payload)
 
-    def iloc(self, i: int) -> List[Union[BoxPrediction, PolygonPrediction]]:
+    def iloc(
+        self, i: int
+    ):  # TODO -> List[Union[BoxPrediction, PolygonPrediction]]:
         """
         Returns Model Run Info For Dataset Item by its number.
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
@@ -92,7 +94,7 @@ class ModelRun:
 
     def refloc(
         self, reference_id: str
-    ) -> List[Union[BoxPrediction, PolygonPrediction]]:
+    ):  # TODO -> List[Union[BoxPrediction, PolygonPrediction]]:
         """
         Returns Model Run Info For Dataset Item by its reference_id.
         :param reference_id: reference_id of a dataset item.
@@ -108,7 +110,7 @@ class ModelRun:
 
     def loc(
         self, dataset_item_id: str
-    ) -> List[Union[BoxPrediction, PolygonPrediction]]:
+    ):  # TODO -> List[Union[BoxPrediction, PolygonPrediction]]:
         """
         Returns Model Run Info For Dataset Item by its id.
         :param dataset_item_id: internally controlled id for dataset item.
@@ -122,7 +124,9 @@ class ModelRun:
         )
         return self._format_prediction_response(response)
 
-    def _format_prediction_response(self, response: dict) -> dict:
+    def _format_prediction_response(
+        self, response: dict
+    ) -> Union[dict, List[Union[BoxPrediction, PolygonPrediction]]]:
         annotations = response.get(ANNOTATIONS_KEY, None)
         if annotations:
             return [

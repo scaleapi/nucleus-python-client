@@ -1,5 +1,4 @@
 import os.path
-from .errors import NotFoundError
 from .constants import (
     IMAGE_URL_KEY,
     METADATA_KEY,
@@ -44,7 +43,7 @@ class DatasetItem:
             or "s3:" in path_components
         )
 
-    def _local_file_exists(self):
+    def local_file_exists(self):
         return os.path.isfile(self.image_url)
 
     def to_payload(self) -> dict:

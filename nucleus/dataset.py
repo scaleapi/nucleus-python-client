@@ -128,7 +128,9 @@ class Dataset:
         """
         return self._client.ingest_tasks(self.id, {"tasks": task_ids})
 
-    def append(self, dataset_items: List[DatasetItem], batch_size=20) -> dict:
+    def append(
+        self, dataset_items: List[DatasetItem], batch_size: Optional[int] = 20
+    ) -> dict:
         """
         Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
 
