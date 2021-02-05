@@ -39,6 +39,9 @@ WIDTH_KEY = "width"
 HEIGHT_KEY = "height"
 TYPE_KEY = "type"
 VERTICES_KEY = "vertices"
+<<<<<<< HEAD
 BOX_TYPE = "box"
 POLYGON_TYPE = "polygon"
+=======
+>>>>>>> 5adeaa3978216d3300104cc23c6e1af9c9b824eb
 GEOMETRY_KEY = "geometry"

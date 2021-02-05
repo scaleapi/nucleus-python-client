@@ -64,28 +64,16 @@ class Dataset:
         name: str,
         reference_id: Optional[str] = None,
         model_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """
-        Creates model run for the dataset based on the given parameters:
+        :param name: A name for the model run.
+        :param reference_id: The user-specified reference identifier to associate with the model.
+                        The 'model_id' field should be empty if this field is populated,
+        :param model_id: The internally-controlled identifier of the model.
+                    The 'reference_id' field should be empty if this field is populated,
+        :param metadata: An arbitrary metadata blob for the current run.
 
-        'reference_id' -- The user-specified reference identifier to associate with the model.
-                        The 'model_id' field should be empty if this field is populated.
-
-        'model_id' -- The internally-controlled identifier of the model.
-                    The 'reference_id' field should be empty if this field is populated.
-
-        'name' -- An optional name for the model run.
-
-        'metadata' -- An arbitrary metadata blob for the current run.
-
-        :param payload:
-        {
-            "reference_id": str,
-            "model_id": str,
-            "name": Optional[str],
-            "metadata": Optional[Dict[str, Any]],
-        }
         :return:
         {
           "model_id": str,
@@ -104,7 +92,8 @@ class Dataset:
     ) -> dict:
         """
         Uploads ground truth annotations for a given dataset.
-        :param payload: {"annotations" : List[Box2DAnnotation]}
+        :param annotations: ground truth annotations for a given dataset to upload
+        :param batch_size: batch parameter for long uploads
         :return:
         {
             "dataset_id: str,
@@ -122,20 +111,25 @@ class Dataset:
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
         annotated by Scale into your Nucleus Dataset.
         Right now we support ingestion from Videobox Annotation and 2D Box Annotation projects.
-        Lated we'll supoport more annotation types.
-        :param payload: {"tasks" : List[task_ids]}
+        Lated we'll support more annotation types.
+        :param task_ids: list of task ids
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
         return self._client.ingest_tasks(self.id, {"tasks": task_ids})
 
     def append(
-        self, dataset_items: List[DatasetItem], batch_size: Optional[int] = 20
+        self,
+        dataset_items: List[DatasetItem],
+        force: bool,
+        batch_size: Optional[int] = 20,
     ) -> dict:
         """
         Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
 
-        :param payload: {"items": List[DatasetItem], "force": bool}
-        :param local: True if you upload local images
+        Parameters:
+        :param dataset_items: items to upload
+        :param force: if True overwrites images on collision
+        :param batch_size: batch parameter for long uploads
         :return:
         {
             'dataset_id': str,
@@ -145,7 +139,10 @@ class Dataset:
         }
         """
         return self._client.populate_dataset(
-            self.id, dataset_items, batch_size=batch_size
+            self.id,
+            dataset_items,
+            force=force,
+            batch_size=batch_size,
         )
 
     def iloc(self, i: int) -> dict:
@@ -198,19 +195,10 @@ class Dataset:
         The caller must exclusively use either datasetItemIds or reference_ids
         as a means of identifying items in the dataset.
 
-        "name" -- The human-readable name of the slice.
+        :param name: The human-readable name of the slice.
+        :param dataset_item_ids: An optional list of dataset item ids for the items in the slice
+        :param reference_ids: An optional list of user-specified identifier for the items in the slice
 
-        "dataset_item_ids" -- An optional list of dataset item ids for the items in the slice
-
-        "reference_ids" -- An optional list of user-specified identifier for the items in the slice
-
-        :param
-        payload:
-        {
-            "name": str,
-            "dataset_item_ids": List[str],
-            "reference_ids": List[str],
-        }
         :return: new Slice object
         """
         if dataset_item_ids and reference_ids:

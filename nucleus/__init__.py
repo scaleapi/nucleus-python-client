@@ -193,6 +193,22 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}", requests.delete
         )
 
+    def create_dataset_from_project(self, project_id: str, last_n_tasks: int = None, name: str = None) -> Dataset:
+        """
+        Creates a new dataset based on payload params:
+        name -- A human-readable name of the dataset.
+        Returns a response with internal id and name for a new dataset.
+        :param payload: { "name": str }
+        :return: new Dataset object
+        """
+        payload = {"project_id": project_id}
+        if last_n_tasks:
+            payload["last_n_tasks"] = last_n_tasks
+        if name:
+            payload["name"] = name
+        response = self._make_request(payload, "dataset/create_from_project")
+        return Dataset(response[DATASET_ID_KEY], self)
+
     def create_dataset(self, name: str) -> Dataset:
         """
         Creates a new dataset based on payload params:
