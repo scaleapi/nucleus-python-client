@@ -15,7 +15,6 @@ class Slice:
         This endpoint provides information about specified slice.
 
         :param
-        slice_id: id of the slice
         id_type: the type of IDs you want in response (either "reference_id" or "dataset_item_id")
         to identify the DatasetItems
 
@@ -27,3 +26,26 @@ class Slice:
         }
         """
         return self._client.slice_info(self.slice_id, id_type)
+
+    def append(self, payload: dict) -> dict:
+        """
+        Appends to a slice from items already present in a dataset.
+        The caller must exclusively use either datasetItemIds or reference_ids
+        as a means of identifying items in the dataset.
+
+        :param
+        payload:
+        {
+            "dataset_item_ids": List[str],
+            "reference_ids": List[str],
+        }
+        
+        :return:
+        {
+            "slice_id": str,
+        }
+        """
+        response = self.client._make_request(
+            payload, f"slice/{self.slice_id}/append"
+        )
+        return response
