@@ -78,6 +78,7 @@ from .payload_constructor import (
     construct_append_payload,
     construct_box_annotation_payload,
     construct_model_creation_payload,
+    construct_box_predictions_payload,
 )
 from .constants import (
     NUCLEUS_ENDPOINT,
@@ -93,12 +94,14 @@ from .constants import (
     DATASET_ITEM_ID_KEY,
     SLICE_ID_KEY,
     ANNOTATIONS_PROCESSED_KEY,
+    PREDICTIONS_PROCESSED_KEY,
     STATUS_CODE_KEY,
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
     DATASET_SLICES_KEY,
     DATASET_LENGTH_KEY,
     NAME_KEY,
+    ANNOTATIONS_KEY,
 )
 from .model import Model
 from .errors import (
@@ -565,7 +568,12 @@ class NucleusClient:
 
         return ModelRun(response[MODEL_RUN_ID_KEY], self)
 
-    def predict(self, model_run_id: str, payload: Dict[str, List[Any]]):
+    def predict(
+        self,
+        model_run_id: str,
+        payload: Dict[str, List[Union[BoxPrediction, PolygonPrediction]]],
+        batch_size: int = 100,
+    ):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
         :param payload:
@@ -579,7 +587,35 @@ class NucleusClient:
             "annotations_processed: int,
         }
         """
-        return self._make_request(payload, f"modelRun/{model_run_id}/predict")
+        predictions: List[Union[BoxPrediction, PolygonPrediction]] = payload[
+            ANNOTATIONS_KEY
+        ]
+        batches = [
+            predictions[i : i + batch_size]
+            for i in range(0, len(predictions), batch_size)
+        ]
+
+        agg_response = {
+            MODEL_RUN_ID_KEY: model_run_id,
+            PREDICTIONS_PROCESSED_KEY: 0,
+        }
+
+        tqdm_batches = self.tqdm_bar(batches)
+
+        for batch in tqdm_batches:
+            batch_payload = {ANNOTATIONS_KEY: batch}
+            response = self._make_request(
+                batch_payload, f"modelRun/{model_run_id}/predict"
+            )
+            if STATUS_CODE_KEY in response:
+                agg_response[ERRORS_KEY] = response
+            else:
+                agg_response[PREDICTIONS_PROCESSED_KEY] += response[
+                    PREDICTIONS_PROCESSED_KEY
+                ]
+
+        return agg_response
+        # return self._make_request(payload, f"modelRun/{model_run_id}/predict")
 
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
