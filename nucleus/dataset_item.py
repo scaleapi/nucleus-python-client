@@ -4,6 +4,7 @@ from .constants import (
     METADATA_KEY,
     REFERENCE_ID_KEY,
     ORIGINAL_IMAGE_URL_KEY,
+    DATASET_ITEM_ID_KEY,
 )
 
 
@@ -15,9 +16,10 @@ class DatasetItem:
         item_id: str = None,
         metadata: dict = None,
     ):
-        self.item_id = item_id
+
         self.image_url = image_location
         self.local = self._is_local_path(image_location)
+        self.item_id = item_id
         self.reference_id = reference_id
         self.metadata = metadata
 
@@ -29,14 +31,14 @@ class DatasetItem:
         return cls(
             image_location=url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),
+            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
     def __str__(self):
         return str(self.to_payload())
 
-    @staticmethod
-    def _is_local_path(path: str) -> bool:
+    def _is_local_path(self, path: str) -> bool:
         path_components = [comp.lower() for comp in path.split("/")]
         return not (
             "https:" in path_components
@@ -51,4 +53,6 @@ class DatasetItem:
         payload = {IMAGE_URL_KEY: self.image_url, METADATA_KEY: self.metadata}
         if self.reference_id:
             payload[REFERENCE_ID_KEY] = self.reference_id
+        if self.item_id:
+            payload[DATASET_ITEM_ID_KEY] = self.item_id
         return payload

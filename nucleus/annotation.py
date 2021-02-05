@@ -1,23 +1,28 @@
 from enum import Enum
 from typing import Dict, Optional, Any, Union, List
 from .constants import (
-DATASET_ITEM_ID_KEY,
-REFERENCE_ID_KEY,
-METADATA_KEY,
-X_KEY,
-Y_KEY,
-WIDTH_KEY,
-HEIGHT_KEY,
-GEOMETRY_KEY,
-BOX_TYPE,
-POLYGON_TYPE,
-LABEL_KEY
+    DATASET_ITEM_ID_KEY,
+    REFERENCE_ID_KEY,
+    METADATA_KEY,
+    X_KEY,
+    Y_KEY,
+    WIDTH_KEY,
+    HEIGHT_KEY,
+    GEOMETRY_KEY,
+    BOX_TYPE,
+    POLYGON_TYPE,
+    LABEL_KEY,
+    TYPE_KEY,
+    VERTICES_KEY,
 )
+
 
 class AnnotationTypes(Enum):
     BOX = BOX_TYPE
     POLYGON = POLYGON_TYPE
 
+
+# TODO: Add base annotation class to reduce repeated code here
 class BoxAnnotation:
     # pylint: disable=too-many-instance-attributes
     def __init__(
@@ -32,7 +37,9 @@ class BoxAnnotation:
         metadata: Optional[Dict] = None,
     ):
         if bool(reference_id) == bool(item_id):
-            raise Exception("You must specify either a reference_id or an item_id for an annotation.")
+            raise Exception(
+                "You must specify either a reference_id or an item_id for an annotation."
+            )
         self.label = label
         self.x = x
         self.y = y
@@ -59,7 +66,7 @@ class BoxAnnotation:
     def to_payload(self) -> dict:
         return {
             LABEL_KEY: self.label,
-            "type": "box",
+            TYPE_KEY: BOX_TYPE,
             GEOMETRY_KEY: {
                 X_KEY: self.x,
                 Y_KEY: self.y,
@@ -73,8 +80,9 @@ class BoxAnnotation:
     def __str__(self):
         return str(self.to_payload())
 
+
+# TODO: Add Generic type for 2D point
 class PolygonAnnotation:
-    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         label: str,
@@ -84,7 +92,9 @@ class PolygonAnnotation:
         metadata: Optional[Dict] = None,
     ):
         if bool(reference_id) == bool(item_id):
-            raise Exception("You must specify either a reference_id or an item_id for an annotation.")
+            raise Exception(
+                "You must specify either a reference_id or an item_id for an annotation."
+            )
         self.label = label
         self.vertices = vertices
         self.reference_id = reference_id
@@ -93,10 +103,10 @@ class PolygonAnnotation:
 
     @classmethod
     def from_json(cls, payload: dict):
-        geometry = payload.get("geometry", {})
+        geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
-            label=payload.get("label", 0),
-            vertices=geometry.get("vertices", []),
+            label=payload.get(LABEL_KEY, 0),
+            vertices=geometry.get(VERTICES_KEY, []),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -104,13 +114,11 @@ class PolygonAnnotation:
 
     def to_payload(self) -> dict:
         return {
-            "label": self.label,
-            "type": "polygon",
-            "geometry": {
-                "vertices": self.vertices
-            },
-            "reference_id": self.reference_id,
-            "metadata": self.metadata,
+            LABEL_KEY: self.label,
+            TYPE_KEY: POLYGON_TYPE,
+            GEOMETRY_KEY: {VERTICES_KEY: self.vertices},
+            REFERENCE_ID_KEY: self.reference_id,
+            METADATA_KEY: self.metadata,
         }
 
     def __str__(self):

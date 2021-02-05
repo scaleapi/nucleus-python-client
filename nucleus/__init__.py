@@ -256,7 +256,6 @@ class NucleusClient:
                 requests.delete,
             )
 
-    # TODO: maybe do more robust error handling here
     def populate_dataset(
         self,
         dataset_id: str,
@@ -310,7 +309,6 @@ class NucleusClient:
 
         async_responses: List[Any] = []
 
-        # TODO: Probably don't need two rounds of batching here
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch)
             responses = self._process_append_requests_local(
@@ -318,7 +316,6 @@ class NucleusClient:
             )
             async_responses.extend(responses)
 
-        # TODO: Probably don't need two rounds of batching here
         for batch in tqdm_remote_batches:
             payload = construct_append_payload(batch)
             responses = self._process_append_requests(
