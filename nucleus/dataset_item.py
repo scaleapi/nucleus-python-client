@@ -35,7 +35,8 @@ class DatasetItem:
     def __str__(self):
         return str(self.to_payload())
 
-    def _is_local_path(self, path: str) -> bool:
+    @staticmethod
+    def _is_local_path(path: str) -> bool:
         path_components = [comp.lower() for comp in path.split("/")]
         return not (
             "https:" in path_components
