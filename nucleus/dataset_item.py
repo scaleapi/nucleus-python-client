@@ -24,7 +24,9 @@ class DatasetItem:
 
     @classmethod
     def from_json(cls, payload: dict):
-        url = payload.get(IMAGE_URL_KEY, "") or payload.get(ORIGINAL_IMAGE_URL_KEY, "")
+        url = payload.get(IMAGE_URL_KEY, "") or payload.get(
+            ORIGINAL_IMAGE_URL_KEY, ""
+        )
         return cls(
             image_location=url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),

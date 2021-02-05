@@ -240,6 +240,7 @@ class NucleusClient:
         local_items = []
         remote_items = []
 
+        # Check local files exist before sending requests
         for item in dataset_items:
             if item.local:
                 if not item._local_file_exists():
