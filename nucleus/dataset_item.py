@@ -50,7 +50,10 @@ class DatasetItem:
         return os.path.isfile(self.image_url)
 
     def to_payload(self) -> dict:
-        payload = {IMAGE_URL_KEY: self.image_url, METADATA_KEY: self.metadata}
+        payload = {
+            IMAGE_URL_KEY: self.image_url,
+            METADATA_KEY: self.metadata or {},
+        }
         if self.reference_id:
             payload[REFERENCE_ID_KEY] = self.reference_id
         if self.item_id:
