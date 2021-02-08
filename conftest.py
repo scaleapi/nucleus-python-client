@@ -17,11 +17,11 @@ import pytest
 import nucleus
 
 
-assert 'PYTEST_API_KEY' in os.environ, \
-    "You must set the 'PYTEST_API_KEY' environment variable to a valid " \
+assert 'NUCLEUS_PYTEST_API_KEY' in os.environ, \
+    "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid " \
     "Nucleus API key to run the test suite"
 
-API_KEY = os.environ['PYTEST_API_KEY']
+API_KEY = os.environ['NUCLEUS_PYTEST_API_KEY']
 
 
 @pytest.fixture(scope='session')
