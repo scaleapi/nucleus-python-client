@@ -8,3 +8,6 @@ requests == 2.22.0
 
 # nucleus-python-client/setup.py: 1
 setuptools == 46.0.0
+
+tqdm == 4.56.0
+
