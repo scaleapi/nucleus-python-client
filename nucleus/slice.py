@@ -49,7 +49,7 @@ class Slice:
         """
         if dataset_item_ids and reference_ids:
             raise Exception(
-                "You cannot both dataset_item_ids and reference_ids"
+                "You cannot specify both dataset_item_ids and reference_ids"
             )
 
         payload: Dict[str, Any] = {}
