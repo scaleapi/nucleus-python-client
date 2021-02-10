@@ -96,6 +96,7 @@ from .constants import (
     ANNOTATIONS_PROCESSED_KEY,
     PREDICTIONS_PROCESSED_KEY,
     STATUS_CODE_KEY,
+    SUCCESS_STATUS_CODES,
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
     DATASET_SLICES_KEY,
@@ -878,11 +879,13 @@ class NucleusClient:
             )
         return post
 
-    def _make_request(
+    def _make_request_raw(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
         """
-        makes a request to Nucleus endpoint
+        Makes a request to Nucleus endpoint. This method returns the raw
+        requests.Response object which is useful for unit testing.
+
         :param payload: given payload
         :param route: route for the request
         :param requests_command: requests.post, requests.get, requests.delete
@@ -899,7 +902,23 @@ class NucleusClient:
         )
         logger.info("API request has response code %s", response.status_code)
 
-        if response.status_code != 200:
+        return response
+
+    def _make_request(
+        self, payload: dict, route: str, requests_command=requests.post
+    ) -> dict:
+        """
+        Makes a request to Nucleus endpoint and logs a warning if not
+        successful.
+
+        :param payload: given payload
+        :param route: route for the request
+        :param requests_command: requests.post, requests.get, requests.delete
+        :return: response JSON
+        """
+        response = self._make_request_raw(payload, route, requests_command)
+
+        if response.status_code not in SUCCESS_STATUS_CODES:
             logger.warning(response)
 
         return (
