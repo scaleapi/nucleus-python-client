@@ -16,7 +16,7 @@ requests == 2.22.0
 setuptools == 46.0.0
 
 # nucleus-python-client/nucleus/__init__.py: 60,61
-tqdm == 4.51.0
+tqdm == 4.56.1
 
 # nucleus-python-client/tests/test_dataset.py: 1
 pytest == 6.2.2
