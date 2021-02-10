@@ -16,6 +16,7 @@ ANNOTATIONS_KEY = "annotations"
 ANNOTATIONS_PROCESSED_KEY = "annotations_processed"
 PREDICTIONS_PROCESSED_KEY = "predictions_processed"
 STATUS_CODE_KEY = "status_code"
+SUCCESS_STATUS_CODES = [200, 201]
 ERRORS_KEY = "errors"
 MODEL_RUN_ID_KEY = "model_run_id"
 MODEL_ID_KEY = "model_id"

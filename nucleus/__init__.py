@@ -96,6 +96,7 @@ from .constants import (
     ANNOTATIONS_PROCESSED_KEY,
     PREDICTIONS_PROCESSED_KEY,
     STATUS_CODE_KEY,
+    SUCCESS_STATUS_CODES,
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
     DATASET_SLICES_KEY,
@@ -917,7 +918,7 @@ class NucleusClient:
         """
         response = self._make_request_raw(payload, route, requests_command)
 
-        if response.status_code not in [200, 201]:
+        if response.status_code not in SUCCESS_STATUS_CODES:
             logger.warning(response)
 
         return (

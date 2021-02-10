@@ -15,6 +15,7 @@ import requests
 import pytest
 
 import nucleus
+from nucleus.constants import SUCCESS_STATUS_CODES
 
 
 assert 'NUCLEUS_PYTEST_API_KEY' in os.environ, \
@@ -47,7 +48,7 @@ def CLIENT(monkeypatch_session):
         payload: dict, route: str, requests_command=requests.post
     ) -> dict:
         response = client._make_request_raw(payload, route, requests_command)
-        assert response.status_code in [200, 201], \
+        assert response.status_code in SUCCESS_STATUS_CODES, \
             f"HTTP response had status code: {response.status_code}. " \
             f"Full JSON: {response.json()}"
         return response.json()
