@@ -1,4 +1,5 @@
-from .constants import DATASET_ITEM_ID_KEY
+from typing import List, Dict, Any
+from .constants import DATASET_ITEM_ID_KEY, REFERENCE_IDS_KEY
 
 
 class Slice:
@@ -15,7 +16,6 @@ class Slice:
         This endpoint provides information about specified slice.
 
         :param
-        slice_id: id of the slice
         id_type: the type of IDs you want in response (either "reference_id" or "dataset_item_id")
         to identify the DatasetItems
 
@@ -27,3 +27,38 @@ class Slice:
         }
         """
         return self._client.slice_info(self.slice_id, id_type)
+
+    def append(
+        self, 
+        dataset_item_ids: List[str] = None,
+        reference_ids: List[str] = None
+    ) -> dict:
+        """
+        Appends to a slice from items already present in a dataset.
+        The caller must exclusively use either datasetItemIds or reference_ids
+        as a means of identifying items in the dataset.
+
+        :param
+        dataset_item_ids: List[str],
+        reference_ids: List[str],
+
+        :return:
+        {
+            "slice_id": str,
+        }
+        """
+        if dataset_item_ids and reference_ids:
+            raise Exception(
+                "You cannot specify both dataset_item_ids and reference_ids"
+            )
+
+        payload: Dict[str, Any] = {}
+        if dataset_item_ids:
+            payload[DATASET_ITEM_IDS_KEY] = dataset_item_ids
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+
+        response = self._client._make_request(
+            payload, f"slice/{self.slice_id}/append"
+        )
+        return response
