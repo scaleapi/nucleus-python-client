@@ -58,7 +58,7 @@ import os
 from typing import List, Union, Dict, Callable, Any, Optional
 
 import tqdm
-import tqdm.notebook
+import tqdm.notebook as tqdm_notebook
 
 import grequests
 import requests
@@ -69,14 +69,14 @@ from requests.packages.urllib3.util.retry import Retry
 
 from .dataset import Dataset
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation, PolygonAnnotation
+from .annotation import AnnotationItem, BoxAnnotation, PolygonAnnotation
 from .prediction import BoxPrediction, PolygonPrediction
 from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
 from .payload_constructor import (
     construct_append_payload,
-    construct_box_annotation_payload,
+    construct_annotation_payload,
     construct_model_creation_payload,
     construct_box_predictions_payload,
 )
@@ -129,7 +129,7 @@ class NucleusClient:
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
         if use_notebook:
-            self.tqdm_bar = tqdm.notebook.tqdm
+            self.tqdm_bar = tqdm_notebook.tqdm
 
     def list_models(self) -> List[str]:
         """
@@ -462,13 +462,14 @@ class NucleusClient:
     def annotate_dataset(
         self,
         dataset_id: str,
-        annotations: List[DatasetItem],
+        annotations: List[AnnotationItem],
+        edit_mode: str,
         batch_size: int = 100,
     ):
         """
         Uploads ground truth annotations for a given dataset.
         :param dataset_id: id of the dataset
-        :param annotations: List[DatasetItem]
+        :param annotations: List[AnnotationItem]
         :return: {"dataset_id: str, "annotations_processed": int}
         """
 
@@ -485,7 +486,7 @@ class NucleusClient:
         tqdm_batches = self.tqdm_bar(batches)
 
         for batch in tqdm_batches:
-            payload = construct_box_annotation_payload(batch)
+            payload = construct_annotation_payload(batch, edit_mode)
             response = self._make_request(
                 payload, f"dataset/{dataset_id}/annotate"
             )

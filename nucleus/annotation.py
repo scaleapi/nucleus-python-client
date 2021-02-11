@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Dict, Optional, Any, Union, List
 from .constants import (
+    ANNOTATIONS_KEY,
+    ANNOTATION_ID_KEY,
     DATASET_ITEM_ID_KEY,
     REFERENCE_ID_KEY,
     METADATA_KEY,
@@ -32,22 +34,14 @@ class BoxAnnotation:
         y: Union[float, int],
         width: Union[float, int],
         height: Union[float, int],
-        reference_id: str = None,
-        item_id: str = None,
-        annotation_id: str = None,
+        annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
-        if bool(reference_id) == bool(item_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for an annotation."
-            )
         self.label = label
         self.x = x
         self.y = y
         self.width = width
         self.height = height
-        self.reference_id = reference_id
-        self.item_id = item_id
         self.annotation_id = annotation_id
         self.metadata = metadata if metadata else {}
 
@@ -60,9 +54,7 @@ class BoxAnnotation:
             y=geometry.get(Y_KEY, 0),
             width=geometry.get(WIDTH_KEY, 0),
             height=geometry.get(HEIGHT_KEY, 0),
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
-            annotation_id=payload.get(ANNOTATION_ID, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
@@ -76,8 +68,7 @@ class BoxAnnotation:
                 WIDTH_KEY: self.width,
                 HEIGHT_KEY: self.height,
             },
-            REFERENCE_ID_KEY: self.reference_id,
-            ANNOTATION_ID: self.annotation_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
 
@@ -91,19 +82,11 @@ class PolygonAnnotation:
         self,
         label: str,
         vertices: List[Any],
-        reference_id: str = None,
-        item_id: str = None,
-        annotation_id: str = None,
+        annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
-        if bool(reference_id) == bool(item_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for an annotation."
-            )
         self.label = label
         self.vertices = vertices
-        self.reference_id = reference_id
-        self.item_id = item_id
         self.annotation_id = annotation_id
         self.metadata = metadata if metadata else {}
 
@@ -113,9 +96,7 @@ class PolygonAnnotation:
         return cls(
             label=payload.get(LABEL_KEY, 0),
             vertices=geometry.get(VERTICES_KEY, []),
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
-            annotation_id=payload.get(ANNOTATION_ID, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
@@ -124,9 +105,46 @@ class PolygonAnnotation:
             LABEL_KEY: self.label,
             TYPE_KEY: POLYGON_TYPE,
             GEOMETRY_KEY: {VERTICES_KEY: self.vertices},
-            REFERENCE_ID_KEY: self.reference_id,
-            ANNOTATION_ID: self.annotation_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
+        }
+
+    def __str__(self):
+        return str(self.to_payload())
+
+
+class AnnotationItem:
+    def __init__(
+        self,
+        annotations: List[Union[PolygonAnnotation, BoxAnnotation]],
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+    ):
+        if bool(reference_id) == bool(item_id):
+            raise Exception(
+                "You must specify either a reference_id or an item_id for an annotation."
+            )
+        self.annotations = annotations
+        self.reference_id = reference_id
+        self.item_id = item_id
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            annotations=[
+                BoxAnnotation.from_json(ann)
+                if ann[TYPE_KEY] == "box"
+                else PolygonAnnotation.from_json(ann)
+                for ann in payload.get(ANNOTATIONS_KEY)
+            ],
+            reference_id=payload.get(REFERENCE_ID_KEY, None),
+            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            ANNOTATIONS_KEY: [annotation.to_payload() for annotation in self.annotations],
+            REFERENCE_ID_KEY: self.reference_id,
         }
 
     def __str__(self):

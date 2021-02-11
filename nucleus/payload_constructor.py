@@ -7,9 +7,11 @@ from .constants import (
     METADATA_KEY,
     REFERENCE_ID_KEY,
     ANNOTATIONS_KEY,
+    ANNOTATION_ITEMS_KEY,
     ITEMS_KEY,
     FORCE_KEY,
     MODEL_ID_KEY,
+    EDIT_MODE_KEY,
 )
 
 
@@ -27,14 +29,15 @@ def construct_append_payload(
     )
 
 
-def construct_box_annotation_payload(
-    box_annotations: List[BoxAnnotation],
+def construct_annotation_payload(
+    box_annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+    edit_mode: str,
 ) -> dict:
     annotations = []
     for annotation in box_annotations:
         annotations.append(annotation.to_payload())
 
-    return {ANNOTATIONS_KEY: annotations}
+    return {ANNOTATION_ITEMS_KEY: annotations, EDIT_MODE_KEY: edit_mode}
 
 
 def construct_box_predictions_payload(
