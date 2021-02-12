@@ -23,7 +23,7 @@ class Slice:
         {
             "name": str,
             "dataset_id": str,
-            "dataset_item_ids": List[str],
+            "dataset_item_ids" or "reference_ids": List[str],
         }
         """
         return self._client.slice_info(self.slice_id, id_type)
