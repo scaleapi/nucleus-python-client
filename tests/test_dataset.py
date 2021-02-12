@@ -83,3 +83,15 @@ def test_dataset_append(dataset):
 
     response = dataset.append(ds_items_with_metadata)
     check_is_expected_response(response)
+
+def test_dataset_list_autotags(CLIENT):
+    def check_is_expected_response(response):
+        resp_json = response.json()
+        assert AUTOTAGS_KEY in resp_json[AUTOTAGS_KEY]
+        assert resp_json[AUTOTAGS_KEY] == []
+    # Creation
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+    assert isinstance(ds, Dataset)
+    # List of Autotags should be empty
+    autotag_response = CLIENT.list_autotags(ds.id)
+    check_is_expected_response(autotag_response)
