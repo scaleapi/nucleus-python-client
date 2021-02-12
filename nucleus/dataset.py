@@ -1,6 +1,6 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from .dataset_item import DatasetItem
-from .annotation import AnnotationItem, BoxAnnotation, PolygonAnnotation
+from .annotation import BoxAnnotation, PolygonAnnotation
 from .constants import (
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
@@ -10,9 +10,8 @@ from .constants import (
     REFERENCE_IDS_KEY,
     NAME_KEY,
     ITEM_KEY,
-    ANNOTATION_EDIT_MODES,
+    DEFAULT_ANNOTATION_UPDATE_MODE,
     ANNOTATIONS_KEY,
-    DEFAULT_ANNOTATION_EDIT_MODE,
 )
 from .payload_constructor import construct_model_run_creation_payload
 
@@ -91,8 +90,8 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: List[AnnotationItem],
-        edit_mode: Optional[str] = None,
+        annotations: List[Union[BoxAnnotation | PolygonAnnotation]],
+        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 20,
     ) -> dict:
         """
@@ -107,15 +106,8 @@ class Dataset:
             "ignored_items": int,
         }
         """
-        if edit_mode is None:
-            edit_mode = DEFAULT_ANNOTATION_EDIT_MODE
-        if edit_mode not in ANNOTATION_EDIT_MODES:
-            raise Exception(
-                f'Edit mode must be empty or one of {ANNOTATION_EDIT_MODES}!'
-            )
-
         return self._client.annotate_dataset(
-            self.id, annotations, edit_mode=edit_mode, batch_size=batch_size
+            self.id, annotations, update=update, batch_size=batch_size
         )
 
     def ingest_tasks(self, task_ids: dict):

@@ -1,6 +1,7 @@
 from typing import Dict, Optional, List, Any
 from .annotation import BoxAnnotation, PolygonAnnotation
 from .constants import (
+    ANNOTATION_ID_KEY,
     DATASET_ITEM_ID_KEY,
     REFERENCE_ID_KEY,
     METADATA_KEY,
@@ -26,10 +27,11 @@ class BoxPrediction(BoxAnnotation):
         reference_id: Optional[str] = None,
         item_id: Optional[str] = None,
         confidence: Optional[float] = None,
+        annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
         super().__init__(
-            label, x, y, width, height, reference_id, item_id, metadata
+            label, x, y, width, height, reference_id, item_id, annotation_id, metadata
         )
         self.confidence = confidence
 
@@ -52,6 +54,7 @@ class BoxPrediction(BoxAnnotation):
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
@@ -67,9 +70,10 @@ class PolygonPrediction(PolygonAnnotation):
         reference_id: Optional[str] = None,
         item_id: Optional[str] = None,
         confidence: Optional[float] = None,
+        annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
-        super().__init__(label, vertices, reference_id, item_id, metadata)
+        super().__init__(label, vertices, reference_id, item_id, annotation_id, metadata)
         self.confidence = confidence
 
     def to_payload(self) -> dict:
@@ -88,6 +92,7 @@ class PolygonPrediction(PolygonAnnotation):
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 

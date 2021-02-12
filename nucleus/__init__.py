@@ -69,7 +69,7 @@ from requests.packages.urllib3.util.retry import Retry
 
 from .dataset import Dataset
 from .dataset_item import DatasetItem
-from .annotation import AnnotationItem, BoxAnnotation, PolygonAnnotation
+from .annotation import BoxAnnotation, PolygonAnnotation
 from .prediction import BoxPrediction, PolygonPrediction
 from .model_run import ModelRun
 from .slice import Slice
@@ -462,14 +462,15 @@ class NucleusClient:
     def annotate_dataset(
         self,
         dataset_id: str,
-        annotations: List[AnnotationItem],
-        edit_mode: str,
+        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        update: bool,
         batch_size: int = 100,
     ):
         """
         Uploads ground truth annotations for a given dataset.
         :param dataset_id: id of the dataset
-        :param annotations: List[AnnotationItem]
+        :param annotations: List[Union[BoxAnnotation, PolygonAnnotation]]
+        :param update: whether to update or ignore conflicting annotations
         :return: {"dataset_id: str, "annotations_processed": int}
         """
 
@@ -486,7 +487,7 @@ class NucleusClient:
         tqdm_batches = self.tqdm_bar(batches)
 
         for batch in tqdm_batches:
-            payload = construct_annotation_payload(batch, edit_mode)
+            payload = construct_annotation_payload(batch, update)
             response = self._make_request(
                 payload, f"dataset/{dataset_id}/annotate"
             )
