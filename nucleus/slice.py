@@ -1,5 +1,9 @@
 from typing import List, Dict, Any
-from .constants import DATASET_ITEM_ID_KEY, REFERENCE_IDS_KEY
+from .constants import (
+    DATASET_ITEM_ID_KEY,
+    REFERENCE_IDS_KEY,
+    DATASET_ITEM_IDS_KEY,
+)
 
 
 class Slice:
@@ -29,9 +33,9 @@ class Slice:
         return self._client.slice_info(self.slice_id, id_type)
 
     def append(
-        self, 
+        self,
         dataset_item_ids: List[str] = None,
-        reference_ids: List[str] = None
+        reference_ids: List[str] = None,
     ) -> dict:
         """
         Appends to a slice from items already present in a dataset.
