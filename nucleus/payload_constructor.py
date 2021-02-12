@@ -8,7 +8,6 @@ from .constants import (
     METADATA_KEY,
     REFERENCE_ID_KEY,
     ANNOTATIONS_KEY,
-    ANNOTATION_ITEMS_KEY,
     ITEMS_KEY,
     FORCE_KEY,
     MODEL_ID_KEY,
@@ -37,7 +36,7 @@ def construct_annotation_payload(
     for annotation_item in annotation_items:
         annotations.append(annotation_item.to_payload())
 
-    return {ANNOTATION_ITEMS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
+    return {ANNOTATIONS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
 
 
 def construct_box_predictions_payload(
