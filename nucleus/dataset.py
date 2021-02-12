@@ -169,7 +169,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Box2DAnnotation],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
