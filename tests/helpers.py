@@ -1,5 +1,8 @@
 from pathlib import Path
 
+TEST_MODEL_NAME = '[PyTest] Test Model'
+TEST_MODEL_REFERENCE = '[PyTest] Test Model Reference'
+TEST_MODEL_RUN = '[PyTest] Test Model Run'
 TEST_DATASET_NAME = '[PyTest] Test Dataset'
 TEST_IMG_URLS = [
     's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg',
@@ -40,3 +43,47 @@ TEST_POLYGON_ANNOTATIONS = [
     }
     for i in range(len(TEST_IMG_URLS))
 ]
+
+TEST_BOX_PREDICTIONS = [
+    {
+        **TEST_BOX_ANNOTATIONS[i],
+        'confidence': 0.10 * i
+    }
+    for i in range(len(TEST_BOX_ANNOTATIONS))
+]
+
+TEST_POLYGON_PREDICTIONS = [
+    {
+        **TEST_POLYGON_ANNOTATIONS[i],
+        'confidence': 0.10 * i
+    }
+    for i in range(len(TEST_POLYGON_ANNOTATIONS))
+]
+
+
+# Asserts that a box annotation instance matches a dict representing its properties.
+# Useful to check annotation uploads/updates match.
+def assert_box_annotation_matches_dict(annotation_instance, annotation_dict):
+    assert annotation_instance.label == annotation_dict['label']
+    assert annotation_instance.x == annotation_dict['x']
+    assert annotation_instance.y == annotation_dict['y']
+    assert annotation_instance.height == annotation_dict['height']
+    assert annotation_instance.width == annotation_dict['width']
+    assert annotation_instance.annotation_id == annotation_dict['annotation_id']
+
+def assert_polygon_annotation_matches_dict(annotation_instance, annotation_dict):
+    assert annotation_instance.label == annotation_dict['label']
+    assert annotation_instance.annotation_id == annotation_dict['annotation_id']
+    for instance_pt, dict_pt in zip(annotation_instance.vertices, annotation_dict['vertices']):
+        assert instance_pt['x'] == dict_pt['x']
+        assert instance_pt['y'] == dict_pt['y']
+
+# Asserts that a box prediction instance matches a dict representing its properties.
+# Useful to check prediction uploads/updates match.
+def assert_box_prediction_matches_dict(prediction_instance, prediction_dict):
+    assert_box_annotation_matches_dict(prediction_instance, prediction_dict)
+    assert prediction_instance.confidence == prediction_dict['confidence']
+
+def assert_polygon_prediction_matches_dict(prediction_instance, prediction_dict):
+    assert_polygon_annotation_matches_dict(prediction_instance, prediction_dict)
+    assert prediction_instance.confidence == prediction_dict['confidence']

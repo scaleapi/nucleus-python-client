@@ -6,28 +6,12 @@ from helpers import (
     TEST_BOX_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     reference_id_from_url,
+    assert_box_annotation_matches_dict,
+    assert_polygon_annotation_matches_dict,
 )
 
 from nucleus import BoxAnnotation, PolygonAnnotation, DatasetItem
 from nucleus.constants import ERROR_PAYLOAD
-
-
-# Asserts that a box annotation instance matches a dict representing its properties.
-# Useful to check annotation uploads/updates match.
-def assert_box_annotation_matches_dict(annotation_instance, annotation_dict):
-    assert annotation_instance.label == annotation_dict['label']
-    assert annotation_instance.x == annotation_dict['x']
-    assert annotation_instance.y == annotation_dict['y']
-    assert annotation_instance.height == annotation_dict['height']
-    assert annotation_instance.width == annotation_dict['width']
-    assert annotation_instance.annotation_id == annotation_dict['annotation_id']
-
-def assert_polygon_annotation_matches_dict(annotation_instance, annotation_dict):
-    assert annotation_instance.label == annotation_dict['label']
-    assert annotation_instance.annotation_id == annotation_dict['annotation_id']
-    for instance_pt, dict_pt in zip(annotation_instance.vertices, annotation_dict['vertices']):
-        assert instance_pt['x'] == dict_pt['x']
-        assert instance_pt['y'] == dict_pt['y']
 
 @pytest.fixture()
 def dataset(CLIENT):

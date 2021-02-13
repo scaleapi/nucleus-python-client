@@ -579,7 +579,7 @@ class NucleusClient:
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
         :param payload:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[Union[Box2DPrediction, Polygon2DPrediction]],
         }
         :return:
         {
