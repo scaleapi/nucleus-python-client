@@ -1,7 +1,5 @@
-import pytest
-
 from pathlib import Path
-
+import pytest
 from nucleus import Dataset, DatasetItem, UploadResponse
 from nucleus.constants import (
     NEW_ITEMS,
@@ -13,16 +11,17 @@ from nucleus.constants import (
 )
 
 
-TEST_DATASET_NAME = '[PyTest] Test Dataset'
+TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_IMG_URLS = [
-    's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg',
-    's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg',
-    's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/7f2e1814-6591087d.jpg',
-    's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/06924f46-1708b96f.jpg',
-    's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg',
+    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
+    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
+    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/7f2e1814-6591087d.jpg",
+    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/06924f46-1708b96f.jpg",
+    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg",
 ]
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     yield ds
@@ -66,28 +65,29 @@ def test_dataset_append(dataset):
     # With reference ids and metadata:
     ds_items_with_metadata = []
     for i, url in enumerate(TEST_IMG_URLS):
-        ds_items_with_metadata.append(DatasetItem(
-            image_location=url,
-            reference_id=Path(url).name,
-            metadata={
-                'made_with_pytest': True,
-                'example_int': i,
-                'example_str': 'hello',
-                'example_float': 0.5,
-                'example_dict': {
-                    'nested': True,
+        ds_items_with_metadata.append(
+            DatasetItem(
+                image_location=url,
+                reference_id=Path(url).name,
+                metadata={
+                    "made_with_pytest": True,
+                    "example_int": i,
+                    "example_str": "hello",
+                    "example_float": 0.5,
+                    "example_dict": {
+                        "nested": True,
+                    },
+                    "example_list": ["hello", i, False],
                 },
-                'example_list': ['hello', i, False],
-            }
-        ))
+            )
+        )
 
     response = dataset.append(ds_items_with_metadata)
     check_is_expected_response(response)
 
-def test_dataset_list_autotags(CLIENT):
+
+def test_dataset_list_autotags(CLIENT, dataset):
     # Creation
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
-    assert isinstance(ds, Dataset)
     # List of Autotags should be empty
-    autotag_response = CLIENT.list_autotags(ds.id)
+    autotag_response = CLIENT.list_autotags(dataset.id)
     assert autotag_response == []
