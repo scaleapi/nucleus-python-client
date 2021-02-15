@@ -10,8 +10,8 @@ from nucleus.constants import (
     DATASET_ID_KEY,
 )
 
-
-TEST_DATASET_NAME = "[PyTest] Test Dataset"
+TEST_DATASET_NAME = '[PyTest] Test Dataset'
+TEST_SLICE_NAME = '[PyTest] Test Slice'
 TEST_IMG_URLS = [
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
@@ -20,14 +20,12 @@ TEST_IMG_URLS = [
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg",
 ]
 
-
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     yield ds
 
     CLIENT.delete_dataset(ds.id)
-
 
 def test_dataset_create_and_delete(CLIENT):
     # Creation
@@ -91,3 +89,58 @@ def test_dataset_list_autotags(CLIENT, dataset):
     # List of Autotags should be empty
     autotag_response = CLIENT.list_autotags(dataset.id)
     assert autotag_response == []
+
+def test_slice_create_and_delete(dataset):
+    # Dataset upload
+    ds_items = []
+    for url in TEST_IMG_URLS:
+        ds_items.append(DatasetItem(
+            image_location=url,
+            reference_id=Path(url).name,
+        ))
+    response = dataset.append(ds_items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    # Slice creation
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=[item.reference_id for item in ds_items[:2]],
+    )
+
+    dataset_slices = dataset.slices
+    assert len(dataset_slices) == 1
+    assert slc.slice_id == dataset_slices[0]
+
+    response = slc.info(id_type="reference_id")
+    assert response["name"] == TEST_SLICE_NAME
+    assert response["dataset_id"] == dataset.id
+    assert len(response["reference_ids"]) == 2
+    for item in ds_items[:2]:
+        assert item.reference_id in response["reference_ids"]
+    print(response)
+
+
+def test_slice_append(dataset):
+    # Dataset upload
+    ds_items = []
+    for url in TEST_IMG_URLS:
+        ds_items.append(DatasetItem(
+            image_location=url,
+            reference_id=Path(url).name,
+        ))
+    response = dataset.append(ds_items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    # Slice creation
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=[ds_items[0].reference_id],
+    )
+
+    # Insert duplicate first item
+    slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
+
+    response = slc.info(id_type="reference_ids")
+    assert len(response["reference_ids"]) == 3
+    for item in ds_items[:3]:
+        assert item.reference_id in response["reference_ids"]

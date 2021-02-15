@@ -852,6 +852,24 @@ class NucleusClient:
         )
         return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
 
+    def delete_model(self, model_id: str) -> dict:
+        """
+        This endpoint deletes the specified model, along with all
+        associated model_runs.
+
+        :param
+        model_id: id of the model_run to delete.
+
+        :return:
+        {}
+        """
+        response = self._make_request(
+            {},
+            f"model/{model_id}",
+            requests_command=requests.delete,
+        )
+        return response
+
     def _make_grequest(
         self,
         payload: dict,
