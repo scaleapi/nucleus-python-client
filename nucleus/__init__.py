@@ -103,6 +103,7 @@ from .constants import (
     DATASET_LENGTH_KEY,
     NAME_KEY,
     ANNOTATIONS_KEY,
+    AUTOTAGS_KEY,
 )
 from .model import Model
 from .errors import (
@@ -837,6 +838,19 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def list_autotags(self, dataset_id: str) -> List[str]:
+        """
+        Fetches a list of autotags for a given dataset id
+        :param dataset_id: internally controlled dataset_id
+        :return: List[str] representing autotag_ids
+        """
+        response = self._make_request(
+            {},
+            f"{dataset_id}/list_autotags",
+            requests_command=requests.get,
+        )
+        return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
 
     def delete_model(self, model_id: str) -> dict:
         """

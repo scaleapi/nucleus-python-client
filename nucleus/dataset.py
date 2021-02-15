@@ -221,6 +221,9 @@ class Dataset:
             self.id, reference_id=reference_id, item_id=item_id
         )
 
+    def list_autotags(self):
+        return self._client.list_autotags(self.id)
+
     def _format_dataset_item_response(self, response: dict) -> dict:
         item = response.get(ITEM_KEY, None)
         annotation_payload = response.get(ANNOTATIONS_KEY, [])
