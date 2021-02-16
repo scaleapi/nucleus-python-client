@@ -41,12 +41,13 @@ def construct_annotation_payload(
 
 def construct_box_predictions_payload(
     box_predictions: List[Union[BoxPrediction, PolygonPrediction]],
+    update: bool,
 ) -> dict:
     predictions = []
     for prediction in box_predictions:
         predictions.append(prediction.to_payload())
 
-    return {ANNOTATIONS_KEY: predictions}
+    return {ANNOTATIONS_KEY: predictions, ANNOTATION_UPDATE_KEY: update}
 
 
 def construct_model_creation_payload(

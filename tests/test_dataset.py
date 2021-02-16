@@ -114,7 +114,6 @@ def test_slice_create_and_delete(dataset):
     assert len(response["reference_ids"]) == 2
     for item in ds_items[:2]:
         assert item.reference_id in response["reference_ids"]
-    print(response)
 
 
 def test_slice_append(dataset):

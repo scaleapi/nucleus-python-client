@@ -37,7 +37,7 @@ class BoxPrediction(BoxAnnotation):
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
-        if self.confidence:
+        if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
 
         return payload
@@ -78,7 +78,7 @@ class PolygonPrediction(PolygonAnnotation):
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
-        if self.confidence:
+        if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
 
         return payload

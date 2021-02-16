@@ -4,6 +4,7 @@ from helpers import (
     TEST_DATASET_NAME,
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
+    TEST_MODEL_RUN,
     TEST_IMG_URLS,
     TEST_BOX_PREDICTIONS,
     TEST_POLYGON_PREDICTIONS,
@@ -16,7 +17,7 @@ from nucleus import BoxPrediction, PolygonPrediction, DatasetItem
 from nucleus.constants import ERROR_PAYLOAD
 
 @pytest.fixture()
-def dataset(CLIENT):
+def model_run(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     ds_items = []
     for url in TEST_IMG_URLS:
@@ -30,46 +31,48 @@ def dataset(CLIENT):
 
     model = CLIENT.add_model(
         name=TEST_MODEL_NAME,
-        reference_id=TEST_MODEL_NAME
+        reference_id=TEST_MODEL_REFERENCE
     )
 
+    run = model.create_run(
+        name=TEST_MODEL_RUN,
+        dataset=ds,
+        predictions=[])
 
-    yield ds
+    yield run
 
     response = CLIENT.delete_dataset(ds.id)
     assert response == {}
+    response = CLIENT.delete_model(model.id)
+    assert response == {}
 
-
-def test_box_pred_upload(dataset):
+def test_box_pred_upload(model_run):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
-    response = dataset.annotate(predictions=[prediction])
+    response = model_run.predict(annotations=[prediction])
 
-    assert response['dataset_id'] == dataset.id
+    assert response['model_run_id'] == model_run.model_run_id
     assert response['predictions_processed'] == 1
 
-    response = dataset.refloc(prediction.reference_id)['predictions']
+    response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
-    response_prediction = response[0]
-    assert_box_prediction_matches_dict(response_prediction, TEST_BOX_PREDICTIONS[0])
+    assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
 
-def test_polygon_pred_upload(dataset):
+def test_polygon_pred_upload(model_run):
     prediction = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
-    response = dataset.annotate(predictions=[prediction])
+    response = model_run.predict(annotations=[prediction])
 
-    assert response['dataset_id'] == dataset.id
+    assert response['model_run_id'] == model_run.model_run_id
     assert response['predictions_processed'] == 1
 
-    response = dataset.refloc(prediction.reference_id)['predictions']
+    response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
-    response_prediction = response[0]
-    print(response_prediction)
-    assert_polygon_prediction_matches_dict(response_prediction, TEST_POLYGON_PREDICTIONS[0])
+    assert_polygon_prediction_matches_dict(response[0], TEST_POLYGON_PREDICTIONS[0])
 
 
-def test_box_pred_upload_update(dataset):
+def test_box_pred_upload_update(model_run):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
-    response = dataset.annotate(predictions=[prediction])
+    response = model_run.predict(annotations=[prediction])
 
     assert response['predictions_processed'] == 1
 
@@ -79,19 +82,18 @@ def test_box_pred_upload_update(dataset):
     prediction_update_params['reference_id'] = TEST_BOX_PREDICTIONS[0]['reference_id']
 
     prediction_update = BoxPrediction(**prediction_update_params)
-    response = dataset.annotate(predictions=[prediction_update], update=True)
+    response = model_run.predict(annotations=[prediction_update], update=True)
 
     assert response['predictions_processed'] == 1
 
-    response = dataset.refloc(prediction.reference_id)['predictions']
+    response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
-    response_prediction = response[0]
-    assert_box_prediction_matches_dict(response_prediction, prediction_update_params)
+    assert_box_prediction_matches_dict(response[0], prediction_update_params)
 
 
-def test_box_pred_upload_ignore(dataset):
+def test_box_pred_upload_ignore(model_run):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
-    response = dataset.annotate(predictions=[prediction])
+    response = model_run.predict(annotations=[prediction])
 
     assert response['predictions_processed'] == 1
 
@@ -101,19 +103,18 @@ def test_box_pred_upload_ignore(dataset):
     prediction_update_params['reference_id'] = TEST_BOX_PREDICTIONS[0]['reference_id']
     prediction_update = BoxPrediction(**prediction_update_params)
     # Default behavior is ignore.
-    response = dataset.annotate(predictions=[prediction_update])
+    response = model_run.predict(annotations=[prediction_update])
 
     assert response['predictions_processed'] == 1
 
-    response = dataset.refloc(prediction.reference_id)['predictions']
+    response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
-    response_prediction = response[0]
-    assert_box_prediction_matches_dict(response_prediction, TEST_BOX_PREDICTIONS[0])
+    assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
 
-def test_polygon_pred_upload_update(dataset):
+def test_polygon_pred_upload_update(model_run):
     prediction = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
-    response = dataset.annotate(predictions=[prediction])
+    response = model_run.predict(annotations=[prediction])
 
     assert response['predictions_processed'] == 1
 
@@ -123,19 +124,18 @@ def test_polygon_pred_upload_update(dataset):
     prediction_update_params['reference_id'] = TEST_POLYGON_PREDICTIONS[0]['reference_id']
 
     prediction_update = PolygonPrediction(**prediction_update_params)
-    response = dataset.annotate(predictions=[prediction_update], update=True)
+    response = model_run.predict(annotations=[prediction_update], update=True)
 
     assert response['predictions_processed'] == 1
 
-    response = dataset.refloc(prediction.reference_id)['predictions']
+    response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
-    response_prediction = response[0]
-    assert_polygon_prediction_matches_dict(response_prediction, prediction_update_params)
+    assert_polygon_prediction_matches_dict(response[0], prediction_update_params)
 
 
-def test_polygon_pred_upload_ignore(dataset):
+def test_polygon_pred_upload_ignore(model_run):
     prediction = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
-    response = dataset.annotate(predictions=[prediction])
+    response = model_run.predict(annotations=[prediction])
 
     assert response['predictions_processed'] == 1
 
@@ -146,11 +146,10 @@ def test_polygon_pred_upload_ignore(dataset):
 
     prediction_update = PolygonPrediction(**prediction_update_params)
     # Default behavior is ignore.
-    response = dataset.annotate(predictions=[prediction_update])
+    response = model_run.predict(annotations=[prediction_update])
 
     assert response['predictions_processed'] == 1
 
-    response = dataset.refloc(prediction.reference_id)['predictions']
+    response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
-    response_prediction = response[0]
-    assert_polygon_prediction_matches_dict(response_prediction, TEST_POLYGON_PREDICTIONS[0])
+    assert_polygon_prediction_matches_dict(response[0], TEST_POLYGON_PREDICTIONS[0])

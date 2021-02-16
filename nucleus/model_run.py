@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any, Union
-from .constants import ANNOTATIONS_KEY
+from .constants import ANNOTATIONS_KEY, DEFAULT_ANNOTATION_UPDATE_MODE
 from .prediction import BoxPrediction, PolygonPrediction
 from .payload_constructor import construct_box_predictions_payload
 
@@ -61,30 +61,26 @@ class ModelRun:
         return self._client.commit_model_run(self.model_run_id, payload)
 
     def predict(
-        self, annotations: List[Union[BoxPrediction, PolygonPrediction]]
+        self,
+        annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
     ) -> dict:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
         :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
         :return:
         {
-            "dataset_id": str,
             "model_run_id": str,
-            "annotations_processed: int,
+            "predictions_processed: int,
         }
         """
-        payload: Dict[str, List[Any]] = construct_box_predictions_payload(
-            annotations
-        )
-        return self._client.predict(self.model_run_id, payload)
+        return self._client.predict(self.model_run_id, annotations, update)
 
     def iloc(self, i: int):
         """
         Returns Model Run Info For Dataset Item by its number.
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
-        :return:
-        {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction]],
+        :return: List[Union[BoxPrediction, PolygonPrediction]],
         }
         """
         response = self._client.predictions_iloc(self.model_run_id, i)
@@ -94,10 +90,7 @@ class ModelRun:
         """
         Returns Model Run Info For Dataset Item by its reference_id.
         :param reference_id: reference_id of a dataset item.
-        :return:
-        {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction]],
-        }
+        :return: List[Union[BoxPrediction, PolygonPrediction]],
         """
         response = self._client.predictions_ref_id(
             self.model_run_id, reference_id

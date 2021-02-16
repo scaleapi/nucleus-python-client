@@ -572,15 +572,14 @@ class NucleusClient:
     def predict(
         self,
         model_run_id: str,
-        payload: Dict[str, List[Union[BoxPrediction, PolygonPrediction]]],
+        annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        update: bool,
         batch_size: int = 100,
     ):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param payload:
-        {
-            "annotations": List[Union[Box2DPrediction, Polygon2DPrediction]],
-        }
+        :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        :param update: bool
         :return:
         {
             "dataset_id": str,
@@ -588,12 +587,9 @@ class NucleusClient:
             "annotations_processed: int,
         }
         """
-        predictions: List[Union[BoxPrediction, PolygonPrediction]] = payload[
-            ANNOTATIONS_KEY
-        ]
         batches = [
-            predictions[i : i + batch_size]
-            for i in range(0, len(predictions), batch_size)
+            annotations[i : i + batch_size]
+            for i in range(0, len(annotations), batch_size)
         ]
 
         agg_response = {
@@ -604,7 +600,11 @@ class NucleusClient:
         tqdm_batches = self.tqdm_bar(batches)
 
         for batch in tqdm_batches:
-            batch_payload = {ANNOTATIONS_KEY: batch}
+            batch_payload = construct_box_predictions_payload(
+                annotations,
+                update,
+            )
+            print(batch_payload)
             response = self._make_request(
                 batch_payload, f"modelRun/{model_run_id}/predict"
             )
@@ -701,7 +701,7 @@ class NucleusClient:
         :param reference_id: reference_id of a dataset item.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[BoxPrediction],
         }
         """
         return self._make_request(
@@ -726,7 +726,7 @@ class NucleusClient:
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[BoxPrediction],
         }
         """
         return self._make_request(
@@ -755,7 +755,7 @@ class NucleusClient:
         :param dataset_item_id: dataset_item_id of a dataset item.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[BoxPrediction],
         }
         """
         return self._make_request(

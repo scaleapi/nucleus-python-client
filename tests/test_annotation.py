@@ -54,7 +54,6 @@ def test_polygon_gt_upload(dataset):
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
     response_annotation = response[0]
-    print(response_annotation)
     assert_polygon_annotation_matches_dict(response_annotation, TEST_POLYGON_ANNOTATIONS[0])
 
 
