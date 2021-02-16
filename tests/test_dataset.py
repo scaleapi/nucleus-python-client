@@ -1,6 +1,7 @@
 import pytest
 
 from helpers import (
+    TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
     reference_id_from_url,
@@ -63,7 +64,7 @@ def test_dataset_append(dataset):
         ds_items_with_metadata.append(
             DatasetItem(
                 image_location=url,
-                reference_id=Path(url).name,
+                reference_id=reference_id_from_url(url),
                 metadata={
                     "made_with_pytest": True,
                     "example_int": i,
@@ -93,7 +94,7 @@ def test_slice_create_and_delete(dataset):
     for url in TEST_IMG_URLS:
         ds_items.append(DatasetItem(
             image_location=url,
-            reference_id=Path(url).name,
+            reference_id=reference_id_from_url(url),
         ))
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
@@ -122,7 +123,7 @@ def test_slice_append(dataset):
     for url in TEST_IMG_URLS:
         ds_items.append(DatasetItem(
             image_location=url,
-            reference_id=Path(url).name,
+            reference_id=reference_id_from_url(url),
         ))
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
