@@ -604,7 +604,6 @@ class NucleusClient:
                 annotations,
                 update,
             )
-            print(batch_payload)
             response = self._make_request(
                 batch_payload, f"modelRun/{model_run_id}/predict"
             )
