@@ -24,6 +24,9 @@ class Model:
         self.metadata = metadata
         self._client = client
 
+    def __repr__(self):
+        return f'Nucleus Model object with id: {self.id}, name: {self.name}, reference id: {self.reference_id}'
+
     def create_run(
         self,
         name: str,

@@ -131,13 +131,18 @@ class NucleusClient:
         if use_notebook:
             self.tqdm_bar = tqdm.notebook.tqdm
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> List[Model]:
         """
         Lists available models in your repo.
         :return: model_ids
         """
-        # TODO implement API
-        raise NotImplementedError
+        model_objects = self._make_request({}, "models/", requests.get)
+
+        try:
+            models = [Model(model['id'], model["name"], model["ref_id"], model["metadata"], self) for model in model_objects['models']]
+            return models
+        except e:
+            return []
 
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
