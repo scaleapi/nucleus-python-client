@@ -52,6 +52,7 @@ def test_box_pred_upload(model_run):
 
     assert response['model_run_id'] == model_run.model_run_id
     assert response['predictions_processed'] == 1
+    assert response['predictions_ignored'] == 0
 
     response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
@@ -63,7 +64,8 @@ def test_polygon_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response['model_run_id'] == model_run.model_run_id
-    assert response['predictions_processed'] == 1
+    assert response['predictions_ignored'] == 0
+    assert response['predictions_ignored'] == 0
 
     response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
@@ -85,6 +87,7 @@ def test_box_pred_upload_update(model_run):
     response = model_run.predict(annotations=[prediction_update], update=True)
 
     assert response['predictions_processed'] == 1
+    assert response['predictions_ignored'] == 0
 
     response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
@@ -106,6 +109,7 @@ def test_box_pred_upload_ignore(model_run):
     response = model_run.predict(annotations=[prediction_update])
 
     assert response['predictions_processed'] == 1
+    assert response['predictions_ignored'] == 1
 
     response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
@@ -127,6 +131,7 @@ def test_polygon_pred_upload_update(model_run):
     response = model_run.predict(annotations=[prediction_update], update=True)
 
     assert response['predictions_processed'] == 1
+    assert response['predictions_ignored'] == 0
 
     response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1
@@ -149,6 +154,7 @@ def test_polygon_pred_upload_ignore(model_run):
     response = model_run.predict(annotations=[prediction_update])
 
     assert response['predictions_processed'] == 1
+    assert response['predictions_ignored'] == 1
 
     response = model_run.refloc(prediction.reference_id)
     assert len(response) == 1

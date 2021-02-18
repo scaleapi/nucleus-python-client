@@ -94,7 +94,9 @@ from .constants import (
     DATASET_ITEM_ID_KEY,
     SLICE_ID_KEY,
     ANNOTATIONS_PROCESSED_KEY,
+    ANNOTATIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
+    PREDICTIONS_IGNORED_KEY,
     STATUS_CODE_KEY,
     SUCCESS_STATUS_CODES,
     DATASET_NAME_KEY,
@@ -482,6 +484,7 @@ class NucleusClient:
         agg_response = {
             DATASET_ID_KEY: dataset_id,
             ANNOTATIONS_PROCESSED_KEY: 0,
+            ANNOTATIONS_IGNORED_KEY: 0,
         }
 
         tqdm_batches = self.tqdm_bar(batches)
@@ -496,6 +499,9 @@ class NucleusClient:
             else:
                 agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
                     ANNOTATIONS_PROCESSED_KEY
+                ]
+                agg_response[ANNOTATIONS_IGNORED_KEY] += response[
+                    ANNOTATIONS_IGNORED_KEY
                 ]
 
         return agg_response
@@ -584,7 +590,8 @@ class NucleusClient:
         {
             "dataset_id": str,
             "model_run_id": str,
-            "annotations_processed: int,
+            "predictions_processed": int,
+            "predictions_ignored": int,
         }
         """
         batches = [
@@ -595,6 +602,7 @@ class NucleusClient:
         agg_response = {
             MODEL_RUN_ID_KEY: model_run_id,
             PREDICTIONS_PROCESSED_KEY: 0,
+            PREDICTIONS_IGNORED_KEY: 0,
         }
 
         tqdm_batches = self.tqdm_bar(batches)
@@ -612,6 +620,9 @@ class NucleusClient:
             else:
                 agg_response[PREDICTIONS_PROCESSED_KEY] += response[
                     PREDICTIONS_PROCESSED_KEY
+                ]
+                agg_response[PREDICTIONS_IGNORED_KEY] += response[
+                    PREDICTIONS_IGNORED_KEY
                 ]
 
         return agg_response

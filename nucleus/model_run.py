@@ -71,7 +71,8 @@ class ModelRun:
         :return:
         {
             "model_run_id": str,
-            "predictions_processed: int,
+            "predictions_processed": int,
+            "predictions_ignored": int,
         }
         """
         return self._client.predict(self.model_run_id, annotations, update)

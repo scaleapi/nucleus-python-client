@@ -37,6 +37,7 @@ def test_box_gt_upload(dataset):
 
     assert response['dataset_id'] == dataset.id
     assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 0
 
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
@@ -50,6 +51,7 @@ def test_polygon_gt_upload(dataset):
 
     assert response['dataset_id'] == dataset.id
     assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 0
 
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
@@ -72,6 +74,7 @@ def test_box_gt_upload_update(dataset):
     response = dataset.annotate(annotations=[annotation_update], update=True)
 
     assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 0
 
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
@@ -94,6 +97,7 @@ def test_box_gt_upload_ignore(dataset):
     response = dataset.annotate(annotations=[annotation_update])
 
     assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 1
 
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
@@ -116,6 +120,7 @@ def test_polygon_gt_upload_update(dataset):
     response = dataset.annotate(annotations=[annotation_update], update=True)
 
     assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 0
 
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
@@ -139,6 +144,7 @@ def test_polygon_gt_upload_ignore(dataset):
     response = dataset.annotate(annotations=[annotation_update])
 
     assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 1
 
     response = dataset.refloc(annotation.reference_id)['annotations']
     assert len(response) == 1
