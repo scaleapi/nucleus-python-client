@@ -25,7 +25,7 @@ class Model:
         self._client = client
 
     def __repr__(self):
-        return f'Model({self.id}, {self.name}, {self.reference_id}, {self.metadata}, {self._client})'
+        return f'Model(model_id={self.id}, name={self.name}, reference_id={self.reference_id}, metadata={self.metadata}, client={self._client})'
 
     def create_run(
         self,
