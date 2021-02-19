@@ -27,6 +27,9 @@ class Model:
     def __repr__(self):
         return f'Model(model_id={self.id}, name={self.name}, reference_id={self.reference_id}, metadata={self.metadata}, client={self._client})'
 
+    def __eq__(self, other):
+        return self.id == other.id
+
     def create_run(
         self,
         name: str,
