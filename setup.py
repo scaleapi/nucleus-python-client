@@ -1,4 +1,8 @@
 import setuptools
+import sys
+
+if sys.version_info < (3,5):
+    sys.exit('Sorry, Python < 3.5 is not supported')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()

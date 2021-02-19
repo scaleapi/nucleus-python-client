@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Dict, Optional, Any, Union, List
 from .constants import (
+    ANNOTATION_ID_KEY,
     DATASET_ITEM_ID_KEY,
     REFERENCE_ID_KEY,
     METADATA_KEY,
@@ -106,8 +107,9 @@ class BoxAnnotation:
         y: Union[float, int],
         width: Union[float, int],
         height: Union[float, int],
-        reference_id: str = None,
-        item_id: str = None,
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+        annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
         if bool(reference_id) == bool(item_id):
@@ -121,6 +123,7 @@ class BoxAnnotation:
         self.height = height
         self.reference_id = reference_id
         self.item_id = item_id
+        self.annotation_id = annotation_id
         self.metadata = metadata if metadata else {}
 
     @classmethod
@@ -134,6 +137,7 @@ class BoxAnnotation:
             height=geometry.get(HEIGHT_KEY, 0),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
@@ -148,6 +152,7 @@ class BoxAnnotation:
                 HEIGHT_KEY: self.height,
             },
             REFERENCE_ID_KEY: self.reference_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
 
@@ -161,8 +166,9 @@ class PolygonAnnotation:
         self,
         label: str,
         vertices: List[Any],
-        reference_id: str = None,
-        item_id: str = None,
+        reference_id: Optional[str] = None,
+        item_id: Optional[str] = None,
+        annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
         if bool(reference_id) == bool(item_id):
@@ -173,6 +179,7 @@ class PolygonAnnotation:
         self.vertices = vertices
         self.reference_id = reference_id
         self.item_id = item_id
+        self.annotation_id = annotation_id
         self.metadata = metadata if metadata else {}
 
     @classmethod
@@ -183,6 +190,7 @@ class PolygonAnnotation:
             vertices=geometry.get(VERTICES_KEY, []),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
@@ -192,6 +200,7 @@ class PolygonAnnotation:
             TYPE_KEY: POLYGON_TYPE,
             GEOMETRY_KEY: {VERTICES_KEY: self.vertices},
             REFERENCE_ID_KEY: self.reference_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
 

@@ -92,8 +92,8 @@ item = dataset.loc("dataset_item_id")
 Upload groundtruth annotations for the items in your dataset.
 Box2DAnnotation has same format as https://dashboard.scale.com/nucleus/docs/api#add-ground-truth
 ```python
-annotation_1 = BoxAnnotation(reference_id="1", label="label", x=0, y=0, width=10, height=10, metadata={})
-annotation_2 = BoxAnnotation(reference_id="2", label="label", x=0, y=0, width=10, height=10, metadata={})
+annotation_1 = BoxAnnotation(reference_id="1", label="label", x=0, y=0, width=10, height=10, annotation_id="ann_1", metadata={})
+annotation_2 = BoxAnnotation(reference_id="2", label="label", x=0, y=0, width=10, height=10, annotation_id="ann_2", metadata={})
 response = dataset.annotate([annotation_1, annotation_2])
 ```
 
@@ -113,8 +113,8 @@ Returns the associated model_id, human-readable name of the run, status, and use
 Takes a list of Box2DPredictions within the payload, where Box2DPrediction
 is formulated as in https://dashboard.scale.com/nucleus/docs/api#upload-model-outputs
 ```python
-prediction_1 = BoxPrediction(reference_id="1", label="label", x=0, y=0, width=10, height=10, confidence=0.9)
-prediction_2 = BoxPrediction(reference_id="2", label="label", x=0, y=0, width=10, height=10, confidence=0.2)
+prediction_1 = BoxPrediction(reference_id="1", label="label", x=0, y=0, width=10, height=10, annotation_id="pred_1", confidence=0.9)
+prediction_2 = BoxPrediction(reference_id="2", label="label", x=0, y=0, width=10, height=10, annotation_id="pred_2", confidence=0.2)
 
 model_run = model.create_run(name="My Model Run", metadata={"timestamp": "121012401"}, dataset=dataset, predictions=[prediction_1, prediction_2])
 ```

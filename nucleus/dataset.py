@@ -10,10 +10,10 @@ from .constants import (
     REFERENCE_IDS_KEY,
     NAME_KEY,
     ITEM_KEY,
+    DEFAULT_ANNOTATION_UPDATE_MODE,
     ANNOTATIONS_KEY,
 )
 from .payload_constructor import construct_model_run_creation_payload
-
 
 class Dataset:
     """
@@ -88,6 +88,7 @@ class Dataset:
     def annotate(
         self,
         annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 20,
     ) -> dict:
         """
@@ -103,7 +104,7 @@ class Dataset:
         }
         """
         return self._client.annotate_dataset(
-            self.id, annotations, batch_size=batch_size
+            self.id, annotations, update=update, batch_size=batch_size
         )
 
     def ingest_tasks(self, task_ids: dict):
@@ -165,7 +166,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Box2DAnnotation],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
