@@ -17,7 +17,6 @@ from nucleus.constants import (
     DATASET_ID_KEY,
 )
 from helpers import (
-    dataset,
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,

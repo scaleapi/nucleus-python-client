@@ -1,5 +1,4 @@
 from pathlib import Path
-import pytest
 from nucleus import DatasetItem, BoxPrediction
 
 TEST_MODEL_NAME = '[PyTest] Test Model'
@@ -26,14 +25,6 @@ TEST_PREDS = [
     BoxPrediction('car', 0, 0, 100, 100, '3'),
     BoxPrediction('car', 0, 0, 100, 100, '4')
 ]
-
-@pytest.fixture()
-def dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
-    ds.append(TEST_DATASET_ITEMS)
-    yield ds
-
-    CLIENT.delete_dataset(ds.id)
 
 def reference_id_from_url(url):
     return Path(url).name
