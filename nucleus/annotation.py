@@ -16,6 +16,51 @@ from .constants import (
     VERTICES_KEY,
 )
 
+class Segment:
+    def __init__(self, label: str, index: int, metadata: Optional[dict] = None):
+        self.label = label
+        self.index = index
+        self.metadata = metadata
+
+    def __str__(self):
+        return self.to_payload()
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(payload.get(LABEL_KEY), payload.get(INDEX_KEY), payload.get(METADATA_KEY, None))
+
+    def to_payload(self) -> dict:
+        payload = {
+            LABEL_KEY: self.label,
+            INDEX_KEY: self.index,
+        }
+        if self.metadata is not None:
+            payload[METADATA_KEY] = self.metadata
+        return payload
+
+class SegmentationAnnotation:
+    def __init__(self, mask_url: str, annotations: List[Segment], reference_id: Optional[str] = None, item_id: Optional[str] = None):
+        if bool(reference_id) == bool(item_id):
+            raise Exception(
+                "You must specify either a reference_id or an item_id for an annotation."
+            )
+        self.mask_url = mask_url
+        self.annotations = annotations
+        self.reference_id = reference_id
+        self.item_id = item_id
+
+
+    def __str__(self):
+
+    @classmethod
+    def from_json(cls, payload: dict):
+
+    def to_payload(self) -> dict:
+        payload = {
+            MASK_URL_KEY: self.mask_url,
+            ANNOTATIONS_KEY: [ann.to_payload for ann in self.annotations],
+        }
+
 
 class AnnotationTypes(Enum):
     BOX = BOX_TYPE
