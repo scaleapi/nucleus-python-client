@@ -17,7 +17,6 @@ TEST_METADATA = {
 }
 TEST_MODEL_RUN_NAME = '[PyTest] Test ModelRun 3'
 TEST_DATASET_NAME = '[PyTest] Test Dataset'
-TEST_SLICE_NAME = '[PyTest] Test Slice'
 TEST_IMG_URLS = [
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
