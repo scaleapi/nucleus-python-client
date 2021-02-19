@@ -1,4 +1,6 @@
 from pathlib import Path
+import pytest
+from nucleus import DatasetItem, BoxPrediction
 
 TEST_MODEL_NAME = '[PyTest] Test Model'
 TEST_MODEL_REFERENCE = '[PyTest] Test Model Reference'
@@ -12,6 +14,26 @@ TEST_IMG_URLS = [
     's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/06924f46-1708b96f.jpg',
     's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg',
 ]
+TEST_DATASET_ITEMS = [
+    DatasetItem(TEST_IMG_URLS[0], '1'),
+    DatasetItem(TEST_IMG_URLS[1], '2'),
+    DatasetItem(TEST_IMG_URLS[2], '3'),
+    DatasetItem(TEST_IMG_URLS[3], '4')
+]
+TEST_PREDS = [
+    BoxPrediction('car', 0, 0, 100, 100, '1'),
+    BoxPrediction('car', 0, 0, 100, 100, '2'),
+    BoxPrediction('car', 0, 0, 100, 100, '3'),
+    BoxPrediction('car', 0, 0, 100, 100, '4')
+]
+
+@pytest.fixture()
+def dataset(CLIENT):
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+    ds.append(TEST_DATASET_ITEMS)
+    yield ds
+
+    CLIENT.delete_dataset(ds.id)
 
 def reference_id_from_url(url):
     return Path(url).name
