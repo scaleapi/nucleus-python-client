@@ -58,7 +58,7 @@ import os
 from typing import List, Union, Dict, Callable, Any, Optional
 
 import tqdm
-import tqdm.notebook
+import tqdm.notebook as tqdm_notebook
 
 import grequests
 import requests
@@ -76,7 +76,7 @@ from .slice import Slice
 from .upload_response import UploadResponse
 from .payload_constructor import (
     construct_append_payload,
-    construct_box_annotation_payload,
+    construct_annotation_payload,
     construct_model_creation_payload,
     construct_box_predictions_payload,
 )
@@ -94,7 +94,9 @@ from .constants import (
     DATASET_ITEM_ID_KEY,
     SLICE_ID_KEY,
     ANNOTATIONS_PROCESSED_KEY,
+    ANNOTATIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
+    PREDICTIONS_IGNORED_KEY,
     STATUS_CODE_KEY,
     SUCCESS_STATUS_CODES,
     DATASET_NAME_KEY,
@@ -129,7 +131,7 @@ class NucleusClient:
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
         if use_notebook:
-            self.tqdm_bar = tqdm.notebook.tqdm
+            self.tqdm_bar = tqdm_notebook.tqdm
 
     def list_models(self) -> List[Model]:
         """
@@ -463,13 +465,15 @@ class NucleusClient:
     def annotate_dataset(
         self,
         dataset_id: str,
-        annotations: List[DatasetItem],
+        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        update: bool,
         batch_size: int = 100,
     ):
         """
         Uploads ground truth annotations for a given dataset.
         :param dataset_id: id of the dataset
-        :param annotations: List[DatasetItem]
+        :param annotations: List[Union[BoxAnnotation, PolygonAnnotation]]
+        :param update: whether to update or ignore conflicting annotations
         :return: {"dataset_id: str, "annotations_processed": int}
         """
 
@@ -481,12 +485,13 @@ class NucleusClient:
         agg_response = {
             DATASET_ID_KEY: dataset_id,
             ANNOTATIONS_PROCESSED_KEY: 0,
+            ANNOTATIONS_IGNORED_KEY: 0,
         }
 
         tqdm_batches = self.tqdm_bar(batches)
 
         for batch in tqdm_batches:
-            payload = construct_box_annotation_payload(batch)
+            payload = construct_annotation_payload(batch, update)
             response = self._make_request(
                 payload, f"dataset/{dataset_id}/annotate"
             )
@@ -495,6 +500,9 @@ class NucleusClient:
             else:
                 agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
                     ANNOTATIONS_PROCESSED_KEY
+                ]
+                agg_response[ANNOTATIONS_IGNORED_KEY] += response[
+                    ANNOTATIONS_IGNORED_KEY
                 ]
 
         return agg_response
@@ -571,39 +579,40 @@ class NucleusClient:
     def predict(
         self,
         model_run_id: str,
-        payload: Dict[str, List[Union[BoxPrediction, PolygonPrediction]]],
+        annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        update: bool,
         batch_size: int = 100,
     ):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param payload:
-        {
-            "annotations": List[Box2DPrediction],
-        }
+        :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        :param update: bool
         :return:
         {
             "dataset_id": str,
             "model_run_id": str,
-            "annotations_processed: int,
+            "predictions_processed": int,
+            "predictions_ignored": int,
         }
         """
-        predictions: List[Union[BoxPrediction, PolygonPrediction]] = payload[
-            ANNOTATIONS_KEY
-        ]
         batches = [
-            predictions[i : i + batch_size]
-            for i in range(0, len(predictions), batch_size)
+            annotations[i : i + batch_size]
+            for i in range(0, len(annotations), batch_size)
         ]
 
         agg_response = {
             MODEL_RUN_ID_KEY: model_run_id,
             PREDICTIONS_PROCESSED_KEY: 0,
+            PREDICTIONS_IGNORED_KEY: 0,
         }
 
         tqdm_batches = self.tqdm_bar(batches)
 
         for batch in tqdm_batches:
-            batch_payload = {ANNOTATIONS_KEY: batch}
+            batch_payload = construct_box_predictions_payload(
+                annotations,
+                update,
+            )
             response = self._make_request(
                 batch_payload, f"modelRun/{model_run_id}/predict"
             )
@@ -612,6 +621,9 @@ class NucleusClient:
             else:
                 agg_response[PREDICTIONS_PROCESSED_KEY] += response[
                     PREDICTIONS_PROCESSED_KEY
+                ]
+                agg_response[PREDICTIONS_IGNORED_KEY] += response[
+                    PREDICTIONS_IGNORED_KEY
                 ]
 
         return agg_response
@@ -700,7 +712,7 @@ class NucleusClient:
         :param reference_id: reference_id of a dataset item.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[BoxPrediction],
         }
         """
         return self._make_request(
@@ -725,7 +737,7 @@ class NucleusClient:
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[BoxPrediction],
         }
         """
         return self._make_request(
@@ -754,7 +766,7 @@ class NucleusClient:
         :param dataset_item_id: dataset_item_id of a dataset item.
         :return:
         {
-            "annotations": List[Box2DPrediction],
+            "annotations": List[BoxPrediction],
         }
         """
         return self._make_request(
