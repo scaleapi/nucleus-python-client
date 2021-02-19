@@ -1,5 +1,12 @@
-from pathlib import Path
 import pytest
+
+from helpers import (
+    TEST_SLICE_NAME,
+    TEST_DATASET_NAME,
+    TEST_IMG_URLS,
+    reference_id_from_url,
+)
+
 from nucleus import Dataset, DatasetItem, UploadResponse
 from nucleus.constants import (
     NEW_ITEMS,
@@ -10,22 +17,13 @@ from nucleus.constants import (
     DATASET_ID_KEY,
 )
 
-TEST_DATASET_NAME = '[PyTest] Test Dataset'
-TEST_SLICE_NAME = '[PyTest] Test Slice'
-TEST_IMG_URLS = [
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/7f2e1814-6591087d.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/06924f46-1708b96f.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg",
-]
-
 @pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     yield ds
 
-    CLIENT.delete_dataset(ds.id)
+    response = CLIENT.delete_dataset(ds.id)
+    assert response == {}
 
 def test_dataset_create_and_delete(CLIENT):
     # Creation
@@ -66,7 +64,7 @@ def test_dataset_append(dataset):
         ds_items_with_metadata.append(
             DatasetItem(
                 image_location=url,
-                reference_id=Path(url).name,
+                reference_id=reference_id_from_url(url),
                 metadata={
                     "made_with_pytest": True,
                     "example_int": i,
@@ -96,7 +94,7 @@ def test_slice_create_and_delete(dataset):
     for url in TEST_IMG_URLS:
         ds_items.append(DatasetItem(
             image_location=url,
-            reference_id=Path(url).name,
+            reference_id=reference_id_from_url(url),
         ))
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
@@ -117,7 +115,6 @@ def test_slice_create_and_delete(dataset):
     assert len(response["reference_ids"]) == 2
     for item in ds_items[:2]:
         assert item.reference_id in response["reference_ids"]
-    print(response)
 
 
 def test_slice_append(dataset):
@@ -126,7 +123,7 @@ def test_slice_append(dataset):
     for url in TEST_IMG_URLS:
         ds_items.append(DatasetItem(
             image_location=url,
-            reference_id=Path(url).name,
+            reference_id=reference_id_from_url(url),
         ))
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()

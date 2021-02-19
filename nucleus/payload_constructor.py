@@ -3,6 +3,7 @@ from .dataset_item import DatasetItem
 from .annotation import BoxAnnotation, PolygonAnnotation
 from .prediction import BoxPrediction, PolygonPrediction
 from .constants import (
+    ANNOTATION_UPDATE_KEY,
     NAME_KEY,
     METADATA_KEY,
     REFERENCE_ID_KEY,
@@ -27,24 +28,26 @@ def construct_append_payload(
     )
 
 
-def construct_box_annotation_payload(
-    box_annotations: List[BoxAnnotation],
+def construct_annotation_payload(
+    annotation_items: List[Union[BoxAnnotation, PolygonAnnotation]],
+    update: bool,
 ) -> dict:
     annotations = []
-    for annotation in box_annotations:
-        annotations.append(annotation.to_payload())
+    for annotation_item in annotation_items:
+        annotations.append(annotation_item.to_payload())
 
-    return {ANNOTATIONS_KEY: annotations}
+    return {ANNOTATIONS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
 
 
 def construct_box_predictions_payload(
     box_predictions: List[Union[BoxPrediction, PolygonPrediction]],
+    update: bool,
 ) -> dict:
     predictions = []
     for prediction in box_predictions:
         predictions.append(prediction.to_payload())
 
-    return {ANNOTATIONS_KEY: predictions}
+    return {ANNOTATIONS_KEY: predictions, ANNOTATION_UPDATE_KEY: update}
 
 
 def construct_model_creation_payload(
