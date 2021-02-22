@@ -36,8 +36,8 @@ class Segment:
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
-            label=payload.get(LABEL_KEY),
-            index=payload.get(INDEX_KEY),
+            label=payload.get(LABEL_KEY, ""),
+            index=payload.get(INDEX_KEY, None),
             metadata=payload.get(METADATA_KEY, None),
         )
 
@@ -75,7 +75,10 @@ class SegmentationAnnotation:
     def from_json(cls, payload: dict):
         return cls(
             mask_url=payload[MASK_URL_KEY],
-            annotations=[Segment.from_json(ann) for ann in payload.get(ANNOTATIONS_KEY, [])],
+            annotations=[
+                Segment.from_json(ann)
+                for ann in payload.get(ANNOTATIONS_KEY, [])
+            ],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(ITEM_ID_KEY, None),
         )
