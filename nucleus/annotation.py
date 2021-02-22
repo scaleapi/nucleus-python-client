@@ -75,7 +75,7 @@ class SegmentationAnnotation:
     def from_json(cls, payload: dict):
         return cls(
             mask_url=payload[MASK_URL_KEY],
-            annotations=payload[ANNOTATIONS_KEY],
+            annotations=[Segment.from_json(ann) for ann in payload.get(ANNOTATIONS_KEY, [])],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(ITEM_ID_KEY, None),
         )
@@ -83,7 +83,7 @@ class SegmentationAnnotation:
     def to_payload(self) -> dict:
         payload = {
             MASK_URL_KEY: self.mask_url,
-            ANNOTATIONS_KEY: [ann.to_payload for ann in self.annotations],
+            ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
         }
         if self.reference_id:
             payload[REFERENCE_ID_KEY] = self.reference_id

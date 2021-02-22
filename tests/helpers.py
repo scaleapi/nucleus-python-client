@@ -1,4 +1,8 @@
 from pathlib import Path
+from urllib.parse import urlparse
+import boto3
+
+PRESIGN_EXPIRY_SECONDS = 60*60*24*2 #2 days
 
 TEST_MODEL_NAME = '[PyTest] Test Model'
 TEST_MODEL_REFERENCE = '[PyTest] Test Model Reference'
@@ -13,6 +17,27 @@ TEST_IMG_URLS = [
     's3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg',
 ]
 
+def get_signed_url(url):
+    bucket, key = get_s3_details(url)
+    return s3_sign(bucket, key)
+
+def get_s3_details(url):
+    # Expects S3 URL format to be https://<BUCKET>.s3.amazonaws.com/<KEY>
+    parsed = urlparse(url)
+    bucket = parsed.netloc[:parsed.netloc.find(".")]
+    return bucket, parsed.path[1:]
+
+def s3_sign(bucket, key):
+    s3 = boto3.client("s3")
+    return s3.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": key,
+        },
+        ExpiresIn=PRESIGN_EXPIRY_SECONDS,
+    )
+    
 def reference_id_from_url(url):
     return Path(url).name
 
@@ -41,6 +66,18 @@ TEST_POLYGON_ANNOTATIONS = [
         ],
         'reference_id': reference_id_from_url(TEST_IMG_URLS[i]),
         'annotation_id': f'[Pytest] Polygon Annotation Annotation Id{i}',
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_MASK_URL = "https://scale-temp.s3.amazonaws.com/scale-select/nucleus/mscoco_semseg_masks_uint8/000000000285.png"
+TEST_SEGMENTATION_ANNOTATIONS = [
+    {
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "mask_url": get_signed_url(TEST_MASK_URL),
+        "annotations": [
+            {"label": "bear", "index": 2}, {"label": "grass-merged", "index": 1}
+        ]
     }
     for i in range(len(TEST_IMG_URLS))
 ]

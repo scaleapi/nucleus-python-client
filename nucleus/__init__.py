@@ -69,7 +69,7 @@ from requests.packages.urllib3.util.retry import Retry
 
 from .dataset import Dataset
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation, PolygonAnnotation
+from .annotation import BoxAnnotation, PolygonAnnotation, SegmentationAnnotation
 from .prediction import BoxPrediction, PolygonPrediction
 from .model_run import ModelRun
 from .slice import Slice
@@ -464,7 +464,7 @@ class NucleusClient:
     def annotate_dataset(
         self,
         dataset_id: str,
-        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        annotations: List[Union[BoxAnnotation, PolygonAnnotation, SegmentationAnnotation]],
         update: bool,
         batch_size: int = 100,
     ):
@@ -476,9 +476,18 @@ class NucleusClient:
         :return: {"dataset_id: str, "annotations_processed": int}
         """
 
+        # Split payload into segmentations and Box/Polygon
+        segmentations = [ann for ann in annotations if isinstance(ann, SegmentationAnnotation)]
+        other_annotations = [ann for ann in annotations if not isinstance(ann, SegmentationAnnotation)]
+
         batches = [
-            annotations[i : i + batch_size]
-            for i in range(0, len(annotations), batch_size)
+            other_annotations[i : i + batch_size]
+            for i in range(0, len(other_annotations), batch_size)
+        ]
+
+        semseg_batches = [
+            segmentations[i : i + batch_size]
+            for i in range(0, len(segmentations), batch_size)
         ]
 
         agg_response = {
@@ -493,6 +502,23 @@ class NucleusClient:
             payload = construct_annotation_payload(batch, update)
             response = self._make_request(
                 payload, f"dataset/{dataset_id}/annotate"
+            )
+            if STATUS_CODE_KEY in response:
+                agg_response[ERRORS_KEY] = response
+            else:
+                agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
+                    ANNOTATIONS_PROCESSED_KEY
+                ]
+                agg_response[ANNOTATIONS_IGNORED_KEY] += response[
+                    ANNOTATIONS_IGNORED_KEY
+                ]
+
+        for s_batch in semseg_batches:
+            payload = {"segmentations": [seg.to_payload() for seg in s_batch]}
+            if update:
+                payload["force"] = update
+            response = self._make_request(
+                payload, f"dataset/{dataset_id}/annotate_segmentation"
             )
             if STATUS_CODE_KEY in response:
                 agg_response[ERRORS_KEY] = response

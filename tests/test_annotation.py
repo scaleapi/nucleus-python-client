@@ -5,12 +5,13 @@ from helpers import (
     TEST_IMG_URLS,
     TEST_BOX_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
+    TEST_SEGMENTATION_ANNOTATIONS,
     reference_id_from_url,
     assert_box_annotation_matches_dict,
     assert_polygon_annotation_matches_dict,
 )
 
-from nucleus import BoxAnnotation, PolygonAnnotation, DatasetItem
+from nucleus import BoxAnnotation, PolygonAnnotation, SegmentationAnnotation, DatasetItem
 from nucleus.constants import ERROR_PAYLOAD
 
 @pytest.fixture()
@@ -58,6 +59,59 @@ def test_polygon_gt_upload(dataset):
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(response_annotation, TEST_POLYGON_ANNOTATIONS[0])
 
+def test_single_semseg_gt_upload(dataset):
+    annotation = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 1
+    assert response['annotations_ignored'] == 0
+    # assert_box_annotation_matches_dict(response_annotation, TEST_BOX_ANNOTATIONS[0])
+
+def test_batch_semseg_gt_upload(dataset):
+    annotations = [SegmentationAnnotation.from_json(ann) for ann in TEST_SEGMENTATION_ANNOTATIONS]
+    response = dataset.annotate(annotations=annotations)
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 5
+    assert response['annotations_ignored'] == 0
+
+def test_batch_semseg_gt_upload_ignore(dataset):
+    # First upload annotations
+    annotations = [SegmentationAnnotation.from_json(ann) for ann in TEST_SEGMENTATION_ANNOTATIONS]
+    response = dataset.annotate(annotations=annotations)
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 5
+    assert response['annotations_ignored'] == 0
+
+    #When we re-upload, expect them to be ignored
+    response = dataset.annotate(annotations=annotations)
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 0
+    assert response['annotations_ignored'] == 5
+
+def test_batch_semseg_gt_upload_update(dataset):
+    # First upload annotations
+    annotations = [SegmentationAnnotation.from_json(ann) for ann in TEST_SEGMENTATION_ANNOTATIONS]
+    response = dataset.annotate(annotations=annotations)
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 5
+    assert response['annotations_ignored'] == 0
+
+    #When we re-upload, expect them to be ignored
+    response = dataset.annotate(annotations=annotations, update=True)
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 5
+    assert response['annotations_ignored'] == 0
+
+
+def test_mixed_annotation_upload(dataset):
+    # First upload annotations
+    semseg_annotations = [SegmentationAnnotation.from_json(ann) for ann in TEST_SEGMENTATION_ANNOTATIONS]
+    bbox_annotations = [BoxAnnotation(**(ann)) for ann in TEST_BOX_ANNOTATIONS]
+    annotations = bbox_annotations + semseg_annotations
+    response = dataset.annotate(annotations=annotations)
+    assert response['dataset_id'] == dataset.id
+    assert response['annotations_processed'] == 10
+    assert response['annotations_ignored'] == 0
 
 def test_box_gt_upload_update(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
