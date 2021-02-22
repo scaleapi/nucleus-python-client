@@ -16,7 +16,7 @@ from nucleus.constants import (
     ERROR_PAYLOAD,
     DATASET_ID_KEY,
 )
-from helpers import (
+from .helpers import (
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,
@@ -24,21 +24,25 @@ from helpers import (
 )
 
 def test_model_creation_and_listing(CLIENT, dataset):
+    models_before = CLIENT.list_models()
+
     # Creation
-    m = CLIENT.add_model(TEST_MODEL_NAME, TEST_MODEL_REFERENCE)
-    m_run =  m.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
+    model = CLIENT.add_model(TEST_MODEL_NAME, TEST_MODEL_REFERENCE)
+    m_run =  model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
     m_run.commit()
 
-    assert isinstance(m, Model)
+    assert isinstance(model, Model)
     assert isinstance(m_run, ModelRun)
 
     # List the models
     ms = CLIENT.list_models()
 
-    assert m in ms
+    assert model in ms
+    assert list(set(ms) - set(models_before))[0] == model
 
     # Delete the model
-    CLIENT.delete_model(m.id)
+    CLIENT.delete_model(model.id)
     ms = CLIENT.list_models()
 
-    assert m not in ms
+    assert model not in ms
+    assert ms == models_before

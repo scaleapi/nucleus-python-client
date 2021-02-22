@@ -1,9 +1,9 @@
 from pathlib import Path
 from nucleus import DatasetItem, BoxPrediction
 
-TEST_MODEL_NAME = '[PyTest] Test Model'
+TEST_MODEL_NAME = '[PyTest] Test Model Name'
 TEST_MODEL_REFERENCE = '[PyTest] Test Model Reference'
-TEST_MODEL_RUN = '[PyTest] Test Model Run'
+TEST_MODEL_RUN = '[PyTest] Test Model Run Reference'
 TEST_DATASET_NAME = '[PyTest] Test Dataset'
 TEST_SLICE_NAME = '[PyTest] Test Slice'
 TEST_IMG_URLS = [
@@ -20,10 +20,10 @@ TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[3], '4')
 ]
 TEST_PREDS = [
-    BoxPrediction('car', 0, 0, 100, 100, '1'),
-    BoxPrediction('car', 0, 0, 100, 100, '2'),
-    BoxPrediction('car', 0, 0, 100, 100, '3'),
-    BoxPrediction('car', 0, 0, 100, 100, '4')
+    BoxPrediction('[Pytest Box Prediction 1]', 0, 0, 100, 100, '1'),
+    BoxPrediction('[Pytest Box Prediction 2]', 0, 0, 100, 100, '2'),
+    BoxPrediction('[Pytest Box Prediction 3]', 0, 0, 100, 100, '3'),
+    BoxPrediction('[Pytest Box Prediction 4]', 0, 0, 100, 100, '4')
 ]
 
 def reference_id_from_url(url):

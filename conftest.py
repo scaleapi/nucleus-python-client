@@ -17,6 +17,7 @@ import pytest
 import nucleus
 from nucleus.constants import SUCCESS_STATUS_CODES
 
+from tests.helpers import TEST_DATASET_NAME, TEST_DATASET_ITEMS
 
 assert 'NUCLEUS_PYTEST_API_KEY' in os.environ, \
     "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid " \
@@ -56,7 +57,7 @@ def CLIENT(monkeypatch_session):
     monkeypatch_session.setattr(client, "_make_request", _make_request_patch)
     return client
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     ds.append(TEST_DATASET_ITEMS)
