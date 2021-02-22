@@ -46,3 +46,4 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     assert model not in ms
     assert ms == models_before
+    
