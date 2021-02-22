@@ -57,7 +57,7 @@ def CLIENT(monkeypatch_session):
     monkeypatch_session.setattr(client, "_make_request", _make_request_patch)
     return client
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     ds.append(TEST_DATASET_ITEMS)
