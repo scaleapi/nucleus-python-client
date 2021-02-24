@@ -52,7 +52,7 @@ def construct_segmentation_payload(
     for annotation_item in annotation_items:
         annotations.append(annotation_item.to_payload())
 
-    return {SEGMENTATIONS_KEY: annotations, "force": update}
+    return {SEGMENTATIONS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
 
 
 def construct_box_predictions_payload(

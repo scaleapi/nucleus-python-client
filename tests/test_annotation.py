@@ -123,7 +123,7 @@ def test_batch_semseg_gt_upload_update(dataset):
     assert response["annotations_processed"] == 5
     assert response["annotations_ignored"] == 0
 
-    # When we re-upload, expect them to be ignored
+    # When we re-upload, expect uploads to be processed
     response = dataset.annotate(annotations=annotations, update=True)
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 5
