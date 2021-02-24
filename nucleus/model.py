@@ -28,7 +28,9 @@ class Model:
         self,
         name: str,
         dataset: Dataset,
-        predictions: List[Union[BoxPrediction, PolygonPrediction]],
+        predictions: List[
+            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+        ],
         metadata: Optional[Dict] = None,
     ) -> ModelRun:
         payload: dict = {
