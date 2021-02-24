@@ -74,7 +74,11 @@ from .annotation import (
     PolygonAnnotation,
     SegmentationAnnotation,
 )
-from .prediction import BoxPrediction, PolygonPrediction
+from .prediction import (
+    BoxPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
 from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
@@ -622,7 +626,9 @@ class NucleusClient:
     def predict(
         self,
         model_run_id: str,
-        annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        annotations: List[
+            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+        ],
         update: bool,
         batch_size: int = 100,
     ):
@@ -638,9 +644,26 @@ class NucleusClient:
             "predictions_ignored": int,
         }
         """
+        segmentations = [
+            ann
+            for ann in annotations
+            if isinstance(ann, SegmentationPrediction)
+        ]
+
+        other_predictions = [
+            ann
+            for ann in annotations
+            if not isinstance(ann, SegmentationPrediction)
+        ]
+
+        s_batches = [
+            segmentations[i : i + batch_size]
+            for i in range(0, len(segmentations), batch_size)
+        ]
+
         batches = [
-            annotations[i : i + batch_size]
-            for i in range(0, len(annotations), batch_size)
+            other_predictions[i : i + batch_size]
+            for i in range(0, len(other_predictions), batch_size)
         ]
 
         agg_response = {
@@ -669,8 +692,23 @@ class NucleusClient:
                     PREDICTIONS_IGNORED_KEY
                 ]
 
+        for s_batch in s_batches:
+            payload = construct_segmentation_payload(s_batch, update)
+            response = self._make_request(
+                payload, f"modelRun/{model_run_id}/predict_segmentation"
+            )
+            # pbar.update(1)
+            if STATUS_CODE_KEY in response:
+                agg_response[ERRORS_KEY] = response
+            else:
+                agg_response[PREDICTIONS_PROCESSED_KEY] += response[
+                    PREDICTIONS_PROCESSED_KEY
+                ]
+                agg_response[PREDICTIONS_IGNORED_KEY] += response[
+                    PREDICTIONS_IGNORED_KEY
+                ]
+
         return agg_response
-        # return self._make_request(payload, f"modelRun/{model_run_id}/predict")
 
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
