@@ -73,6 +73,7 @@ from .annotation import (
     BoxAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
+    Segment,
 )
 from .prediction import (
     BoxPrediction,
