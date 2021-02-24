@@ -1,6 +1,7 @@
 from pathlib import Path
 from urllib.parse import urlparse
 import boto3
+from nucleus import DatasetItem, BoxPrediction
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 
@@ -9,12 +10,30 @@ TEST_MODEL_REFERENCE = "[PyTest] Test Model Reference"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
+
+TEST_MODEL_NAME = '[PyTest] Test Model Name'
+TEST_MODEL_REFERENCE = '[PyTest] Test Model Reference'
+TEST_MODEL_RUN = '[PyTest] Test Model Run Reference'
+TEST_DATASET_NAME = '[PyTest] Test Dataset'
+TEST_SLICE_NAME = '[PyTest] Test Slice'
 TEST_IMG_URLS = [
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/7f2e1814-6591087d.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/06924f46-1708b96f.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg",
+]
+TEST_DATASET_ITEMS = [
+    DatasetItem(TEST_IMG_URLS[0], '1'),
+    DatasetItem(TEST_IMG_URLS[1], '2'),
+    DatasetItem(TEST_IMG_URLS[2], '3'),
+    DatasetItem(TEST_IMG_URLS[3], '4')
+]
+TEST_PREDS = [
+    BoxPrediction('[Pytest Box Prediction 1]', 0, 0, 100, 100, '1'),
+    BoxPrediction('[Pytest Box Prediction 2]', 0, 0, 100, 100, '2'),
+    BoxPrediction('[Pytest Box Prediction 3]', 0, 0, 100, 100, '3'),
+    BoxPrediction('[Pytest Box Prediction 4]', 0, 0, 100, 100, '4')
 ]
 
 
