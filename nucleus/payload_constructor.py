@@ -1,7 +1,15 @@
 from typing import List, Optional, Dict, Union
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation, PolygonAnnotation
-from .prediction import BoxPrediction, PolygonPrediction
+from .annotation import (
+    BoxAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+)
+from .prediction import (
+    BoxPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
 from .constants import (
     ANNOTATION_UPDATE_KEY,
     NAME_KEY,
@@ -11,6 +19,7 @@ from .constants import (
     ITEMS_KEY,
     FORCE_KEY,
     MODEL_ID_KEY,
+    SEGMENTATIONS_KEY,
 )
 
 
@@ -37,6 +46,19 @@ def construct_annotation_payload(
         annotations.append(annotation_item.to_payload())
 
     return {ANNOTATIONS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
+
+
+def construct_segmentation_payload(
+    annotation_items: List[
+        Union[SegmentationAnnotation, SegmentationPrediction]
+    ],
+    update: bool,
+) -> dict:
+    annotations = []
+    for annotation_item in annotation_items:
+        annotations.append(annotation_item.to_payload())
+
+    return {SEGMENTATIONS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
 
 
 def construct_box_predictions_payload(
