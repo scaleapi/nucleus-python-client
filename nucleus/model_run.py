@@ -1,6 +1,10 @@
 from typing import Optional, List, Dict, Any, Union
 from .constants import ANNOTATIONS_KEY, DEFAULT_ANNOTATION_UPDATE_MODE
-from .prediction import BoxPrediction, PolygonPrediction
+from .prediction import (
+    BoxPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
 from .payload_constructor import construct_box_predictions_payload
 
 
@@ -62,7 +66,9 @@ class ModelRun:
 
     def predict(
         self,
-        annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        annotations: List[
+            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+        ],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
     ) -> dict:
         """

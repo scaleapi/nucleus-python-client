@@ -5,7 +5,11 @@ from .annotation import (
     PolygonAnnotation,
     SegmentationAnnotation,
 )
-from .prediction import BoxPrediction, PolygonPrediction
+from .prediction import (
+    BoxPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
 from .constants import (
     ANNOTATION_UPDATE_KEY,
     NAME_KEY,
@@ -45,7 +49,9 @@ def construct_annotation_payload(
 
 
 def construct_segmentation_payload(
-    annotation_items: List[SegmentationAnnotation],
+    annotation_items: List[
+        Union[SegmentationAnnotation, SegmentationPrediction]
+    ],
     update: bool,
 ) -> dict:
     annotations = []

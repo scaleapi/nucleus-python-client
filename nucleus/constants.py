@@ -1,4 +1,5 @@
-NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+# NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
+NUCLEUS_ENDPOINT = "http://localhost:3000/v1/nucleus"
 ITEMS_KEY = "items"
 ITEM_KEY = "item"
 REFERENCE_ID_KEY = "reference_id"
