@@ -127,7 +127,6 @@ class ModelRun:
         self, response: dict
     ) -> Union[dict, List[Union[BoxPrediction, PolygonPrediction]]]:
         annotations = response.get(ANNOTATIONS_KEY, None)
-        print(annotations)
         if annotations:
             annotation_response = {}
             if BOX_TYPE in annotations:

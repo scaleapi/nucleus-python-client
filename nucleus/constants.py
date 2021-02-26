@@ -48,6 +48,7 @@ VERTICES_KEY = "vertices"
 BOX_TYPE = "box"
 POLYGON_TYPE = "polygon"
 SEGMENTATION_TYPE = "segmentation"
+ANNOTATION_TYPES = (BOX_TYPE, POLYGON_TYPE, SEGMENTATION_TYPE)
 GEOMETRY_KEY = "geometry"
 AUTOTAGS_KEY = "autotags"
 MASK_URL_KEY = "mask_url"

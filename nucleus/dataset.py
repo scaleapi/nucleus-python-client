@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional, Union
 from .dataset_item import DatasetItem
 from .annotation import (
+    Annotation,
     BoxAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
@@ -19,6 +20,7 @@ from .constants import (
     BOX_TYPE,
     POLYGON_TYPE,
     SEGMENTATION_TYPE,
+    ANNOTATION_TYPES,
 )
 from .payload_constructor import construct_model_run_creation_payload
 
@@ -178,7 +180,6 @@ class Dataset:
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
-        print("RESPONSE" + str(response))
         return self._format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
@@ -242,22 +243,12 @@ class Dataset:
             return response
 
         annotation_response = {}
-        if BOX_TYPE in annotation_payload:
-            annotation_response[BOX_TYPE] = [
-                BoxAnnotation.from_json(ann)
-                for ann in annotation_payload[BOX_TYPE]
-            ]
-        if POLYGON_TYPE in annotation_payload:
-            annotation_response[POLYGON_TYPE] = [
-                PolygonAnnotation.from_json(ann)
-                for ann in annotation_payload[POLYGON_TYPE]
-            ]
-        if SEGMENTATION_TYPE in annotation_payload:
-            annotation_response[
-                SEGMENTATION_TYPE
-            ] = SegmentationAnnotation.from_json(
-                annotation_payload[SEGMENTATION_TYPE]
-            )
+        for annotation_type in ANNOTATION_TYPES:
+            if annotation_type in annotation_payload:
+                annotation_response[annotation_type] = [
+                    Annotation.from_json(ann)
+                    for ann in annotation_payload[annotation_type]
+                ]
         return {
             ITEM_KEY: DatasetItem.from_json(item),
             ANNOTATIONS_KEY: annotation_response,
