@@ -1,6 +1,10 @@
 from typing import List, Dict, Any, Optional, Union
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation, PolygonAnnotation
+from .annotation import (
+    BoxAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+)
 from .constants import (
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
@@ -12,8 +16,12 @@ from .constants import (
     ITEM_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     ANNOTATIONS_KEY,
+    BOX_TYPE,
+    POLYGON_TYPE,
+    SEGMENTATION_TYPE,
 )
 from .payload_constructor import construct_model_run_creation_payload
+
 
 class Dataset:
     """
@@ -170,6 +178,7 @@ class Dataset:
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
+        print("RESPONSE" + str(response))
         return self._format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
@@ -227,17 +236,34 @@ class Dataset:
 
     def _format_dataset_item_response(self, response: dict) -> dict:
         item = response.get(ITEM_KEY, None)
-        annotation_payload = response.get(ANNOTATIONS_KEY, [])
+        annotation_payload = response.get(ANNOTATIONS_KEY, {})
         if not item or not annotation_payload:
             # An error occured
             return response
-        annotations = [
-            BoxAnnotation.from_json(ann)
-            if ann["type"] == "box"
-            else PolygonAnnotation.from_json(ann)
-            for ann in annotation_payload
-        ]
+
+        annotation_response = {}
+        if BOX_TYPE in annotation_payload:
+            annotation_response[BOX_TYPE] = [
+                BoxAnnotation.from_json(ann)
+                for ann in annotation_payload[BOX_TYPE]
+            ]
+        if POLYGON_TYPE in annotation_payload:
+            annotation_response[POLYGON_TYPE] = [
+                PolygonAnnotation.from_json(ann)
+                for ann in annotation_payload[POLYGON_TYPE]
+            ]
+        if SEGMENTATION_TYPE in annotation_payload:
+            annotation_response[SEGMENTATION_TYPE] = [
+                SegmentationAnnotation.from_json(ann)
+                for ann in annotation_payload[SEGMENTATION_TYPE]
+            ]
+        # annotations = [
+        #     BoxAnnotation.from_json(ann)
+        #     if ann["type"] == "box"
+        #     else PolygonAnnotation.from_json(ann)
+        #     for ann in annotation_payload
+        # ]
         return {
             ITEM_KEY: DatasetItem.from_json(item),
-            ANNOTATIONS_KEY: annotations,
+            ANNOTATIONS_KEY: annotation_response,
         }
