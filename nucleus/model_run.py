@@ -126,25 +126,13 @@ class ModelRun:
     def _format_prediction_response(
         self, response: dict
     ) -> Union[dict, List[Union[BoxPrediction, PolygonPrediction]]]:
-        annotations = response.get(ANNOTATIONS_KEY, None)
-        if annotations:
+        annotation_payload = response.get(ANNOTATIONS_KEY, None)
+        if annotation_payload:
             annotation_response = {}
-            if BOX_TYPE in annotations:
-                annotation_response[BOX_TYPE] = [
-                    BoxPrediction.from_json(ann)
-                    for ann in annotations[BOX_TYPE]
-                ]
-            if POLYGON_TYPE in annotations:
-                annotation_response[POLYGON_TYPE] = [
-                    PolygonPrediction.from_json(ann)
-                    for ann in annotations[POLYGON_TYPE]
-                ]
-            if SEGMENTATION_TYPE in annotations:
-                annotation_response[
-                    SEGMENTATION_TYPE
-                ] = SegmentationPrediction.from_json(
-                    annotations[SEGMENTATION_TYPE]
-                )
+            for (type_key, type_cls) in zip([BOX_TYPE, POLYGON_TYPE, SEGMENTATION_TYPE],
+            [BoxPrediction, PolygonPrediction, SegmentationPrediction]):
+                if type_key in annotation_payload:
+                    annotation_response[type_key] = [type_cls.from_json(ann) for ann in annotation_payload[type_key]]
             return annotation_response
         else:  # An error occurred
             return response

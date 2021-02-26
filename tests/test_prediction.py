@@ -92,10 +92,10 @@ def test_segmentation_pred_upload(model_run):
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["segmentation"]
-    assert isinstance(response, SegmentationPrediction)
+    assert isinstance(response[0], SegmentationPrediction)
 
     assert_segmentation_annotation_matches_dict(
-        response, TEST_SEGMENTATION_PREDICTIONS[0]
+        response[0], TEST_SEGMENTATION_PREDICTIONS[0]
     )
 
 
@@ -238,3 +238,12 @@ def test_mixed_pred_upload(model_run):
     assert response["predictions_ignored"] == 0
 
     response_refloc = model_run.refloc(prediction_polygon.reference_id)
+    assert_box_prediction_matches_dict(
+        response_refloc["box"][0], TEST_BOX_PREDICTIONS[0]
+    )
+    assert_polygon_prediction_matches_dict(
+        response_refloc["polygon"][0], TEST_POLYGON_PREDICTIONS[0]
+    )
+    assert_segmentation_annotation_matches_dict(
+        response_refloc["segmentation"][0], TEST_SEGMENTATION_PREDICTIONS[0]
+    )

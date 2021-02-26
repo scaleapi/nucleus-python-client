@@ -86,7 +86,7 @@ def test_single_semseg_gt_upload(dataset):
 
     response_annotation = dataset.refloc(annotation.reference_id)[
         "annotations"
-    ]["segmentation"]
+    ]["segmentation"][0]
     assert_segmentation_annotation_matches_dict(
         response_annotation, TEST_SEGMENTATION_ANNOTATIONS[0]
     )

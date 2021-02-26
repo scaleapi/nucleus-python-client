@@ -156,6 +156,10 @@ def assert_segmentation_annotation_matches_dict(
         annotation_dict["annotations"]
     )
 
+    for instance_segment, dict_segment in zip(sorted(annotation_instance.annotations, key = lambda i: i.index), sorted(annotation_dict["annotations"],  key = lambda i: i["index"])):
+        assert instance_segment.index == dict_segment["index"]
+        assert instance_segment.label == dict_segment["label"]
+
 
 # Asserts that a box prediction instance matches a dict representing its properties.
 # Useful to check prediction uploads/updates match.
