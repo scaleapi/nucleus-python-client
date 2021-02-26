@@ -21,8 +21,6 @@ from .constants import (
     ANNOTATIONS_KEY,
 )
 
-ORIGINAL_URL_KEY = "original_url"
-
 
 class Segment:
     def __init__(

@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Union
 from .constants import (
     ANNOTATIONS_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
@@ -11,7 +11,6 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
-from .payload_constructor import construct_box_predictions_payload
 
 
 class ModelRun:
@@ -147,7 +146,6 @@ class ModelRun:
                 ] = SegmentationPrediction.from_json(
                     annotations[SEGMENTATION_TYPE]
                 )
-            print(annotation_response)
             return annotation_response
         else:  # An error occurred
             return response
