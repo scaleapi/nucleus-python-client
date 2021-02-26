@@ -883,6 +883,25 @@ class NucleusClient:
         )
         return response
 
+    def get_autotag(self, autotag_id: str) -> dict:
+        """
+        """
+        response = self._make_request(
+            {},
+            f"autotag/{autotag_id}",
+            requests_command=requests.get,
+        )
+        return Autotag.from_json(response)
+
+    def delete_autotag(self, autotag_id: str) -> dict:
+        """
+        """
+        return self._make_request(
+            {},
+            f"autotag/{autotag_id}",
+            requests_command=requests.delete,
+        )
+
     def _make_grequest(
         self,
         payload: dict,
