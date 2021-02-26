@@ -11,11 +11,11 @@ TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 
-TEST_MODEL_NAME = '[PyTest] Test Model Name'
-TEST_MODEL_REFERENCE = '[PyTest] Test Model Reference'
-TEST_MODEL_RUN = '[PyTest] Test Model Run Reference'
-TEST_DATASET_NAME = '[PyTest] Test Dataset'
-TEST_SLICE_NAME = '[PyTest] Test Slice'
+TEST_MODEL_NAME = "[PyTest] Test Model Name"
+TEST_MODEL_REFERENCE = "[PyTest] Test Model Reference"
+TEST_MODEL_RUN = "[PyTest] Test Model Run Reference"
+TEST_DATASET_NAME = "[PyTest] Test Dataset"
+TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_IMG_URLS = [
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
@@ -24,16 +24,16 @@ TEST_IMG_URLS = [
     "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg",
 ]
 TEST_DATASET_ITEMS = [
-    DatasetItem(TEST_IMG_URLS[0], '1'),
-    DatasetItem(TEST_IMG_URLS[1], '2'),
-    DatasetItem(TEST_IMG_URLS[2], '3'),
-    DatasetItem(TEST_IMG_URLS[3], '4')
+    DatasetItem(TEST_IMG_URLS[0], "1"),
+    DatasetItem(TEST_IMG_URLS[1], "2"),
+    DatasetItem(TEST_IMG_URLS[2], "3"),
+    DatasetItem(TEST_IMG_URLS[3], "4"),
 ]
 TEST_PREDS = [
-    BoxPrediction('[Pytest Box Prediction 1]', 0, 0, 100, 100, '1'),
-    BoxPrediction('[Pytest Box Prediction 2]', 0, 0, 100, 100, '2'),
-    BoxPrediction('[Pytest Box Prediction 3]', 0, 0, 100, 100, '3'),
-    BoxPrediction('[Pytest Box Prediction 4]', 0, 0, 100, 100, '4')
+    BoxPrediction("[Pytest Box Prediction 1]", 0, 0, 100, 100, "1"),
+    BoxPrediction("[Pytest Box Prediction 2]", 0, 0, 100, 100, "2"),
+    BoxPrediction("[Pytest Box Prediction 3]", 0, 0, 100, 100, "3"),
+    BoxPrediction("[Pytest Box Prediction 4]", 0, 0, 100, 100, "4"),
 ]
 
 
@@ -145,6 +145,16 @@ def assert_polygon_annotation_matches_dict(
     ):
         assert instance_pt["x"] == dict_pt["x"]
         assert instance_pt["y"] == dict_pt["y"]
+
+
+def assert_segmentation_annotation_matches_dict(
+    annotation_instance, annotation_dict
+):
+    assert annotation_instance.mask_url == annotation_dict["mask_url"]
+    # Cannot guarantee segments are in same order
+    assert len(annotation_instance.annotations) == len(
+        annotation_dict["annotations"]
+    )
 
 
 # Asserts that a box prediction instance matches a dict representing its properties.

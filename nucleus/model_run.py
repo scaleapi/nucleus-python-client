@@ -1,5 +1,11 @@
 from typing import Optional, List, Dict, Any, Union
-from .constants import ANNOTATIONS_KEY, DEFAULT_ANNOTATION_UPDATE_MODE
+from .constants import (
+    ANNOTATIONS_KEY,
+    DEFAULT_ANNOTATION_UPDATE_MODE,
+    BOX_TYPE,
+    POLYGON_TYPE,
+    SEGMENTATION_TYPE,
+)
 from .prediction import (
     BoxPrediction,
     PolygonPrediction,
@@ -122,12 +128,26 @@ class ModelRun:
         self, response: dict
     ) -> Union[dict, List[Union[BoxPrediction, PolygonPrediction]]]:
         annotations = response.get(ANNOTATIONS_KEY, None)
+        print(annotations)
         if annotations:
-            return [
-                BoxPrediction.from_json(ann)
-                if ann["type"] == "box"
-                else PolygonPrediction.from_json(ann)
-                for ann in annotations
-            ]
+            annotation_response = {}
+            if BOX_TYPE in annotations:
+                annotation_response[BOX_TYPE] = [
+                    BoxPrediction.from_json(ann)
+                    for ann in annotations[BOX_TYPE]
+                ]
+            if POLYGON_TYPE in annotations:
+                annotation_response[POLYGON_TYPE] = [
+                    PolygonPrediction.from_json(ann)
+                    for ann in annotations[POLYGON_TYPE]
+                ]
+            if SEGMENTATION_TYPE in annotations:
+                annotation_response[
+                    SEGMENTATION_TYPE
+                ] = SegmentationPrediction.from_json(
+                    annotations[SEGMENTATION_TYPE]
+                )
+            print(annotation_response)
+            return annotation_response
         else:  # An error occurred
             return response

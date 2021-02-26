@@ -1,6 +1,6 @@
 import pytest
 
-from helpers import (
+from .helpers import (
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
@@ -17,6 +17,7 @@ from nucleus.constants import (
     DATASET_ID_KEY,
 )
 
+
 @pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
@@ -24,6 +25,7 @@ def dataset(CLIENT):
 
     response = CLIENT.delete_dataset(ds.id)
     assert response == {}
+
 
 def test_dataset_create_and_delete(CLIENT):
     # Creation
@@ -88,14 +90,17 @@ def test_dataset_list_autotags(CLIENT, dataset):
     autotag_response = CLIENT.list_autotags(dataset.id)
     assert autotag_response == []
 
+
 def test_slice_create_and_delete(dataset):
     # Dataset upload
     ds_items = []
     for url in TEST_IMG_URLS:
-        ds_items.append(DatasetItem(
-            image_location=url,
-            reference_id=reference_id_from_url(url),
-        ))
+        ds_items.append(
+            DatasetItem(
+                image_location=url,
+                reference_id=reference_id_from_url(url),
+            )
+        )
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
 
@@ -121,10 +126,12 @@ def test_slice_append(dataset):
     # Dataset upload
     ds_items = []
     for url in TEST_IMG_URLS:
-        ds_items.append(DatasetItem(
-            image_location=url,
-            reference_id=reference_id_from_url(url),
-        ))
+        ds_items.append(
+            DatasetItem(
+                image_location=url,
+                reference_id=reference_id_from_url(url),
+            )
+        )
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
 

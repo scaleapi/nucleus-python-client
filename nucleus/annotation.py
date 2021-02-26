@@ -21,6 +21,8 @@ from .constants import (
     ANNOTATIONS_KEY,
 )
 
+ORIGINAL_URL_KEY = "original_url"
+
 
 class Segment:
     def __init__(
@@ -74,7 +76,7 @@ class SegmentationAnnotation:
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
-            mask_url=payload[MASK_URL_KEY],
+            mask_url=payload.get(MASK_URL_KEY, None),
             annotations=[
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])
