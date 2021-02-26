@@ -1,6 +1,6 @@
 import pytest
 
-from helpers import (
+from .helpers import (
     TEST_DATASET_NAME,
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
