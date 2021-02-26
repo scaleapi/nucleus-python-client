@@ -5,6 +5,7 @@ from .constants import (
     DATASET_ITEM_IDS_KEY,
 )
 
+
 class Autotag:
     """
     Autotag respesents a subset of your Dataset tagged by a binary attribute trained through the Nucleus Dashboard.

@@ -140,7 +140,16 @@ class NucleusClient:
         """
         model_objects = self._make_request({}, "models/", requests.get)
 
-        return [Model(model["id"], model["name"], model["ref_id"], model["metadata"], self) for model in model_objects["models"]]
+        return [
+            Model(
+                model["id"],
+                model["name"],
+                model["ref_id"],
+                model["metadata"],
+                self,
+            )
+            for model in model_objects["models"]
+        ]
 
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
@@ -884,8 +893,7 @@ class NucleusClient:
         return response
 
     def get_autotag(self, autotag_id: str) -> dict:
-        """
-        """
+        """"""
         response = self._make_request(
             {},
             f"autotag/{autotag_id}",
@@ -894,8 +902,7 @@ class NucleusClient:
         return Autotag.from_json(response)
 
     def delete_autotag(self, autotag_id: str) -> dict:
-        """
-        """
+        """"""
         return self._make_request(
             {},
             f"autotag/{autotag_id}",
