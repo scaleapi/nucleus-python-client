@@ -156,7 +156,10 @@ def assert_segmentation_annotation_matches_dict(
         annotation_dict["annotations"]
     )
 
-    for instance_segment, dict_segment in zip(sorted(annotation_instance.annotations, key = lambda i: i.index), sorted(annotation_dict["annotations"],  key = lambda i: i["index"])):
+    for instance_segment, dict_segment in zip(
+        sorted(annotation_instance.annotations, key=lambda i: i.index),
+        sorted(annotation_dict["annotations"], key=lambda i: i["index"]),
+    ):
         assert instance_segment.index == dict_segment["index"]
         assert instance_segment.label == dict_segment["label"]
 

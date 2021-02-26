@@ -34,41 +34,6 @@ class Annotation:
         else:
             return SegmentationAnnotation.from_json(payload)
 
-    # def from_json(cls, payload: dict):
-    #     if payload.get(TYPE_KEY, None) == BOX_TYPE:
-    #         geometry = payload.get(GEOMETRY_KEY, {})
-    #         return BoxAnnotation(
-    #             label=payload.get(LABEL_KEY, 0),
-    #             x=geometry.get(X_KEY, 0),
-    #             y=geometry.get(Y_KEY, 0),
-    #             width=geometry.get(WIDTH_KEY, 0),
-    #             height=geometry.get(HEIGHT_KEY, 0),
-    #             reference_id=payload.get(REFERENCE_ID_KEY, None),
-    #             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
-    #             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
-    #             metadata=payload.get(METADATA_KEY, {}),
-    #         )
-    #     elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
-    #         geometry = payload.get(GEOMETRY_KEY, {})
-    #         return PolygonAnnotation(
-    #             label=payload.get(LABEL_KEY, 0),
-    #             vertices=geometry.get(VERTICES_KEY, []),
-    #             reference_id=payload.get(REFERENCE_ID_KEY, None),
-    #             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
-    #             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
-    #             metadata=payload.get(METADATA_KEY, {}),
-    #         )
-    #     else:
-    #         return SegmentationAnnotation(
-    #             mask_url=payload.get(MASK_URL_KEY),
-    #             annotations=[
-    #                 Segment.from_json(ann)
-    #                 for ann in payload.get(ANNOTATIONS_KEY, [])
-    #             ],
-    #             reference_id=payload.get(REFERENCE_ID_KEY, None),
-    #             item_id=payload.get(ITEM_ID_KEY, None),
-    #         )
-
 
 class Segment:
     def __init__(
