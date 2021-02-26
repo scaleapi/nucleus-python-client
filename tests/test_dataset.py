@@ -1,6 +1,6 @@
 import pytest
 
-from .helpers import (
+from helpers import (
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
