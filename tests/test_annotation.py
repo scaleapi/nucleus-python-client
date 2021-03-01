@@ -9,6 +9,7 @@ from helpers import (
     reference_id_from_url,
     assert_box_annotation_matches_dict,
     assert_polygon_annotation_matches_dict,
+    assert_segmentation_annotation_matches_dict,
 )
 
 from nucleus import (
@@ -48,7 +49,7 @@ def test_box_gt_upload(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]
+    response = dataset.refloc(annotation.reference_id)["annotations"]["box"]
     assert len(response) == 1
     response_annotation = response[0]
     assert_box_annotation_matches_dict(
@@ -64,7 +65,9 @@ def test_polygon_gt_upload(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "polygon"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
@@ -80,7 +83,13 @@ def test_single_semseg_gt_upload(dataset):
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
-    # assert_box_annotation_matches_dict(response_annotation, TEST_BOX_ANNOTATIONS[0])
+
+    response_annotation = dataset.refloc(annotation.reference_id)[
+        "annotations"
+    ]["segmentation"][0]
+    assert_segmentation_annotation_matches_dict(
+        response_annotation, TEST_SEGMENTATION_ANNOTATIONS[0]
+    )
 
 
 def test_batch_semseg_gt_upload(dataset):
@@ -142,6 +151,12 @@ def test_mixed_annotation_upload(dataset):
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 10
     assert response["annotations_ignored"] == 0
+    response_annotations = dataset.refloc(bbox_annotations[0].reference_id)[
+        "annotations"
+    ]
+    assert len(response_annotations) == 2
+    assert len(response_annotations["box"]) == 1
+    assert "segmentation" in response_annotations
 
 
 def test_box_gt_upload_update(dataset):
@@ -165,7 +180,7 @@ def test_box_gt_upload_update(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]
+    response = dataset.refloc(annotation.reference_id)["annotations"]["box"]
     assert len(response) == 1
     response_annotation = response[0]
     assert_box_annotation_matches_dict(
@@ -194,7 +209,7 @@ def test_box_gt_upload_ignore(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 1
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]
+    response = dataset.refloc(annotation.reference_id)["annotations"]["box"]
     assert len(response) == 1
     response_annotation = response[0]
     assert_box_annotation_matches_dict(
@@ -223,7 +238,9 @@ def test_polygon_gt_upload_update(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "polygon"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
@@ -253,7 +270,9 @@ def test_polygon_gt_upload_ignore(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 1
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "polygon"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(

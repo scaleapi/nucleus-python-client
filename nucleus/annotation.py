@@ -22,6 +22,19 @@ from .constants import (
 )
 
 
+class Annotation:
+    @classmethod
+    def from_json(cls, payload: dict):
+        if payload.get(TYPE_KEY, None) == BOX_TYPE:
+            geometry = payload.get(GEOMETRY_KEY, {})
+            return BoxAnnotation.from_json(payload)
+        elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
+            geometry = payload.get(GEOMETRY_KEY, {})
+            return PolygonAnnotation.from_json(payload)
+        else:
+            return SegmentationAnnotation.from_json(payload)
+
+
 class Segment:
     def __init__(
         self, label: str, index: int, metadata: Optional[dict] = None
@@ -51,7 +64,7 @@ class Segment:
         return payload
 
 
-class SegmentationAnnotation:
+class SegmentationAnnotation(Annotation):
     def __init__(
         self,
         mask_url: str,
@@ -59,6 +72,9 @@ class SegmentationAnnotation:
         reference_id: Optional[str] = None,
         item_id: Optional[str] = None,
     ):
+        super().__init__()
+        if not mask_url:
+            raise Exception("You must specify a mask_url.")
         if bool(reference_id) == bool(item_id):
             raise Exception(
                 "You must specify either a reference_id or an item_id for an annotation."
@@ -74,7 +90,7 @@ class SegmentationAnnotation:
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
-            mask_url=payload[MASK_URL_KEY],
+            mask_url=payload.get(MASK_URL_KEY),
             annotations=[
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])
@@ -101,7 +117,7 @@ class AnnotationTypes(Enum):
 
 
 # TODO: Add base annotation class to reduce repeated code here
-class BoxAnnotation:
+class BoxAnnotation(Annotation):
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
@@ -115,6 +131,7 @@ class BoxAnnotation:
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
+        super().__init__()
         if bool(reference_id) == bool(item_id):
             raise Exception(
                 "You must specify either a reference_id or an item_id for an annotation."
@@ -164,7 +181,7 @@ class BoxAnnotation:
 
 
 # TODO: Add Generic type for 2D point
-class PolygonAnnotation:
+class PolygonAnnotation(Annotation):
     def __init__(
         self,
         label: str,
@@ -174,6 +191,7 @@ class PolygonAnnotation:
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
+        super().__init__()
         if bool(reference_id) == bool(item_id):
             raise Exception(
                 "You must specify either a reference_id or an item_id for an annotation."

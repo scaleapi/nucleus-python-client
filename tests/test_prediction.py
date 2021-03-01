@@ -12,6 +12,7 @@ from helpers import (
     reference_id_from_url,
     assert_box_prediction_matches_dict,
     assert_polygon_prediction_matches_dict,
+    assert_segmentation_annotation_matches_dict,
 )
 
 from nucleus import (
@@ -60,7 +61,7 @@ def test_box_pred_upload(model_run):
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
-    response = model_run.refloc(prediction.reference_id)
+    response = model_run.refloc(prediction.reference_id)["box"]
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
@@ -73,7 +74,7 @@ def test_polygon_pred_upload(model_run):
     assert response["predictions_ignored"] == 0
     assert response["predictions_ignored"] == 0
 
-    response = model_run.refloc(prediction.reference_id)
+    response = model_run.refloc(prediction.reference_id)["polygon"]
     assert len(response) == 1
     assert_polygon_prediction_matches_dict(
         response[0], TEST_POLYGON_PREDICTIONS[0]
@@ -89,6 +90,13 @@ def test_segmentation_pred_upload(model_run):
     assert response["model_run_id"] == model_run.model_run_id
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["segmentation"]
+    assert isinstance(response[0], SegmentationPrediction)
+
+    assert_segmentation_annotation_matches_dict(
+        response[0], TEST_SEGMENTATION_PREDICTIONS[0]
+    )
 
 
 def test_segmentation_pred_upload_ignore(model_run):
@@ -127,7 +135,7 @@ def test_box_pred_upload_update(model_run):
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
-    response = model_run.refloc(prediction.reference_id)
+    response = model_run.refloc(prediction.reference_id)["box"]
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], prediction_update_params)
 
@@ -153,7 +161,7 @@ def test_box_pred_upload_ignore(model_run):
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 1
 
-    response = model_run.refloc(prediction.reference_id)
+    response = model_run.refloc(prediction.reference_id)["box"]
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
@@ -179,7 +187,7 @@ def test_polygon_pred_upload_update(model_run):
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
-    response = model_run.refloc(prediction.reference_id)
+    response = model_run.refloc(prediction.reference_id)["polygon"]
     assert len(response) == 1
     assert_polygon_prediction_matches_dict(
         response[0], prediction_update_params
@@ -208,7 +216,7 @@ def test_polygon_pred_upload_ignore(model_run):
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 1
 
-    response = model_run.refloc(prediction.reference_id)
+    response = model_run.refloc(prediction.reference_id)["polygon"]
     assert len(response) == 1
     assert_polygon_prediction_matches_dict(
         response[0], TEST_POLYGON_PREDICTIONS[0]
@@ -228,3 +236,14 @@ def test_mixed_pred_upload(model_run):
     assert response["model_run_id"] == model_run.model_run_id
     assert response["predictions_processed"] == 3
     assert response["predictions_ignored"] == 0
+
+    response_refloc = model_run.refloc(prediction_polygon.reference_id)
+    assert_box_prediction_matches_dict(
+        response_refloc["box"][0], TEST_BOX_PREDICTIONS[0]
+    )
+    assert_polygon_prediction_matches_dict(
+        response_refloc["polygon"][0], TEST_POLYGON_PREDICTIONS[0]
+    )
+    assert_segmentation_annotation_matches_dict(
+        response_refloc["segmentation"][0], TEST_SEGMENTATION_PREDICTIONS[0]
+    )
