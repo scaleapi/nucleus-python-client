@@ -49,8 +49,8 @@ def construct_annotation_payload(
 
 
 def construct_segmentation_payload(
-    annotation_items: List[
-        Union[SegmentationAnnotation, SegmentationPrediction]
+    annotation_items: Union[
+        List[SegmentationAnnotation], List[SegmentationPrediction]
     ],
     update: bool,
 ) -> dict:

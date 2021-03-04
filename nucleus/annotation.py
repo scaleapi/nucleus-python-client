@@ -26,10 +26,8 @@ class Annotation:
     @classmethod
     def from_json(cls, payload: dict):
         if payload.get(TYPE_KEY, None) == BOX_TYPE:
-            geometry = payload.get(GEOMETRY_KEY, {})
             return BoxAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
-            geometry = payload.get(GEOMETRY_KEY, {})
             return PolygonAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
@@ -71,6 +69,7 @@ class SegmentationAnnotation(Annotation):
         annotations: List[Segment],
         reference_id: Optional[str] = None,
         item_id: Optional[str] = None,
+        annotation_id: Optional[str] = None,
     ):
         super().__init__()
         if not mask_url:
@@ -83,6 +82,7 @@ class SegmentationAnnotation(Annotation):
         self.annotations = annotations
         self.reference_id = reference_id
         self.item_id = item_id
+        self.annotation_id = annotation_id
 
     def __str__(self):
         return str(self.to_payload())
@@ -97,12 +97,14 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(ITEM_ID_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
         payload = {
             MASK_URL_KEY: self.mask_url,
             ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
+            ANNOTATION_ID_KEY: self.annotation_id,
         }
         if self.reference_id:
             payload[REFERENCE_ID_KEY] = self.reference_id

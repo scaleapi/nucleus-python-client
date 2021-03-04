@@ -94,10 +94,11 @@ TEST_POLYGON_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
-TEST_MASK_URL = "https://scale-temp.s3.amazonaws.com/scale-select/nucleus/mscoco_semseg_masks_uint8/000000000285.png"
+TEST_MASK_URL = "https://scale-ml.s3.amazonaws.com/tmp/nucleus/mscoco_semseg_masks/000000000285.png"
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Segmentation Annotation Id{i}",
         "mask_url": get_signed_url(TEST_MASK_URL),
         "annotations": [
             {"label": "bear", "index": 2},
@@ -151,6 +152,9 @@ def assert_segmentation_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert annotation_instance.mask_url == annotation_dict["mask_url"]
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
     # Cannot guarantee segments are in same order
     assert len(annotation_instance.annotations) == len(
         annotation_dict["annotations"]
