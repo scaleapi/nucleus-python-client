@@ -25,6 +25,8 @@ from .constants import (
 
 
 class SegmentationPrediction(SegmentationAnnotation):
+    # No need to define init or to_payload methods because
+    # we default to functions defined in the parent class
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
@@ -36,10 +38,6 @@ class SegmentationPrediction(SegmentationAnnotation):
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(ITEM_ID_KEY, None),
         )
-
-    def to_payload(self) -> dict:
-        payload = super().to_payload()
-        return payload
 
 
 class BoxPrediction(BoxAnnotation):
