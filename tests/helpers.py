@@ -98,7 +98,7 @@ TEST_MASK_URL = "https://scale-ml.s3.amazonaws.com/tmp/nucleus/mscoco_semseg_mas
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
-        "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
+        "annotation_id": f"[Pytest] Segmentation Annotation Id{i}",
         "mask_url": get_signed_url(TEST_MASK_URL),
         "annotations": [
             {"label": "bear", "index": 2},
