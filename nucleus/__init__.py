@@ -109,6 +109,7 @@ from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
     SEGMENTATION_METADATA_SCHEMA_KEY,
     ITEM_METADATA_SCHEMA_KEY,
+    FORCE_KEY,
 )
 from .model import Model
 from .errors import (
@@ -345,14 +346,15 @@ class NucleusClient:
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch, force)
             responses = self._process_append_requests_local(
-                dataset_id, payload
+                dataset_id, payload, force
             )
             async_responses.extend(responses)
 
         for batch in tqdm_remote_batches:
-            payload = construct_append_payload(batch)
+            payload = construct_append_payload(batch, force)
+            print(payload)
             responses = self._process_append_requests(
-                dataset_id, payload, batch_size, batch_size
+                dataset_id, payload, force, batch_size, batch_size
             )
             async_responses.extend(responses)
 
@@ -429,7 +431,6 @@ class NucleusClient:
         # don't forget to close all open files
         for p in request_payloads:
             close_files(p)
-        # [close_files(p) for p in request_payloads]
 
         # response object will be None if an error occurred
         async_responses = [
@@ -446,6 +447,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
+        update: bool,
         batch_size: int = 20,
         size: int = 10,
     ):
@@ -464,7 +466,7 @@ class NucleusClient:
         items = payload[ITEMS_KEY]
         payloads = [
             # batch_size images per request
-            {ITEMS_KEY: items[i : i + batch_size]}
+            {ITEMS_KEY: items[i : i + batch_size], FORCE_KEY: update}
             for i in range(0, len(items), batch_size)
         ]
 
@@ -655,7 +657,6 @@ class NucleusClient:
                 ]
 
         return agg_response
-        # return self._make_request(payload, f"modelRun/{model_run_id}/predict")
 
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
