@@ -15,6 +15,7 @@ from .constants import (
 )
 from .payload_constructor import construct_model_run_creation_payload
 
+
 class Dataset:
     """
     Nucleus Dataset. You can append images with metadata to your dataset,
@@ -65,6 +66,7 @@ class Dataset:
         reference_id: Optional[str] = None,
         model_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        annotation_metadata_schema: Optional[Dict] = None,
     ):
         """
         :param name: A name for the model run.
@@ -73,6 +75,7 @@ class Dataset:
         :param model_id: The internally-controlled identifier of the model.
                     The 'reference_id' field should be empty if this field is populated,
         :param metadata: An arbitrary metadata blob for the current run.
+        :annotation_metadata_schema: A dictionary that defines schema for annotations.
 
         :return:
         {
@@ -81,7 +84,7 @@ class Dataset:
         }
         """
         payload = construct_model_run_creation_payload(
-            name, reference_id, model_id, metadata
+            name, reference_id, model_id, metadata, annotation_metadata_schema
         )
         return self._client.create_model_run(self.id, payload)
 
