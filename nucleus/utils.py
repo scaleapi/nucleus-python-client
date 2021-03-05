@@ -29,7 +29,7 @@ def suggest_metadata_schema(
             entry["type"] = "number"
         elif len(values) <= 50:
             entry["type"] = "category"
-            entry["values"] = list(values)
+            entry["choices"] = list(values)
         else:
             entry["type"] = "text"
         schema[key] = entry
