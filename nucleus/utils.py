@@ -1,5 +1,4 @@
-from copy import deepcopy
-from typing import List, Union
+from typing import List, Union, Dict
 
 from .dataset_item import DatasetItem
 from .prediction import BoxPrediction, PolygonPrediction
@@ -20,17 +19,17 @@ def suggest_metadata_schema(
     schema = {}
     all_keys = {k for metadata in metadata_list for k in metadata.keys()}
 
-    all_key_values = {
+    all_key_values: Dict[str, set] = {
         k: _get_all_field_values(metadata_list, k) for k in all_keys
     }
 
     for key, values in all_key_values.items():
-        entry = {}
+        entry: dict = {}
         if all(isinstance(x, (float, int)) for x in values):
             entry["type"] = "number"
         elif len(values) <= 50:
             entry["type"] = "category"
-            entry["values"] = deepcopy(values)
+            entry["values"] = list(values)
         else:
             entry["type"] = "text"
         schema[key] = entry

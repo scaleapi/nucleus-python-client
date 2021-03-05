@@ -343,7 +343,7 @@ class NucleusClient:
         async_responses: List[Any] = []
 
         for batch in tqdm_local_batches:
-            payload = construct_append_payload(batch)
+            payload = construct_append_payload(batch, force)
             responses = self._process_append_requests_local(
                 dataset_id, payload
             )
