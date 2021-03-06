@@ -352,7 +352,6 @@ class NucleusClient:
 
         for batch in tqdm_remote_batches:
             payload = construct_append_payload(batch, force)
-            print(payload)
             responses = self._process_append_requests(
                 dataset_id, payload, force, batch_size, batch_size
             )
