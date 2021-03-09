@@ -107,7 +107,6 @@ from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAGS_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
-    SEGMENTATION_METADATA_SCHEMA_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     FORCE_KEY,
 )
@@ -237,7 +236,6 @@ class NucleusClient:
         name: str,
         item_metadata_schema: Optional[Dict] = None,
         annotation_metadata_schema: Optional[Dict] = None,
-        segmentation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
         """
         Creates a new dataset:
@@ -245,14 +243,12 @@ class NucleusClient:
         :param name -- A human-readable name of the dataset.
         :param item_metadata_schema -- optional dictionary to define item metadata schema
         :param annotation_metadata_schema -- optional dictionary to define annotation metadata schema
-        :param segmentation_metadata_schema -- optional dictionary to define segmentation metadata schema
         :return: new Dataset object
         """
         response = self._make_request(
             {
                 NAME_KEY: name,
                 ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
-                SEGMENTATION_METADATA_SCHEMA_KEY: segmentation_metadata_schema,
                 ITEM_METADATA_SCHEMA_KEY: item_metadata_schema,
             },
             "dataset/create",

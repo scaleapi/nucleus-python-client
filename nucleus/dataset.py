@@ -67,7 +67,6 @@ class Dataset:
         model_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         annotation_metadata_schema: Optional[Dict] = None,
-        segmentation_metadata_schema: Optional[Dict] = None,
     ):
         """
         :param name: A name for the model run.
@@ -91,7 +90,6 @@ class Dataset:
             model_id,
             metadata,
             annotation_metadata_schema,
-            segmentation_metadata_schema,
         )
         return self._client.create_model_run(self.id, payload)
 
