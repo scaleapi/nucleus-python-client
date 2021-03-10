@@ -1,6 +1,11 @@
 from typing import List, Dict, Any, Optional, Union
 from .dataset_item import DatasetItem
-from .annotation import BoxAnnotation, PolygonAnnotation
+from .annotation import (
+    Annotation,
+    BoxAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+)
 from .constants import (
     DATASET_NAME_KEY,
     DATASET_MODEL_RUNS_KEY,
@@ -12,6 +17,10 @@ from .constants import (
     ITEM_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     ANNOTATIONS_KEY,
+    BOX_TYPE,
+    POLYGON_TYPE,
+    SEGMENTATION_TYPE,
+    ANNOTATION_TYPES,
 )
 from .payload_constructor import construct_model_run_creation_payload
 
@@ -235,17 +244,19 @@ class Dataset:
 
     def _format_dataset_item_response(self, response: dict) -> dict:
         item = response.get(ITEM_KEY, None)
-        annotation_payload = response.get(ANNOTATIONS_KEY, [])
+        annotation_payload = response.get(ANNOTATIONS_KEY, {})
         if not item or not annotation_payload:
             # An error occured
             return response
-        annotations = [
-            BoxAnnotation.from_json(ann)
-            if ann["type"] == "box"
-            else PolygonAnnotation.from_json(ann)
-            for ann in annotation_payload
-        ]
+
+        annotation_response = {}
+        for annotation_type in ANNOTATION_TYPES:
+            if annotation_type in annotation_payload:
+                annotation_response[annotation_type] = [
+                    Annotation.from_json(ann)
+                    for ann in annotation_payload[annotation_type]
+                ]
         return {
             ITEM_KEY: DatasetItem.from_json(item),
-            ANNOTATIONS_KEY: annotations,
+            ANNOTATIONS_KEY: annotation_response,
         }

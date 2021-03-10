@@ -16,7 +16,7 @@ from nucleus.constants import (
     ERROR_PAYLOAD,
     DATASET_ID_KEY,
 )
-from .helpers import (
+from helpers import (
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,

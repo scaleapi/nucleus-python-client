@@ -1,6 +1,10 @@
 from typing import List, Optional, Dict, Union
 from .dataset import Dataset
-from .prediction import BoxPrediction, PolygonPrediction
+from .prediction import (
+    BoxPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
 from .model_run import ModelRun
 from .constants import (
     NAME_KEY,
@@ -25,7 +29,7 @@ class Model:
         self._client = client
 
     def __repr__(self):
-        return f'Model(model_id={self.id}, name={self.name}, reference_id={self.reference_id}, metadata={self.metadata}, client={self._client})'
+        return f"Model(model_id={self.id}, name={self.name}, reference_id={self.reference_id}, metadata={self.metadata}, client={self._client})"
 
     def __eq__(self, other):
         return self.id == other.id
@@ -37,7 +41,9 @@ class Model:
         self,
         name: str,
         dataset: Dataset,
-        predictions: List[Union[BoxPrediction, PolygonPrediction]],
+        predictions: List[
+            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+        ],
         metadata: Optional[Dict] = None,
     ) -> ModelRun:
         payload: dict = {

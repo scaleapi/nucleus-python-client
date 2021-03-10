@@ -1,5 +1,10 @@
 from typing import Dict, Optional, List, Any
-from .annotation import BoxAnnotation, PolygonAnnotation
+from .annotation import (
+    BoxAnnotation,
+    PolygonAnnotation,
+    Segment,
+    SegmentationAnnotation,
+)
 from .constants import (
     ANNOTATION_ID_KEY,
     DATASET_ITEM_ID_KEY,
@@ -13,7 +18,26 @@ from .constants import (
     HEIGHT_KEY,
     CONFIDENCE_KEY,
     VERTICES_KEY,
+    ANNOTATIONS_KEY,
+    ITEM_ID_KEY,
+    MASK_URL_KEY,
 )
+
+
+class SegmentationPrediction(SegmentationAnnotation):
+    # No need to define init or to_payload methods because
+    # we default to functions defined in the parent class
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            mask_url=payload[MASK_URL_KEY],
+            annotations=[
+                Segment.from_json(ann)
+                for ann in payload.get(ANNOTATIONS_KEY, [])
+            ],
+            reference_id=payload.get(REFERENCE_ID_KEY, None),
+            item_id=payload.get(ITEM_ID_KEY, None),
+        )
 
 
 class BoxPrediction(BoxAnnotation):
@@ -31,7 +55,15 @@ class BoxPrediction(BoxAnnotation):
         metadata: Optional[Dict] = None,
     ):
         super().__init__(
-            label, x, y, width, height, reference_id, item_id, annotation_id, metadata
+            label,
+            x,
+            y,
+            width,
+            height,
+            reference_id,
+            item_id,
+            annotation_id,
+            metadata,
         )
         self.confidence = confidence
 
@@ -73,7 +105,9 @@ class PolygonPrediction(PolygonAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
     ):
-        super().__init__(label, vertices, reference_id, item_id, annotation_id, metadata)
+        super().__init__(
+            label, vertices, reference_id, item_id, annotation_id, metadata
+        )
         self.confidence = confidence
 
     def to_payload(self) -> dict:
