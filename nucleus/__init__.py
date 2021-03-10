@@ -116,6 +116,9 @@ from .constants import (
     NAME_KEY,
     ANNOTATIONS_KEY,
     AUTOTAGS_KEY,
+    ANNOTATION_METADATA_SCHEMA_KEY,
+    ITEM_METADATA_SCHEMA_KEY,
+    FORCE_KEY,
 )
 from .model import Model
 from .errors import (
@@ -150,7 +153,16 @@ class NucleusClient:
         """
         model_objects = self._make_request({}, "models/", requests.get)
 
-        return [Model(model["id"], model["name"], model["ref_id"], model["metadata"], self) for model in model_objects["models"]]
+        return [
+            Model(
+                model["id"],
+                model["name"],
+                model["ref_id"],
+                model["metadata"],
+                self,
+            )
+            for model in model_objects["models"]
+        ]
 
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
@@ -229,15 +241,28 @@ class NucleusClient:
         response = self._make_request(payload, "dataset/create_from_project")
         return Dataset(response[DATASET_ID_KEY], self)
 
-    def create_dataset(self, name: str) -> Dataset:
+    def create_dataset(
+        self,
+        name: str,
+        item_metadata_schema: Optional[Dict] = None,
+        annotation_metadata_schema: Optional[Dict] = None,
+    ) -> Dataset:
         """
-        Creates a new dataset based on payload params:
-        name -- A human-readable name of the dataset.
+        Creates a new dataset:
         Returns a response with internal id and name for a new dataset.
-        :param payload: { "name": str }
+        :param name -- A human-readable name of the dataset.
+        :param item_metadata_schema -- optional dictionary to define item metadata schema
+        :param annotation_metadata_schema -- optional dictionary to define annotation metadata schema
         :return: new Dataset object
         """
-        response = self._make_request({NAME_KEY: name}, "dataset/create")
+        response = self._make_request(
+            {
+                NAME_KEY: name,
+                ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
+                ITEM_METADATA_SCHEMA_KEY: item_metadata_schema,
+            },
+            "dataset/create",
+        )
         return Dataset(response[DATASET_ID_KEY], self)
 
     def delete_dataset(self, dataset_id: str) -> dict:
@@ -325,16 +350,16 @@ class NucleusClient:
         async_responses: List[Any] = []
 
         for batch in tqdm_local_batches:
-            payload = construct_append_payload(batch)
+            payload = construct_append_payload(batch, force)
             responses = self._process_append_requests_local(
-                dataset_id, payload
+                dataset_id, payload, force
             )
             async_responses.extend(responses)
 
         for batch in tqdm_remote_batches:
-            payload = construct_append_payload(batch)
+            payload = construct_append_payload(batch, force)
             responses = self._process_append_requests(
-                dataset_id, payload, batch_size, batch_size
+                dataset_id, payload, force, batch_size, batch_size
             )
             async_responses.extend(responses)
 
@@ -411,7 +436,6 @@ class NucleusClient:
         # don't forget to close all open files
         for p in request_payloads:
             close_files(p)
-        # [close_files(p) for p in request_payloads]
 
         # response object will be None if an error occurred
         async_responses = [
@@ -428,6 +452,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
+        update: bool,
         batch_size: int = 20,
         size: int = 10,
     ):
@@ -446,7 +471,7 @@ class NucleusClient:
         items = payload[ITEMS_KEY]
         payloads = [
             # batch_size images per request
-            {ITEMS_KEY: items[i : i + batch_size]}
+            {ITEMS_KEY: items[i : i + batch_size], FORCE_KEY: update}
             for i in range(0, len(items), batch_size)
         ]
 
@@ -479,7 +504,7 @@ class NucleusClient:
             Union[BoxAnnotation, PolygonAnnotation, SegmentationAnnotation]
         ],
         update: bool,
-        batch_size: int = 100,
+        batch_size: int = 5000,
     ):
         """
         Uploads ground truth annotations for a given dataset.
@@ -1009,7 +1034,7 @@ class NucleusClient:
 
     def _make_request_raw(
         self, payload: dict, route: str, requests_command=requests.post
-    ) -> dict:
+    ):
         """
         Makes a request to Nucleus endpoint. This method returns the raw
         requests.Response object which is useful for unit testing.
@@ -1046,7 +1071,7 @@ class NucleusClient:
         """
         response = self._make_request_raw(payload, route, requests_command)
 
-        if response.status_code not in SUCCESS_STATUS_CODES:
+        if getattr(response, "status_code") not in SUCCESS_STATUS_CODES:
             logger.warning(response)
 
         return (

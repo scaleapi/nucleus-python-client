@@ -75,6 +75,7 @@ class Dataset:
         reference_id: Optional[str] = None,
         model_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        annotation_metadata_schema: Optional[Dict] = None,
     ):
         """
         :param name: A name for the model run.
@@ -83,6 +84,8 @@ class Dataset:
         :param model_id: The internally-controlled identifier of the model.
                     The 'reference_id' field should be empty if this field is populated,
         :param metadata: An arbitrary metadata blob for the current run.
+        :param annotation_metadata_schema: A dictionary that defines schema for annotations.
+        :param segmentation_metadata_schema: A dictionary that defines schema for segmentation.
 
         :return:
         {
@@ -91,7 +94,11 @@ class Dataset:
         }
         """
         payload = construct_model_run_creation_payload(
-            name, reference_id, model_id, metadata
+            name,
+            reference_id,
+            model_id,
+            metadata,
+            annotation_metadata_schema,
         )
         return self._client.create_model_run(self.id, payload)
 
