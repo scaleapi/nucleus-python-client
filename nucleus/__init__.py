@@ -657,7 +657,7 @@ class NucleusClient:
             Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
         ],
         update: bool,
-        batch_size: int = 100,
+        batch_size: int = 5000,
     ):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
