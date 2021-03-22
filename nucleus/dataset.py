@@ -4,7 +4,6 @@ from .annotation import (
     Annotation,
     BoxAnnotation,
     PolygonAnnotation,
-    SegmentationAnnotation,
 )
 from .constants import (
     DATASET_NAME_KEY,
@@ -17,9 +16,6 @@ from .constants import (
     ITEM_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     ANNOTATIONS_KEY,
-    BOX_TYPE,
-    POLYGON_TYPE,
-    SEGMENTATION_TYPE,
     ANNOTATION_TYPES,
 )
 from .payload_constructor import construct_model_run_creation_payload
@@ -260,3 +256,12 @@ class Dataset:
             ITEM_KEY: DatasetItem.from_json(item),
             ANNOTATIONS_KEY: annotation_response,
         }
+
+    def create_custom_index(self, embeddings_url: str):
+        return self._client.create_custom_index(self.id, embeddings_url)
+
+    def delete_custom_index(self):
+        return self._client.delete_custom_index(self.id)
+
+    def check_index_status(self, job_id: str):
+        return self._client.check_index_status(self, job_id)
