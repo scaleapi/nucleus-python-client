@@ -120,6 +120,7 @@ TEST_POLYGON_PREDICTIONS = [
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]
 
+TEST_INDEX_EMBEDDINGS_FILE = "https://scale-ml.s3.amazonaws.com/tmp/sasha/pytest_embeddings_payload.json"
 
 # Asserts that a box annotation instance matches a dict representing its properties.
 # Useful to check annotation uploads/updates match.
