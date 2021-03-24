@@ -119,6 +119,7 @@ from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     FORCE_KEY,
+    EMBEDDINGS_URL_KEY,
 )
 from .model import Model
 from .errors import (
@@ -990,6 +991,27 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def create_custom_index(self, dataset_id: str, embeddings_url: str):
+        return self._make_request(
+            {EMBEDDINGS_URL_KEY: embeddings_url},
+            f"indexing/{dataset_id}",
+            requests_command=requests.post,
+        )
+
+    def check_index_status(self, job_id: str):
+        return self._make_request(
+            {},
+            f"indexing/{job_id}",
+            requests_command=requests.get,
+        )
+
+    def delete_custom_index(self, dataset_id: str):
+        return self._make_request(
+            {},
+            f"indexing/{dataset_id}",
+            requests_command=requests.delete,
+        )
 
     def _make_grequest(
         self,
