@@ -94,7 +94,7 @@ TEST_POLYGON_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
-TEST_MASK_URL = "https://scale-ml.s3.amazonaws.com/tmp/nucleus/mscoco_semseg_masks/000000000285.png"
+TEST_MASK_URL = "https://scale-ml.s3.amazonaws.com/home/nucleus/mscoco_masks_uint8/000000000285.png"
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
@@ -120,7 +120,7 @@ TEST_POLYGON_PREDICTIONS = [
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]
 
-TEST_INDEX_EMBEDDINGS_FILE = "https://scale-ml.s3.amazonaws.com/tmp/sasha/pytest_embeddings_payload.json"
+TEST_INDEX_EMBEDDINGS_FILE = "https://scale-ml.s3.amazonaws.com/home/nucleus/pytest/pytest_embeddings_payload.json"
 
 # Asserts that a box annotation instance matches a dict representing its properties.
 # Useful to check annotation uploads/updates match.
