@@ -920,7 +920,7 @@ class NucleusClient:
         return Slice(slice_id, self)
 
     def slice_info(
-        self, slice_id: str, id_type: str = DATASET_ITEM_ID_KEY
+        self, slice_id: str
     ) -> dict:
         """
         This endpoint provides information about specified slice.
@@ -939,7 +939,7 @@ class NucleusClient:
         """
         response = self._make_request(
             {},
-            f"slice/{slice_id}?idType={id_type}",
+            f"slice/{slice_id}",
             requests_command=requests.get,
         )
         return response

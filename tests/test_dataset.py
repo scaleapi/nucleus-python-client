@@ -91,7 +91,7 @@ def test_dataset_list_autotags(CLIENT, dataset):
     assert autotag_response == []
 
 
-def test_slice_create_and_delete(dataset):
+def test_slice_create_and_delete_and_list(dataset):
     # Dataset upload
     ds_items = []
     for url in TEST_IMG_URLS:
@@ -114,12 +114,12 @@ def test_slice_create_and_delete(dataset):
     assert len(dataset_slices) == 1
     assert slc.slice_id == dataset_slices[0]
 
-    response = slc.info(id_type="reference_id")
+    response = slc.info()
     assert response["name"] == TEST_SLICE_NAME
     assert response["dataset_id"] == dataset.id
-    assert len(response["reference_ids"]) == 2
+    assert len(response["dataset_items"]) == 2
     for item in ds_items[:2]:
-        assert item.reference_id in response["reference_ids"]
+        assert item.reference_id == response["dataset_items"][0]["reference_id"] or item.reference_id == response["dataset_items"][1]["reference_id"]
 
 
 def test_slice_append(dataset):
@@ -144,7 +144,7 @@ def test_slice_append(dataset):
     # Insert duplicate first item
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
 
-    response = slc.info(id_type="reference_ids")
-    assert len(response["reference_ids"]) == 3
+    response = slc.info()
+    assert len(response["dataset_items"]) == 3
     for item in ds_items[:3]:
-        assert item.reference_id in response["reference_ids"]
+        assert item.reference_id == response["dataset_items"][0]["reference_id"] or item.reference_id == response["dataset_items"][1]["reference_id"] or item.reference_id == response["dataset_items"][2]["reference_id"]

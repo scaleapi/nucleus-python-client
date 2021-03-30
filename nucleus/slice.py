@@ -15,22 +15,18 @@ class Slice:
         self.slice_id = slice_id
         self._client = client
 
-    def info(self, id_type: str = DATASET_ITEM_ID_KEY) -> dict:
+    def info(self) -> dict:
         """
         This endpoint provides information about specified slice.
-
-        :param
-        id_type: the type of IDs you want in response (either "reference_id" or "dataset_item_id")
-        to identify the DatasetItems
 
         :return:
         {
             "name": str,
             "dataset_id": str,
-            "dataset_item_ids" or "reference_ids": List[str],
+            "dataset_items",
         }
         """
-        return self._client.slice_info(self.slice_id, id_type)
+        return self._client.slice_info(self.slice_id)
 
     def append(
         self,
