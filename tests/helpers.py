@@ -152,6 +152,8 @@ def assert_polygon_annotation_matches_dict(
 def assert_segmentation_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
+    print("RETURNED: ", str(annotation_instance))
+    print("ORIG: ", annotation_dict)
     assert annotation_instance.mask_url == annotation_dict["mask_url"]
     assert (
         annotation_instance.annotation_id == annotation_dict["annotation_id"]

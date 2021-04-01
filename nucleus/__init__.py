@@ -723,7 +723,6 @@ class NucleusClient:
 
         for s_batch in s_batches:
             payload = construct_segmentation_payload(s_batch, update)
-            print("PAYLOAD: ", payload)
             response = self._make_request(
                 payload, f"modelRun/{model_run_id}/predict_segmentation"
             )
@@ -921,9 +920,7 @@ class NucleusClient:
         """
         return Slice(slice_id, self)
 
-    def slice_info(
-        self, slice_id: str
-    ) -> dict:
+    def slice_info(self, slice_id: str) -> dict:
         """
         This endpoint provides information about specified slice.
 

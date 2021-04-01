@@ -156,3 +156,11 @@ A response code of 200 indicates successful deletion.
 ```python
 client.delete_model_run("model_run_id")
 ```
+
+## For Developers
+
+Please install the pre-commit hooks by running the following commands:
+```python
+pip install pre-commit
+pre-commit install
+```
