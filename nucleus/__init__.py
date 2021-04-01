@@ -373,6 +373,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
+        update: bool,
         local_batch_size: int = 10,
         size: int = 10,
     ):
