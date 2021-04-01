@@ -1,6 +1,6 @@
 import pytest
 
-from helpers import (
+from tests.helpers import (
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
@@ -30,6 +30,7 @@ def dataset(CLIENT):
 def test_dataset_create_and_delete(CLIENT):
     # Creation
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+    print(ds)
     assert isinstance(ds, Dataset)
     assert ds.name == TEST_DATASET_NAME
     assert ds.model_runs == []
@@ -119,7 +120,7 @@ def test_slice_create_and_delete_and_list(dataset):
     assert response["dataset_id"] == dataset.id
     assert len(response["dataset_items"]) == 2
     for item in ds_items[:2]:
-        assert item.reference_id == response["dataset_items"][0]["reference_id"] or item.reference_id == response["dataset_items"][1]["reference_id"]
+        assert item.reference_id == response["dataset_items"][0]["ref_id"] or item.reference_id == response["dataset_items"][1]["ref_id"]
 
 
 def test_slice_append(dataset):
@@ -145,6 +146,7 @@ def test_slice_append(dataset):
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
 
     response = slc.info()
+    print(response)
     assert len(response["dataset_items"]) == 3
     for item in ds_items[:3]:
-        assert item.reference_id == response["dataset_items"][0]["reference_id"] or item.reference_id == response["dataset_items"][1]["reference_id"] or item.reference_id == response["dataset_items"][2]["reference_id"]
+        assert item.reference_id == response["dataset_items"][0]["ref_id"] or item.reference_id == response["dataset_items"][1]["ref_id"] or item.reference_id == response["dataset_items"][2]["ref_id"]

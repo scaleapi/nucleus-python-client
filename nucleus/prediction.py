@@ -37,6 +37,7 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(ITEM_ID_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
         )
 
 
