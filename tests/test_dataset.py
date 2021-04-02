@@ -4,6 +4,7 @@ from helpers import (
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
+    LOCAL_FILENAME,
     reference_id_from_url,
 )
 
@@ -82,6 +83,19 @@ def test_dataset_append(dataset):
 
     response = dataset.append(ds_items_with_metadata)
     check_is_expected_response(response)
+
+
+def test_dataset_append_local(CLIENT, dataset):
+    ds_items_local = [DatasetItem(image_location=LOCAL_FILENAME)]
+    response = dataset.append(ds_items_local)
+    assert isinstance(response, UploadResponse)
+    resp_json = response.json()
+    assert resp_json[DATASET_ID_KEY] == dataset.id
+    assert resp_json[NEW_ITEMS] == 1
+    assert resp_json[UPDATED_ITEMS] == 0
+    assert resp_json[IGNORED_ITEMS] == 0
+    assert resp_json[ERROR_ITEMS] == 0
+    assert ERROR_PAYLOAD not in resp_json
 
 
 def test_dataset_list_autotags(CLIENT, dataset):
