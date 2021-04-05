@@ -162,7 +162,6 @@ def test_slice_append(dataset):
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
 
     response = slc.info()
-    print(response)
     assert len(response["dataset_items"]) == 3
     for item in ds_items[:3]:
         assert (
