@@ -164,3 +164,16 @@ Please install the pre-commit hooks by running the following commands:
 pip install pre-commit
 pre-commit install
 ```
+
+**Best practices for testing:**
+(1). Before running pytest, please make sure to authenticate into AWS, since some of the unit tests rely on AWs resources:
+```
+gimme_okta_aws_creds
+```
+
+(2). Please run pytest from the root directory of the repo, i.e.
+```
+pytest tests/test_dataset.py
+```
+
+
