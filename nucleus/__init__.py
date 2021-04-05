@@ -92,7 +92,7 @@ from .payload_constructor import (
 )
 from .constants import (
     NUCLEUS_ENDPOINT,
-    DEFAULT_TIMEOUT,
+    DEFAULT_NETWORK_TIMEOUT_SEC,
     ERRORS_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
@@ -1022,7 +1022,7 @@ class NucleusClient:
                 session=sess,
                 files=payload,
                 auth=(self.api_key, ""),
-                timeout=DEFAULT_TIMEOUT,
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
             )
         else:
             post = requests_command(
@@ -1031,7 +1031,7 @@ class NucleusClient:
                 json=payload,
                 headers={"Content-Type": "application/json"},
                 auth=(self.api_key, ""),
-                timeout=DEFAULT_TIMEOUT,
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
             )
         return post
 
@@ -1055,7 +1055,7 @@ class NucleusClient:
             json=payload,
             headers={"Content-Type": "application/json"},
             auth=(self.api_key, ""),
-            timeout=DEFAULT_TIMEOUT,
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
         )
         logger.info("API request has response code %s", response.status_code)
 
