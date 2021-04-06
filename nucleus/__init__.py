@@ -374,6 +374,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
+        update: bool,
         local_batch_size: int = 10,
         size: int = 10,
     ):
@@ -920,9 +921,7 @@ class NucleusClient:
         """
         return Slice(slice_id, self)
 
-    def slice_info(
-        self, slice_id: str
-    ) -> dict:
+    def slice_info(self, slice_id: str) -> dict:
         """
         This endpoint provides information about specified slice.
 

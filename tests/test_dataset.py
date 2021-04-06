@@ -4,6 +4,7 @@ from helpers import (
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
+    LOCAL_FILENAME,
     reference_id_from_url,
 )
 
@@ -84,6 +85,19 @@ def test_dataset_append(dataset):
     check_is_expected_response(response)
 
 
+def test_dataset_append_local(CLIENT, dataset):
+    ds_items_local = [DatasetItem(image_location=LOCAL_FILENAME)]
+    response = dataset.append(ds_items_local)
+    assert isinstance(response, UploadResponse)
+    resp_json = response.json()
+    assert resp_json[DATASET_ID_KEY] == dataset.id
+    assert resp_json[NEW_ITEMS] == 1
+    assert resp_json[UPDATED_ITEMS] == 0
+    assert resp_json[IGNORED_ITEMS] == 0
+    assert resp_json[ERROR_ITEMS] == 0
+    assert ERROR_PAYLOAD not in resp_json
+
+
 def test_dataset_list_autotags(CLIENT, dataset):
     # Creation
     # List of Autotags should be empty
@@ -119,7 +133,10 @@ def test_slice_create_and_delete_and_list(dataset):
     assert response["dataset_id"] == dataset.id
     assert len(response["dataset_items"]) == 2
     for item in ds_items[:2]:
-        assert item.reference_id == response["dataset_items"][0]["reference_id"] or item.reference_id == response["dataset_items"][1]["reference_id"]
+        assert (
+            item.reference_id == response["dataset_items"][0]["ref_id"]
+            or item.reference_id == response["dataset_items"][1]["ref_id"]
+        )
 
 
 def test_slice_append(dataset):
@@ -147,4 +164,8 @@ def test_slice_append(dataset):
     response = slc.info()
     assert len(response["dataset_items"]) == 3
     for item in ds_items[:3]:
-        assert item.reference_id == response["dataset_items"][0]["reference_id"] or item.reference_id == response["dataset_items"][1]["reference_id"] or item.reference_id == response["dataset_items"][2]["reference_id"]
+        assert (
+            item.reference_id == response["dataset_items"][0]["ref_id"]
+            or item.reference_id == response["dataset_items"][1]["ref_id"]
+            or item.reference_id == response["dataset_items"][2]["ref_id"]
+        )

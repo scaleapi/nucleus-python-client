@@ -156,3 +156,24 @@ A response code of 200 indicates successful deletion.
 ```python
 client.delete_model_run("model_run_id")
 ```
+
+## For Developers
+
+Please install the pre-commit hooks by running the following commands:
+```python
+pip install pre-commit
+pre-commit install
+```
+
+**Best practices for testing:**
+(1). Before running pytest, please make sure to authenticate into AWS, since some of the unit tests rely on AWs resources:
+```
+gimme_okta_aws_creds
+```
+
+(2). Please run pytest from the root directory of the repo, i.e.
+```
+pytest tests/test_dataset.py
+```
+
+

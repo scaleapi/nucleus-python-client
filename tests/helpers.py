@@ -29,6 +29,8 @@ TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[2], "3"),
     DatasetItem(TEST_IMG_URLS[3], "4"),
 ]
+
+LOCAL_FILENAME = "tests/test_img.jpg"
 TEST_PREDS = [
     BoxPrediction("[Pytest Box Prediction 1]", 0, 0, 100, 100, "1"),
     BoxPrediction("[Pytest Box Prediction 2]", 0, 0, 100, 100, "2"),
@@ -59,7 +61,6 @@ def s3_sign(bucket, key):
         },
         ExpiresIn=PRESIGN_EXPIRY_SECONDS,
     )
-
 
 def reference_id_from_url(url):
     return Path(url).name
