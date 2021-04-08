@@ -50,7 +50,7 @@ confidence      |   float   |   The optional confidence level of this annotation
 geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
-
+# pylint: disable=C0302
 import json
 import logging
 import warnings
@@ -321,6 +321,9 @@ class NucleusClient:
             "upload_errors": int
         }
         """
+        if batch_size <= 0:
+            raise ValueError("batch_size should be > 0")
+
         local_items = []
         remote_items = []
 
@@ -354,7 +357,10 @@ class NucleusClient:
         for batch in tqdm_local_batches:
             payload = construct_append_payload(batch, force)
             responses = self._process_append_requests_local(
-                dataset_id, payload, force
+                dataset_id,
+                payload,
+                force,
+                batch_size,
             )
             async_responses.extend(responses)
 

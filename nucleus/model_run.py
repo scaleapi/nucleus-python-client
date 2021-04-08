@@ -135,7 +135,7 @@ class ModelRun:
             ):
                 if type_key in annotation_payload:
                     annotation_response[type_key] = [
-                        type_cls.from_json(ann)
+                        type_cls.from_json(ann)  # type: ignore
                         for ann in annotation_payload[type_key]
                     ]
             return annotation_response
