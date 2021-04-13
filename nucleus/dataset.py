@@ -102,7 +102,7 @@ class Dataset:
         self,
         annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
-        batch_size: int = 20,
+        batch_size: int = 5000,
     ) -> dict:
         """
         Uploads ground truth annotations for a given dataset.
