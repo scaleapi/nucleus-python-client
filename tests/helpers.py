@@ -62,6 +62,7 @@ def s3_sign(bucket, key):
         ExpiresIn=PRESIGN_EXPIRY_SECONDS,
     )
 
+
 def reference_id_from_url(url):
     return Path(url).name
 

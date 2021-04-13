@@ -3,7 +3,6 @@ line-length = 79
 target-version = ['py37']
 include = '\.pyi?$'
 exclude = '''
-
 (
   /(
       \.eggs         # exclude a few common directories in the
@@ -17,11 +16,49 @@ exclude = '''
     | build
     | dist
   )/
-  | foo.py           # also separately exclude a file named foo.py in
-                     # the root of the project
 )
 '''
 
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta:__legacy__"
+requires = [
+  "flit_core >=2,<4",
+]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "nucleus"
+author = "Scale AI"
+author-email = "select@scaleapi.com"
+home-page = "https://github.com/scaleapi/nucleus-python-client"
+classifiers = [ "License :: OSI Approved :: MIT License",]
+description-file = "README.md"
+dist-name = "scale-nucleus"
+requires = ["grequests >= 0.6.0",
+  "requests >= 2.22.0",
+  "tqdm >= 4.56.1"]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py36,py37,py38,py39 
+
+[testenv]
+deps =
+  black
+  coverage
+  flake8
+  mypy
+  mccabe
+  pylint
+  boto3
+commands = 
+  black nucleus
+  flake8 nucleus
+  pylint nucleus
+  mypy nucleus --ignore-missing-imports
+  coverage erase
+  coverage run --include=tests/* -m pytest -ra
+  coverage report -m
+"""
+

@@ -6,7 +6,7 @@ from nucleus import (
     UploadResponse,
     Model,
     ModelRun,
-    BoxPrediction
+    BoxPrediction,
 )
 from nucleus.constants import (
     NEW_ITEMS,
@@ -20,15 +20,16 @@ from helpers import (
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,
-    TEST_PREDS
+    TEST_PREDS,
 )
+
 
 def test_model_creation_and_listing(CLIENT, dataset):
     models_before = CLIENT.list_models()
 
     # Creation
     model = CLIENT.add_model(TEST_MODEL_NAME, TEST_MODEL_REFERENCE)
-    m_run =  model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
+    m_run = model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
     m_run.commit()
 
     assert isinstance(model, Model)
@@ -46,4 +47,3 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     assert model not in ms
     assert ms == models_before
-    

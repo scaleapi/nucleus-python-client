@@ -89,8 +89,10 @@ class SegmentationAnnotation(Annotation):
 
     @classmethod
     def from_json(cls, payload: dict):
+        if MASK_URL_KEY not in payload:
+            raise ValueError(f"Missing {MASK_URL_KEY} in json")
         return cls(
-            mask_url=payload.get(MASK_URL_KEY),
+            mask_url=payload[MASK_URL_KEY],
             annotations=[
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])

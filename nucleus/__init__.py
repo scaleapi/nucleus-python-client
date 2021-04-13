@@ -50,6 +50,7 @@ confidence      |   float   |   The optional confidence level of this annotation
 geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
+__version__ = "0.0.1"
 
 import json
 import logging
@@ -65,8 +66,11 @@ import requests
 from requests.adapters import HTTPAdapter
 
 # pylint: disable=E1101
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
 from requests.packages.urllib3.util.retry import Retry
 
+from .constants import REFERENCE_IDS_KEY, DATASET_ITEM_IDS_KEY
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .annotation import (
@@ -958,6 +962,42 @@ class NucleusClient:
             {},
             f"slice/{slice_id}",
             requests_command=requests.delete,
+        )
+        return response
+
+    def append_to_slice(
+        self,
+        slice_id: str,
+        dataset_item_ids: List[str] = None,
+        reference_ids: List[str] = None,
+    ) -> dict:
+        """
+        Appends to a slice from items already present in a dataset.
+        The caller must exclusively use either datasetItemIds or reference_ids
+        as a means of identifying items in the dataset.
+
+        :param
+        dataset_item_ids: List[str],
+        reference_ids: List[str],
+
+        :return:
+        {
+            "slice_id": str,
+        }
+        """
+        if dataset_item_ids and reference_ids:
+            raise Exception(
+                "You cannot specify both dataset_item_ids and reference_ids"
+            )
+
+        ids_to_append: Dict[str, Any] = {}
+        if dataset_item_ids:
+            ids_to_append[DATASET_ITEM_IDS_KEY] = dataset_item_ids
+        if reference_ids:
+            ids_to_append[REFERENCE_IDS_KEY] = reference_ids
+
+        response = self._make_request(
+            ids_to_append, f"slice/{slice_id}/append"
         )
         return response
 
