@@ -17,13 +17,7 @@ Nucleus is a new way—the right way—to develop ML models, helping us move awa
 
 ## Installation
 
-### Editable mode
-
-`$ pip install -e . `
-
-### As a Normal Package
-
-`$ pip install git+ssh://git@github.com/scaleapi/nucleus-python-client.git`
+`$ pip install scale-nucleus`
 
 ## Usage
 
@@ -158,6 +152,14 @@ client.delete_model_run("model_run_id")
 ```
 
 ## For Developers
+
+Clone from github and install as editable
+
+```
+git clone git@github.com:scaleapi/nucleus-python-client.git
+cd nucleus-python-client
+pip install -e .
+```
 
 Please install the pre-commit hooks by running the following commands:
 ```python
