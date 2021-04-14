@@ -7,6 +7,7 @@ from nucleus import (
     Model,
     ModelRun,
     BoxPrediction,
+    NucleusClient
 )
 from nucleus.constants import (
     NEW_ITEMS,
@@ -22,6 +23,16 @@ from helpers import (
     TEST_MODEL_RUN,
     TEST_PREDS,
 )
+
+# Have to define here in order to have access to all relevant objects
+def test_repr(test_object: any):
+    assert eval(str(test_object)) == test_object
+
+def test_reprs():
+    client = NucleusClient(api_key="fake_key")
+    test_repr(Model(client=client, model_id="fake_model_id", name="fake_name", reference_id="fake_reference_id", metadata={"fake": "metadata"}))
+    test_repr(ModelRun(client=client, model_run_id="fake_model_run_id"))
+
 
 
 def test_model_creation_and_listing(CLIENT, dataset):

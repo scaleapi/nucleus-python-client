@@ -141,7 +141,6 @@ logging.getLogger(requests.packages.urllib3.__package__).setLevel(
 )
 
 
-
 class NucleusClient:
     """
     Nucleus client.
@@ -162,8 +161,6 @@ class NucleusClient:
             if self._use_notebook == other._use_notebook:
                 return True
         return False
-
-    
 
     def list_models(self) -> List[Model]:
         """

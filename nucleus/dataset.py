@@ -34,7 +34,7 @@ class Dataset:
 
     def __repr__(self):
         return f"Dataset(dataset_id='{self.id}', client={self._client})"
-    
+
     def __eq__(self, other):
         if self.id == other.id:
             if self._client == other._client:

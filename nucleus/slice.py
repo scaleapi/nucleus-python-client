@@ -9,6 +9,15 @@ class Slice:
     def __init__(self, slice_id: str, client):
         self.slice_id = slice_id
         self._client = client
+    
+    def __repr__(self):
+        return f"Slice(slice_id='{self.slice_id}', client={self._client})"
+
+    def __eq__(self, other):
+        if self.slice_id == other.slice_id:
+            if self._client == other._client:
+                return True
+        return False
 
     def info(self) -> dict:
         """

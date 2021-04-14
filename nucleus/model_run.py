@@ -23,6 +23,15 @@ class ModelRun:
         self.model_run_id = model_run_id
         self._client = client
 
+    def __repr__(self):
+        return f"ModelRun(model_run_id='{self.model_run_id}', client={self._client})"
+
+    def __eq__(self, other):
+        if self.model_run_id == other.model_run_id:
+            if self._client == other._client:
+                return True
+        return False
+
     def info(self) -> dict:
         """
         provides information about the Model Run:

@@ -23,8 +23,8 @@ from .constants import (
 
 from dataclasses import dataclass
 
-class Annotation:
 
+class Annotation:
     def _check_ids(self):
         if not bool(self.reference_id) and not bool(self.item_id):
             raise Exception(
@@ -39,6 +39,7 @@ class Annotation:
             return PolygonAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
+
 
 @dataclass
 class Segment:
@@ -71,11 +72,11 @@ class SegmentationAnnotation(Annotation):
     reference_id: Optional[str] = None
     item_id: Optional[str] = None
     annotation_id: Optional[str] = None
+
     def __post_init__(self):
         if not self.mask_url:
             raise Exception("You must specify a mask_url.")
         self._check_ids()
-        
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -121,6 +122,7 @@ class BoxAnnotation(Annotation):
     item_id: Optional[str] = None
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+
     def __post_init__(self):
         self._check_ids()
         self.metadata = self.metadata if self.metadata else {}
@@ -165,6 +167,7 @@ class PolygonAnnotation(Annotation):
     item_id: Optional[str] = None
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+
     def __post_init__(self):
         self._check_ids()
         self.metadata = self.metadata if self.metadata else {}
