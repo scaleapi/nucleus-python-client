@@ -20,8 +20,27 @@ from nucleus import (
     PolygonPrediction,
     SegmentationPrediction,
     DatasetItem,
+    Segment
 )
 from nucleus.constants import ERROR_PAYLOAD
+
+
+def test_repr(test_object: any):
+    assert eval(str(test_object)) == test_object
+
+
+def test_reprs():
+    [
+        test_repr(SegmentationPrediction.from_json(_))
+        for _ in TEST_SEGMENTATION_PREDICTIONS
+    ]
+
+    [test_repr(BoxPrediction.from_json(_)) for _ in TEST_BOX_PREDICTIONS]
+
+    [
+        test_repr(PolygonPrediction.from_json(_))
+        for _ in TEST_POLYGON_PREDICTIONS
+    ]
 
 
 @pytest.fixture()

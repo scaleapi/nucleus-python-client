@@ -130,7 +130,6 @@ class ModelRun:
         List[Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]],
     ]:
         annotation_payload = response.get(ANNOTATIONS_KEY, None)
-        SegmentationPrediction.from_json({"asdf": "asdf"})
         if not annotation_payload:
             # An error occurred
             return response

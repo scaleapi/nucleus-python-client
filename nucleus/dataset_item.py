@@ -7,21 +7,19 @@ from .constants import (
     DATASET_ITEM_ID_KEY,
 )
 
+from dataclasses import dataclass
 
+
+@dataclass
 class DatasetItem:
-    def __init__(
-        self,
-        image_location: str,
-        reference_id: str = None,
-        item_id: str = None,
-        metadata: dict = None,
-    ):
 
-        self.image_url = image_location
-        self.local = self._is_local_path(image_location)
-        self.item_id = item_id
-        self.reference_id = reference_id
-        self.metadata = metadata
+    image_location: str
+    reference_id: str = None
+    item_id: str = None
+    metadata: dict = None
+
+    def __post_init__(self):
+        self.local = self._is_local_path(self.image_location)
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -34,9 +32,6 @@ class DatasetItem:
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
-
-    def __str__(self):
-        return str(self.to_payload())
 
     def _is_local_path(self, path: str) -> bool:
         path_components = [comp.lower() for comp in path.split("/")]

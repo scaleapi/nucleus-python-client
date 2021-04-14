@@ -93,9 +93,6 @@ class BoxPrediction(BoxAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
         )
 
-    def __str__(self):
-        return str(self.to_payload())
-
 
 class PolygonPrediction(PolygonAnnotation):
     def __init__(
@@ -132,6 +129,3 @@ class PolygonPrediction(PolygonAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
-
-    def __str__(self):
-        return str(self.to_payload())
