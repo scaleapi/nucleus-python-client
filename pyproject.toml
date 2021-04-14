@@ -22,6 +22,29 @@ exclude = '''
 )
 '''
 
+[tool.poetry]
+name = "scale-nucleus"
+version = "0.1.0"
+description = "The official Python client library for Nucleus, the Data Platform for AI"
+license =  "MIT"
+authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
+readme = "README.md"
+homepage = "https://scale.com/nucleus"
+repository = "https://github.com/scaleapi/nucleus-python-client"
+documentation = "https://dashboard.scale.com/nucleus/docs/api"
+packages = [{include="nucleus"}]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+grequests = "^0.6.0"
+requests = "^2.25.1"
+tqdm = "^4.60.0"
+
+[tool.poetry.dev-dependencies]
+poetry = "^1.1.5"
+pytest = "^6.2.3"
+pylint = "^2.7.4"
+
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta:__legacy__"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
