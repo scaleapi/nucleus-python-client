@@ -141,6 +141,7 @@ logging.getLogger(requests.packages.urllib3.__package__).setLevel(
 )
 
 
+
 class NucleusClient:
     """
     Nucleus client.
@@ -149,8 +150,20 @@ class NucleusClient:
     def __init__(self, api_key: str, use_notebook: bool = False):
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
+        self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
+
+    def __repr__(self):
+        return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook})"
+
+    def __eq__(self, other):
+        if self.api_key == other.api_key:
+            if self._use_notebook == other._use_notebook:
+                return True
+        return False
+
+    
 
     def list_models(self) -> List[Model]:
         """
