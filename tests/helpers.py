@@ -185,7 +185,3 @@ def assert_polygon_prediction_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]
-
-
-def test_repr(test_object: any):
-    assert eval(str(test_object)) == test_object
