@@ -19,11 +19,12 @@ from nucleus.constants import (
 )
 
 
-# Have to define here in order to have access to all relevant objects
-def test_repr(test_object: any):
-    assert eval(str(test_object)) == test_object
+
 
 def test_reprs():
+    # Have to define here in order to have access to all relevant objects
+    def test_repr(test_object: any):
+        assert eval(str(test_object)) == test_object
     test_repr(DatasetItem(
                 image_location="test_url",
                 reference_id="test_reference_id",

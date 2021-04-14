@@ -21,11 +21,12 @@ from nucleus import (
 )
 from nucleus.constants import ERROR_PAYLOAD
 
-# Have to define here in order to have access to all relevant objects
-def test_repr(test_object: any):
-    assert eval(str(test_object)) == test_object
+
 
 def test_reprs():
+    # Have to define here in order to have access to all relevant objects
+    def test_repr(test_object: any):
+        assert eval(str(test_object)) == test_object
     [
         test_repr(SegmentationAnnotation.from_json(_))
         for _ in TEST_SEGMENTATION_ANNOTATIONS

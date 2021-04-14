@@ -25,11 +25,12 @@ from nucleus import (
 from nucleus.constants import ERROR_PAYLOAD
 
 
-def test_repr(test_object: any):
-    assert eval(str(test_object)) == test_object
+
 
 
 def test_reprs():
+    def test_repr(test_object: any):
+        assert eval(str(test_object)) == test_object
     [
         test_repr(SegmentationPrediction.from_json(_))
         for _ in TEST_SEGMENTATION_PREDICTIONS

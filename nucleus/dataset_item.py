@@ -19,6 +19,7 @@ class DatasetItem:
     metadata: dict = None
 
     def __post_init__(self):
+        self.image_url = self.image_location
         self.local = self._is_local_path(self.image_location)
 
     @classmethod
