@@ -158,7 +158,8 @@ Clone from github and install as editable
 ```
 git clone git@github.com:scaleapi/nucleus-python-client.git
 cd nucleus-python-client
-pip install -e .
+pip3 install poetry
+poetry install
 ```
 
 Please install the pre-commit hooks by running the following commands:
