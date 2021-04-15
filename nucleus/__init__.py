@@ -50,6 +50,7 @@ confidence      |   float   |   The optional confidence level of this annotation
 geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
+__version__ = "0.1.0"
 
 import json
 import logging
