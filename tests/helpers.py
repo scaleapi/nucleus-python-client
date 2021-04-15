@@ -17,11 +17,11 @@ TEST_MODEL_RUN = "[PyTest] Test Model Run Reference"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_IMG_URLS = [
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/6dd63871-831611a6.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/82c1005c-e2d1d94f.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/7f2e1814-6591087d.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/06924f46-1708b96f.jpg",
-    "s3://scaleapi-attachments/BDD/BDD/bdd100k/images/100k/train/89b42832-10d662f4.jpg",
+    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/front_camera/1557540143.650423lf.jpg",
+    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/back_camera/1557540143.600352lf.jpg",
+    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/right_camera/1557540143.681730lf.jpg",
+    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/front_left_camera/1557540143.639619lf.jpg",
+    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/front_right_camera/1557540143.661212lf.jpg",
 ]
 TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[0], "1"),
