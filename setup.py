@@ -1,11 +1,18 @@
 import setuptools
 import sys
+import os
+import re
 
-if sys.version_info < (3,5):
+
+if sys.version_info < (3, 5):
     sys.exit('Sorry, Python < 3.5 is not supported')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+# Read metadata from metadata file
+metadata_file = open(os.path.join(os.path.dirname(__file__), 'nucleus', '_metadata.py')).read()
+metadata = dict(re.findall("__([a-z]+)__ = '([^']+)'", metadata_file))
 
 
 def read_requirements_links(fi: str):
@@ -38,7 +45,7 @@ print(links)
 
 setuptools.setup(
     name="nucleus",
-    version="0.0.1",
+    version=metadata['version'],
     author="Scale AI",
     author_email="support@scale.com",
     description="The official Python client library for Nucleus, the Data Platform for AI",
