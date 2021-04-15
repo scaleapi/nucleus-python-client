@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 class Annotation:
     def _check_ids(self):
-        if not bool(self.reference_id) and not bool(self.item_id):
+        if bool(self.reference_id) == bool(self.item_id):
             raise Exception(
                 "You must specify either a reference_id or an item_id for an annotation."
             )
