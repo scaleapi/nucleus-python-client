@@ -120,10 +120,10 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     y: Union[float, int]
     width: Union[float, int]
     height: Union[float, int]
-    annotation_id: Optional[str] = None
-    metadata: Optional[Dict] = None
     reference_id: Optional[str] = None
     item_id: Optional[str] = None
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
 
     def __post_init__(self):
         self._check_ids()
@@ -165,10 +165,10 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
 class PolygonAnnotation(Annotation):
     label: str
     vertices: List[Any]
-    annotation_id: Optional[str] = None
-    metadata: Optional[Dict] = None
     reference_id: Optional[str] = None
     item_id: Optional[str] = None
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
 
     def __post_init__(self):
         self._check_ids()
