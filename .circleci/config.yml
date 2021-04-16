@@ -25,7 +25,7 @@ jobs:
       - run:
           name: Pylint Lint Check # Uses .pylintrc for configuration
           command: |
-            poetry pylint nucleus
+            poetry run pylint nucleus
       - run :
           name: MyPy typing check
           command: |
