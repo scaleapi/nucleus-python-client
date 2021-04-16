@@ -66,8 +66,11 @@ import requests
 from requests.adapters import HTTPAdapter
 
 # pylint: disable=E1101
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
 from requests.packages.urllib3.util.retry import Retry
 
+from .constants import REFERENCE_IDS_KEY, DATASET_ITEM_IDS_KEY
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .annotation import (
@@ -146,8 +149,18 @@ class NucleusClient:
     def __init__(self, api_key: str, use_notebook: bool = False):
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
+        self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
+
+    def __repr__(self):
+        return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook})"
+
+    def __eq__(self, other):
+        if self.api_key == other.api_key:
+            if self._use_notebook == other._use_notebook:
+                return True
+        return False
 
     def list_models(self) -> List[Model]:
         """
@@ -959,6 +972,42 @@ class NucleusClient:
             {},
             f"slice/{slice_id}",
             requests_command=requests.delete,
+        )
+        return response
+
+    def append_to_slice(
+        self,
+        slice_id: str,
+        dataset_item_ids: List[str] = None,
+        reference_ids: List[str] = None,
+    ) -> dict:
+        """
+        Appends to a slice from items already present in a dataset.
+        The caller must exclusively use either datasetItemIds or reference_ids
+        as a means of identifying items in the dataset.
+
+        :param
+        dataset_item_ids: List[str],
+        reference_ids: List[str],
+
+        :return:
+        {
+            "slice_id": str,
+        }
+        """
+        if dataset_item_ids and reference_ids:
+            raise Exception(
+                "You cannot specify both dataset_item_ids and reference_ids"
+            )
+
+        ids_to_append: Dict[str, Any] = {}
+        if dataset_item_ids:
+            ids_to_append[DATASET_ITEM_IDS_KEY] = dataset_item_ids
+        if reference_ids:
+            ids_to_append[REFERENCE_IDS_KEY] = reference_ids
+
+        response = self._make_request(
+            ids_to_append, f"slice/{slice_id}/append"
         )
         return response
 

@@ -32,6 +32,15 @@ class Dataset:
         self.id = dataset_id
         self._client = client
 
+    def __repr__(self):
+        return f"Dataset(dataset_id='{self.id}', client={self._client})"
+
+    def __eq__(self, other):
+        if self.id == other.id:
+            if self._client == other._client:
+                return True
+        return False
+
     @property
     def name(self) -> str:
         return self.info().get(DATASET_NAME_KEY, "")

@@ -21,8 +21,16 @@ from .constants import (
     ANNOTATIONS_KEY,
 )
 
+from dataclasses import dataclass
+
 
 class Annotation:
+    def _check_ids(self):
+        if bool(self.reference_id) == bool(self.item_id):
+            raise Exception(
+                "You must specify either a reference_id or an item_id for an annotation."
+            )
+
     @classmethod
     def from_json(cls, payload: dict):
         if payload.get(TYPE_KEY, None) == BOX_TYPE:
@@ -33,16 +41,11 @@ class Annotation:
             return SegmentationAnnotation.from_json(payload)
 
 
+@dataclass
 class Segment:
-    def __init__(
-        self, label: str, index: int, metadata: Optional[dict] = None
-    ):
-        self.label = label
-        self.index = index
-        self.metadata = metadata
-
-    def __str__(self):
-        return str(self.to_payload())
+    label: str
+    index: int
+    metadata: Optional[dict] = None
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -62,35 +65,25 @@ class Segment:
         return payload
 
 
+@dataclass
 class SegmentationAnnotation(Annotation):
-    def __init__(
-        self,
-        mask_url: str,
-        annotations: List[Segment],
-        reference_id: Optional[str] = None,
-        item_id: Optional[str] = None,
-        annotation_id: Optional[str] = None,
-    ):
-        super().__init__()
-        if not mask_url:
-            raise Exception("You must specify a mask_url.")
-        if bool(reference_id) == bool(item_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for an annotation."
-            )
-        self.mask_url = mask_url
-        self.annotations = annotations
-        self.reference_id = reference_id
-        self.item_id = item_id
-        self.annotation_id = annotation_id
+    mask_url: str
+    annotations: List[Segment]
+    reference_id: Optional[str] = None
+    item_id: Optional[str] = None
+    annotation_id: Optional[str] = None
 
-    def __str__(self):
-        return str(self.to_payload())
+    def __post_init__(self):
+        if not self.mask_url:
+            raise Exception("You must specify a mask_url.")
+        self._check_ids()
 
     @classmethod
     def from_json(cls, payload: dict):
+        if MASK_URL_KEY not in payload:
+            raise ValueError(f"Missing {MASK_URL_KEY} in json")
         return cls(
-            mask_url=payload.get(MASK_URL_KEY),
+            mask_url=payload[MASK_URL_KEY],
             annotations=[
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])
@@ -118,35 +111,21 @@ class AnnotationTypes(Enum):
     POLYGON = POLYGON_TYPE
 
 
-# TODO: Add base annotation class to reduce repeated code here
+@dataclass
 class BoxAnnotation(Annotation):
-    # pylint: disable=too-many-instance-attributes
-    def __init__(
-        self,
-        label: str,
-        x: Union[float, int],
-        y: Union[float, int],
-        width: Union[float, int],
-        height: Union[float, int],
-        reference_id: Optional[str] = None,
-        item_id: Optional[str] = None,
-        annotation_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
-    ):
-        super().__init__()
-        if bool(reference_id) == bool(item_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for an annotation."
-            )
-        self.label = label
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.reference_id = reference_id
-        self.item_id = item_id
-        self.annotation_id = annotation_id
-        self.metadata = metadata if metadata else {}
+    label: str
+    x: Union[float, int]
+    y: Union[float, int]
+    width: Union[float, int]
+    height: Union[float, int]
+    reference_id: Optional[str] = None
+    item_id: Optional[str] = None
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self._check_ids()
+        self.metadata = self.metadata if self.metadata else {}
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -178,32 +157,20 @@ class BoxAnnotation(Annotation):
             METADATA_KEY: self.metadata,
         }
 
-    def __str__(self):
-        return str(self.to_payload())
-
 
 # TODO: Add Generic type for 2D point
+@dataclass
 class PolygonAnnotation(Annotation):
-    def __init__(
-        self,
-        label: str,
-        vertices: List[Any],
-        reference_id: Optional[str] = None,
-        item_id: Optional[str] = None,
-        annotation_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
-    ):
-        super().__init__()
-        if bool(reference_id) == bool(item_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for an annotation."
-            )
-        self.label = label
-        self.vertices = vertices
-        self.reference_id = reference_id
-        self.item_id = item_id
-        self.annotation_id = annotation_id
-        self.metadata = metadata if metadata else {}
+    label: str
+    vertices: List[Any]
+    reference_id: Optional[str] = None
+    item_id: Optional[str] = None
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self._check_ids()
+        self.metadata = self.metadata if self.metadata else {}
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -226,6 +193,3 @@ class PolygonAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
-
-    def __str__(self):
-        return str(self.to_payload())

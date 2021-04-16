@@ -8,7 +8,7 @@ from helpers import (
     reference_id_from_url,
 )
 
-from nucleus import Dataset, DatasetItem, UploadResponse
+from nucleus import Dataset, DatasetItem, UploadResponse, NucleusClient
 from nucleus.constants import (
     NEW_ITEMS,
     UPDATED_ITEMS,
@@ -17,6 +17,29 @@ from nucleus.constants import (
     ERROR_PAYLOAD,
     DATASET_ID_KEY,
 )
+
+
+
+
+def test_reprs():
+    # Have to define here in order to have access to all relevant objects
+    def test_repr(test_object: any):
+        assert eval(str(test_object)) == test_object
+    test_repr(DatasetItem(
+                image_location="test_url",
+                reference_id="test_reference_id",
+                metadata={
+                    "made_with_pytest": True,
+                    "example_int": 0,
+                    "example_str": "hello",
+                    "example_float": 0.5,
+                    "example_dict": {
+                        "nested": True,
+                    },
+                    "example_list": ["hello", 1, False],
+                },
+            ))
+    test_repr(Dataset("test_dataset", NucleusClient(api_key="fake_key")))
 
 
 @pytest.fixture()

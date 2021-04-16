@@ -6,7 +6,8 @@ from nucleus import (
     UploadResponse,
     Model,
     ModelRun,
-    BoxPrediction
+    BoxPrediction,
+    NucleusClient
 )
 from nucleus.constants import (
     NEW_ITEMS,
@@ -20,15 +21,27 @@ from helpers import (
     TEST_MODEL_NAME,
     TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,
-    TEST_PREDS
+    TEST_PREDS,
 )
+
+
+
+def test_reprs():
+    # Have to define here in order to have access to all relevant objects
+    def test_repr(test_object: any):
+        assert eval(str(test_object)) == test_object
+    client = NucleusClient(api_key="fake_key")
+    test_repr(Model(client=client, model_id="fake_model_id", name="fake_name", reference_id="fake_reference_id", metadata={"fake": "metadata"}))
+    test_repr(ModelRun(client=client, model_run_id="fake_model_run_id"))
+
+
 
 def test_model_creation_and_listing(CLIENT, dataset):
     models_before = CLIENT.list_models()
 
     # Creation
     model = CLIENT.add_model(TEST_MODEL_NAME, TEST_MODEL_REFERENCE)
-    m_run =  model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
+    m_run = model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
     m_run.commit()
 
     assert isinstance(model, Model)
@@ -46,4 +59,3 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     assert model not in ms
     assert ms == models_before
-    
