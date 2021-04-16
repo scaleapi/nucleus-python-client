@@ -2,27 +2,25 @@ from pathlib import Path
 from urllib.parse import urlparse
 import boto3
 from nucleus import DatasetItem, BoxPrediction
+import time
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 
 TEST_MODEL_NAME = "[PyTest] Test Model"
-TEST_MODEL_REFERENCE = "[PyTest] Test Model Reference"
+TEST_MODEL_REFERENCE = "[PyTest] Test Model Reference" + str(time.time())
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 
-TEST_MODEL_NAME = "[PyTest] Test Model Name"
-TEST_MODEL_REFERENCE = "[PyTest] Test Model Reference"
-TEST_MODEL_RUN = "[PyTest] Test Model Run Reference"
-TEST_DATASET_NAME = "[PyTest] Test Dataset"
-TEST_SLICE_NAME = "[PyTest] Test Slice"
+
 TEST_IMG_URLS = [
-    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/front_camera/1557540143.650423lf.jpg",
-    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/back_camera/1557540143.600352lf.jpg",
-    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/right_camera/1557540143.681730lf.jpg",
-    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/front_left_camera/1557540143.639619lf.jpg",
-    "s3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557540003/undistorted/front_right_camera/1557540143.661212lf.jpg",
+    "http://farm1.staticflickr.com/107/309278012_7a1f67deaa_z.jpg",
+    "http://farm9.staticflickr.com/8001/7679588594_4e51b76472_z.jpg",
+    "http://farm6.staticflickr.com/5295/5465771966_76f9773af1_z.jpg",
+    "http://farm4.staticflickr.com/3449/4002348519_8ddfa4f2fb_z.jpg",
+    "http://farm1.staticflickr.com/6/7617223_d84fcbce0e_z.jpg",
 ]
+
 TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[0], "1"),
     DatasetItem(TEST_IMG_URLS[1], "2"),
@@ -96,12 +94,14 @@ TEST_POLYGON_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
-TEST_MASK_URL = "https://scale-ml.s3.amazonaws.com/home/nucleus/mscoco_masks_uint8/000000000285.png"
+
+TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
+
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Segmentation Annotation Id{i}",
-        "mask_url": get_signed_url(TEST_MASK_URL),
+        "mask_url": TEST_MASK_URL,
         "annotations": [
             {"label": "bear", "index": 2},
             {"label": "grass-merged", "index": 1},
@@ -109,7 +109,6 @@ TEST_SEGMENTATION_ANNOTATIONS = [
     }
     for i in range(len(TEST_IMG_URLS))
 ]
-
 TEST_SEGMENTATION_PREDICTIONS = TEST_SEGMENTATION_ANNOTATIONS
 
 TEST_BOX_PREDICTIONS = [
@@ -122,7 +121,8 @@ TEST_POLYGON_PREDICTIONS = [
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]
 
-TEST_INDEX_EMBEDDINGS_FILE = "https://scale-ml.s3.amazonaws.com/home/nucleus/pytest/pytest_embeddings_payload.json"
+TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
+
 
 # Asserts that a box annotation instance matches a dict representing its properties.
 # Useful to check annotation uploads/updates match.
