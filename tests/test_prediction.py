@@ -1,9 +1,8 @@
 import pytest
-
+import time
 from helpers import (
     TEST_DATASET_NAME,
     TEST_MODEL_NAME,
-    TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,
     TEST_IMG_URLS,
     TEST_BOX_PREDICTIONS,
@@ -58,7 +57,7 @@ def model_run(CLIENT):
     assert ERROR_PAYLOAD not in response.json()
 
     model = CLIENT.add_model(
-        name=TEST_MODEL_NAME, reference_id=TEST_MODEL_REFERENCE
+        name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
     )
 
     run = model.create_run(name=TEST_MODEL_RUN, dataset=ds, predictions=[])

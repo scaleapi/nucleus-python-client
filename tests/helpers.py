@@ -7,7 +7,6 @@ import time
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 
 TEST_MODEL_NAME = "[PyTest] Test Model"
-TEST_MODEL_REFERENCE = "[PyTest] Test Model Reference" + str(time.time())
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
