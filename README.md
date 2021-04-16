@@ -169,14 +169,9 @@ pre-commit install
 ```
 
 **Best practices for testing:**
-(1). Before running pytest, please make sure to authenticate into AWS, since some of the unit tests rely on AWs resources:
+(1). Please run pytest from the root directory of the repo, i.e.
 ```
-gimme_okta_aws_creds
-```
-
-(2). Please run pytest from the root directory of the repo, i.e.
-```
-pytest tests/test_dataset.py
+poetry pytest tests/test_dataset.py
 ```
 
 
