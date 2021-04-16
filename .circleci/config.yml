@@ -22,11 +22,14 @@ jobs:
           name: Flake8 Lint Check # Uses setup.cfg for configuration
           command: |
             poetry run flake8 . --count --statistics
-      # TODO: fix pylint. and add a mypy check.
-      # - run:
-      #     name: Pylint Lint Check # Uses .pylintrc for configuration
-      #     command: |
-      #       pylint scaleapi
+      - run:
+          name: Pylint Lint Check # Uses .pylintrc for configuration
+          command: |
+            poetry pylint nucleus
+      - run :
+          name: MyPy typing check
+          command: |
+            poetry run mypy --ignore-missing-imports nucleus
       - run:
           name: Pytest Test Cases
           command: | # Run test suite, uses SCALE_TEST_API_KEY env variable
