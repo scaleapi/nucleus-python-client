@@ -34,7 +34,7 @@ jobs:
           name: Pytest Test Cases
           command: | # Run test suite, uses NUCLEUS_TEST_API_KEY env variable
             mkdir test_results
-            poetry run coverage --include=nucleus/* run -m pytest --junitxml=test_results/junit.xml
+            poetry run coverage run --include=nucleus/* -m pytest --junitxml=test_results/junit.xml
             poetry run coverage report
             poetry run coverage html
 
