@@ -46,7 +46,7 @@ def test_reprs():
 def test_model_creation_and_listing(CLIENT, dataset):
     models_before = CLIENT.list_models()
 
-    model_reference = "model_" + time.time()
+    model_reference = "model_" + str(time.time())
     # Creation
     model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
     m_run = model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
