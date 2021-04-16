@@ -13,6 +13,7 @@ jobs:
           command: | # install env dependencies
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs --output install_rust.sh
             sh install_rust.sh -y
+            source $HOME/.cargo/env
             pip install poetry
             poetry install
       - run:
