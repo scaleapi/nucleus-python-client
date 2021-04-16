@@ -175,7 +175,7 @@ def test_box_pred_upload_ignore(model_run):
     # Default behavior is ignore.
     response = model_run.predict(annotations=[prediction_update])
 
-    assert response["predictions_processed"] == 1
+    assert response["predictions_processed"] == 0
     assert response["predictions_ignored"] == 1
 
     response = model_run.refloc(prediction.reference_id)["box"]
@@ -230,7 +230,7 @@ def test_polygon_pred_upload_ignore(model_run):
     # Default behavior is ignore.
     response = model_run.predict(annotations=[prediction_update])
 
-    assert response["predictions_processed"] == 1
+    assert response["predictions_processed"] == 0
     assert response["predictions_ignored"] == 1
 
     response = model_run.refloc(prediction.reference_id)["polygon"]

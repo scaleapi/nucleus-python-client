@@ -209,6 +209,9 @@ def test_box_gt_upload_update(dataset):
 
 def test_box_gt_upload_ignore(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+
+    print(annotation)
+
     response = dataset.annotate(annotations=[annotation])
 
     assert response["annotations_processed"] == 1
@@ -222,10 +225,12 @@ def test_box_gt_upload_ignore(dataset):
         "reference_id"
     ]
     annotation_update = BoxAnnotation(**annotation_update_params)
+
     # Default behavior is ignore.
     response = dataset.annotate(annotations=[annotation_update])
 
-    assert response["annotations_processed"] == 1
+
+    assert response["annotations_processed"] == 0
     assert response["annotations_ignored"] == 1
 
     response = dataset.refloc(annotation.reference_id)["annotations"]["box"]
@@ -286,7 +291,7 @@ def test_polygon_gt_upload_ignore(dataset):
     # Default behavior is ignore.
     response = dataset.annotate(annotations=[annotation_update])
 
-    assert response["annotations_processed"] == 1
+    assert response["annotations_processed"] == 0
     assert response["annotations_ignored"] == 1
 
     response = dataset.refloc(annotation.reference_id)["annotations"][
