@@ -32,8 +32,13 @@ jobs:
             poetry run mypy --ignore-missing-imports nucleus
       - run:
           name: Pytest Test Cases
-          command: | # Run test suite, uses SCALE_TEST_API_KEY env variable
-            poetry run pytest
+          command: | # Run test suite, uses NUCLEUS_TEST_API_KEY env variable
+            poetry run coverage run -m pytest
+            poetry run coverage report
+            poetry run coverage html
+
+      - store_test_results:
+          path: htmlcov
   pypi_publish:
     docker:
       - image: cimg/python:3.6
