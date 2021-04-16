@@ -11,6 +11,7 @@ jobs:
       - run:
           name: Install Environment Dependencies
           command: | # install env dependencies
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
             pip install poetry
             poetry install
       - run:
