@@ -1,6 +1,5 @@
 from pathlib import Path
 from urllib.parse import urlparse
-import boto3
 from nucleus import DatasetItem, BoxPrediction
 import time
 
@@ -34,30 +33,6 @@ TEST_PREDS = [
     BoxPrediction("[Pytest Box Prediction 3]", 0, 0, 100, 100, "3"),
     BoxPrediction("[Pytest Box Prediction 4]", 0, 0, 100, 100, "4"),
 ]
-
-
-def get_signed_url(url):
-    bucket, key = get_s3_details(url)
-    return s3_sign(bucket, key)
-
-
-def get_s3_details(url):
-    # Expects S3 URL format to be https://<BUCKET>.s3.amazonaws.com/<KEY>
-    parsed = urlparse(url)
-    bucket = parsed.netloc[: parsed.netloc.find(".")]
-    return bucket, parsed.path[1:]
-
-
-def s3_sign(bucket, key):
-    s3 = boto3.client("s3")
-    return s3.generate_presigned_url(
-        ClientMethod="get_object",
-        Params={
-            "Bucket": bucket,
-            "Key": key,
-        },
-        ExpiresIn=PRESIGN_EXPIRY_SECONDS,
-    )
 
 
 def reference_id_from_url(url):
