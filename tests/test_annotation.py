@@ -17,8 +17,27 @@ from nucleus import (
     PolygonAnnotation,
     SegmentationAnnotation,
     DatasetItem,
+    Segment,
 )
 from nucleus.constants import ERROR_PAYLOAD
+
+
+def test_reprs():
+    # Have to define here in order to have access to all relevant objects
+    def test_repr(test_object: any):
+        assert eval(str(test_object)) == test_object
+
+    [
+        test_repr(SegmentationAnnotation.from_json(_))
+        for _ in TEST_SEGMENTATION_ANNOTATIONS
+    ]
+
+    [test_repr(BoxAnnotation.from_json(_)) for _ in TEST_BOX_ANNOTATIONS]
+
+    [
+        test_repr(PolygonAnnotation.from_json(_))
+        for _ in TEST_POLYGON_ANNOTATIONS
+    ]
 
 
 @pytest.fixture()

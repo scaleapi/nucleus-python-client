@@ -39,6 +39,12 @@ class UploadResponse:
         self.error_codes: Set[str] = set()
         self.error_payload = upload_error_payload
 
+    def __repr__(self):
+        return f"UploadResponse(json={self.json()})"
+
+    def __eq__(self, other):
+        return self.json() == other.json()
+
     def update_response(self, json):
         """
         :param json: { new_items: int, updated_items: int, ignored_items: int, upload_errors: int, }

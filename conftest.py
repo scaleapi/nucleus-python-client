@@ -6,6 +6,7 @@
 # https://github.com/gevent/gevent/issues/1016#issuecomment-328530533
 # https://github.com/spyoungtech/grequests/issues/8
 import grequests
+
 ################
 
 import logging
@@ -19,26 +20,28 @@ from nucleus.constants import SUCCESS_STATUS_CODES
 
 from tests.helpers import TEST_DATASET_NAME, TEST_DATASET_ITEMS
 
-assert 'NUCLEUS_PYTEST_API_KEY' in os.environ, \
-    "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid " \
+assert "NUCLEUS_PYTEST_API_KEY" in os.environ, (
+    "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid "
     "Nucleus API key to run the test suite"
+)
 
-API_KEY = os.environ['NUCLEUS_PYTEST_API_KEY']
+API_KEY = os.environ["NUCLEUS_PYTEST_API_KEY"]
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def monkeypatch_session(request):
-    """ This workaround is needed to allow monkeypatching in session-scoped fixtures.
+    """This workaround is needed to allow monkeypatching in session-scoped fixtures.
 
     See https://github.com/pytest-dev/pytest/issues/363
     """
     from _pytest.monkeypatch import MonkeyPatch
+
     mpatch = MonkeyPatch()
     yield mpatch
     mpatch.undo()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def CLIENT(monkeypatch_session):
     client = nucleus.NucleusClient(API_KEY)
 
@@ -49,13 +52,15 @@ def CLIENT(monkeypatch_session):
         payload: dict, route: str, requests_command=requests.post
     ) -> dict:
         response = client._make_request_raw(payload, route, requests_command)
-        assert response.status_code in SUCCESS_STATUS_CODES, \
-            f"HTTP response had status code: {response.status_code}. " \
+        assert response.status_code in SUCCESS_STATUS_CODES, (
+            f"HTTP response had status code: {response.status_code}. "
             f"Full JSON: {response.json()}"
+        )
         return response.json()
 
     monkeypatch_session.setattr(client, "_make_request", _make_request_patch)
     return client
+
 
 @pytest.fixture()
 def dataset(CLIENT):
