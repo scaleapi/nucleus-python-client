@@ -229,7 +229,6 @@ def test_box_gt_upload_ignore(dataset):
     # Default behavior is ignore.
     response = dataset.annotate(annotations=[annotation_update])
 
-
     assert response["annotations_processed"] == 0
     assert response["annotations_ignored"] == 1
 
