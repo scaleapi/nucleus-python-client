@@ -4,23 +4,24 @@ version: 2.1
 jobs:
   build_test:
     docker:
-      - image: cimg/python:3.6
+      - image: python:3.9-slim-buster
     resource_class: small
     steps:
       - checkout # checkout source code to working directory
       - run:
           name: Install Environment Dependencies
-          command: | # install env dependencies
+          command: | # install dependencies
+            pip install --upgrade pip 
             pip install poetry
             poetry install
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
           command: |
-            black --check -t py36 .
+            poetry run black --check -t py36 .
       - run:
           name: Flake8 Lint Check # Uses setup.cfg for configuration
           command: |
-            flake8 . --count --statistics
+            poetry run flake8 . --count --statistics
       # TODO: fix pylint. and add a mypy check.
       # - run:
       #     name: Pylint Lint Check # Uses .pylintrc for configuration
