@@ -1,7 +1,8 @@
 from pathlib import Path
-from urllib.parse import urlparse
-from nucleus import DatasetItem, BoxPrediction
 import time
+from urllib.parse import urlparse
+
+from nucleus import DatasetItem, BoxPrediction
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 
