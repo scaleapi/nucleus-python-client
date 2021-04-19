@@ -1,9 +1,7 @@
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from .dataset_item import DatasetItem
 from .annotation import (
     Annotation,
-    BoxAnnotation,
-    PolygonAnnotation,
 )
 from .constants import (
     DATASET_NAME_KEY,
@@ -109,7 +107,7 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        annotations: List[Annotation],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
     ) -> dict:
