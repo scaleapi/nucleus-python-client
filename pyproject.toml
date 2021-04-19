@@ -39,6 +39,7 @@ tqdm = "^4.60.0"
 boto3 = "^1.17.53"
 mypy = "^0.812"
 coverage = "^5.5"
+dataclasses = { version = "^0.7", python = "^3.6.1, <3.7" }
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
