@@ -110,7 +110,6 @@ class Slice:
         info = self.info()
         for item_metadata in info["dataset_items"]:
             yield self._client.dataitem_loc(
-                self,
                 dataset_id=info["dataset_id"],
                 dataset_item_id=item_metadata["id"],
             )

@@ -193,3 +193,12 @@ def test_slice_append(dataset):
             or item.reference_id == response["dataset_items"][1]["ref_id"]
             or item.reference_id == response["dataset_items"][2]["ref_id"]
         )
+
+    all_stored_items = slc.items()
+
+    def sort_by_reference_id(items):
+        return sorted(items, key=lambda x: x.reference_id)
+
+    breakpoint()
+
+    assert tuple(sort_by_reference_id(all_stored_items)) == ds_items
