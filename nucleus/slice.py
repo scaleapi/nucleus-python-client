@@ -74,7 +74,7 @@ class Slice:
         return response
 
     def items_generator(self) -> Iterable[DatasetItem]:
-        """Returns an iterable of DatasetItem/Annotation dicts."""
+        """Use to iterate over all dataset items in slice."""
         info = self.info()
         for item_metadata in info["dataset_items"]:
             yield format_dataset_item_response(
