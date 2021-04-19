@@ -113,7 +113,7 @@ class AnnotationTypes(Enum):
     POLYGON = POLYGON_TYPE
 
 
-@dataclass # pylint: disable=R0902
+@dataclass  # pylint: disable=R0902
 class BoxAnnotation(Annotation):  # pylint: disable=R0902
     label: str
     x: Union[float, int]
