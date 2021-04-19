@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 import os.path
+from typing import Optional
 from .constants import (
     IMAGE_URL_KEY,
     METADATA_KEY,
@@ -7,16 +9,14 @@ from .constants import (
     DATASET_ITEM_ID_KEY,
 )
 
-from dataclasses import dataclass
-
 
 @dataclass
 class DatasetItem:
 
     image_location: str
-    reference_id: str = None
-    item_id: str = None
-    metadata: dict = None
+    reference_id: Optional[str] = None
+    item_id: Optional[str] = None
+    metadata: Optional[dict] = None
 
     def __post_init__(self):
         self.image_url = self.image_location

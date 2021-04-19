@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, Optional, Any, Union, List
 from .constants import (
@@ -21,10 +22,11 @@ from .constants import (
     ANNOTATIONS_KEY,
 )
 
-from dataclasses import dataclass
-
 
 class Annotation:
+    reference_id: Optional[str] = None
+    item_id: Optional[str] = None
+
     def _check_ids(self):
         if bool(self.reference_id) == bool(self.item_id):
             raise Exception(
@@ -69,9 +71,9 @@ class Segment:
 class SegmentationAnnotation(Annotation):
     mask_url: str
     annotations: List[Segment]
+    annotation_id: Optional[str] = None
     reference_id: Optional[str] = None
     item_id: Optional[str] = None
-    annotation_id: Optional[str] = None
 
     def __post_init__(self):
         if not self.mask_url:
@@ -111,8 +113,8 @@ class AnnotationTypes(Enum):
     POLYGON = POLYGON_TYPE
 
 
-@dataclass
-class BoxAnnotation(Annotation):
+@dataclass  # pylint: disable=R0902
+class BoxAnnotation(Annotation):  # pylint: disable=R0902
     label: str
     x: Union[float, int]
     y: Union[float, int]

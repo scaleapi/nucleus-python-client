@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Dict, Optional, List, Any
 from .annotation import (
     BoxAnnotation,
@@ -30,7 +28,7 @@ class SegmentationPrediction(SegmentationAnnotation):
     # No need to define init or to_payload methods because
     # we default to functions defined in the parent class
     @classmethod
-    def from_json(cls, payload: dict) -> SegmentationPrediction:
+    def from_json(cls, payload: dict):
         return cls(
             mask_url=payload[MASK_URL_KEY],
             annotations=[
@@ -58,15 +56,15 @@ class BoxPrediction(BoxAnnotation):
         metadata: Optional[Dict] = None,
     ):
         super().__init__(
-            label,
-            x,
-            y,
-            width,
-            height,
-            reference_id,
-            item_id,
-            annotation_id,
-            metadata,
+            label=label,
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            reference_id=reference_id,
+            item_id=item_id,
+            annotation_id=annotation_id,
+            metadata=metadata,
         )
         self.confidence = confidence
 
@@ -78,7 +76,7 @@ class BoxPrediction(BoxAnnotation):
         return payload
 
     @classmethod
-    def from_json(cls, payload: dict) -> BoxPrediction:
+    def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
             label=payload.get(LABEL_KEY, 0),
@@ -106,7 +104,12 @@ class PolygonPrediction(PolygonAnnotation):
         metadata: Optional[Dict] = None,
     ):
         super().__init__(
-            label, vertices, reference_id, item_id, annotation_id, metadata
+            label=label,
+            vertices=vertices,
+            reference_id=reference_id,
+            item_id=item_id,
+            annotation_id=annotation_id,
+            metadata=metadata,
         )
         self.confidence = confidence
 
@@ -118,7 +121,7 @@ class PolygonPrediction(PolygonAnnotation):
         return payload
 
     @classmethod
-    def from_json(cls, payload: dict) -> PolygonPrediction:
+    def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
             label=payload.get(LABEL_KEY, 0),

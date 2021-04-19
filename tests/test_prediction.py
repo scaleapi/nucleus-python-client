@@ -1,9 +1,8 @@
 import pytest
-
+import time
 from helpers import (
     TEST_DATASET_NAME,
     TEST_MODEL_NAME,
-    TEST_MODEL_REFERENCE,
     TEST_MODEL_RUN,
     TEST_IMG_URLS,
     TEST_BOX_PREDICTIONS,
@@ -20,17 +19,15 @@ from nucleus import (
     PolygonPrediction,
     SegmentationPrediction,
     DatasetItem,
-    Segment
+    Segment,
 )
 from nucleus.constants import ERROR_PAYLOAD
-
-
-
 
 
 def test_reprs():
     def test_repr(test_object: any):
         assert eval(str(test_object)) == test_object
+
     [
         test_repr(SegmentationPrediction.from_json(_))
         for _ in TEST_SEGMENTATION_PREDICTIONS
@@ -60,7 +57,7 @@ def model_run(CLIENT):
     assert ERROR_PAYLOAD not in response.json()
 
     model = CLIENT.add_model(
-        name=TEST_MODEL_NAME, reference_id=TEST_MODEL_REFERENCE
+        name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
     )
 
     run = model.create_run(name=TEST_MODEL_RUN, dataset=ds, predictions=[])
@@ -178,7 +175,7 @@ def test_box_pred_upload_ignore(model_run):
     # Default behavior is ignore.
     response = model_run.predict(annotations=[prediction_update])
 
-    assert response["predictions_processed"] == 1
+    assert response["predictions_processed"] == 0
     assert response["predictions_ignored"] == 1
 
     response = model_run.refloc(prediction.reference_id)["box"]
@@ -233,7 +230,7 @@ def test_polygon_pred_upload_ignore(model_run):
     # Default behavior is ignore.
     response = model_run.predict(annotations=[prediction_update])
 
-    assert response["predictions_processed"] == 1
+    assert response["predictions_processed"] == 0
     assert response["predictions_ignored"] == 1
 
     response = model_run.refloc(prediction.reference_id)["polygon"]

@@ -9,7 +9,7 @@ class Slice:
     def __init__(self, slice_id: str, client):
         self.slice_id = slice_id
         self._client = client
-    
+
     def __repr__(self):
         return f"Slice(slice_id='{self.slice_id}', client={self._client})"
 

@@ -1,7 +1,6 @@
 import pytest
 
 from helpers import (
-    get_signed_url,
     TEST_INDEX_EMBEDDINGS_FILE,
     TEST_IMG_URLS,
     TEST_DATASET_NAME,
@@ -39,7 +38,7 @@ def dataset(CLIENT):
 
 
 def test_index_integration(dataset):
-    signed_embeddings_url = get_signed_url(TEST_INDEX_EMBEDDINGS_FILE)
+    signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
     create_response = dataset.create_custom_index(signed_embeddings_url)
     assert JOB_ID_KEY in create_response
     assert MESSAGE_KEY in create_response
