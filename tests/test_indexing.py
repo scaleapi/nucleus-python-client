@@ -1,7 +1,6 @@
 import pytest
 
 from helpers import (
-    get_signed_url,
     TEST_INDEX_EMBEDDINGS_FILE,
     TEST_IMG_URLS,
     TEST_DATASET_NAME,

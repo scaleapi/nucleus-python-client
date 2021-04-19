@@ -33,12 +33,19 @@ jobs:
       - run:
           name: Pytest Test Cases
           command: | # Run test suite, uses NUCLEUS_TEST_API_KEY env variable
-            poetry run coverage run -m pytest
+            mkdir test_results
+            poetry run coverage run --include=nucleus/* -m pytest --junitxml=test_results/junit.xml
             poetry run coverage report
             poetry run coverage html
 
       - store_test_results:
           path: htmlcov
+
+      - store_test_results:
+          path: test_results
+      
+      - store_artifacts:
+          path: test_results
   pypi_publish:
     docker:
       - image: cimg/python:3.6
