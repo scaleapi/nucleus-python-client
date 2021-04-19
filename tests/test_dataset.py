@@ -197,8 +197,15 @@ def test_slice_append(dataset):
     all_stored_items = slc.items()
 
     def sort_by_reference_id(items):
+        # Remove the generated item_ids and standardize
+        #  empty metadata so we can do an equality check.
+        for item in items:
+            item.item_id = None
+            if item.metadata == {}:
+                item.metadata = None
         return sorted(items, key=lambda x: x.reference_id)
 
     breakpoint()
-
-    assert tuple(sort_by_reference_id(all_stored_items)) == ds_items
+    assert sort_by_reference_id(all_stored_items) == sort_by_reference_id(
+        ds_items[:3]
+    )

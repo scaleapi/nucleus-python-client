@@ -1,41 +1,9 @@
-from __future__ import annotations
-
 from typing import List, Iterable, Set, Tuple, Optional
 from nucleus.dataset_item import DatasetItem
 from nucleus.annotation import Annotation
+from nucleus.utils import format_dataset_item_response
 
-from .constants import DEFAULT_ANNOTATION_UPDATE_MODE
-
-
-def check_annotations_are_in_slice(
-    annotations: List[Annotation], slice_to_check: Slice
-) -> Tuple[bool, Set[str], Set[str]]:
-    """Check membership of the annotation targets within this slice.
-
-    annotations: Annnotations with ids referring to targets.
-    slice: The slice to check against.
-    """
-    info = slice_to_check.info()
-    item_ids_not_found_in_slice = {
-        annotation.item_id
-        for annotation in annotations
-        if annotation.item_id is not None
-    }.difference({item_metadata["id"] for item_metadata in info})
-    reference_ids_not_found_in_slice = {
-        annotation.reference_id
-        for annotation in annotations
-        if annotation.reference_id is not None
-    }.difference({item_metadata["reference_id"] for item_metadata in info})
-    if item_ids_not_found_in_slice or reference_ids_not_found_in_slice:
-        annotations_are_in_slice = False
-    else:
-        annotations_are_in_slice = True
-
-    return (
-        annotations_are_in_slice,
-        item_ids_not_found_in_slice,
-        reference_ids_not_found_in_slice,
-    )
+from .constants import DEFAULT_ANNOTATION_UPDATE_MODE, ITEM_KEY
 
 
 class Slice:
@@ -106,13 +74,15 @@ class Slice:
         return response
 
     def items_generator(self) -> Iterable[DatasetItem]:
-        """Returns an iterable of DatasetItems in this slice."""
+        """Returns an iterable of DatasetItem/Annotation dicts."""
         info = self.info()
         for item_metadata in info["dataset_items"]:
-            yield self._client.dataitem_loc(
-                dataset_id=info["dataset_id"],
-                dataset_item_id=item_metadata["id"],
-            )
+            yield format_dataset_item_response(
+                self._client.dataitem_loc(
+                    dataset_id=info["dataset_id"],
+                    dataset_item_id=item_metadata["id"],
+                )
+            )[ITEM_KEY]
 
     def items(self) -> List[DatasetItem]:
         """Returns a list of all DatasetItems in this slice."""
@@ -152,3 +122,34 @@ class Slice:
             update=update,
             batch_size=batch_size,
         )
+
+
+def check_annotations_are_in_slice(
+    annotations: List[Annotation], slice_to_check: Slice
+) -> Tuple[bool, Set[str], Set[str]]:
+    """Check membership of the annotation targets within this slice.
+
+    annotations: Annnotations with ids referring to targets.
+    slice: The slice to check against.
+    """
+    info = slice_to_check.info()
+    item_ids_not_found_in_slice = {
+        annotation.item_id
+        for annotation in annotations
+        if annotation.item_id is not None
+    }.difference({item_metadata["id"] for item_metadata in info})
+    reference_ids_not_found_in_slice = {
+        annotation.reference_id
+        for annotation in annotations
+        if annotation.reference_id is not None
+    }.difference({item_metadata["reference_id"] for item_metadata in info})
+    if item_ids_not_found_in_slice or reference_ids_not_found_in_slice:
+        annotations_are_in_slice = False
+    else:
+        annotations_are_in_slice = True
+
+    return (
+        annotations_are_in_slice,
+        item_ids_not_found_in_slice,
+        reference_ids_not_found_in_slice,
+    )
