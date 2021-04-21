@@ -1,9 +1,9 @@
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
+
+from nucleus.utils import format_dataset_item_response
 from .dataset_item import DatasetItem
 from .annotation import (
     Annotation,
-    BoxAnnotation,
-    PolygonAnnotation,
 )
 from .constants import (
     DATASET_NAME_KEY,
@@ -13,10 +13,7 @@ from .constants import (
     DATASET_ITEM_IDS_KEY,
     REFERENCE_IDS_KEY,
     NAME_KEY,
-    ITEM_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
-    ANNOTATIONS_KEY,
-    ANNOTATION_TYPES,
 )
 from .payload_constructor import construct_model_run_creation_payload
 
@@ -109,7 +106,7 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        annotations: List[Annotation],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
     ) -> dict:
@@ -179,7 +176,7 @@ class Dataset:
         }
         """
         response = self._client.dataitem_iloc(self.id, i)
-        return self._format_dataset_item_response(response)
+        return format_dataset_item_response(response)
 
     def refloc(self, reference_id: str) -> dict:
         """
@@ -192,7 +189,7 @@ class Dataset:
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
-        return self._format_dataset_item_response(response)
+        return format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
         """
@@ -205,7 +202,7 @@ class Dataset:
         }
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)
-        return self._format_dataset_item_response(response)
+        return format_dataset_item_response(response)
 
     def create_slice(
         self,
@@ -246,25 +243,6 @@ class Dataset:
 
     def list_autotags(self):
         return self._client.list_autotags(self.id)
-
-    def _format_dataset_item_response(self, response: dict) -> dict:
-        item = response.get(ITEM_KEY, None)
-        annotation_payload = response.get(ANNOTATIONS_KEY, {})
-        if not item or not annotation_payload:
-            # An error occured
-            return response
-
-        annotation_response = {}
-        for annotation_type in ANNOTATION_TYPES:
-            if annotation_type in annotation_payload:
-                annotation_response[annotation_type] = [
-                    Annotation.from_json(ann)
-                    for ann in annotation_payload[annotation_type]
-                ]
-        return {
-            ITEM_KEY: DatasetItem.from_json(item),
-            ANNOTATIONS_KEY: annotation_response,
-        }
 
     def create_custom_index(self, embeddings_url: str):
         return self._client.create_custom_index(self.id, embeddings_url)
