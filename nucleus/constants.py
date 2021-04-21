@@ -1,5 +1,5 @@
 NUCLEUS_ENDPOINT = "https://api.scale.com/v1/nucleus"
-DEFAULT_NETWORK_TIMEOUT_SEC = 60
+DEFAULT_NETWORK_TIMEOUT_SEC = 120
 ITEMS_KEY = "items"
 ITEM_KEY = "item"
 REFERENCE_ID_KEY = "reference_id"
