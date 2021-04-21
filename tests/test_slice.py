@@ -1,6 +1,6 @@
 import pytest
 from nucleus import Slice, NucleusClient, DatasetItem, BoxAnnotation
-from nucleus.constants import ERROR_PAYLOAD
+from nucleus.constants import ERROR_PAYLOAD, ITEM_KEY
 from helpers import (
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
@@ -127,7 +127,7 @@ def test_slice_append(dataset):
             or item.reference_id == response["dataset_items"][2]["ref_id"]
         )
 
-    all_stored_items = slc.items()
+    all_stored_items = [_[ITEM_KEY] for _ in slc.items_and_annotations()]
 
     def sort_by_reference_id(items):
         # Remove the generated item_ids and standardize

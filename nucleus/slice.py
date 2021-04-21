@@ -1,9 +1,9 @@
-from typing import List, Iterable, Set, Tuple, Optional
+from typing import Dict, List, Iterable, Set, Tuple, Optional, Union
 from nucleus.dataset_item import DatasetItem
 from nucleus.annotation import Annotation
 from nucleus.utils import format_dataset_item_response
 
-from .constants import DEFAULT_ANNOTATION_UPDATE_MODE, ITEM_KEY
+from .constants import DEFAULT_ANNOTATION_UPDATE_MODE
 
 
 class Slice:
@@ -73,8 +73,19 @@ class Slice:
         )
         return response
 
-    def items_generator(self) -> Iterable[DatasetItem]:
-        """Returns an iterable of DatasetItem/Annotation dicts."""
+    def items_and_annotation_generator(
+        self,
+    ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Returns an iterable of all DatasetItems and Annotations in this slice.
+
+        Returns:
+            An iterable, where each item is a dict with two keys representing a row
+            in the dataset.
+            * One value in the dict is the DatasetItem, containing a reference to the
+                item that was annotated, for example an image_url.
+            * The other value is a dictionary containing all the annotations for this
+                dataset item, sorted by annotation type.
+        """
         info = self.info()
         for item_metadata in info["dataset_items"]:
             yield format_dataset_item_response(
@@ -82,11 +93,22 @@ class Slice:
                     dataset_id=info["dataset_id"],
                     dataset_item_id=item_metadata["id"],
                 )
-            )[ITEM_KEY]
+            )
 
-    def items(self) -> List[DatasetItem]:
-        """Returns a list of all DatasetItems in this slice."""
-        return list(self.items_generator())
+    def items_and_annotations(
+        self,
+    ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Returns a list of all DatasetItems and Annotations in this slice.
+
+        Returns:
+            A list, where each item is a dict with two keys representing a row
+            in the dataset.
+            * One value in the dict is the DatasetItem, containing a reference to the
+                item that was annotated.
+            * The other value is a dictionary containing all the annotations for this
+                dataset item, sorted by annotation type.
+        """
+        return list(self.items_and_annotation_generator())
 
     def annotate(
         self,
@@ -131,6 +153,13 @@ def check_annotations_are_in_slice(
 
     annotations: Annnotations with ids referring to targets.
     slice: The slice to check against.
+
+
+    Returns:
+        A tuple, where the first element is true/false whether the annotations are all
+        in the slice.
+        The second element is the list of item_ids not in the slice.
+        The third element is the list of ref_ids not in the slice.
     """
     info = slice_to_check.info()
 
