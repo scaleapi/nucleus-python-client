@@ -167,7 +167,7 @@ class NucleusClient:
         Lists available models in your repo.
         :return: model_ids
         """
-        model_objects = self._make_request({}, "models/", requests.get)
+        model_objects = self.make_request({}, "models/", requests.get)
 
         return [
             Model(
@@ -185,14 +185,14 @@ class NucleusClient:
         Lists available datasets in your repo.
         :return: { datasets_ids }
         """
-        return self._make_request({}, "dataset/", requests.get)
+        return self.make_request({}, "dataset/", requests.get)
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
         """
         Gets all the dataset items inside your repo as a json blob.
         :return [ DatasetItem ]
         """
-        response = self._make_request(
+        response = self.make_request(
             {}, f"dataset/{dataset_id}/datasetItems", requests.get
         )
         dataset_items = response.get("dataset_items", None)
@@ -235,7 +235,7 @@ class NucleusClient:
         :param model_run_id: internally controlled model_run_id
         :return: model_run
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"modelRun/{model_run_id}", requests.delete
         )
 
@@ -254,7 +254,7 @@ class NucleusClient:
             payload["last_n_tasks"] = str(last_n_tasks)
         if name:
             payload["name"] = name
-        response = self._make_request(payload, "dataset/create_from_project")
+        response = self.make_request(payload, "dataset/create_from_project")
         return Dataset(response[DATASET_ID_KEY], self)
 
     def create_dataset(
@@ -271,7 +271,7 @@ class NucleusClient:
         :param annotation_metadata_schema -- optional dictionary to define annotation metadata schema
         :return: new Dataset object
         """
-        response = self._make_request(
+        response = self.make_request(
             {
                 NAME_KEY: name,
                 ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
@@ -289,7 +289,7 @@ class NucleusClient:
         :param payload: { "name": str }
         :return: { "dataset_id": str, "name": str }
         """
-        return self._make_request({}, f"dataset/{dataset_id}", requests.delete)
+        return self.make_request({}, f"dataset/{dataset_id}", requests.delete)
 
     def delete_dataset_item(
         self, dataset_id: str, item_id: str = None, reference_id: str = None
@@ -302,11 +302,11 @@ class NucleusClient:
         :return: { "dataset_id": str, "name": str }
         """
         if item_id:
-            return self._make_request(
+            return self.make_request(
                 {}, f"dataset/{dataset_id}/{item_id}", requests.delete
             )
         else:  # Assume reference_id is provided
-            return self._make_request(
+            return self.make_request(
                 {},
                 f"dataset/{dataset_id}/refloc/{reference_id}",
                 requests.delete,
@@ -566,7 +566,7 @@ class NucleusClient:
         with self.tqdm_bar(total=total_batches) as pbar:
             for batch in tqdm_batches:
                 payload = construct_annotation_payload(batch, update)
-                response = self._make_request(
+                response = self.make_request(
                     payload, f"dataset/{dataset_id}/annotate"
                 )
                 pbar.update(1)
@@ -582,7 +582,7 @@ class NucleusClient:
 
             for s_batch in semseg_batches:
                 payload = construct_segmentation_payload(s_batch, update)
-                response = self._make_request(
+                response = self.make_request(
                     payload, f"dataset/{dataset_id}/annotate_segmentation"
                 )
                 pbar.update(1)
@@ -607,9 +607,7 @@ class NucleusClient:
         :param dataset_id: id of the dataset
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
-        return self._make_request(
-            payload, f"dataset/{dataset_id}/ingest_tasks"
-        )
+        return self.make_request(payload, f"dataset/{dataset_id}/ingest_tasks")
 
     def add_model(
         self, name: str, reference_id: str, metadata: Optional[Dict] = None
@@ -624,7 +622,7 @@ class NucleusClient:
         :param metadata: An optional arbitrary metadata blob for the model.
         :return: { "model_id": str }
         """
-        response = self._make_request(
+        response = self.make_request(
             construct_model_creation_payload(name, reference_id, metadata),
             "models/add",
         )
@@ -659,7 +657,7 @@ class NucleusClient:
         }
         :return: new ModelRun object
         """
-        response = self._make_request(
+        response = self.make_request(
             payload, f"dataset/{dataset_id}/modelRun/create"
         )
         if response.get(STATUS_CODE_KEY, None):
@@ -723,7 +721,7 @@ class NucleusClient:
                 batch,
                 update,
             )
-            response = self._make_request(
+            response = self.make_request(
                 batch_payload, f"modelRun/{model_run_id}/predict"
             )
             if STATUS_CODE_KEY in response:
@@ -738,7 +736,7 @@ class NucleusClient:
 
         for s_batch in s_batches:
             payload = construct_segmentation_payload(s_batch, update)
-            response = self._make_request(
+            response = self.make_request(
                 payload, f"modelRun/{model_run_id}/predict_segmentation"
             )
             # pbar.update(1)
@@ -783,7 +781,7 @@ class NucleusClient:
         """
         if payload is None:
             payload = {}
-        return self._make_request(payload, f"modelRun/{model_run_id}/commit")
+        return self.make_request(payload, f"modelRun/{model_run_id}/commit")
 
     def dataset_info(self, dataset_id: str):
         """
@@ -797,7 +795,7 @@ class NucleusClient:
                 'slice_ids': List[str]
             }
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"dataset/{dataset_id}/info", requests.get
         )
 
@@ -816,7 +814,7 @@ class NucleusClient:
             "metadata": Dict[str, Any],
         }
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"modelRun/{model_run_id}/info", requests.get
         )
 
@@ -826,7 +824,7 @@ class NucleusClient:
         :param reference_id: reference_id of a dataset_item
         :return:
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
         )
 
@@ -840,7 +838,7 @@ class NucleusClient:
             "annotations": List[BoxPrediction],
         }
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"modelRun/{model_run_id}/refloc/{ref_id}", requests.get
         )
 
@@ -851,7 +849,7 @@ class NucleusClient:
         :param i: absolute number of the dataset_item
         :return:
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
         )
 
@@ -865,7 +863,7 @@ class NucleusClient:
             "annotations": List[BoxPrediction],
         }
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"modelRun/{model_run_id}/iloc/{i}", requests.get
         )
 
@@ -880,7 +878,7 @@ class NucleusClient:
             "annotations": List[Box2DAnnotation],
         }
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"dataset/{dataset_id}/loc/{dataset_item_id}", requests.get
         )
 
@@ -894,7 +892,7 @@ class NucleusClient:
             "annotations": List[BoxPrediction],
         }
         """
-        return self._make_request(
+        return self.make_request(
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
 
@@ -920,7 +918,7 @@ class NucleusClient:
         }
         :return: new Slice object
         """
-        response = self._make_request(
+        response = self.make_request(
             payload, f"dataset/{dataset_id}/create_slice"
         )
         return Slice(response[SLICE_ID_KEY], self)
@@ -951,7 +949,7 @@ class NucleusClient:
             "dataset_item_ids": List[str],
         }
         """
-        response = self._make_request(
+        response = self.make_request(
             {},
             f"slice/{slice_id}",
             requests_command=requests.get,
@@ -968,7 +966,7 @@ class NucleusClient:
         :return:
         {}
         """
-        response = self._make_request(
+        response = self.make_request(
             {},
             f"slice/{slice_id}",
             requests_command=requests.delete,
@@ -1006,9 +1004,7 @@ class NucleusClient:
         if reference_ids:
             ids_to_append[REFERENCE_IDS_KEY] = reference_ids
 
-        response = self._make_request(
-            ids_to_append, f"slice/{slice_id}/append"
-        )
+        response = self.make_request(ids_to_append, f"slice/{slice_id}/append")
         return response
 
     def list_autotags(self, dataset_id: str) -> List[str]:
@@ -1017,7 +1013,7 @@ class NucleusClient:
         :param dataset_id: internally controlled dataset_id
         :return: List[str] representing autotag_ids
         """
-        response = self._make_request(
+        response = self.make_request(
             {},
             f"{dataset_id}/list_autotags",
             requests_command=requests.get,
@@ -1035,7 +1031,7 @@ class NucleusClient:
         :return:
         {}
         """
-        response = self._make_request(
+        response = self.make_request(
             {},
             f"model/{model_id}",
             requests_command=requests.delete,
@@ -1043,21 +1039,21 @@ class NucleusClient:
         return response
 
     def create_custom_index(self, dataset_id: str, embeddings_url: str):
-        return self._make_request(
+        return self.make_request(
             {EMBEDDINGS_URL_KEY: embeddings_url},
             f"indexing/{dataset_id}",
             requests_command=requests.post,
         )
 
     def check_index_status(self, job_id: str):
-        return self._make_request(
+        return self.make_request(
             {},
             f"indexing/{job_id}",
             requests_command=requests.get,
         )
 
     def delete_custom_index(self, dataset_id: str):
-        return self._make_request(
+        return self.make_request(
             {},
             f"indexing/{dataset_id}",
             requests_command=requests.delete,
@@ -1132,7 +1128,7 @@ class NucleusClient:
 
         return response
 
-    def _make_request(
+    def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
         """
@@ -1149,6 +1145,7 @@ class NucleusClient:
         if getattr(response, "status_code") not in SUCCESS_STATUS_CODES:
             logger.warning(response)
 
-        return (
-            response.json()
-        )  # TODO: this line fails if response has code == 404
+        if response.status_code == 404:
+            raise response.raise_for_status()
+
+        return response.json()

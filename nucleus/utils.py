@@ -1,7 +1,17 @@
+"""Shared stateless utility function library"""
+
+
 from typing import List, Union, Dict
 
+from nucleus.annotation import Annotation
 from .dataset_item import DatasetItem
 from .prediction import BoxPrediction, PolygonPrediction
+
+from .constants import (
+    ITEM_KEY,
+    ANNOTATIONS_KEY,
+    ANNOTATION_TYPES,
+)
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):
@@ -34,3 +44,29 @@ def suggest_metadata_schema(
             entry["type"] = "text"
         schema[key] = entry
     return schema
+
+
+def format_dataset_item_response(response: dict) -> dict:
+    """Format the raw client response into api objects."""
+    if ANNOTATIONS_KEY not in response:
+        raise ValueError(
+            f"Server response was missing the annotation key: {response}"
+        )
+    if ITEM_KEY not in response:
+        raise ValueError(
+            f"Server response was missing the item key: {response}"
+        )
+    item = response[ITEM_KEY]
+    annotation_payload = response[ANNOTATIONS_KEY]
+
+    annotation_response = {}
+    for annotation_type in ANNOTATION_TYPES:
+        if annotation_type in annotation_payload:
+            annotation_response[annotation_type] = [
+                Annotation.from_json(ann)
+                for ann in annotation_payload[annotation_type]
+            ]
+    return {
+        ITEM_KEY: DatasetItem.from_json(item),
+        ANNOTATIONS_KEY: annotation_response,
+    }

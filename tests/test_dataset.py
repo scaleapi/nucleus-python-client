@@ -129,6 +129,13 @@ def test_dataset_list_autotags(CLIENT, dataset):
     assert autotag_response == []
 
 
+def test_dataset_export_autotag_scores_raises_not_found(CLIENT):
+    client.get_dataset("ds_bwhjbyfb8mjj0ykagxf0")
+
+    # TODO: if/when we can create autotags via api, create one instead.
+    dataset.autotag_scores(autotag_name="red_car_v2")
+
+
 def test_slice_create_and_delete_and_list(dataset):
     # Dataset upload
     ds_items = []

@@ -20,6 +20,8 @@ from .constants import (
 )
 from .payload_constructor import construct_model_run_creation_payload
 
+import requests
+
 
 class Dataset:
     """
@@ -60,6 +62,25 @@ class Dataset:
     @property
     def items(self) -> List[DatasetItem]:
         return self._client.get_dataset_items(self.id)
+
+    def autotag_scores(self, autotag_name, for_scores_greater_than=0):
+        """Export the autotag scores above a threshold, largest scores first.
+
+        If you have pandas installed, you can create a pandas dataframe using
+
+        pandas.Dataframe(dataset.autotag_scores(autotag_name))
+
+        :return: dictionary of the form
+            {'ref_ids': List[str],
+             'datset_item_ids': List[str],
+             'score': List[float]}
+        """
+        response = self._client.make_request(
+            payload={},
+            route=f"autotag/{self.id}/{autotag_name}/{for_scores_greater_than}",
+            requests_command=requests.get,
+        )
+        return response
 
     def info(self) -> dict:
         """

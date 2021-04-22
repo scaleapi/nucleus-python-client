@@ -52,13 +52,11 @@ def CLIENT(monkeypatch_session):
         payload: dict, route: str, requests_command=requests.post
     ) -> dict:
         response = client._make_request_raw(payload, route, requests_command)
-        assert response.status_code in SUCCESS_STATUS_CODES, (
-            f"HTTP response had status code: {response.status_code}. "
-            f"Full JSON: {response.json()}"
-        )
+        if response.status_code not in SUCCESS_STATUS_CODES:
+            response.raise_for_status()
         return response.json()
 
-    monkeypatch_session.setattr(client, "_make_request", _make_request_patch)
+    monkeypatch_session.setattr(client, "make_request", _make_request_patch)
     return client
 
 
