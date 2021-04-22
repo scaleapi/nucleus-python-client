@@ -129,74 +129,11 @@ def test_dataset_list_autotags(CLIENT, dataset):
     assert autotag_response == []
 
 
-def test_dataset_export_autotag_scores_raises_not_found(CLIENT):
+def test_dataset_export_autotag_scores(CLIENT):
+    # Pandoc dataset.
     client.get_dataset("ds_bwhjbyfb8mjj0ykagxf0")
 
     # TODO: if/when we can create autotags via api, create one instead.
     dataset.autotag_scores(autotag_name="red_car_v2")
 
-
-def test_slice_create_and_delete_and_list(dataset):
-    # Dataset upload
-    ds_items = []
-    for url in TEST_IMG_URLS:
-        ds_items.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-            )
-        )
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
-
-    # Slice creation
-    slc = dataset.create_slice(
-        name=TEST_SLICE_NAME,
-        reference_ids=[item.reference_id for item in ds_items[:2]],
-    )
-
-    dataset_slices = dataset.slices
-    assert len(dataset_slices) == 1
-    assert slc.slice_id == dataset_slices[0]
-
-    response = slc.info()
-    assert response["name"] == TEST_SLICE_NAME
-    assert response["dataset_id"] == dataset.id
-    assert len(response["dataset_items"]) == 2
-    for item in ds_items[:2]:
-        assert (
-            item.reference_id == response["dataset_items"][0]["ref_id"]
-            or item.reference_id == response["dataset_items"][1]["ref_id"]
-        )
-
-
-def test_slice_append(dataset):
-    # Dataset upload
-    ds_items = []
-    for url in TEST_IMG_URLS:
-        ds_items.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-            )
-        )
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
-
-    # Slice creation
-    slc = dataset.create_slice(
-        name=TEST_SLICE_NAME,
-        reference_ids=[ds_items[0].reference_id],
-    )
-
-    # Insert duplicate first item
-    slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
-
-    response = slc.info()
-    assert len(response["dataset_items"]) == 3
-    for item in ds_items[:3]:
-        assert (
-            item.reference_id == response["dataset_items"][0]["ref_id"]
-            or item.reference_id == response["dataset_items"][1]["ref_id"]
-            or item.reference_id == response["dataset_items"][2]["ref_id"]
-        )
+    # TODO: add some asserts?
