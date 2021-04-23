@@ -161,7 +161,7 @@ class NucleusClient:
             self.tqdm_bar = tqdm_notebook.tqdm
 
     def __repr__(self):
-        return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}'')"
+        return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"
 
     def __eq__(self, other):
         if self.api_key == other.api_key:
