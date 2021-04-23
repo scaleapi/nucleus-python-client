@@ -132,6 +132,7 @@ from .errors import (
     ModelRunCreationError,
     DatasetItemRetrievalError,
     NotFoundError,
+    NucleusAPIError,
 )
 
 logger = logging.getLogger(__name__)
@@ -146,15 +147,21 @@ class NucleusClient:
     Nucleus client.
     """
 
-    def __init__(self, api_key: str, use_notebook: bool = False):
+    def __init__(
+        self,
+        api_key: str,
+        use_notebook: bool = False,
+        endpoint=NUCLEUS_ENDPOINT,
+    ):
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
+        self.endpoint = endpoint
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
 
     def __repr__(self):
-        return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook})"
+        return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}'')"
 
     def __eq__(self, other):
         if self.api_key == other.api_key:
@@ -1080,7 +1087,7 @@ class NucleusClient:
         sess.mount("https://", adapter)
         sess.mount("http://", adapter)
 
-        endpoint = f"{NUCLEUS_ENDPOINT}/{route}"
+        endpoint = f"{self.endpoint}/{route}"
         logger.info("Posting to %s", endpoint)
 
         if local:
@@ -1103,18 +1110,17 @@ class NucleusClient:
         return post
 
     def _make_request_raw(
-        self, payload: dict, route: str, requests_command=requests.post
+        self, payload: dict, endpoint: str, requests_command=requests.post
     ):
         """
         Makes a request to Nucleus endpoint. This method returns the raw
         requests.Response object which is useful for unit testing.
 
         :param payload: given payload
-        :param route: route for the request
+        :param endpoint: endpoint + route for the request
         :param requests_command: requests.post, requests.get, requests.delete
         :return: response
         """
-        endpoint = f"{NUCLEUS_ENDPOINT}/{route}"
         logger.info("Posting to %s", endpoint)
 
         response = requests_command(
@@ -1140,12 +1146,14 @@ class NucleusClient:
         :param requests_command: requests.post, requests.get, requests.delete
         :return: response JSON
         """
-        response = self._make_request_raw(payload, route, requests_command)
+        endpoint = f"{self.endpoint}/{route}"
 
-        if getattr(response, "status_code") not in SUCCESS_STATUS_CODES:
-            logger.warning(response)
+        response = self._make_request_raw(payload, endpoint, requests_command)
 
-        if response.status_code == 404:
-            raise response.raise_for_status()
+        if not response.ok:
+            self.handle_bad_response(endpoint, requests_command, response)
 
         return response.json()
+
+    def handle_bad_response(self, endpoint, requests_command, response):
+        raise NucleusAPIError(endpoint, requests_command, response)

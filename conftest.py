@@ -29,34 +29,8 @@ API_KEY = os.environ["NUCLEUS_PYTEST_API_KEY"]
 
 
 @pytest.fixture(scope="session")
-def monkeypatch_session(request):
-    """This workaround is needed to allow monkeypatching in session-scoped fixtures.
-
-    See https://github.com/pytest-dev/pytest/issues/363
-    """
-    from _pytest.monkeypatch import MonkeyPatch
-
-    mpatch = MonkeyPatch()
-    yield mpatch
-    mpatch.undo()
-
-
-@pytest.fixture(scope="session")
-def CLIENT(monkeypatch_session):
+def CLIENT():
     client = nucleus.NucleusClient(API_KEY)
-
-    # Change _make_request to raise AsssertionErrors when the
-    # HTTP status code is not successful, so that tests fail if
-    # the request was unsuccessful.
-    def _make_request_patch(
-        payload: dict, route: str, requests_command=requests.post
-    ) -> dict:
-        response = client._make_request_raw(payload, route, requests_command)
-        if response.status_code not in SUCCESS_STATUS_CODES:
-            response.raise_for_status()
-        return response.json()
-
-    monkeypatch_session.setattr(client, "make_request", _make_request_patch)
     return client
 
 

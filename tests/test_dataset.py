@@ -1,4 +1,5 @@
 import pytest
+import os
 
 from helpers import (
     TEST_SLICE_NAME,
@@ -8,7 +9,13 @@ from helpers import (
     reference_id_from_url,
 )
 
-from nucleus import Dataset, DatasetItem, UploadResponse, NucleusClient
+from nucleus import (
+    Dataset,
+    DatasetItem,
+    UploadResponse,
+    NucleusClient,
+    NucleusAPIError,
+)
 from nucleus.constants import (
     NEW_ITEMS,
     UPDATED_ITEMS,
@@ -17,6 +24,8 @@ from nucleus.constants import (
     ERROR_PAYLOAD,
     DATASET_ID_KEY,
 )
+
+TEST_AUTOTAG_DATASET = "ds_bz43jm2jwm70060b3890"
 
 
 def test_reprs():
@@ -130,10 +139,20 @@ def test_dataset_list_autotags(CLIENT, dataset):
 
 
 def test_dataset_export_autotag_scores(CLIENT):
-    # Pandoc dataset.
-    client.get_dataset("ds_bwhjbyfb8mjj0ykagxf0")
-
+    # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    dataset.autotag_scores(autotag_name="red_car_v2")
+    if os.environ.get("HAS_ACCESS_TO_TEST_DATA", False):
+        dataset = CLIENT.get_dataset(TEST_AUTOTAG_DATASET)
 
-    # TODO: add some asserts?
+        with pytest.raises(NucleusAPIError) as api_error:
+            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
+        assert (
+            f"The autotag NONSENSE_GARBAGE was not found in dataset {TEST_AUTOTAG_DATASET}"
+            in str(api_error.value)
+        )
+
+        scores = dataset.autotag_scores(autotag_name="TestTag")
+
+        for column in ["dataset_item_ids", "ref_ids", "scores"]:
+            assert column in scores
+            assert len(scores[column]) > 0
