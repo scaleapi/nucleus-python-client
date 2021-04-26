@@ -77,7 +77,7 @@ def serialize_and_write(
 ):
     for unit in upload_unit:
         try:
-            file_pointer.write(unit.to_json())
+            file_pointer.write(unit.to_json() + "\n")
         except TypeError as e:
             type_name = type(unit).__name__
             message = (

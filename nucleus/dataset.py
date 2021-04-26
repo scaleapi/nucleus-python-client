@@ -241,9 +241,9 @@ class Dataset:
 
         :return: new Slice object
         """
-        if dataset_item_ids and reference_ids:
+        if bool(dataset_item_ids) == bool(reference_ids):
             raise Exception(
-                "You cannot specify both dataset_item_ids and reference_ids"
+                "You must specify exactly one of dataset_item_ids or reference_ids."
             )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if dataset_item_ids:
