@@ -1,25 +1,27 @@
+import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional, Any, Union, List
+from typing import Any, Dict, List, Optional, Union
+
 from .constants import (
     ANNOTATION_ID_KEY,
-    DATASET_ITEM_ID_KEY,
-    REFERENCE_ID_KEY,
-    METADATA_KEY,
-    X_KEY,
-    Y_KEY,
-    WIDTH_KEY,
-    HEIGHT_KEY,
-    GEOMETRY_KEY,
+    ANNOTATIONS_KEY,
     BOX_TYPE,
-    POLYGON_TYPE,
+    DATASET_ITEM_ID_KEY,
+    GEOMETRY_KEY,
+    HEIGHT_KEY,
+    INDEX_KEY,
+    ITEM_ID_KEY,
     LABEL_KEY,
+    MASK_URL_KEY,
+    METADATA_KEY,
+    POLYGON_TYPE,
+    REFERENCE_ID_KEY,
     TYPE_KEY,
     VERTICES_KEY,
-    ITEM_ID_KEY,
-    MASK_URL_KEY,
-    INDEX_KEY,
-    ANNOTATIONS_KEY,
+    WIDTH_KEY,
+    X_KEY,
+    Y_KEY,
 )
 
 
@@ -41,6 +43,15 @@ class Annotation:
             return PolygonAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
+
+    def to_payload(self):
+        raise NotImplementedError(
+            "For serialization, use a specific subclass (i.e. SegmentationAnnotation), "
+            "not the base annotation class."
+        )
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_payload())
 
 
 @dataclass

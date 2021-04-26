@@ -1,12 +1,14 @@
-from dataclasses import dataclass
+import json
 import os.path
+from dataclasses import dataclass
 from typing import Optional
+
 from .constants import (
+    DATASET_ITEM_ID_KEY,
     IMAGE_URL_KEY,
     METADATA_KEY,
-    REFERENCE_ID_KEY,
     ORIGINAL_IMAGE_URL_KEY,
-    DATASET_ITEM_ID_KEY,
+    REFERENCE_ID_KEY,
 )
 
 
@@ -51,3 +53,6 @@ class DatasetItem:
         if self.item_id:
             payload[DATASET_ITEM_ID_KEY] = self.item_id
         return payload
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_payload())

@@ -70,3 +70,25 @@ def format_dataset_item_response(response: dict) -> dict:
         ITEM_KEY: DatasetItem.from_json(item),
         ANNOTATIONS_KEY: annotation_response,
     }
+
+
+def serialize_and_write(
+    upload_unit: List[Union[DatasetItem, Annotation]], file_pointer
+):
+    for unit in upload_unit:
+        try:
+            file_pointer.write(unit.to_json())
+        except TypeError as e:
+            type_name = type(unit).__name__
+            message = (
+                f"The following {type_name} could not be serialized: {unit}\n"
+            )
+            message += (
+                "This is usally an issue with a custom python object being "
+                "present in the metadata. Please inspect this error and adjust the "
+                "metadata so it is json-serializable: only python primitives such as "
+                "strings, ints, floats, lists, and dicts. For example, you must "
+                "convert numpy arrays into list or lists of lists.\n"
+            )
+            message += f"The specific error was {e}"
+            raise ValueError(message) from e
