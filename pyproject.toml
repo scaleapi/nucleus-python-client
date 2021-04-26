@@ -32,7 +32,7 @@ documentation = "https://dashboard.scale.com/nucleus/docs/api"
 packages = [{include="nucleus"}]
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.6.2"
 grequests = "^0.6.0"
 requests = "^2.25.1"
 tqdm = "^4.60.0"
@@ -47,6 +47,7 @@ flake8 = "^3.9.1"
 mypy = "^0.812"
 coverage = "^5.5"
 pre-commit = "^2.12.1"
+jupyterlab = "^3.0.14"
 
 
 [build-system]
