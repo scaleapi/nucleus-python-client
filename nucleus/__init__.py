@@ -416,7 +416,9 @@ class NucleusClient:
                 (ITEMS_KEY, (None, json.dumps(batch), "application/json"))
             ]
             for item in batch:
-                image = open(item.get(IMAGE_URL_KEY), "rb")
+                image = open(  # pylint: disable=R1732
+                    item.get(IMAGE_URL_KEY), "rb"  # pylint: disable=R1732
+                )  # pylint: disable=R1732
                 img_name = os.path.basename(image.name)
                 img_type = (
                     f"image/{os.path.splitext(image.name)[1].strip('.')}"
