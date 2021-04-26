@@ -1,20 +1,21 @@
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
+import requests
 
 from nucleus.utils import format_dataset_item_response
-from .dataset_item import DatasetItem
-from .annotation import (
-    Annotation,
-)
+
+from .annotation import Annotation
 from .constants import (
-    DATASET_NAME_KEY,
-    DATASET_MODEL_RUNS_KEY,
-    DATASET_SLICES_KEY,
-    DATASET_LENGTH_KEY,
     DATASET_ITEM_IDS_KEY,
-    REFERENCE_IDS_KEY,
-    NAME_KEY,
+    DATASET_LENGTH_KEY,
+    DATASET_MODEL_RUNS_KEY,
+    DATASET_NAME_KEY,
+    DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
+    NAME_KEY,
+    REFERENCE_IDS_KEY,
 )
+from .dataset_item import DatasetItem
 from .payload_constructor import construct_model_run_creation_payload
 
 
@@ -57,6 +58,25 @@ class Dataset:
     @property
     def items(self) -> List[DatasetItem]:
         return self._client.get_dataset_items(self.id)
+
+    def autotag_scores(self, autotag_name, for_scores_greater_than=0):
+        """Export the autotag scores above a threshold, largest scores first.
+
+        If you have pandas installed, you can create a pandas dataframe using
+
+        pandas.Dataframe(dataset.autotag_scores(autotag_name))
+
+        :return: dictionary of the form
+            {'ref_ids': List[str],
+             'datset_item_ids': List[str],
+             'score': List[float]}
+        """
+        response = self._client.make_request(
+            payload={},
+            route=f"autotag/{self.id}/{autotag_name}/{for_scores_greater_than}",
+            requests_command=requests.get,
+        )
+        return response
 
     def info(self) -> dict:
         """

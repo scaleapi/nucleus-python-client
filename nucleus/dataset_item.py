@@ -38,11 +38,7 @@ class DatasetItem:
 
     def _is_local_path(self, path: str) -> bool:
         path_components = [comp.lower() for comp in path.split("/")]
-        return not (
-            "https:" in path_components
-            or "http:" in path_components
-            or "s3:" in path_components
-        )
+        return path_components[0] not in {"https:", "http:", "s3:", "gs:"}
 
     def local_file_exists(self):
         return os.path.isfile(self.image_url)

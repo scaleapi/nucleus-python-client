@@ -162,10 +162,9 @@ pip3 install poetry
 poetry install
 ```
 
-Please install the pre-commit hooks by running the following commands:
+Please install the pre-commit hooks by running the following command:
 ```python
-pip install pre-commit
-pre-commit install
+poetry run pre-commit install
 ```
 
 **Best practices for testing:**
