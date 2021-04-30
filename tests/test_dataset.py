@@ -58,7 +58,7 @@ def dataset(CLIENT):
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
-    assert response == {}
+    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_dataset_create_and_delete(CLIENT):
@@ -73,7 +73,7 @@ def test_dataset_create_and_delete(CLIENT):
 
     # Deletion
     response = CLIENT.delete_dataset(ds.id)
-    assert response == {}
+    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_dataset_append(dataset):
