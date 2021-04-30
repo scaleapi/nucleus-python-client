@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional
+from collections import Counter
+from typing import List, Dict, Any, Optional
 
 import requests
 
@@ -178,6 +179,19 @@ class Dataset:
             'ignored_items': int,
         }
         """
+        ref_ids = []
+        for dataset_item in dataset_items:
+            if dataset_item.reference_id is not None:
+                ref_ids.append(dataset_item.reference_id)
+        if len(ref_ids) != len(set(ref_ids)):
+            duplicates = {
+                f"{key}": f"Count: {value}"
+                for key, value in Counter(ref_ids).items()
+            }
+            raise ValueError(
+                "Duplicate reference ids found among dataset_items: %s"
+                % duplicates
+            )
         return self._client.populate_dataset(
             self.id,
             dataset_items,
