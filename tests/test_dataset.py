@@ -156,3 +156,13 @@ def test_dataset_export_autotag_scores(CLIENT):
         for column in ["dataset_item_ids", "ref_ids", "scores"]:
             assert column in scores
             assert len(scores[column]) > 0
+
+
+def test_dataset_append_404(dataset):
+
+    with pytest.raises(NucleusAPIError) as e:
+        dataset.append(
+            [DatasetItem(image_location="https://fakegarbage.notpossible.tv")]
+        )
+    breakpoint()
+    print(e)
