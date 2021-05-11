@@ -16,7 +16,7 @@ def dataset(CLIENT):
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
-    assert response == {}
+    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_reprs():

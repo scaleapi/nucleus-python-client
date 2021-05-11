@@ -1,7 +1,8 @@
+from collections import Counter
 import json
 import os.path
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional, Sequence
 
 from .constants import (
     DATASET_ITEM_ID_KEY,
@@ -58,10 +59,26 @@ def is_local_path(path: str) -> bool:
     return path_components[0] not in {"https:", "http:", "s3:", "gs:"}
 
 
-def check_all_paths_remote(dataset_items: List[DatasetItem]):
+def check_all_paths_remote(dataset_items: Sequence[DatasetItem]):
     for item in dataset_items:
         if is_local_path(item.image_location):
             raise ValueError(
                 f"All paths must be remote, but {item.image_location} is either "
                 "local, or a remote URL type that is not supported."
             )
+
+
+def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
+    ref_ids = []
+    for dataset_item in dataset_items:
+        if dataset_item.reference_id is not None:
+            ref_ids.append(dataset_item.reference_id)
+    if len(ref_ids) != len(set(ref_ids)):
+        duplicates = {
+            f"{key}": f"Count: {value}"
+            for key, value in Counter(ref_ids).items()
+        }
+        raise ValueError(
+            "Duplicate reference ids found among dataset_items: %s"
+            % duplicates
+        )

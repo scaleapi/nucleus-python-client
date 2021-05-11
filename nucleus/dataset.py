@@ -22,7 +22,11 @@ from .constants import (
     REQUEST_ID_KEY,
     UPDATE_KEY,
 )
-from .dataset_item import DatasetItem, check_all_paths_remote
+from .dataset_item import (
+    DatasetItem,
+    check_all_paths_remote,
+    check_for_duplicate_reference_ids,
+)
 from .payload_constructor import construct_model_run_creation_payload
 
 
@@ -191,6 +195,8 @@ class Dataset:
             'ignored_items': int,
         }
         """
+        check_for_duplicate_reference_ids(dataset_items)
+
         if asynchronous:
             check_all_paths_remote(dataset_items)
             request_id = uuid.uuid4().hex
@@ -199,8 +205,6 @@ class Dataset:
                 route=f"dataset/{self.id}/signedUrl/{request_id}",
                 requests_command=requests.get,
             )
-            print(response["signed_url"])
-
             serialize_and_write_to_presigned_url(
                 dataset_items, response["signed_url"]
             )

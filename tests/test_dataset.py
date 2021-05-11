@@ -96,7 +96,7 @@ def test_dataset_create_and_delete(CLIENT):
 
     # Deletion
     response = CLIENT.delete_dataset(ds.id)
-    assert response == {}
+    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_dataset_append(dataset):
@@ -202,6 +202,22 @@ def test_dataset_list_autotags(CLIENT, dataset):
     # List of Autotags should be empty
     autotag_response = CLIENT.list_autotags(dataset.id)
     assert autotag_response == []
+
+
+def test_raises_error_for_duplicate():
+    fake_dataset = Dataset("fake", NucleusClient("fake"))
+    with pytest.raises(ValueError) as error:
+        fake_dataset.append(
+            [
+                DatasetItem("fake", "duplicate"),
+                DatasetItem("fake", "duplicate"),
+            ]
+        )
+    assert (
+        str(error.value)
+        == "Duplicate reference ids found among dataset_items:"
+        " {'duplicate': 'Count: 2'}"
+    )
 
 
 def test_dataset_export_autotag_scores(CLIENT):
