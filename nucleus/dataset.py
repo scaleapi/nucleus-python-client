@@ -1,8 +1,13 @@
-from typing import Any, Dict, List, Optional
+import uuid
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-from nucleus.utils import format_dataset_item_response
+from nucleus.job import AsyncJob
+from nucleus.utils import (
+    format_dataset_item_response,
+    serialize_and_write_to_presigned_url,
+)
 
 from .annotation import Annotation
 from .constants import (
@@ -14,8 +19,10 @@ from .constants import (
     DEFAULT_ANNOTATION_UPDATE_MODE,
     NAME_KEY,
     REFERENCE_IDS_KEY,
+    REQUEST_ID_KEY,
+    UPDATE_KEY,
 )
-from .dataset_item import DatasetItem
+from .dataset_item import DatasetItem, check_all_paths_remote
 from .payload_constructor import construct_model_run_creation_payload
 
 
@@ -26,7 +33,11 @@ class Dataset:
     compare model performance on you data.
     """
 
-    def __init__(self, dataset_id: str, client):
+    def __init__(
+        self,
+        dataset_id: str,
+        client: "NucleusClient",  # type:ignore # noqa: F821
+    ):
         self.id = dataset_id
         self._client = client
 
@@ -160,16 +171,18 @@ class Dataset:
     def append(
         self,
         dataset_items: List[DatasetItem],
-        force: Optional[bool] = False,
+        update: Optional[bool] = False,
         batch_size: Optional[int] = 20,
-    ) -> dict:
+        asynchronous=False,
+    ) -> Union[dict, AsyncJob]:
         """
         Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
 
         Parameters:
         :param dataset_items: items to upload
-        :param force: if True overwrites images on collision
+        :param update: if True overwrites images and metadata on collision
         :param batch_size: batch parameter for long uploads
+        :param aynchronous: if True, return a job object representing asynchronous ingestion job.
         :return:
         {
             'dataset_id': str,
@@ -178,10 +191,29 @@ class Dataset:
             'ignored_items': int,
         }
         """
+        if asynchronous:
+            check_all_paths_remote(dataset_items)
+            request_id = uuid.uuid4().hex
+            response = self._client.make_request(
+                payload={},
+                route=f"dataset/{self.id}/signedUrl/{request_id}",
+                requests_command=requests.get,
+            )
+            print(response["signed_url"])
+
+            serialize_and_write_to_presigned_url(
+                dataset_items, response["signed_url"]
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"dataset/{self.id}/append?async=1",
+            )
+            return AsyncJob(response["job_id"], self._client)
+
         return self._client.populate_dataset(
             self.id,
             dataset_items,
-            force=force,
+            force=update,
             batch_size=batch_size,
         )
 

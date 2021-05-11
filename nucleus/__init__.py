@@ -70,7 +70,7 @@ from requests.adapters import HTTPAdapter
 # pylint: disable=C0302
 from requests.packages.urllib3.util.retry import Retry
 
-from .constants import REFERENCE_IDS_KEY, DATASET_ITEM_IDS_KEY
+from .constants import REFERENCE_IDS_KEY, DATASET_ITEM_IDS_KEY, UPDATE_KEY
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .annotation import (
@@ -123,7 +123,6 @@ from .constants import (
     AUTOTAGS_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     ITEM_METADATA_SCHEMA_KEY,
-    FORCE_KEY,
     EMBEDDINGS_URL_KEY,
 )
 from .model import Model
@@ -151,11 +150,14 @@ class NucleusClient:
         self,
         api_key: str,
         use_notebook: bool = False,
-        endpoint=NUCLEUS_ENDPOINT,
+        endpoint: str = None,
     ):
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
-        self.endpoint = endpoint
+        if endpoint is None:
+            self.endpoint = os.environ.get(
+                "NUCLEUS_ENDPOINT", NUCLEUS_ENDPOINT
+            )
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
@@ -497,7 +499,7 @@ class NucleusClient:
         items = payload[ITEMS_KEY]
         payloads = [
             # batch_size images per request
-            {ITEMS_KEY: items[i : i + batch_size], FORCE_KEY: update}
+            {ITEMS_KEY: items[i : i + batch_size], UPDATE_KEY: update}
             for i in range(0, len(items), batch_size)
         ]
 

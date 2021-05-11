@@ -1,7 +1,7 @@
 import json
 import os.path
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 from .constants import (
     DATASET_ITEM_ID_KEY,
@@ -22,7 +22,7 @@ class DatasetItem:
 
     def __post_init__(self):
         self.image_url = self.image_location
-        self.local = self._is_local_path(self.image_location)
+        self.local = is_local_path(self.image_location)
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -35,10 +35,6 @@ class DatasetItem:
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
-
-    def _is_local_path(self, path: str) -> bool:
-        path_components = [comp.lower() for comp in path.split("/")]
-        return path_components[0] not in {"https:", "http:", "s3:", "gs:"}
 
     def local_file_exists(self):
         return os.path.isfile(self.image_url)
@@ -56,3 +52,17 @@ class DatasetItem:
 
     def to_json(self) -> str:
         return json.dumps(self.to_payload())
+
+
+def is_local_path(path: str) -> bool:
+    path_components = [comp.lower() for comp in path.split("/")]
+    return path_components[0] not in {"https:", "http:", "s3:", "gs:"}
+
+
+def check_all_paths_remote(dataset_items: List[DatasetItem]):
+    for item in dataset_items:
+        if is_local_path(item.image_location):
+            raise ValueError(
+                f"All paths must be remote, but {item.image_location} is either "
+                "local, or a remote URL type that is not supported."
+            )
