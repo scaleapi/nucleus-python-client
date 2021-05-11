@@ -20,7 +20,7 @@ class AsyncJob:
     def errors(self) -> List[str]:
         return self.client.make_request(
             payload={},
-            route=f"job/${self.id}/errors",
+            route=f"job/{self.id}/errors",
             requests_command=requests.get,
         )
 
@@ -28,11 +28,12 @@ class AsyncJob:
         while 1:
             time.sleep(1)
             status = self.status()
+            if verbose_std_out:
+                print(status)
             if status["status"] == "Running":
-                if verbose_std_out:
-                    print(status)
                 continue
             break
+
         final_status = status
         if final_status["status"] == "Errored":
             raise JobError(final_status, self)

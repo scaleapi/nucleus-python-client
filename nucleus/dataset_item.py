@@ -21,7 +21,6 @@ class DatasetItem:
     metadata: Optional[dict] = None
 
     def __post_init__(self):
-        self.image_url = self.image_location
         self.local = is_local_path(self.image_location)
 
     @classmethod
@@ -37,11 +36,11 @@ class DatasetItem:
         )
 
     def local_file_exists(self):
-        return os.path.isfile(self.image_url)
+        return os.path.isfile(self.image_location)
 
     def to_payload(self) -> dict:
         payload = {
-            IMAGE_URL_KEY: self.image_url,
+            IMAGE_URL_KEY: self.image_location,
             METADATA_KEY: self.metadata or {},
         }
         if self.reference_id:
