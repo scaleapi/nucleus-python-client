@@ -4,6 +4,8 @@ from typing import Dict, List
 
 import requests
 
+JOB_POLLING_INTERVAL = 5
+
 
 @dataclass
 class AsyncJob:
@@ -26,10 +28,12 @@ class AsyncJob:
 
     def sleep_until_complete(self, verbose_std_out=True):
         while 1:
-            time.sleep(1)
             status = self.status()
+
+            time.sleep(JOB_POLLING_INTERVAL)
+
             if verbose_std_out:
-                print(status)
+                print(f"Status at {time.ctime()}: {status}")
             if status["status"] == "Running":
                 continue
             break
