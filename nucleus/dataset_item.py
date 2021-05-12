@@ -3,6 +3,7 @@ import json
 import os.path
 from dataclasses import dataclass
 from typing import Optional, Sequence
+from urllib.parse import urlparse
 
 from .constants import (
     DATASET_ITEM_ID_KEY,
@@ -55,8 +56,7 @@ class DatasetItem:
 
 
 def is_local_path(path: str) -> bool:
-    path_components = [comp.lower() for comp in path.split("/")]
-    return path_components[0] not in {"https:", "http:", "s3:", "gs:"}
+    return urlparse(path).scheme not in {"https", "http", "s3", "gs"}
 
 
 def check_all_paths_remote(dataset_items: Sequence[DatasetItem]):
