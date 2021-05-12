@@ -1,7 +1,8 @@
+from nucleus.job import JobError
 import pytest
 import os
 
-from helpers import (
+from .helpers import (
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
@@ -61,6 +62,28 @@ def dataset(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
 
 
+def make_dataset_items():
+    ds_items_with_metadata = []
+    for i, url in enumerate(TEST_IMG_URLS):
+        ds_items_with_metadata.append(
+            DatasetItem(
+                image_location=url,
+                reference_id=reference_id_from_url(url),
+                metadata={
+                    "made_with_pytest": True,
+                    "example_int": i,
+                    "example_str": "hello",
+                    "example_float": 0.5,
+                    "example_dict": {
+                        "nested": True,
+                    },
+                    "example_list": ["hello", i, False],
+                },
+            )
+        )
+    return ds_items_with_metadata
+
+
 def test_dataset_create_and_delete(CLIENT):
     # Creation
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
@@ -95,26 +118,8 @@ def test_dataset_append(dataset):
     check_is_expected_response(response)
 
     # With reference ids and metadata:
-    ds_items_with_metadata = []
-    for i, url in enumerate(TEST_IMG_URLS):
-        ds_items_with_metadata.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-                metadata={
-                    "made_with_pytest": True,
-                    "example_int": i,
-                    "example_str": "hello",
-                    "example_float": 0.5,
-                    "example_dict": {
-                        "nested": True,
-                    },
-                    "example_list": ["hello", i, False],
-                },
-            )
-        )
 
-    response = dataset.append(ds_items_with_metadata)
+    response = dataset.append(make_dataset_items())
     check_is_expected_response(response)
 
 
@@ -129,6 +134,67 @@ def test_dataset_append_local(CLIENT, dataset):
     assert resp_json[IGNORED_ITEMS] == 0
     assert resp_json[ERROR_ITEMS] == 0
     assert ERROR_PAYLOAD not in resp_json
+
+
+def test_dataset_append_async(dataset: Dataset):
+    job = dataset.append(make_dataset_items(), asynchronous=True)
+    job.sleep_until_complete()
+    status = job.status()
+    assert status == {
+        "job_id": job.id,
+        "status": "Completed",
+        "message": {
+            "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
+            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
+        },
+    }
+
+
+def test_dataset_append_async_with_local_path(dataset: Dataset):
+    ds_items = make_dataset_items()
+    ds_items[
+        0
+    ].image_location = "/a/fake/local/path/you/can/tell/is/local/but/is/fake"
+    with pytest.raises(ValueError):
+        dataset.append(ds_items, asynchronous=True)
+
+
+def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
+    ds_items = make_dataset_items()
+    ds_items[0].image_location = "https://looks.ok.but.is.not.accessible"
+    job = dataset.append(ds_items, asynchronous=True)
+    with pytest.raises(JobError):
+        job.sleep_until_complete()
+    assert job.status() == {
+        "job_id": f"{job.id}",
+        "status": "Errored",
+        "message": {
+            "final_error": (
+                "One or more of the images you attempted to upload did not process"
+                " correctly. Please see the status for an overview and the errors for "
+                "more detailed messages."
+            ),
+            "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
+            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
+        },
+    }
+    assert job.errors() == [
+        "One or more of the images you attempted to upload did not process correctly. Please see the status for an overview and the errors for more detailed messages.",
+        # Todo: figure out why this error isn't propagating from image upload.
+        'Failure when processing the image "https://looks.ok.but.is.not.accessible": {}',
+    ]
 
 
 def test_dataset_list_autotags(CLIENT, dataset):

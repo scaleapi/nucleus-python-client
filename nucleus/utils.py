@@ -1,17 +1,17 @@
 """Shared stateless utility function library"""
 
 
-from typing import List, Union, Dict
+import io
+from typing import IO, Dict, List, Sequence, Union
+
+import requests
+from requests.models import HTTPError
 
 from nucleus.annotation import Annotation
+
+from .constants import ANNOTATION_TYPES, ANNOTATIONS_KEY, ITEM_KEY
 from .dataset_item import DatasetItem
 from .prediction import BoxPrediction, PolygonPrediction
-
-from .constants import (
-    ITEM_KEY,
-    ANNOTATIONS_KEY,
-    ANNOTATION_TYPES,
-)
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):
@@ -73,9 +73,9 @@ def format_dataset_item_response(response: dict) -> dict:
 
 
 def serialize_and_write(
-    upload_unit: List[Union[DatasetItem, Annotation]], file_pointer
+    upload_units: Sequence[Union[DatasetItem, Annotation]], file_pointer
 ):
-    for unit in upload_unit:
+    for unit in upload_units:
         try:
             file_pointer.write(unit.to_json() + "\n")
         except TypeError as e:
@@ -92,3 +92,21 @@ def serialize_and_write(
             )
             message += f"The specific error was {e}"
             raise ValueError(message) from e
+
+
+def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
+    # TODO optimize this further to deal with truly huge files and flaky internet connection.
+    upload_response = requests.put(presigned_url, file_pointer)
+    if not upload_response.ok:
+        raise HTTPError(
+            f"Tried to put a file to url, but failed with status {upload_response.status_code}. The detailed error was: {upload_response.text}"
+        )
+
+
+def serialize_and_write_to_presigned_url(
+    upload_units: Sequence[Union[DatasetItem, Annotation]], presigned_url
+):
+    strio = io.StringIO()
+    serialize_and_write(upload_units, strio)
+    strio.seek(0)
+    upload_to_presigned_url(presigned_url, strio)

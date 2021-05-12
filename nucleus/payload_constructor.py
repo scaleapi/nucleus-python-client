@@ -17,7 +17,7 @@ from .constants import (
     REFERENCE_ID_KEY,
     ANNOTATIONS_KEY,
     ITEMS_KEY,
-    FORCE_KEY,
+    UPDATE_KEY,
     MODEL_ID_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     SEGMENTATIONS_KEY,
@@ -34,7 +34,7 @@ def construct_append_payload(
     return (
         {ITEMS_KEY: items}
         if not force
-        else {ITEMS_KEY: items, FORCE_KEY: True}
+        else {ITEMS_KEY: items, UPDATE_KEY: True}
     )
 
 

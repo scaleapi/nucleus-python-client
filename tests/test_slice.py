@@ -1,7 +1,7 @@
 import pytest
 from nucleus import Slice, NucleusClient, DatasetItem, BoxAnnotation
 from nucleus.constants import ERROR_PAYLOAD, ITEM_KEY
-from helpers import (
+from .helpers import (
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
     TEST_SLICE_NAME,

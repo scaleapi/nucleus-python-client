@@ -1,7 +1,9 @@
+from collections import Counter
 import json
 import os.path
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Sequence
+from urllib.parse import urlparse
 
 from .constants import (
     DATASET_ITEM_ID_KEY,
@@ -21,8 +23,7 @@ class DatasetItem:
     metadata: Optional[dict] = None
 
     def __post_init__(self):
-        self.image_url = self.image_location
-        self.local = self._is_local_path(self.image_location)
+        self.local = is_local_path(self.image_location)
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -36,16 +37,12 @@ class DatasetItem:
             metadata=payload.get(METADATA_KEY, {}),
         )
 
-    def _is_local_path(self, path: str) -> bool:
-        path_components = [comp.lower() for comp in path.split("/")]
-        return path_components[0] not in {"https:", "http:", "s3:", "gs:"}
-
     def local_file_exists(self):
-        return os.path.isfile(self.image_url)
+        return os.path.isfile(self.image_location)
 
     def to_payload(self) -> dict:
         payload = {
-            IMAGE_URL_KEY: self.image_url,
+            IMAGE_URL_KEY: self.image_location,
             METADATA_KEY: self.metadata or {},
         }
         if self.reference_id:
@@ -56,3 +53,32 @@ class DatasetItem:
 
     def to_json(self) -> str:
         return json.dumps(self.to_payload())
+
+
+def is_local_path(path: str) -> bool:
+    return urlparse(path).scheme not in {"https", "http", "s3", "gs"}
+
+
+def check_all_paths_remote(dataset_items: Sequence[DatasetItem]):
+    for item in dataset_items:
+        if is_local_path(item.image_location):
+            raise ValueError(
+                f"All paths must be remote, but {item.image_location} is either "
+                "local, or a remote URL type that is not supported."
+            )
+
+
+def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
+    ref_ids = []
+    for dataset_item in dataset_items:
+        if dataset_item.reference_id is not None:
+            ref_ids.append(dataset_item.reference_id)
+    if len(ref_ids) != len(set(ref_ids)):
+        duplicates = {
+            f"{key}": f"Count: {value}"
+            for key, value in Counter(ref_ids).items()
+        }
+        raise ValueError(
+            "Duplicate reference ids found among dataset_items: %s"
+            % duplicates
+        )

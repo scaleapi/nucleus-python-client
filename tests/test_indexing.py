@@ -1,6 +1,6 @@
 import pytest
 
-from helpers import (
+from .helpers import (
     TEST_INDEX_EMBEDDINGS_FILE,
     TEST_IMG_URLS,
     TEST_DATASET_NAME,
