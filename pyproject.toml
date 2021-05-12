@@ -47,7 +47,6 @@ flake8 = "^3.9.1"
 mypy = "^0.812"
 coverage = "^5.5"
 pre-commit = "^2.12.1"
-jupyterlab = "^3.0.14"
 
 
 [build-system]
