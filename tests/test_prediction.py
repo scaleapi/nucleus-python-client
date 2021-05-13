@@ -49,7 +49,8 @@ def model_run(CLIENT, dataset):
     for url in TEST_IMG_URLS:
         ds_items.append(
             DatasetItem(
-                image_location=url, reference_id=reference_id_from_url(url),
+                image_location=url,
+                reference_id=reference_id_from_url(url),
             )
         )
 
