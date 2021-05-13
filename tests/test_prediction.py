@@ -49,8 +49,7 @@ def model_run(CLIENT, dataset):
     for url in TEST_IMG_URLS:
         ds_items.append(
             DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
+                image_location=url, reference_id=reference_id_from_url(url),
             )
         )
 
@@ -61,8 +60,9 @@ def model_run(CLIENT, dataset):
         name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
     )
 
-    run = model.create_run(name=TEST_MODEL_RUN,
-                           dataset=dataset, predictions=[])
+    run = model.create_run(
+        name=TEST_MODEL_RUN, dataset=dataset, predictions=[]
+    )
 
     yield run
     response = CLIENT.delete_model(model.id)
@@ -85,21 +85,37 @@ def test_schema_validation(model_run, dataset):
     annotation_labels = [annotation.label for annotation in annotations]
     prediction_labels = [prediction.label for prediction in predictions]
 
-    allowed_label_matches = [{'ground_truth_label': annotation_label, 'model_prediction_label': prediction_label}
-                             for annotation_label, prediction_label in zip(annotation_labels, prediction_labels)]
-    allowed_label_matches_fudged = [{'ground_truth_label': f'{annotation_label}t', 'model_prediction_label': prediction_label}
-                                    for annotation_label, prediction_label in zip(annotation_labels, prediction_labels)]
+    allowed_label_matches = [
+        {
+            "ground_truth_label": annotation_label,
+            "model_prediction_label": prediction_label,
+        }
+        for annotation_label, prediction_label in zip(
+            annotation_labels, prediction_labels
+        )
+    ]
+    allowed_label_matches_fudged = [
+        {
+            "ground_truth_label": f"{annotation_label}t",
+            "model_prediction_label": prediction_label,
+        }
+        for annotation_label, prediction_label in zip(
+            annotation_labels, prediction_labels
+        )
+    ]
     error = None
     try:
         model_run.commit(
-            payload={'allowed_label_matches': allowed_label_matches_fudged})
+            payload={"allowed_label_matches": allowed_label_matches_fudged}
+        )
     except Exception as e:
         error = e
-    assert(error is not None)
+    assert error is not None
 
     # If this fails, we would raise an error.
     response = model_run.commit(
-        payload={'allowed_label_matches': allowed_label_matches})
+        payload={"allowed_label_matches": allowed_label_matches}
+    )
 
 
 def test_box_pred_upload(model_run):
