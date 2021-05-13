@@ -5,6 +5,7 @@ from .helpers import (
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
     TEST_IMG_URLS,
+    TEST_BOX_ANNOTATIONS,
     TEST_BOX_PREDICTIONS,
     TEST_POLYGON_PREDICTIONS,
     TEST_SEGMENTATION_PREDICTIONS,
@@ -15,6 +16,7 @@ from .helpers import (
 )
 
 from nucleus import (
+    BoxAnnotation,
     BoxPrediction,
     PolygonPrediction,
     SegmentationPrediction,
@@ -42,8 +44,7 @@ def test_reprs():
 
 
 @pytest.fixture()
-def model_run(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+def model_run(CLIENT, dataset):
     ds_items = []
     for url in TEST_IMG_URLS:
         ds_items.append(
@@ -53,21 +54,52 @@ def model_run(CLIENT):
             )
         )
 
-    response = ds.append(ds_items)
+    response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
 
     model = CLIENT.add_model(
         name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
     )
 
-    run = model.create_run(name=TEST_MODEL_RUN, dataset=ds, predictions=[])
+    run = model.create_run(name=TEST_MODEL_RUN,
+                           dataset=dataset, predictions=[])
 
     yield run
-
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
     response = CLIENT.delete_model(model.id)
     assert response == {}
+
+
+def test_schema_validation(model_run, dataset):
+    annotations = []
+    for annotation in TEST_BOX_ANNOTATIONS:
+        annotations.append(BoxAnnotation(**annotation))
+    response = dataset.annotate(annotations=annotations)
+    assert response["annotations_processed"] == len(annotations)
+
+    predictions = []
+    for prediction in TEST_BOX_PREDICTIONS:
+        predictions.append(BoxPrediction(**prediction))
+    response = model_run.predict(annotations=predictions)
+    assert response["predictions_processed"] == len(TEST_BOX_PREDICTIONS)
+
+    annotation_labels = [annotation.label for annotation in annotations]
+    prediction_labels = [prediction.label for prediction in predictions]
+
+    allowed_label_matches = [{'ground_truth_label': annotation_label, 'model_prediction_label': prediction_label}
+                             for annotation_label, prediction_label in zip(annotation_labels, prediction_labels)]
+    allowed_label_matches_fudged = [{'ground_truth_label': f'{annotation_label}t', 'model_prediction_label': prediction_label}
+                                    for annotation_label, prediction_label in zip(annotation_labels, prediction_labels)]
+    error = None
+    try:
+        model_run.commit(
+            payload={'allowed_label_matches': allowed_label_matches_fudged})
+    except Exception as e:
+        error = e
+    assert(error is not None)
+
+    # If this fails, we would raise an error.
+    response = model_run.commit(
+        payload={'allowed_label_matches': allowed_label_matches})
 
 
 def test_box_pred_upload(model_run):
