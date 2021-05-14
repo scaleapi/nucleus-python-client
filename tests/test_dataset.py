@@ -193,7 +193,7 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     assert job.errors() == [
         "One or more of the images you attempted to upload did not process correctly. Please see the status for an overview and the errors for more detailed messages.",
         # Todo: figure out why this error isn't propagating from image upload.
-        'Failure when processing the image "https://looks.ok.but.is.not.accessible": {}',
+        'Failure when processing the image "https://looks.ok.but.is.not.accessible": "{}"',
     ]
 
 
