@@ -2,6 +2,7 @@
 
 
 import io
+import uuid
 from typing import IO, Dict, List, Sequence, Union
 
 import requests
@@ -104,9 +105,19 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union[DatasetItem, Annotation]], presigned_url
+    upload_units: Sequence[Union["DatasetItem", Annotation]],
+    dataset_id: str,
+    client,
 ):
+    request_id = uuid.uuid4().hex
+    response = client.make_request(
+        payload={},
+        route=f"dataset/{dataset_id}/signedUrl/{request_id}",
+        requests_command=requests.get,
+    )
+
     strio = io.StringIO()
     serialize_and_write(upload_units, strio)
     strio.seek(0)
-    upload_to_presigned_url(presigned_url, strio)
+    upload_to_presigned_url(response["presigned_url"], strio)
+    return request_id

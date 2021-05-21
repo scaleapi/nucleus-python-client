@@ -5,6 +5,7 @@ ANNOTATION_ID_KEY = "annotation_id"
 ANNOTATION_METADATA_SCHEMA_KEY = "annotation_metadata_schema"
 BOX_TYPE = "box"
 POLYGON_TYPE = "polygon"
+MASK_TYPE = "mask"
 SEGMENTATION_TYPE = "segmentation"
 ANNOTATION_TYPES = (BOX_TYPE, POLYGON_TYPE, SEGMENTATION_TYPE)
 ANNOTATION_UPDATE_KEY = "update"

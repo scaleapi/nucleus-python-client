@@ -1,10 +1,17 @@
-from typing import Dict, Optional, List, Union, Type
+from typing import Dict, List, Optional, Type, Union
+
+from nucleus.annotation import check_all_annotation_paths_remote
+from nucleus.job import AsyncJob
+from nucleus.utils import serialize_and_write_to_presigned_url
+
 from .constants import (
     ANNOTATIONS_KEY,
-    DEFAULT_ANNOTATION_UPDATE_MODE,
     BOX_TYPE,
+    DEFAULT_ANNOTATION_UPDATE_MODE,
+    MASK_TYPE,
     POLYGON_TYPE,
-    SEGMENTATION_TYPE,
+    REQUEST_ID_KEY,
+    UPDATE_KEY,
 )
 from .prediction import (
     BoxPrediction,
@@ -84,7 +91,9 @@ class ModelRun:
             Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
         ],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
-    ) -> dict:
+        asynchronous: bool = False,
+        dataset_id: Optional[str] = None,
+    ) -> Union[dict, AsyncJob]:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
         :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
@@ -95,7 +104,24 @@ class ModelRun:
             "predictions_ignored": int,
         }
         """
-        return self._client.predict(self.model_run_id, annotations, update)
+        if asynchronous:
+            check_all_annotation_paths_remote(annotations)
+
+            assert (
+                dataset_id is not None
+            ), "For now, you must pass a dataset id to predict for asynchronous uploads."
+
+            request_id = serialize_and_write_to_presigned_url(
+                annotations, dataset_id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"modelRun/{self.model_run_id}/predict?async=1",
+            )
+
+            return AsyncJob(response["job_id"], self._client)
+        else:
+            return self._client.predict(self.model_run_id, annotations, update)
 
     def iloc(self, i: int):
         """
@@ -153,7 +179,7 @@ class ModelRun:
         ] = {
             BOX_TYPE: BoxPrediction,
             POLYGON_TYPE: PolygonPrediction,
-            SEGMENTATION_TYPE: SegmentationPrediction,
+            MASK_TYPE: SegmentationPrediction,
         }
         for type_key in annotation_payload:
             type_class = type_key_to_class[type_key]
