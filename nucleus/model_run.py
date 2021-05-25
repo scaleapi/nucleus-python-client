@@ -8,9 +8,9 @@ from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     DEFAULT_ANNOTATION_UPDATE_MODE,
-    MASK_TYPE,
     POLYGON_TYPE,
     REQUEST_ID_KEY,
+    SEGMENTATION_TYPE,
     UPDATE_KEY,
 )
 from .prediction import (
@@ -175,7 +175,7 @@ class ModelRun:
         ] = {
             BOX_TYPE: BoxPrediction,
             POLYGON_TYPE: PolygonPrediction,
-            MASK_TYPE: SegmentationPrediction,
+            SEGMENTATION_TYPE: SegmentationPrediction,
         }
         for type_key in annotation_payload:
             type_class = type_key_to_class[type_key]

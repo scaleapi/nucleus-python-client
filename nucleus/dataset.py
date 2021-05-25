@@ -23,6 +23,7 @@ from .constants import (
 )
 from .dataset_item import (
     DatasetItem,
+    check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
 from .payload_constructor import construct_model_run_creation_payload
@@ -196,6 +197,7 @@ class Dataset:
         check_for_duplicate_reference_ids(dataset_items)
 
         if asynchronous:
+            check_all_paths_remote(dataset_items)
             request_id = serialize_and_write_to_presigned_url(
                 dataset_items, self.id, self._client
             )
