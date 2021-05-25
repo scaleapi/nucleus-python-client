@@ -26,12 +26,13 @@ class ModelRun:
     Having an open model run is a prerequisite for uploading predictions to your dataset.
     """
 
-    def __init__(self, model_run_id: str, client):
+    def __init__(self, model_run_id: str, dataset_id: str, client):
         self.model_run_id = model_run_id
         self._client = client
+        self._dataset_id = dataset_id
 
     def __repr__(self):
-        return f"ModelRun(model_run_id='{self.model_run_id}', client={self._client})"
+        return f"ModelRun(model_run_id='{self.model_run_id}', dataset_id='{self._dataset_id}', client={self._client})"
 
     def __eq__(self, other):
         if self.model_run_id == other.model_run_id:
@@ -92,7 +93,6 @@ class ModelRun:
         ],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         asynchronous: bool = False,
-        dataset_id: Optional[str] = None,
     ) -> Union[dict, AsyncJob]:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
@@ -107,12 +107,8 @@ class ModelRun:
         if asynchronous:
             check_all_annotation_paths_remote(annotations)
 
-            assert (
-                dataset_id is not None
-            ), "For now, you must pass a dataset id to predict for asynchronous uploads."
-
             request_id = serialize_and_write_to_presigned_url(
-                annotations, dataset_id, self._client
+                annotations, self._dataset_id, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},

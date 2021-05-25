@@ -158,6 +158,8 @@ class NucleusClient:
             self.endpoint = os.environ.get(
                 "NUCLEUS_ENDPOINT", NUCLEUS_ENDPOINT
             )
+        else:
+            self.endpoint = endpoint
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
@@ -230,13 +232,13 @@ class NucleusClient:
         """
         return Dataset(dataset_id, self)
 
-    def get_model_run(self, model_run_id: str) -> ModelRun:
+    def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
         """
         Fetches a model_run for given id
         :param model_run_id: internally controlled model_run_id
         :return: model_run
         """
-        return ModelRun(model_run_id, self)
+        return ModelRun(model_run_id, dataset_id, self)
 
     def delete_model_run(self, model_run_id: str):
         """
@@ -674,7 +676,9 @@ class NucleusClient:
         if response.get(STATUS_CODE_KEY, None):
             raise ModelRunCreationError(response.get("error"))
 
-        return ModelRun(response[MODEL_RUN_ID_KEY], self)
+        return ModelRun(
+            response[MODEL_RUN_ID_KEY], dataset_id=dataset_id, client=self
+        )
 
     def predict(
         self,

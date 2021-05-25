@@ -119,5 +119,5 @@ def serialize_and_write_to_presigned_url(
     strio = io.StringIO()
     serialize_and_write(upload_units, strio)
     strio.seek(0)
-    upload_to_presigned_url(response["presigned_url"], strio)
+    upload_to_presigned_url(response["signed_url"], strio)
     return request_id

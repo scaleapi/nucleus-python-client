@@ -13,11 +13,11 @@ TEST_SLICE_NAME = "[PyTest] Test Slice"
 
 
 TEST_IMG_URLS = [
-    "http://farm1.staticflickr.com/107/309278012_7a1f67deaa_z.jpg",
-    "http://farm9.staticflickr.com/8001/7679588594_4e51b76472_z.jpg",
-    "http://farm6.staticflickr.com/5295/5465771966_76f9773af1_z.jpg",
-    "http://farm4.staticflickr.com/3449/4002348519_8ddfa4f2fb_z.jpg",
-    "http://farm1.staticflickr.com/6/7617223_d84fcbce0e_z.jpg",
+    "https://homepages.cae.wisc.edu/~ece533/images/airplane.png",
+    "https://homepages.cae.wisc.edu/~ece533/images/arctichare.png",
+    "https://homepages.cae.wisc.edu/~ece533/images/baboon.png",
+    "https://homepages.cae.wisc.edu/~ece533/images/barbara.png",
+    "https://homepages.cae.wisc.edu/~ece533/images/cat.png",
 ]
 
 TEST_DATASET_ITEMS = [
