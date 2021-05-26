@@ -45,7 +45,7 @@ class Model:
             Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
         ],
         metadata: Optional[Dict] = None,
-        asynchronous=False,
+        asynchronous: bool = False,
     ) -> ModelRun:
         payload: dict = {
             NAME_KEY: name,
