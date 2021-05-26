@@ -1,7 +1,8 @@
 import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
+from nucleus.dataset_item import is_local_path
 
 from .constants import (
     ANNOTATION_ID_KEY,
@@ -13,6 +14,7 @@ from .constants import (
     INDEX_KEY,
     ITEM_ID_KEY,
     LABEL_KEY,
+    MASK_TYPE,
     MASK_URL_KEY,
     METADATA_KEY,
     POLYGON_TYPE,
@@ -108,6 +110,7 @@ class SegmentationAnnotation(Annotation):
 
     def to_payload(self) -> dict:
         payload = {
+            TYPE_KEY: MASK_TYPE,
             MASK_URL_KEY: self.mask_url,
             ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
             ANNOTATION_ID_KEY: self.annotation_id,
@@ -206,3 +209,14 @@ class PolygonAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
+
+
+def check_all_annotation_paths_remote(
+    annotations: Sequence[Union[Annotation]],
+):
+    for annotation in annotations:
+        if hasattr(annotation, MASK_URL_KEY):
+            if is_local_path(getattr(annotation, MASK_URL_KEY)):
+                raise ValueError(
+                    f"Found an annotation with a local path, which cannot be uploaded asynchronously. Use a remote path instead. {annotation}"
+                )

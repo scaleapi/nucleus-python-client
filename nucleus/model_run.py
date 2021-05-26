@@ -1,10 +1,18 @@
-from typing import Dict, Optional, List, Union, Type
+from typing import Dict, List, Optional, Type, Union
+
+from nucleus.annotation import check_all_annotation_paths_remote
+from nucleus.job import AsyncJob
+from nucleus.utils import serialize_and_write_to_presigned_url
+
 from .constants import (
     ANNOTATIONS_KEY,
-    DEFAULT_ANNOTATION_UPDATE_MODE,
     BOX_TYPE,
+    DEFAULT_ANNOTATION_UPDATE_MODE,
+    JOB_ID_KEY,
     POLYGON_TYPE,
+    REQUEST_ID_KEY,
     SEGMENTATION_TYPE,
+    UPDATE_KEY,
 )
 from .prediction import (
     BoxPrediction,
@@ -19,12 +27,13 @@ class ModelRun:
     Having an open model run is a prerequisite for uploading predictions to your dataset.
     """
 
-    def __init__(self, model_run_id: str, client):
+    def __init__(self, model_run_id: str, dataset_id: str, client):
         self.model_run_id = model_run_id
         self._client = client
+        self._dataset_id = dataset_id
 
     def __repr__(self):
-        return f"ModelRun(model_run_id='{self.model_run_id}', client={self._client})"
+        return f"ModelRun(model_run_id='{self.model_run_id}', dataset_id='{self._dataset_id}', client={self._client})"
 
     def __eq__(self, other):
         if self.model_run_id == other.model_run_id:
@@ -84,7 +93,8 @@ class ModelRun:
             Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
         ],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
-    ) -> dict:
+        asynchronous: bool = False,
+    ) -> Union[dict, AsyncJob]:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
         :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
@@ -95,7 +105,20 @@ class ModelRun:
             "predictions_ignored": int,
         }
         """
-        return self._client.predict(self.model_run_id, annotations, update)
+        if asynchronous:
+            check_all_annotation_paths_remote(annotations)
+
+            request_id = serialize_and_write_to_presigned_url(
+                annotations, self._dataset_id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"modelRun/{self.model_run_id}/predict?async=1",
+            )
+
+            return AsyncJob(response[JOB_ID_KEY], self._client)
+        else:
+            return self._client.predict(self.model_run_id, annotations, update)
 
     def iloc(self, i: int):
         """

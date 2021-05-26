@@ -40,7 +40,13 @@ def test_reprs():
             metadata={"fake": "metadata"},
         )
     )
-    test_repr(ModelRun(client=client, model_run_id="fake_model_run_id"))
+    test_repr(
+        ModelRun(
+            client=client,
+            dataset_id="fake_dataset_id",
+            model_run_id="fake_model_run_id",
+        )
+    )
 
 
 def test_model_creation_and_listing(CLIENT, dataset):

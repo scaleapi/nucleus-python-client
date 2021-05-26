@@ -45,6 +45,7 @@ class Model:
             Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
         ],
         metadata: Optional[Dict] = None,
+        asynchronous: bool = False,
     ) -> ModelRun:
         payload: dict = {
             NAME_KEY: name,
@@ -56,6 +57,6 @@ class Model:
             dataset.id, payload
         )
 
-        model_run.predict(predictions)
+        model_run.predict(predictions, asynchronous=asynchronous)
 
         return model_run

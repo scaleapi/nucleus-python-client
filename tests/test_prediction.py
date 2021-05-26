@@ -1,3 +1,4 @@
+from nucleus.job import AsyncJob
 import pytest
 import time
 from .helpers import (
@@ -20,8 +21,11 @@ from nucleus import (
     SegmentationPrediction,
     DatasetItem,
     Segment,
+    ModelRun,
 )
 from nucleus.constants import ERROR_PAYLOAD
+
+from nucleus import utils
 
 
 def test_reprs():
@@ -54,6 +58,7 @@ def model_run(CLIENT):
         )
 
     response = ds.append(ds_items)
+
     assert ERROR_PAYLOAD not in response.json()
 
     model = CLIENT.add_model(
@@ -264,3 +269,77 @@ def test_mixed_pred_upload(model_run):
     assert_segmentation_annotation_matches_dict(
         response_refloc["segmentation"][0], TEST_SEGMENTATION_PREDICTIONS[0]
     )
+
+
+def test_mixed_pred_upload_async(model_run: ModelRun):
+    prediction_semseg = SegmentationPrediction.from_json(
+        TEST_SEGMENTATION_PREDICTIONS[0]
+    )
+    prediction_polygon = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction_bbox = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
+    job: AsyncJob = model_run.predict(
+        annotations=[prediction_semseg, prediction_polygon, prediction_bbox],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+    print(job.status())
+    print(job.errors())
+
+    assert job.status() == {
+        "job_id": job.id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 2,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": model_run._dataset_id,
+                "processed": 2,
+            },
+            "segmentation_upload": {
+                "errors": [],
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 1,
+            },
+        },
+    }
+
+
+def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
+    prediction_semseg = SegmentationPrediction.from_json(
+        TEST_SEGMENTATION_PREDICTIONS[0]
+    )
+    prediction_polygon = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction_bbox = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
+    prediction_bbox.reference_id = "fake_garbage"
+
+    job: AsyncJob = model_run.predict(
+        annotations=[prediction_semseg, prediction_polygon, prediction_bbox],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 2,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": model_run._dataset_id,
+                "processed": 1,
+            },
+            "segmentation_upload": {
+                "errors": [],
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 1,
+            },
+        },
+    }
+
+    assert "Item with id fake_garbage doesn" in str(job.errors())

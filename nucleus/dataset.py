@@ -1,4 +1,3 @@
-import uuid
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -199,14 +198,8 @@ class Dataset:
 
         if asynchronous:
             check_all_paths_remote(dataset_items)
-            request_id = uuid.uuid4().hex
-            response = self._client.make_request(
-                payload={},
-                route=f"dataset/{self.id}/signedUrl/{request_id}",
-                requests_command=requests.get,
-            )
-            serialize_and_write_to_presigned_url(
-                dataset_items, response["signed_url"]
+            request_id = serialize_and_write_to_presigned_url(
+                dataset_items, self.id, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},

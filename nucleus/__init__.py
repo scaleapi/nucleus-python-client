@@ -50,19 +50,17 @@ confidence      |   float   |   The optional confidence level of this annotation
 geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
-__version__ = "0.1.0"
-
 import json
 import logging
-import warnings
 import os
-from typing import List, Union, Dict, Callable, Any, Optional
-
-import tqdm
-import tqdm.notebook as tqdm_notebook
+import warnings
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import grequests
+import pkg_resources
 import requests
+import tqdm
+import tqdm.notebook as tqdm_notebook
 from requests.adapters import HTTPAdapter
 
 # pylint: disable=E1101
@@ -70,69 +68,65 @@ from requests.adapters import HTTPAdapter
 # pylint: disable=C0302
 from requests.packages.urllib3.util.retry import Retry
 
-from .constants import REFERENCE_IDS_KEY, DATASET_ITEM_IDS_KEY, UPDATE_KEY
-from .dataset import Dataset
-from .dataset_item import DatasetItem
 from .annotation import (
     BoxAnnotation,
     PolygonAnnotation,
-    SegmentationAnnotation,
     Segment,
+    SegmentationAnnotation,
+)
+from .constants import (
+    ANNOTATION_METADATA_SCHEMA_KEY,
+    ANNOTATIONS_IGNORED_KEY,
+    ANNOTATIONS_PROCESSED_KEY,
+    AUTOTAGS_KEY,
+    DATASET_ID_KEY,
+    DATASET_ITEM_IDS_KEY,
+    DEFAULT_NETWORK_TIMEOUT_SEC,
+    EMBEDDINGS_URL_KEY,
+    ERROR_ITEMS,
+    ERROR_PAYLOAD,
+    ERRORS_KEY,
+    IMAGE_KEY,
+    IMAGE_URL_KEY,
+    ITEM_METADATA_SCHEMA_KEY,
+    ITEMS_KEY,
+    MODEL_RUN_ID_KEY,
+    NAME_KEY,
+    NUCLEUS_ENDPOINT,
+    PREDICTIONS_IGNORED_KEY,
+    PREDICTIONS_PROCESSED_KEY,
+    REFERENCE_IDS_KEY,
+    SLICE_ID_KEY,
+    STATUS_CODE_KEY,
+    UPDATE_KEY,
+)
+from .dataset import Dataset
+from .dataset_item import DatasetItem
+from .errors import (
+    DatasetItemRetrievalError,
+    ModelCreationError,
+    ModelRunCreationError,
+    NotFoundError,
+    NucleusAPIError,
+)
+from .model import Model
+from .model_run import ModelRun
+from .payload_constructor import (
+    construct_annotation_payload,
+    construct_append_payload,
+    construct_box_predictions_payload,
+    construct_model_creation_payload,
+    construct_segmentation_payload,
 )
 from .prediction import (
     BoxPrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
-from .model_run import ModelRun
 from .slice import Slice
 from .upload_response import UploadResponse
-from .payload_constructor import (
-    construct_append_payload,
-    construct_annotation_payload,
-    construct_model_creation_payload,
-    construct_box_predictions_payload,
-    construct_segmentation_payload,
-)
-from .constants import (
-    NUCLEUS_ENDPOINT,
-    DEFAULT_NETWORK_TIMEOUT_SEC,
-    ERRORS_KEY,
-    ERROR_ITEMS,
-    ERROR_PAYLOAD,
-    ITEMS_KEY,
-    ITEM_KEY,
-    IMAGE_KEY,
-    IMAGE_URL_KEY,
-    DATASET_ID_KEY,
-    MODEL_RUN_ID_KEY,
-    DATASET_ITEM_ID_KEY,
-    SLICE_ID_KEY,
-    ANNOTATIONS_PROCESSED_KEY,
-    ANNOTATIONS_IGNORED_KEY,
-    PREDICTIONS_PROCESSED_KEY,
-    PREDICTIONS_IGNORED_KEY,
-    STATUS_CODE_KEY,
-    SUCCESS_STATUS_CODES,
-    DATASET_NAME_KEY,
-    DATASET_MODEL_RUNS_KEY,
-    DATASET_SLICES_KEY,
-    DATASET_LENGTH_KEY,
-    NAME_KEY,
-    ANNOTATIONS_KEY,
-    AUTOTAGS_KEY,
-    ANNOTATION_METADATA_SCHEMA_KEY,
-    ITEM_METADATA_SCHEMA_KEY,
-    EMBEDDINGS_URL_KEY,
-)
-from .model import Model
-from .errors import (
-    ModelCreationError,
-    ModelRunCreationError,
-    DatasetItemRetrievalError,
-    NotFoundError,
-    NucleusAPIError,
-)
+
+__version__ = pkg_resources.get_distribution("scale-nucleus").version
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -158,6 +152,8 @@ class NucleusClient:
             self.endpoint = os.environ.get(
                 "NUCLEUS_ENDPOINT", NUCLEUS_ENDPOINT
             )
+        else:
+            self.endpoint = endpoint
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
@@ -230,13 +226,15 @@ class NucleusClient:
         """
         return Dataset(dataset_id, self)
 
-    def get_model_run(self, model_run_id: str) -> ModelRun:
+    def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
         """
         Fetches a model_run for given id
         :param model_run_id: internally controlled model_run_id
+        :param dataset_id: the dataset id which may determine the prediction schema
+            for this model run if present on the dataset.
         :return: model_run
         """
-        return ModelRun(model_run_id, self)
+        return ModelRun(model_run_id, dataset_id, self)
 
     def delete_model_run(self, model_run_id: str):
         """
@@ -674,7 +672,9 @@ class NucleusClient:
         if response.get(STATUS_CODE_KEY, None):
             raise ModelRunCreationError(response.get("error"))
 
-        return ModelRun(response[MODEL_RUN_ID_KEY], self)
+        return ModelRun(
+            response[MODEL_RUN_ID_KEY], dataset_id=dataset_id, client=self
+        )
 
     def predict(
         self,
