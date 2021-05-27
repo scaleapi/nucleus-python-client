@@ -145,6 +145,11 @@ class Slice:
             batch_size=batch_size,
         )
 
+    def send_to_labeling(self, project_id: str):
+        return self._client.make_request(
+            {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
+        )
+
 
 def check_annotations_are_in_slice(
     annotations: List[Annotation], slice_to_check: Slice
