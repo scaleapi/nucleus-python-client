@@ -8,7 +8,7 @@ from nucleus.utils import (
     serialize_and_write_to_presigned_url,
 )
 
-from .annotation import Annotation
+from .annotation import Annotation, check_all_annotation_paths_remote
 from .constants import (
     DATASET_ITEM_IDS_KEY,
     DATASET_LENGTH_KEY,
@@ -16,6 +16,7 @@ from .constants import (
     DATASET_NAME_KEY,
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
+    JOB_ID_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
@@ -143,7 +144,8 @@ class Dataset:
         annotations: List[Annotation],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
-    ) -> dict:
+        asynchronous: bool = False,
+    ) -> Union[dict[str, Any], AsyncJob]:
         """
         Uploads ground truth annotations for a given dataset.
         :param annotations: ground truth annotations for a given dataset to upload
@@ -156,6 +158,19 @@ class Dataset:
             "ignored_items": int,
         }
         """
+        if asynchronous:
+            check_all_annotation_paths_remote(annotations)
+
+            request_id = serialize_and_write_to_presigned_url(
+                annotations, self.id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"dataset/{self.id}/annotate?async=1",
+            )
+
+            return AsyncJob(response[JOB_ID_KEY], self._client)
+
         return self._client.annotate_dataset(
             self.id, annotations, update=update, batch_size=batch_size
         )

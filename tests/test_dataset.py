@@ -1,8 +1,16 @@
-from nucleus.job import JobError
+from nucleus.annotation import (
+    BoxAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+)
+from nucleus.job import AsyncJob, JobError
 import pytest
 import os
 
 from .helpers import (
+    TEST_BOX_ANNOTATIONS,
+    TEST_POLYGON_ANNOTATIONS,
+    TEST_SEGMENTATION_ANNOTATIONS,
     TEST_SLICE_NAME,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
@@ -238,3 +246,73 @@ def test_dataset_export_autotag_scores(CLIENT):
         for column in ["dataset_item_ids", "ref_ids", "scores"]:
             assert column in scores
             assert len(scores[column]) > 0
+
+
+def test_annotate_async(dataset: Dataset):
+    semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
+    polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    bbox.reference_id = "fake_garbage"
+
+    job: AsyncJob = dataset.annotate(
+        annotations=[semseg, polygon, bbox],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 2,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": dataset.id,
+                "processed": 2,
+            },
+            "segmentation_upload": {
+                "errors": [],
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 1,
+            },
+        },
+    }
+
+
+def test_annotate_async_with_error(dataset: Dataset):
+    semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
+    polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    bbox.reference_id = "fake_garbage"
+
+    job: AsyncJob = dataset.annotate(
+        annotations=[semseg, polygon, bbox],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 2,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": dataset.id,
+                "processed": 1,
+            },
+            "segmentation_upload": {
+                "errors": [],
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 1,
+            },
+        },
+    }
+
+    assert "Item with id fake_garbage doesn" in str(job.errors())
