@@ -249,6 +249,7 @@ def test_dataset_export_autotag_scores(CLIENT):
 
 
 def test_annotate_async(dataset: Dataset):
+    dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
@@ -259,6 +260,28 @@ def test_annotate_async(dataset: Dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
+    {
+        "job_id": "job_c2r16b9vcz50048tk5k0",
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 2,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": "ds_c2r16asgc3s009hs5jzg",
+                "processed": 0,
+            },
+            "segmentation_upload": {
+                "errors": [
+                    "Item not found for reference ID airplane.png in dataset ds_c2r16asgc3s009hs5jzg!"
+                ],
+                "ignored": 0,
+                "n_errors": 1,
+                "processed": 0,
+            },
+        },
+    }
 
     assert job.status() == {
         "job_id": job.id,
