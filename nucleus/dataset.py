@@ -145,7 +145,7 @@ class Dataset:
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
         asynchronous: bool = False,
-    ) -> Union[dict[str, Any], AsyncJob]:
+    ) -> Union[Dict[str, Any], AsyncJob]:
         """
         Uploads ground truth annotations for a given dataset.
         :param annotations: ground truth annotations for a given dataset to upload
