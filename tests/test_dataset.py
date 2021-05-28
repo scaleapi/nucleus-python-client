@@ -260,7 +260,7 @@ def test_annotate_async(dataset: Dataset):
     )
     job.sleep_until_complete()
     assert job.status() == {
-        "job_id": "job_c2r21dnq1j9007r2p740",
+        "job_id": job.id,
         "status": "Completed",
         "message": {
             "annotation_upload": {
