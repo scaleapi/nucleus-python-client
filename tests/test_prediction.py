@@ -271,6 +271,7 @@ def test_mixed_pred_upload(model_run):
     )
 
 
+@pytest.mark.integration
 def test_mixed_pred_upload_async(model_run: ModelRun):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
@@ -307,6 +308,7 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
     }
 
 
+@pytest.mark.integration
 def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]

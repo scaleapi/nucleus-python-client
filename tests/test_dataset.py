@@ -144,6 +144,7 @@ def test_dataset_append_local(CLIENT, dataset):
     assert ERROR_PAYLOAD not in resp_json
 
 
+@pytest.mark.integration
 def test_dataset_append_async(dataset: Dataset):
     job = dataset.append(make_dataset_items(), asynchronous=True)
     job.sleep_until_complete()
@@ -173,6 +174,7 @@ def test_dataset_append_async_with_local_path(dataset: Dataset):
         dataset.append(ds_items, asynchronous=True)
 
 
+@pytest.mark.integration
 def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     ds_items = make_dataset_items()
     ds_items[0].image_location = "https://looks.ok.but.is.not.accessible"
@@ -248,6 +250,7 @@ def test_dataset_export_autotag_scores(CLIENT):
             assert len(scores[column]) > 0
 
 
+@pytest.mark.integration
 def test_annotate_async(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
@@ -281,6 +284,7 @@ def test_annotate_async(dataset: Dataset):
     }
 
 
+@pytest.mark.integration
 def test_annotate_async_with_error(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
