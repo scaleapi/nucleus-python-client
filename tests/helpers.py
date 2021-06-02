@@ -10,6 +10,7 @@ TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
+TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
 
 TEST_IMG_URLS = [
