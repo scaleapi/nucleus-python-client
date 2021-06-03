@@ -2,6 +2,7 @@ from typing import Dict, List, Iterable, Set, Tuple, Optional, Union
 from nucleus.dataset_item import DatasetItem
 from nucleus.annotation import Annotation
 from nucleus.utils import format_dataset_item_response
+from nucleus.job import AsyncJob
 
 from .constants import DEFAULT_ANNOTATION_UPDATE_MODE
 
@@ -144,6 +145,12 @@ class Slice:
             update=update,
             batch_size=batch_size,
         )
+
+    def send_to_labeling(self, project_id: str):
+        response = self._client.make_request(
+            {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
+        )
+        return AsyncJob(response["job_id"], self._client)
 
 
 def check_annotations_are_in_slice(

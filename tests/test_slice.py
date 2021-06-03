@@ -6,8 +6,10 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_SLICE_NAME,
     TEST_BOX_ANNOTATIONS,
+    TEST_PROJECT_ID,
     reference_id_from_url,
 )
+from nucleus.job import AsyncJob
 
 
 @pytest.fixture()
@@ -141,3 +143,29 @@ def test_slice_append(dataset):
     assert sort_by_reference_id(all_stored_items) == sort_by_reference_id(
         ds_items[:3]
     )
+
+
+def test_slice_send_to_labeling(dataset):
+    # Dataset upload
+    ds_items = []
+    for url in TEST_IMG_URLS:
+        ds_items.append(
+            DatasetItem(
+                image_location=url,
+                reference_id=reference_id_from_url(url),
+            )
+        )
+    response = dataset.append(ds_items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    # Slice creation
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
+    )
+
+    response = slc.info()
+    assert len(response["dataset_items"]) == 2
+
+    response = slc.send_to_labeling(TEST_PROJECT_ID)
+    assert isinstance(response, AsyncJob)
