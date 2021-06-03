@@ -305,7 +305,7 @@ def test_annotate_async_with_error(dataset: Dataset):
             "annotation_upload": {
                 "epoch": 1,
                 "total": 2,
-                "errored": 0,  # TODO: fix this once backend fix is in
+                "errored": 1,
                 "ignored": 0,
                 "datasetId": dataset.id,
                 "processed": 1,
