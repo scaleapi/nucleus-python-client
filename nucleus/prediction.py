@@ -16,6 +16,7 @@ from .constants import (
     Y_KEY,
     WIDTH_KEY,
     HEIGHT_KEY,
+    CLASS_PDF_KEY,
     CONFIDENCE_KEY,
     VERTICES_KEY,
     ANNOTATIONS_KEY,
@@ -54,6 +55,7 @@ class BoxPrediction(BoxAnnotation):
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
+        class_pdf: Optional[Dict] = None,
     ):
         super().__init__(
             label=label,
@@ -67,11 +69,13 @@ class BoxPrediction(BoxAnnotation):
             metadata=metadata,
         )
         self.confidence = confidence
+        self.class_pdf = class_pdf
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
         if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
+            payload[CLASS_PDF_KEY] = self.class_pdf
 
         return payload
 
@@ -89,6 +93,7 @@ class BoxPrediction(BoxAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, {}),
         )
 
 
@@ -102,6 +107,7 @@ class PolygonPrediction(PolygonAnnotation):
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
+        class_pdf: Optional[Dict] = None,
     ):
         super().__init__(
             label=label,
@@ -112,11 +118,13 @@ class PolygonPrediction(PolygonAnnotation):
             metadata=metadata,
         )
         self.confidence = confidence
+        self.class_pdf = class_pdf
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
         if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
+            payload[CLASS_PDF_KEY] = self.class_pdf
 
         return payload
 
@@ -131,4 +139,5 @@ class PolygonPrediction(PolygonAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, {}),
         )

@@ -11,6 +11,7 @@ ANNOTATION_TYPES = (BOX_TYPE, POLYGON_TYPE, SEGMENTATION_TYPE)
 ANNOTATION_UPDATE_KEY = "update"
 AUTOTAGS_KEY = "autotags"
 
+CLASS_PDF_KEY = "class_pdf"
 CONFIDENCE_KEY = "confidence"
 DATASET_ID_KEY = "dataset_id"
 DATASET_ITEM_IDS_KEY = "dataset_item_ids"
