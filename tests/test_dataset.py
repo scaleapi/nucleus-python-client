@@ -275,7 +275,6 @@ def test_annotate_async(dataset: Dataset):
                 "processed": 2,
             },
             "segmentation_upload": {
-                "errors": [],
                 "ignored": 0,
                 "n_errors": 0,
                 "processed": 1,
@@ -311,7 +310,6 @@ def test_annotate_async_with_error(dataset: Dataset):
                 "processed": 1,
             },
             "segmentation_upload": {
-                "errors": [],
                 "ignored": 0,
                 "n_errors": 0,
                 "processed": 1,
