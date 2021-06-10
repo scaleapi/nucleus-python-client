@@ -225,7 +225,7 @@ class Dataset:
         return self._client.populate_dataset(
             self.id,
             dataset_items,
-            force=update,
+            update=update,
             batch_size=batch_size,
         )
 

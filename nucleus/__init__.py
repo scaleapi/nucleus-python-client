@@ -68,6 +68,7 @@ from .annotation import (
     BoxAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
+    Segment,
 )
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -386,7 +387,7 @@ class NucleusClient:
             async_responses.extend(responses)
 
         for response in async_responses:
-            agg_response.update_response(response.json())
+            agg_response.update_response(response)
 
         return agg_response
 
@@ -394,10 +395,10 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
-        update: bool,
+        update: bool,  # TODO: understand how to pass this in.
         local_batch_size: int = 10,
     ):
-        def preprocess_payload(batch):
+        def get_files(batch):
             request_payload = [
                 (ITEMS_KEY, (None, json.dumps(batch), "application/json"))
             ]
@@ -416,20 +417,19 @@ class NucleusClient:
 
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
-        request_payloads = []
+        files_per_request = []
         payload_items = []
         for i in range(0, len(items), local_batch_size):
             batch = items[i : i + local_batch_size]
-            batch_payload = preprocess_payload(batch)
-            request_payloads.append(batch_payload)
+            files_per_request.append(get_files(batch))
             payload_items.append(batch)
 
         responses = [
-            self.make_request(
-                payload,
-                f"dataset/{dataset_id}/append",
+            self._make_files_request(
+                files=files,
+                route=f"dataset/{dataset_id}/append",
             )
-            for payload in request_payloads
+            for files in files_per_request
         ]
 
         def close_files(request_items):
@@ -439,7 +439,7 @@ class NucleusClient:
                     item[1][1].close()
 
         # don't forget to close all open files
-        for p in request_payloads:
+        for p in files_per_request:
             close_files(p)
 
         return responses
@@ -1013,8 +1013,8 @@ class NucleusClient:
             requests_command=requests.delete,
         )
 
-    def _make_request_raw(
-        self, payload: dict, endpoint: str, requests_command=requests.post
+    def _make_files_request(
+        self, files, route: str, requests_command=requests.post
     ):
         """
         Makes a request to Nucleus endpoint. This method returns the raw
@@ -1025,18 +1025,22 @@ class NucleusClient:
         :param requests_command: requests.post, requests.get, requests.delete
         :return: response
         """
+        endpoint = f"{self.endpoint}/{route}"
+
         logger.info("Posting to %s", endpoint)
 
         response = requests_command(
             endpoint,
-            json=payload,
-            headers={"Content-Type": "application/json"},
+            files=files,
             auth=(self.api_key, ""),
             timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
         )
         logger.info("API request has response code %s", response.status_code)
 
-        return response
+        if not response.ok:
+            self.handle_bad_response(endpoint, requests_command, response)
+
+        return response.json()
 
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
@@ -1052,7 +1056,16 @@ class NucleusClient:
         """
         endpoint = f"{self.endpoint}/{route}"
 
-        response = self._make_request_raw(payload, endpoint, requests_command)
+        logger.info("Posting to %s", endpoint)
+
+        response = requests_command(
+            endpoint,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            auth=(self.api_key, ""),
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+        )
+        logger.info("API request has response code %s", response.status_code)
 
         if not response.ok:
             self.handle_bad_response(endpoint, requests_command, response)
