@@ -33,7 +33,6 @@ packages = [{include="nucleus"}]
 
 [tool.poetry.dependencies]
 python = "^3.6.2"
-grequests = "^0.6.0"
 requests = "^2.25.1"
 tqdm = "^4.41.0"
 dataclasses = { version = "^0.7", python = "^3.6.1, <3.7" }
