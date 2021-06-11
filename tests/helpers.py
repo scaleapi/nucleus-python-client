@@ -87,13 +87,31 @@ TEST_SEGMENTATION_ANNOTATIONS = [
 ]
 TEST_SEGMENTATION_PREDICTIONS = TEST_SEGMENTATION_ANNOTATIONS
 
+TEST_BOX_MODEL_PDF = {
+    box_annotation["label"]: 1 / len(TEST_BOX_ANNOTATIONS)
+    for box_annotation in TEST_BOX_ANNOTATIONS
+}
+
+TEST_POLYGON_MODEL_PDF = {
+    polygon_annotation["label"]: 1 / len(TEST_POLYGON_ANNOTATIONS)
+    for polygon_annotation in TEST_POLYGON_ANNOTATIONS
+}
+
 TEST_BOX_PREDICTIONS = [
-    {**TEST_BOX_ANNOTATIONS[i], "confidence": 0.10 * i}
+    {
+        **TEST_BOX_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_BOX_MODEL_PDF,
+    }
     for i in range(len(TEST_BOX_ANNOTATIONS))
 ]
 
 TEST_POLYGON_PREDICTIONS = [
-    {**TEST_POLYGON_ANNOTATIONS[i], "confidence": 0.10 * i}
+    {
+        **TEST_POLYGON_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_POLYGON_MODEL_PDF,
+    }
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]
 

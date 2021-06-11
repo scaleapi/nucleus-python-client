@@ -297,7 +297,6 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
                 "processed": 2,
             },
             "segmentation_upload": {
-                "errors": [],
                 "ignored": 0,
                 "n_errors": 0,
                 "processed": 1,
@@ -334,7 +333,6 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
                 "processed": 1,
             },
             "segmentation_upload": {
-                "errors": [],
                 "ignored": 0,
                 "n_errors": 0,
                 "processed": 1,
