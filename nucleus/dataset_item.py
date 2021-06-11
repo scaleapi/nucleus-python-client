@@ -52,7 +52,7 @@ class DatasetItem:
         return payload
 
     def to_json(self) -> str:
-        return json.dumps(self.to_payload())
+        return json.dumps(self.to_payload(), allow_nan=False)
 
 
 def is_local_path(path: str) -> bool:

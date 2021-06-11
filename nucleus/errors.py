@@ -38,10 +38,9 @@ class NucleusAPIError(Exception):
                     )
 
         if aiohttp_response is not None:
-            message = f"Tried to {command.__name__} {endpoint}, but received {aiohttp_response.status}: {aiohttp_response.reason}."
-            if hasattr(requests_response, "text"):
-                text = requests_response.text()
-                if text:
-                    message += f"\nThe detailed error is:\n{text}"
+            status, reason, data = aiohttp_response
+            message = f"Tried to {command.__name__} {endpoint}, but received {status}: {reason}."
+            if data:
+                message += f"\nThe detailed error is:\n{data}"
 
         super().__init__(message)

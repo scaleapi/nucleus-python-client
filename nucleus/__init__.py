@@ -402,7 +402,14 @@ class NucleusClient:
     ):
         def get_files(batch):
             request_payload = [
-                (ITEMS_KEY, (None, json.dumps(batch), "application/json"))
+                (
+                    ITEMS_KEY,
+                    (
+                        None,
+                        json.dumps(batch, allow_nan=False),
+                        "application/json",
+                    ),
+                )
             ]
             for item in batch:
                 image = open(  # pylint: disable=R1732
@@ -426,7 +433,8 @@ class NucleusClient:
             files_per_request.append(get_files(batch))
             payload_items.append(batch)
 
-        responses = asyncio.run(
+        loop = asyncio.get_event_loop()
+        responses = loop.run_until_complete(
             self.make_many_files_requests_asynchronously(
                 files_per_request,
                 f"dataset/{dataset_id}/append",
@@ -476,7 +484,7 @@ class NucleusClient:
         """
         Makes an async post request with files to a Nucleus endpoint.
 
-        :param files: A list of tuples (filename, file_pointer, file_type)
+        :param files: A list of tuples (name, (filename, file_pointer, file_type))
         :param route: route for the request
         :param session: Session to use for post.
         :return: response
@@ -502,12 +510,21 @@ class NucleusClient:
             timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
         ) as response:
             logger.info("API request has response code %s", response.status)
+
+            try:
+                data = await response.json()
+            except aiohttp.client_exceptions.ContentTypeError:
+                # In case of 404, the server returns text
+                data = await response.text()
+
             if not response.ok:
                 self.handle_bad_response(
-                    endpoint, session.post, aiohttp_response=response
+                    endpoint,
+                    session.post,
+                    aiohttp_response=(response.status, response.reason, data),
                 )
 
-            return await response.json()
+            return data
 
     def _process_append_requests(
         self,

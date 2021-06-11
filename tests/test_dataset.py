@@ -1,37 +1,38 @@
+import math
+import os
+
+import pytest
+from nucleus import (
+    Dataset,
+    DatasetItem,
+    NucleusAPIError,
+    NucleusClient,
+    UploadResponse,
+)
 from nucleus.annotation import (
     BoxAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
+from nucleus.constants import (
+    DATASET_ID_KEY,
+    ERROR_ITEMS,
+    ERROR_PAYLOAD,
+    IGNORED_ITEMS,
+    NEW_ITEMS,
+    UPDATED_ITEMS,
+)
 from nucleus.job import AsyncJob, JobError
-import pytest
-import os
 
 from .helpers import (
+    LOCAL_FILENAME,
     TEST_BOX_ANNOTATIONS,
+    TEST_DATASET_NAME,
+    TEST_IMG_URLS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     TEST_SLICE_NAME,
-    TEST_DATASET_NAME,
-    TEST_IMG_URLS,
-    LOCAL_FILENAME,
     reference_id_from_url,
-)
-
-from nucleus import (
-    Dataset,
-    DatasetItem,
-    UploadResponse,
-    NucleusClient,
-    NucleusAPIError,
-)
-from nucleus.constants import (
-    NEW_ITEMS,
-    UPDATED_ITEMS,
-    IGNORED_ITEMS,
-    ERROR_ITEMS,
-    ERROR_PAYLOAD,
-    DATASET_ID_KEY,
 )
 
 TEST_AUTOTAG_DATASET = "ds_bz43jm2jwm70060b3890"
@@ -132,8 +133,20 @@ def test_dataset_append(dataset):
 
 
 def test_dataset_append_local(CLIENT, dataset):
-    ds_items_local = [DatasetItem(image_location=LOCAL_FILENAME)]
+    ds_items_local_error = [
+        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": math.nan})
+    ]
+    with pytest.raises(ValueError) as e:
+        dataset.append(ds_items_local_error)
+        assert "Out of range float values are not JSON compliant" in str(
+            e.value
+        )
+    ds_items_local = [
+        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": 0})
+    ]
+
     response = dataset.append(ds_items_local)
+
     assert isinstance(response, UploadResponse)
     resp_json = response.json()
     assert resp_json[DATASET_ID_KEY] == dataset.id
