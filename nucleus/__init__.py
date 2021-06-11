@@ -50,25 +50,23 @@ confidence      |   float   |   The optional confidence level of this annotation
 geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
+import asyncio
 import json
 import logging
 import os
 from typing import Any, Dict, List, Optional, Union
 
+import aiohttp
 import pkg_resources
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
 
-# pylint: disable=E1101
-# TODO: refactor to reduce this file to under 1000 lines.
-# pylint: disable=C0302
-
 from .annotation import (
     BoxAnnotation,
     PolygonAnnotation,
-    SegmentationAnnotation,
     Segment,
+    SegmentationAnnotation,
 )
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -122,6 +120,11 @@ from .prediction import (
 from .slice import Slice
 from .upload_response import UploadResponse
 
+# pylint: disable=E1101
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
+
+
 __version__ = pkg_resources.get_distribution("scale-nucleus").version
 
 logger = logging.getLogger(__name__)
@@ -141,7 +144,6 @@ class NucleusClient:
         api_key: str,
         use_notebook: bool = False,
         endpoint: str = None,
-        verify: bool = True,
     ):
         self.api_key = api_key
         self.tqdm_bar = tqdm.tqdm
@@ -424,13 +426,12 @@ class NucleusClient:
             files_per_request.append(get_files(batch))
             payload_items.append(batch)
 
-        responses = [
-            self._make_files_request(
-                files=files,
-                route=f"dataset/{dataset_id}/append",
+        responses = asyncio.run(
+            self.make_many_files_requests_asynchronously(
+                files_per_request,
+                f"dataset/{dataset_id}/append",
             )
-            for files in files_per_request
-        ]
+        )
 
         def close_files(request_items):
             for item in request_items:
@@ -443,6 +444,70 @@ class NucleusClient:
             close_files(p)
 
         return responses
+
+    async def make_many_files_requests_asynchronously(
+        self, files_per_request, route
+    ):
+        """
+        Makes an async post request with files to a Nucleus endpoint.
+
+        :param files_per_request: A list of lists of tuples (name, (filename, file_pointer, content_type))
+           name will become the name by which the multer can build an array.
+        :param route: route for the request
+        :return: awaitable list(response)
+        """
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                asyncio.ensure_future(
+                    self._make_files_request(
+                        files=files, route=route, session=session
+                    )
+                )
+                for files in files_per_request
+            ]
+            return await asyncio.gather(*tasks)
+
+    async def _make_files_request(
+        self,
+        files,
+        route: str,
+        session: aiohttp.ClientSession,
+    ):
+        """
+        Makes an async post request with files to a Nucleus endpoint.
+
+        :param files: A list of tuples (filename, file_pointer, file_type)
+        :param route: route for the request
+        :param session: Session to use for post.
+        :return: response
+        """
+        endpoint = f"{self.endpoint}/{route}"
+
+        logger.info("Posting to %s", endpoint)
+
+        form = aiohttp.FormData()
+
+        for file in files:
+            form.add_field(
+                name=file[0],
+                filename=file[1][0],
+                value=file[1][1],
+                content_type=file[1][2],
+            )
+
+        async with session.post(
+            endpoint,
+            data=form,
+            auth=aiohttp.BasicAuth(self.api_key, ""),
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+        ) as response:
+            logger.info("API request has response code %s", response.status)
+            if not response.ok:
+                self.handle_bad_response(
+                    endpoint, session.post, aiohttp_response=response
+                )
+
+            return await response.json()
 
     def _process_append_requests(
         self,
@@ -1013,35 +1078,6 @@ class NucleusClient:
             requests_command=requests.delete,
         )
 
-    def _make_files_request(
-        self, files, route: str, requests_command=requests.post
-    ):
-        """
-        Makes a request to Nucleus endpoint. This method returns the raw
-        requests.Response object which is useful for unit testing.
-
-        :param payload: given payload
-        :param endpoint: endpoint + route for the request
-        :param requests_command: requests.post, requests.get, requests.delete
-        :return: response
-        """
-        endpoint = f"{self.endpoint}/{route}"
-
-        logger.info("Posting to %s", endpoint)
-
-        response = requests_command(
-            endpoint,
-            files=files,
-            auth=(self.api_key, ""),
-            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-        )
-        logger.info("API request has response code %s", response.status_code)
-
-        if not response.ok:
-            self.handle_bad_response(endpoint, requests_command, response)
-
-        return response.json()
-
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
@@ -1072,5 +1108,13 @@ class NucleusClient:
 
         return response.json()
 
-    def handle_bad_response(self, endpoint, requests_command, response):
-        raise NucleusAPIError(endpoint, requests_command, response)
+    def handle_bad_response(
+        self,
+        endpoint,
+        requests_command,
+        requests_response=None,
+        aiohttp_response=None,
+    ):
+        raise NucleusAPIError(
+            endpoint, requests_command, requests_response, aiohttp_response
+        )
