@@ -30,6 +30,9 @@ from .dataset_item import (
 from .payload_constructor import construct_model_run_creation_payload
 
 
+WARN_FOR_LARGE_UPLOAD = 50000
+
+
 class Dataset:
     """
     Nucleus Dataset. You can append images with metadata to your dataset,
@@ -210,6 +213,11 @@ class Dataset:
         }
         """
         check_for_duplicate_reference_ids(dataset_items)
+
+        if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
+            print(
+                "WARNING: for large uploads we recommend uploading your images remotely to a cloud storage provider and then using asynchronous=True."
+            )
 
         if asynchronous:
             check_all_paths_remote(dataset_items)
