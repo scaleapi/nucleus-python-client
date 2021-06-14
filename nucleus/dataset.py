@@ -216,7 +216,10 @@ class Dataset:
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
-                "WARNING: for large uploads we recommend uploading your images remotely to a cloud storage provider and then using asynchronous=True."
+                "Tip: for large uploads, get faster performance by importing your data "
+                "into Nucleus directly from a cloud storage provider. See "
+                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+                " for details."
             )
 
         if asynchronous:
