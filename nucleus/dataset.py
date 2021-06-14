@@ -30,6 +30,9 @@ from .dataset_item import (
 from .payload_constructor import construct_model_run_creation_payload
 
 
+WARN_FOR_LARGE_UPLOAD = 50000
+
+
 class Dataset:
     """
     Nucleus Dataset. You can append images with metadata to your dataset,
@@ -211,6 +214,14 @@ class Dataset:
         """
         check_for_duplicate_reference_ids(dataset_items)
 
+        if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
+            print(
+                "Tip: for large uploads, get faster performance by importing your data "
+                "into Nucleus directly from a cloud storage provider. See "
+                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+                " for details."
+            )
+
         if asynchronous:
             check_all_paths_remote(dataset_items)
             request_id = serialize_and_write_to_presigned_url(
@@ -225,7 +236,7 @@ class Dataset:
         return self._client.populate_dataset(
             self.id,
             dataset_items,
-            force=update,
+            update=update,
             batch_size=batch_size,
         )
 

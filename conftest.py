@@ -1,14 +1,3 @@
-# grequests must be imported before any module not designed for reentrancy,
-# because it relies on aggressive monkey patching that breaks if done after many
-# other common module imports, e.g. ssl.
-#
-# So we import it before everything else. For details see:
-# https://github.com/gevent/gevent/issues/1016#issuecomment-328530533
-# https://github.com/spyoungtech/grequests/issues/8
-import grequests
-
-################
-
 import logging
 import os
 

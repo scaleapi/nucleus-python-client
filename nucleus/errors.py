@@ -25,9 +25,22 @@ class DatasetItemRetrievalError(Exception):
 
 
 class NucleusAPIError(Exception):
-    def __init__(self, endpoint, command, response):
-        message = f"Tried to {command.__name__} {endpoint}, but received {response.status_code}: {response.reason}."
-        if hasattr(response, "text"):
-            if response.text:
-                message += f"\nThe detailed error is:\n{response.text}"
+    def __init__(
+        self, endpoint, command, requests_response=None, aiohttp_response=None
+    ):
+
+        if requests_response is not None:
+            message = f"Tried to {command.__name__} {endpoint}, but received {requests_response.status_code}: {requests_response.reason}."
+            if hasattr(requests_response, "text"):
+                if requests_response.text:
+                    message += (
+                        f"\nThe detailed error is:\n{requests_response.text}"
+                    )
+
+        if aiohttp_response is not None:
+            status, reason, data = aiohttp_response
+            message = f"Tried to {command.__name__} {endpoint}, but received {status}: {reason}."
+            if data:
+                message += f"\nThe detailed error is:\n{data}"
+
         super().__init__(message)

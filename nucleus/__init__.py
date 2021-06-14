@@ -50,23 +50,17 @@ confidence      |   float   |   The optional confidence level of this annotation
 geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
 metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
 """
+import asyncio
 import json
 import logging
 import os
-import warnings
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
-import grequests
+import aiohttp
 import pkg_resources
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
-from requests.adapters import HTTPAdapter
-
-# pylint: disable=E1101
-# TODO: refactor to reduce this file to under 1000 lines.
-# pylint: disable=C0302
-from requests.packages.urllib3.util.retry import Retry
 
 from .annotation import (
     BoxAnnotation,
@@ -125,6 +119,11 @@ from .prediction import (
 )
 from .slice import Slice
 from .upload_response import UploadResponse
+
+# pylint: disable=E1101
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
+
 
 __version__ = pkg_resources.get_distribution("scale-nucleus").version
 
@@ -324,13 +323,13 @@ class NucleusClient:
         dataset_id: str,
         dataset_items: List[DatasetItem],
         batch_size: int = 100,
-        force: bool = False,
+        update: bool = False,
     ):
         """
         Appends images to a dataset with given dataset_id.
-        Overwrites images on collision if forced.
+        Overwrites images on collision if updated.
         :param dataset_id: id of a dataset
-        :param payload: { "items": List[DatasetItem], "force": bool }
+        :param payload: { "items": List[DatasetItem], "update": bool }
         :param local: flag if images are stored locally
         :param batch_size: size of the batch for long payload
         :return:
@@ -373,21 +372,24 @@ class NucleusClient:
         async_responses: List[Any] = []
 
         for batch in tqdm_local_batches:
-            payload = construct_append_payload(batch, force)
+            payload = construct_append_payload(batch, update)
             responses = self._process_append_requests_local(
-                dataset_id, payload, force
+                dataset_id, payload, update
             )
             async_responses.extend(responses)
 
         for batch in tqdm_remote_batches:
-            payload = construct_append_payload(batch, force)
+            payload = construct_append_payload(batch, update)
             responses = self._process_append_requests(
-                dataset_id, payload, force, batch_size, batch_size
+                dataset_id=dataset_id,
+                payload=payload,
+                update=update,
+                batch_size=batch_size,
             )
             async_responses.extend(responses)
 
         for response in async_responses:
-            agg_response.update_response(response.json())
+            agg_response.update_response(response)
 
         return agg_response
 
@@ -395,25 +397,19 @@ class NucleusClient:
         self,
         dataset_id: str,
         payload: dict,
-        update: bool,
+        update: bool,  # TODO: understand how to pass this in.
         local_batch_size: int = 10,
-        size: int = 10,
     ):
-        def error(batch_items: dict) -> UploadResponse:
-            return UploadResponse(
-                {
-                    DATASET_ID_KEY: dataset_id,
-                    ERROR_ITEMS: len(batch_items),
-                    ERROR_PAYLOAD: batch_items,
-                }
-            )
-
-        def exception_handler(request, exception):
-            logger.error(exception)
-
-        def preprocess_payload(batch):
+        def get_files(batch):
             request_payload = [
-                (ITEMS_KEY, (None, json.dumps(batch), "application/json"))
+                (
+                    ITEMS_KEY,
+                    (
+                        None,
+                        json.dumps(batch, allow_nan=False),
+                        "application/json",
+                    ),
+                )
             ]
             for item in batch:
                 image = open(  # pylint: disable=R1732
@@ -430,27 +426,19 @@ class NucleusClient:
 
         items = payload[ITEMS_KEY]
         responses: List[Any] = []
-        request_payloads = []
+        files_per_request = []
         payload_items = []
         for i in range(0, len(items), local_batch_size):
             batch = items[i : i + local_batch_size]
-            batch_payload = preprocess_payload(batch)
-            request_payloads.append(batch_payload)
+            files_per_request.append(get_files(batch))
             payload_items.append(batch)
 
-        async_requests = [
-            self._make_grequest(
-                payload,
+        loop = asyncio.get_event_loop()
+        responses = loop.run_until_complete(
+            self.make_many_files_requests_asynchronously(
+                files_per_request,
                 f"dataset/{dataset_id}/append",
-                local=True,
             )
-            for payload in request_payloads
-        ]
-
-        async_responses = grequests.map(
-            async_requests,
-            exception_handler=exception_handler,
-            size=size,
         )
 
         def close_files(request_items):
@@ -460,19 +448,83 @@ class NucleusClient:
                     item[1][1].close()
 
         # don't forget to close all open files
-        for p in request_payloads:
+        for p in files_per_request:
             close_files(p)
 
-        # response object will be None if an error occurred
-        async_responses = [
-            response
-            if (response and response.status_code == 200)
-            else error(request_items)
-            for response, request_items in zip(async_responses, payload_items)
-        ]
-        responses.extend(async_responses)
-
         return responses
+
+    async def make_many_files_requests_asynchronously(
+        self, files_per_request, route
+    ):
+        """
+        Makes an async post request with files to a Nucleus endpoint.
+
+        :param files_per_request: A list of lists of tuples (name, (filename, file_pointer, content_type))
+           name will become the name by which the multer can build an array.
+        :param route: route for the request
+        :return: awaitable list(response)
+        """
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                asyncio.ensure_future(
+                    self._make_files_request(
+                        files=files, route=route, session=session
+                    )
+                )
+                for files in files_per_request
+            ]
+            return await asyncio.gather(*tasks)
+
+    async def _make_files_request(
+        self,
+        files,
+        route: str,
+        session: aiohttp.ClientSession,
+    ):
+        """
+        Makes an async post request with files to a Nucleus endpoint.
+
+        :param files: A list of tuples (name, (filename, file_pointer, file_type))
+        :param route: route for the request
+        :param session: Session to use for post.
+        :return: response
+        """
+        endpoint = f"{self.endpoint}/{route}"
+
+        logger.info("Posting to %s", endpoint)
+
+        form = aiohttp.FormData()
+
+        for file in files:
+            form.add_field(
+                name=file[0],
+                filename=file[1][0],
+                value=file[1][1],
+                content_type=file[1][2],
+            )
+
+        async with session.post(
+            endpoint,
+            data=form,
+            auth=aiohttp.BasicAuth(self.api_key, ""),
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+        ) as response:
+            logger.info("API request has response code %s", response.status)
+
+            try:
+                data = await response.json()
+            except aiohttp.client_exceptions.ContentTypeError:
+                # In case of 404, the server returns text
+                data = await response.text()
+
+            if not response.ok:
+                self.handle_bad_response(
+                    endpoint,
+                    session.post,
+                    aiohttp_response=(response.status, response.reason, data),
+                )
+
+            return data
 
     def _process_append_requests(
         self,
@@ -480,20 +532,7 @@ class NucleusClient:
         payload: dict,
         update: bool,
         batch_size: int = 20,
-        size: int = 10,
     ):
-        def default_error(payload: dict) -> UploadResponse:
-            return UploadResponse(
-                {
-                    DATASET_ID_KEY: dataset_id,
-                    ERROR_ITEMS: len(payload[ITEMS_KEY]),
-                    ERROR_PAYLOAD: payload[ITEMS_KEY],
-                }
-            )
-
-        def exception_handler(request, exception):
-            logger.error(exception)
-
         items = payload[ITEMS_KEY]
         payloads = [
             # batch_size images per request
@@ -501,27 +540,13 @@ class NucleusClient:
             for i in range(0, len(items), batch_size)
         ]
 
-        async_requests = [
-            self._make_grequest(
+        return [
+            self.make_request(
                 payload,
                 f"dataset/{dataset_id}/append",
-                local=False,
             )
             for payload in payloads
         ]
-
-        async_responses = grequests.map(
-            async_requests, exception_handler=exception_handler, size=size
-        )
-
-        async_responses = [
-            response
-            if (response and response.status_code == 200)
-            else default_error(payload)
-            for response, payload in zip(async_responses, payloads)
-        ]
-
-        return async_responses
 
     def annotate_dataset(
         self,
@@ -1070,74 +1095,6 @@ class NucleusClient:
             requests_command=requests.delete,
         )
 
-    def _make_grequest(
-        self,
-        payload: dict,
-        route: str,
-        session=None,
-        requests_command: Callable = grequests.post,
-        local=True,
-    ):
-        """
-        makes a grequest to Nucleus endpoint
-        :param payload: file dict for multipart-formdata
-        :param route: route for the request
-        :param session: requests.session
-        :param requests_command: grequests.post, grequests.get, grequests.delete
-        :return: An async grequest object
-        """
-        adapter = HTTPAdapter(max_retries=Retry(total=3))
-        sess = requests.Session()
-        sess.mount("https://", adapter)
-        sess.mount("http://", adapter)
-
-        endpoint = f"{self.endpoint}/{route}"
-        logger.info("Posting to %s", endpoint)
-
-        if local:
-            post = requests_command(
-                endpoint,
-                session=sess,
-                files=payload,
-                auth=(self.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            )
-        else:
-            post = requests_command(
-                endpoint,
-                session=sess,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                auth=(self.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            )
-        return post
-
-    def _make_request_raw(
-        self, payload: dict, endpoint: str, requests_command=requests.post
-    ):
-        """
-        Makes a request to Nucleus endpoint. This method returns the raw
-        requests.Response object which is useful for unit testing.
-
-        :param payload: given payload
-        :param endpoint: endpoint + route for the request
-        :param requests_command: requests.post, requests.get, requests.delete
-        :return: response
-        """
-        logger.info("Posting to %s", endpoint)
-
-        response = requests_command(
-            endpoint,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            auth=(self.api_key, ""),
-            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-        )
-        logger.info("API request has response code %s", response.status_code)
-
-        return response
-
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
@@ -1152,12 +1109,29 @@ class NucleusClient:
         """
         endpoint = f"{self.endpoint}/{route}"
 
-        response = self._make_request_raw(payload, endpoint, requests_command)
+        logger.info("Posting to %s", endpoint)
+
+        response = requests_command(
+            endpoint,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            auth=(self.api_key, ""),
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+        )
+        logger.info("API request has response code %s", response.status_code)
 
         if not response.ok:
             self.handle_bad_response(endpoint, requests_command, response)
 
         return response.json()
 
-    def handle_bad_response(self, endpoint, requests_command, response):
-        raise NucleusAPIError(endpoint, requests_command, response)
+    def handle_bad_response(
+        self,
+        endpoint,
+        requests_command,
+        requests_response=None,
+        aiohttp_response=None,
+    ):
+        raise NucleusAPIError(
+            endpoint, requests_command, requests_response, aiohttp_response
+        )

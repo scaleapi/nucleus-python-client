@@ -53,7 +53,7 @@ class Annotation:
         )
 
     def to_json(self) -> str:
-        return json.dumps(self.to_payload())
+        return json.dumps(self.to_payload(), allow_nan=False)
 
 
 @dataclass
