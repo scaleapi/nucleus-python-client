@@ -1,3 +1,4 @@
+import copy
 import math
 import os
 
@@ -21,6 +22,9 @@ from nucleus.constants import (
     IGNORED_ITEMS,
     NEW_ITEMS,
     UPDATED_ITEMS,
+    ITEM_KEY,
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
 )
 from nucleus.job import AsyncJob, JobError
 
@@ -331,3 +335,29 @@ def test_annotate_async_with_error(dataset: Dataset):
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
+
+
+def test_append_and_export(dataset):
+    # Dataset upload
+    url = TEST_IMG_URLS[0]
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+
+    ds_items = [
+        DatasetItem(
+            image_location=url,
+            reference_id=reference_id_from_url(url),
+            metadata={"test": "metadata"},
+        ),
+    ]
+    response = dataset.append(ds_items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    dataset.annotate(annotations=[annotation])
+
+    expected_box_annotation = copy.deepcopy(annotation)
+    expected_box_annotation.annotation_id = None
+    expected_box_annotation.metadata = {}
+
+    exported = dataset.items_and_annotations()
+    assert exported[0][ITEM_KEY] == ds_items[0]
+    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == expected_box_annotation

@@ -4,6 +4,7 @@ import requests
 
 from nucleus.job import AsyncJob
 from nucleus.utils import (
+    convert_export_payload,
     format_dataset_item_response,
     serialize_and_write_to_presigned_url,
 )
@@ -327,3 +328,23 @@ class Dataset:
 
     def check_index_status(self, job_id: str):
         return self._client.check_index_status(job_id)
+
+    def items_and_annotations(
+        self,
+    ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Returns a list of all DatasetItems and Annotations in this slice.
+
+        Returns:
+            A list, where each item is a dict with two keys representing a row
+            in the dataset.
+            * One value in the dict is the DatasetItem, containing a reference to the
+                item that was annotated.
+            * The other value is a dictionary containing all the annotations for this
+                dataset item, sorted by annotation type.
+        """
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/exportForTraining",
+            requests_command=requests.get,
+        )
+        return convert_export_payload(api_payload["exportedRows"])
