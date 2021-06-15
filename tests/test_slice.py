@@ -1,6 +1,12 @@
+import copy
 import pytest
 from nucleus import Slice, NucleusClient, DatasetItem, BoxAnnotation
-from nucleus.constants import ERROR_PAYLOAD, ITEM_KEY
+from nucleus.constants import (
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
+    ERROR_PAYLOAD,
+    ITEM_KEY,
+)
 from .helpers import (
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
@@ -64,38 +70,41 @@ def test_slice_create_and_delete_and_list(dataset):
         )
 
 
-def test_slice_create_and_annotate(dataset):
+def test_slice_create_and_export(dataset):
     # Dataset upload
     url = TEST_IMG_URLS[0]
     annotation_in_slice = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
-    annotation_not_in_slice = BoxAnnotation(**TEST_BOX_ANNOTATIONS[1])
 
-    ds_items = []
-    ds_items.append(
+    ds_items = [
         DatasetItem(
             image_location=url,
             reference_id=reference_id_from_url(url),
-        )
-    )
+            metadata={"test": "metadata"},
+        ),
+        DatasetItem(
+            image_location=url,
+            reference_id="different_item",
+            metadata={"test": "metadata"},
+        ),
+    ]
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
 
     # Slice creation
     slc = dataset.create_slice(
         name=TEST_SLICE_NAME,
-        reference_ids=[item.reference_id for item in ds_items[:2]],
+        reference_ids=[item.reference_id for item in ds_items[:1]],
     )
 
-    slc.annotate(annotations=[annotation_in_slice])
-    with pytest.raises(ValueError) as not_in_slice_error:
-        slc.annotate(annotations=[annotation_not_in_slice])
+    dataset.annotate(annotations=[annotation_in_slice])
 
-    assert (
-        annotation_not_in_slice.reference_id
-        in not_in_slice_error.value.args[0]
-    )
+    expected_box_annotation = copy.deepcopy(annotation_in_slice)
+    expected_box_annotation.annotation_id = None
+    expected_box_annotation.metadata = {}
 
-    slc.annotate(annotations=[annotation_not_in_slice], strict=False)
+    exported = slc.items_and_annotations()
+    assert exported[0][ITEM_KEY] == ds_items[0]
+    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == expected_box_annotation
 
 
 def test_slice_append(dataset):

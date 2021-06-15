@@ -1,6 +1,6 @@
 """Shared stateless utility function library"""
 
-
+from collections import defaultdict
 import io
 import uuid
 from typing import IO, Dict, List, Sequence, Union
@@ -8,9 +8,22 @@ from typing import IO, Dict, List, Sequence, Union
 import requests
 from requests.models import HTTPError
 
-from nucleus.annotation import Annotation
+from nucleus.annotation import (
+    Annotation,
+    BoxAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+)
 
-from .constants import ANNOTATION_TYPES, ANNOTATIONS_KEY, ITEM_KEY
+from .constants import (
+    ANNOTATION_TYPES,
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
+    ITEM_KEY,
+    POLYGON_TYPE,
+    REFERENCE_ID_KEY,
+    SEGMENTATION_TYPE,
+)
 from .dataset_item import DatasetItem
 from .prediction import BoxPrediction, PolygonPrediction
 
@@ -71,6 +84,31 @@ def format_dataset_item_response(response: dict) -> dict:
         ITEM_KEY: DatasetItem.from_json(item),
         ANNOTATIONS_KEY: annotation_response,
     }
+
+
+def convert_export_payload(api_payload):
+    return_payload = []
+    for row in api_payload:
+        return_payload_row = {}
+        return_payload_row[ITEM_KEY] = DatasetItem.from_json(row[ITEM_KEY])
+        annotations = defaultdict(list)
+        if row[SEGMENTATION_TYPE] is not None:
+            segmentation = row[SEGMENTATION_TYPE]
+            segmentation[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[SEGMENTATION_TYPE] = SegmentationAnnotation.from_json(
+                segmentation
+            )
+        for polygon in row[POLYGON_TYPE]:
+            polygon[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[POLYGON_TYPE].append(
+                PolygonAnnotation.from_json(polygon)
+            )
+        for box in row[BOX_TYPE]:
+            box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
+        return_payload_row[ANNOTATIONS_KEY] = annotations
+        return_payload.append(return_payload_row)
+    return return_payload
 
 
 def serialize_and_write(

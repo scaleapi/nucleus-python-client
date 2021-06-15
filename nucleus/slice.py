@@ -1,10 +1,11 @@
-from typing import Dict, List, Iterable, Set, Tuple, Optional, Union
-from nucleus.dataset_item import DatasetItem
-from nucleus.annotation import Annotation
-from nucleus.utils import format_dataset_item_response
-from nucleus.job import AsyncJob
+from typing import Dict, Iterable, List, Set, Tuple, Union
 
-from .constants import DEFAULT_ANNOTATION_UPDATE_MODE
+import requests
+
+from nucleus.annotation import Annotation
+from nucleus.dataset_item import DatasetItem
+from nucleus.job import AsyncJob
+from nucleus.utils import convert_export_payload, format_dataset_item_response
 
 
 class Slice:
@@ -109,42 +110,12 @@ class Slice:
             * The other value is a dictionary containing all the annotations for this
                 dataset item, sorted by annotation type.
         """
-        return list(self.items_and_annotation_generator())
-
-    def annotate(
-        self,
-        annotations: List[Annotation],
-        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
-        batch_size: int = 5000,
-        strict=True,
-    ):
-        """Update annotations within this slice.
-
-        Args:
-            annotations: List of annotations to upload
-            batch_size: How many annotations to send per request.
-            strict: Whether to first check that the annotations belong to this slice.
-                Set to false to avoid this check and speed up upload.
-        """
-        if strict:
-            (
-                annotations_are_in_slice,
-                item_ids_not_found_in_slice,
-                reference_ids_not_found_in_slice,
-            ) = check_annotations_are_in_slice(annotations, self)
-            if not annotations_are_in_slice:
-                message = "Not all annotations are in this slice.\n"
-                if item_ids_not_found_in_slice:
-                    message += f"Item ids not found in slice: {item_ids_not_found_in_slice} \n"
-                if reference_ids_not_found_in_slice:
-                    message += f"Reference ids not found in slice: {reference_ids_not_found_in_slice}"
-                raise ValueError(message)
-        self._client.annotate_dataset(
-            dataset_id=self.dataset_id,
-            annotations=annotations,
-            update=update,
-            batch_size=batch_size,
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.slice_id}/exportForTraining",
+            requests_command=requests.get,
         )
+        return convert_export_payload(api_payload["exportedRows"])
 
     def send_to_labeling(self, project_id: str):
         response = self._client.make_request(
