@@ -18,6 +18,7 @@ from nucleus import (
     SegmentationAnnotation,
     DatasetItem,
     Segment,
+    Point,
 )
 from nucleus.constants import ERROR_PAYLOAD
 
@@ -77,7 +78,7 @@ def test_box_gt_upload(dataset):
 
 
 def test_polygon_gt_upload(dataset):
-    annotation = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    annotation = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
 
     assert response["dataset_id"] == dataset.id
@@ -241,7 +242,7 @@ def test_box_gt_upload_ignore(dataset):
 
 
 def test_polygon_gt_upload_update(dataset):
-    annotation = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    annotation = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
 
     assert response["annotations_processed"] == 1
@@ -255,7 +256,7 @@ def test_polygon_gt_upload_update(dataset):
         "reference_id"
     ]
 
-    annotation_update = PolygonAnnotation(**annotation_update_params)
+    annotation_update = PolygonAnnotation.from_json(annotation_update_params)
     response = dataset.annotate(annotations=[annotation_update], update=True)
 
     assert response["annotations_processed"] == 1
@@ -272,7 +273,7 @@ def test_polygon_gt_upload_update(dataset):
 
 
 def test_polygon_gt_upload_ignore(dataset):
-    annotation = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    annotation = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
 
     assert response["annotations_processed"] == 1
@@ -286,7 +287,7 @@ def test_polygon_gt_upload_ignore(dataset):
         "reference_id"
     ]
 
-    annotation_update = PolygonAnnotation(**annotation_update_params)
+    annotation_update = PolygonAnnotation.from_json(annotation_update_params)
     # Default behavior is ignore.
     response = dataset.annotate(annotations=[annotation_update])
 

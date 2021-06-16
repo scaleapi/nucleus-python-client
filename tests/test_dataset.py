@@ -21,6 +21,8 @@ from nucleus.constants import (
     ERROR_PAYLOAD,
     IGNORED_ITEMS,
     NEW_ITEMS,
+    POLYGON_TYPE,
+    SEGMENTATION_TYPE,
     UPDATED_ITEMS,
     ITEM_KEY,
     ANNOTATIONS_KEY,
@@ -340,7 +342,13 @@ def test_annotate_async_with_error(dataset: Dataset):
 def test_append_and_export(dataset):
     # Dataset upload
     url = TEST_IMG_URLS[0]
-    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    box_annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    segmentation_annotation = SegmentationAnnotation.from_json(
+        TEST_SEGMENTATION_ANNOTATIONS[0]
+    )
+    polygon_annotation = PolygonAnnotation.from_json(
+        TEST_POLYGON_ANNOTATIONS[0]
+    )
 
     ds_items = [
         DatasetItem(
@@ -352,12 +360,34 @@ def test_append_and_export(dataset):
     response = dataset.append(ds_items)
     assert ERROR_PAYLOAD not in response.json()
 
-    dataset.annotate(annotations=[annotation])
+    dataset.annotate(
+        annotations=[
+            box_annotation,
+            polygon_annotation,
+            segmentation_annotation,
+        ]
+    )
 
-    expected_box_annotation = copy.deepcopy(annotation)
-    expected_box_annotation.annotation_id = None
-    expected_box_annotation.metadata = {}
+    # We don't export everything on the annotations in order to speed up export.
+    def clear_fields(annotation):
+        cleared_annotation = copy.deepcopy(annotation)
+        cleared_annotation.annotation_id = None
+        cleared_annotation.metadata = {}
+        return cleared_annotation
+
+    def sort_labelmap(segmentation_annotation):
+        segmentation_annotation.annotations = sorted(
+            segmentation_annotation.annotations, key=lambda x: x.index
+        )
 
     exported = dataset.items_and_annotations()
     assert exported[0][ITEM_KEY] == ds_items[0]
-    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == expected_box_annotation
+    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == clear_fields(
+        box_annotation
+    )
+    assert sort_labelmap(
+        exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
+    ) == sort_labelmap(clear_fields(segmentation_annotation))
+    assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == clear_fields(
+        polygon_annotation
+    )

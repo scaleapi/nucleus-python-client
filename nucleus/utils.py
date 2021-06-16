@@ -92,7 +92,7 @@ def convert_export_payload(api_payload):
         return_payload_row = {}
         return_payload_row[ITEM_KEY] = DatasetItem.from_json(row[ITEM_KEY])
         annotations = defaultdict(list)
-        if row[SEGMENTATION_TYPE] is not None:
+        if row.get(SEGMENTATION_TYPE) is not None:
             segmentation = row[SEGMENTATION_TYPE]
             segmentation[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[SEGMENTATION_TYPE] = SegmentationAnnotation.from_json(
