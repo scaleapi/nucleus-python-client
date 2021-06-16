@@ -103,6 +103,11 @@ TEST_BOX_PREDICTIONS = [
         "confidence": 0.10 * i,
         "class_pdf": TEST_BOX_MODEL_PDF,
     }
+    if i != 0
+    else {
+        **TEST_BOX_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
     for i in range(len(TEST_BOX_ANNOTATIONS))
 ]
 
@@ -111,6 +116,11 @@ TEST_POLYGON_PREDICTIONS = [
         **TEST_POLYGON_ANNOTATIONS[i],
         "confidence": 0.10 * i,
         "class_pdf": TEST_POLYGON_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_POLYGON_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
     }
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]
