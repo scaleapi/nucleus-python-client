@@ -22,6 +22,7 @@ from nucleus import (
     DatasetItem,
     Segment,
     ModelRun,
+    Point,
 )
 from nucleus.constants import ERROR_PAYLOAD
 
@@ -89,7 +90,7 @@ def test_box_pred_upload(model_run):
 
 
 def test_polygon_pred_upload(model_run):
-    prediction = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction = PolygonPrediction.from_json(TEST_POLYGON_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
@@ -189,7 +190,7 @@ def test_box_pred_upload_ignore(model_run):
 
 
 def test_polygon_pred_upload_update(model_run):
-    prediction = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction = PolygonPrediction.from_json(TEST_POLYGON_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
 
     assert response["predictions_processed"] == 1
@@ -203,7 +204,7 @@ def test_polygon_pred_upload_update(model_run):
         "reference_id"
     ]
 
-    prediction_update = PolygonPrediction(**prediction_update_params)
+    prediction_update = PolygonPrediction.from_json(prediction_update_params)
     response = model_run.predict(annotations=[prediction_update], update=True)
 
     assert response["predictions_processed"] == 1
@@ -217,7 +218,7 @@ def test_polygon_pred_upload_update(model_run):
 
 
 def test_polygon_pred_upload_ignore(model_run):
-    prediction = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction = PolygonPrediction.from_json(TEST_POLYGON_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
 
     assert response["predictions_processed"] == 1
@@ -231,7 +232,7 @@ def test_polygon_pred_upload_ignore(model_run):
         "reference_id"
     ]
 
-    prediction_update = PolygonPrediction(**prediction_update_params)
+    prediction_update = PolygonPrediction.from_json(prediction_update_params)
     # Default behavior is ignore.
     response = model_run.predict(annotations=[prediction_update])
 
@@ -249,7 +250,9 @@ def test_mixed_pred_upload(model_run):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
     )
-    prediction_polygon = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction_polygon = PolygonPrediction.from_json(
+        TEST_POLYGON_PREDICTIONS[0]
+    )
     prediction_bbox = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     response = model_run.predict(
         annotations=[prediction_semseg, prediction_polygon, prediction_bbox]
@@ -276,7 +279,9 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
     )
-    prediction_polygon = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction_polygon = PolygonPrediction.from_json(
+        TEST_POLYGON_PREDICTIONS[0]
+    )
     prediction_bbox = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     job: AsyncJob = model_run.predict(
         annotations=[prediction_semseg, prediction_polygon, prediction_bbox],
@@ -310,7 +315,9 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
     )
-    prediction_polygon = PolygonPrediction(**TEST_POLYGON_PREDICTIONS[0])
+    prediction_polygon = PolygonPrediction.from_json(
+        TEST_POLYGON_PREDICTIONS[0]
+    )
     prediction_bbox = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     prediction_bbox.reference_id = "fake_garbage"
 

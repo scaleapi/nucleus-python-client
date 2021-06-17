@@ -112,7 +112,7 @@ TEST_POLYGON_PREDICTIONS = [
     {
         **TEST_POLYGON_ANNOTATIONS[i],
         "confidence": 0.10 * i,
-        "class_pdf": TEST_POLYGON_MODEL_PDF,
+        "class_pdf": None,
     }
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]

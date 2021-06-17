@@ -174,9 +174,6 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-# TODO: Add Generic type for 2D point
-
-
 @dataclass
 class Point:
     x: float
@@ -206,9 +203,15 @@ class PolygonAnnotation(Annotation):
             if not hasattr(self.vertices[0], X_KEY) or not hasattr(
                 self.vertices[0], "to_payload"
             ):
-                raise ValueError(
-                    "Use the Point object, not a dictionary for vertices"
-                )
+                try:
+                    self.vertices = [
+                        Point(x=vertex[X_KEY], y=vertex[Y_KEY])
+                        for vertex in self.vertices
+                    ]
+                except KeyError as ke:
+                    raise ValueError(
+                        "Use a point object to pass in vertices. For example, vertices=[nucleus.Point(x=1, y=2)]"
+                    ) from ke
 
     @classmethod
     def from_json(cls, payload: dict):
