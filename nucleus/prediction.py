@@ -76,6 +76,7 @@ class BoxPrediction(BoxAnnotation):
         payload = super().to_payload()
         if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
+        if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
 
         return payload
@@ -94,7 +95,7 @@ class BoxPrediction(BoxAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            class_pdf=payload.get(CLASS_PDF_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, None),
         )
 
 
@@ -125,6 +126,7 @@ class PolygonPrediction(PolygonAnnotation):
         payload = super().to_payload()
         if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
+        if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
 
         return payload
@@ -142,5 +144,5 @@ class PolygonPrediction(PolygonAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            class_pdf=payload.get(CLASS_PDF_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, None),
         )
