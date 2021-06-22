@@ -168,10 +168,12 @@ def test_dataset_append_async(dataset: Dataset):
     job = dataset.append(make_dataset_items(), asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
+    status["message"]["Payload"] = ""
     assert status == {
         "job_id": job.id,
         "status": "Completed",
         "message": {
+            "Payload": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
             "ingest_to_reupload_queue": {
@@ -200,10 +202,13 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     job = dataset.append(ds_items, asynchronous=True)
     with pytest.raises(JobError):
         job.sleep_until_complete()
-    assert job.status() == {
+    status = job.status()
+    status["message"]["Payload"] = ""
+    assert status == {
         "job_id": f"{job.id}",
         "status": "Errored",
         "message": {
+            "Payload": "",
             "final_error": (
                 "One or more of the images you attempted to upload did not process"
                 " correctly. Please see the status for an overview and the errors for "
@@ -273,7 +278,7 @@ def test_dataset_export_autotag_scores(CLIENT):
 def test_annotate_async(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
-    polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
 
     job: AsyncJob = dataset.annotate(
@@ -306,7 +311,7 @@ def test_annotate_async(dataset: Dataset):
 def test_annotate_async_with_error(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
-    polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     bbox.reference_id = "fake_garbage"
 
