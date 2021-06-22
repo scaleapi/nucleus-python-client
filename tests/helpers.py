@@ -117,7 +117,7 @@ TEST_POLYGON_PREDICTIONS = [
     {
         **TEST_POLYGON_ANNOTATIONS[i],
         "confidence": 0.10 * i,
-        "class_pdf": None,
+        "class_pdf": TEST_POLYGON_MODEL_PDF,
     }
     if i != 0
     else {

@@ -6,6 +6,7 @@ from nucleus.annotation import Annotation
 from nucleus.dataset_item import DatasetItem
 from nucleus.job import AsyncJob
 from nucleus.utils import convert_export_payload, format_dataset_item_response
+from nucleus.constants import EXPORTED_ROWS
 
 
 class Slice:
@@ -115,7 +116,7 @@ class Slice:
             route=f"slice/{self.slice_id}/exportForTraining",
             requests_command=requests.get,
         )
-        return convert_export_payload(api_payload["exportedRows"])
+        return convert_export_payload(api_payload[EXPORTED_ROWS])
 
     def send_to_labeling(self, project_id: str):
         response = self._client.make_request(

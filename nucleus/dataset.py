@@ -17,6 +17,7 @@ from .constants import (
     DATASET_NAME_KEY,
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
+    EXPORTED_ROWS,
     JOB_ID_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
@@ -347,4 +348,4 @@ class Dataset:
             route=f"dataset/{self.id}/exportForTraining",
             requests_command=requests.get,
         )
-        return convert_export_payload(api_payload["exportedRows"])
+        return convert_export_payload(api_payload[EXPORTED_ROWS])
