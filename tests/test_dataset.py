@@ -168,12 +168,12 @@ def test_dataset_append_async(dataset: Dataset):
     job = dataset.append(make_dataset_items(), asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
-    status["message"]["Payload"] = ""
+    status["message"]["PayloadUrl"] = ""
     assert status == {
         "job_id": job.id,
         "status": "Completed",
         "message": {
-            "Payload": "",
+            "PayloadUrl": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
             "ingest_to_reupload_queue": {
@@ -203,12 +203,12 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     with pytest.raises(JobError):
         job.sleep_until_complete()
     status = job.status()
-    status["message"]["Payload"] = ""
+    status["message"]["PayloadUrl"] = ""
     assert status == {
         "job_id": f"{job.id}",
         "status": "Errored",
         "message": {
-            "Payload": "",
+            "PayloadUrl": "",
             "final_error": (
                 "One or more of the images you attempted to upload did not process"
                 " correctly. Please see the status for an overview and the errors for "
