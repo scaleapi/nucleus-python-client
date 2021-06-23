@@ -263,8 +263,8 @@ class PolygonAnnotation(Annotation):
         return payload
 
 
-@dataclass
-class CuboidAnnotation(Annotation):
+@dataclass  # pylint: disable=R0902
+class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     label: str
     position: Point3D
     dimensions: Point3D
