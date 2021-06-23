@@ -57,13 +57,15 @@ TEST_BOX_ANNOTATIONS = [
 TEST_POLYGON_ANNOTATIONS = [
     {
         "label": f"[Pytest] Polygon Annotation ${i}",
-        "vertices": [
-            {
-                "x": 50 + i * 10 + j,
-                "y": 60 + i * 10 + j,
-            }
-            for j in range(3)
-        ],
+        "geometry": {
+            "vertices": [
+                {
+                    "x": 50 + i * 10 + j,
+                    "y": 60 + i * 10 + j,
+                }
+                for j in range(3)
+            ],
+        },
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
     }
@@ -149,10 +151,10 @@ def assert_polygon_annotation_matches_dict(
         annotation_instance.annotation_id == annotation_dict["annotation_id"]
     )
     for instance_pt, dict_pt in zip(
-        annotation_instance.vertices, annotation_dict["vertices"]
+        annotation_instance.vertices, annotation_dict["geometry"]["vertices"]
     ):
-        assert instance_pt["x"] == dict_pt["x"]
-        assert instance_pt["y"] == dict_pt["y"]
+        assert instance_pt.x == dict_pt["x"]
+        assert instance_pt.y == dict_pt["y"]
 
 
 def assert_segmentation_annotation_matches_dict(

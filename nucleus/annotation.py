@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 from nucleus.dataset_item import is_local_path
 
 from .constants import (
@@ -174,11 +174,23 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-# TODO: Add Generic type for 2D point
+@dataclass
+class Point:
+    x: float
+    y: float
+
+    @classmethod
+    def from_json(cls, payload: Dict[str, float]):
+        return cls(payload[X_KEY], payload[Y_KEY])
+
+    def to_payload(self) -> dict:
+        return {X_KEY: self.x, Y_KEY: self.y}
+
+
 @dataclass
 class PolygonAnnotation(Annotation):
     label: str
-    vertices: List[Any]
+    vertices: List[Point]
     reference_id: Optional[str] = None
     item_id: Optional[str] = None
     annotation_id: Optional[str] = None
@@ -187,13 +199,28 @@ class PolygonAnnotation(Annotation):
     def __post_init__(self):
         self._check_ids()
         self.metadata = self.metadata if self.metadata else {}
+        if len(self.vertices) > 0:
+            if not hasattr(self.vertices[0], X_KEY) or not hasattr(
+                self.vertices[0], "to_payload"
+            ):
+                try:
+                    self.vertices = [
+                        Point(x=vertex[X_KEY], y=vertex[Y_KEY])
+                        for vertex in self.vertices
+                    ]
+                except KeyError as ke:
+                    raise ValueError(
+                        "Use a point object to pass in vertices. For example, vertices=[nucleus.Point(x=1, y=2)]"
+                    ) from ke
 
     @classmethod
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
             label=payload.get(LABEL_KEY, 0),
-            vertices=geometry.get(VERTICES_KEY, []),
+            vertices=[
+                Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
+            ],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
@@ -201,14 +228,17 @@ class PolygonAnnotation(Annotation):
         )
 
     def to_payload(self) -> dict:
-        return {
+        payload = {
             LABEL_KEY: self.label,
             TYPE_KEY: POLYGON_TYPE,
-            GEOMETRY_KEY: {VERTICES_KEY: self.vertices},
+            GEOMETRY_KEY: {
+                VERTICES_KEY: [_.to_payload() for _ in self.vertices]
+            },
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
+        return payload
 
 
 def check_all_annotation_paths_remote(

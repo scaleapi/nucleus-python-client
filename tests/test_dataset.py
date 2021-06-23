@@ -1,3 +1,4 @@
+import copy
 import math
 import os
 
@@ -20,7 +21,12 @@ from nucleus.constants import (
     ERROR_PAYLOAD,
     IGNORED_ITEMS,
     NEW_ITEMS,
+    POLYGON_TYPE,
+    SEGMENTATION_TYPE,
     UPDATED_ITEMS,
+    ITEM_KEY,
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
 )
 from nucleus.job import AsyncJob, JobError
 
@@ -162,10 +168,12 @@ def test_dataset_append_async(dataset: Dataset):
     job = dataset.append(make_dataset_items(), asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
+    status["message"]["PayloadUrl"] = ""
     assert status == {
         "job_id": job.id,
         "status": "Completed",
         "message": {
+            "PayloadUrl": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
             "ingest_to_reupload_queue": {
@@ -194,10 +202,13 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     job = dataset.append(ds_items, asynchronous=True)
     with pytest.raises(JobError):
         job.sleep_until_complete()
-    assert job.status() == {
+    status = job.status()
+    status["message"]["PayloadUrl"] = ""
+    assert status == {
         "job_id": f"{job.id}",
         "status": "Errored",
         "message": {
+            "PayloadUrl": "",
             "final_error": (
                 "One or more of the images you attempted to upload did not process"
                 " correctly. Please see the status for an overview and the errors for "
@@ -267,7 +278,7 @@ def test_dataset_export_autotag_scores(CLIENT):
 def test_annotate_async(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
-    polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
 
     job: AsyncJob = dataset.annotate(
@@ -300,7 +311,7 @@ def test_annotate_async(dataset: Dataset):
 def test_annotate_async_with_error(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
-    polygon = PolygonAnnotation(**TEST_POLYGON_ANNOTATIONS[0])
+    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     bbox.reference_id = "fake_garbage"
 
@@ -331,3 +342,57 @@ def test_annotate_async_with_error(dataset: Dataset):
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
+
+
+def test_append_and_export(dataset):
+    # Dataset upload
+    url = TEST_IMG_URLS[0]
+    box_annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    segmentation_annotation = SegmentationAnnotation.from_json(
+        TEST_SEGMENTATION_ANNOTATIONS[0]
+    )
+    polygon_annotation = PolygonAnnotation.from_json(
+        TEST_POLYGON_ANNOTATIONS[0]
+    )
+
+    ds_items = [
+        DatasetItem(
+            image_location=url,
+            reference_id=reference_id_from_url(url),
+            metadata={"test": "metadata"},
+        ),
+    ]
+    response = dataset.append(ds_items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    dataset.annotate(
+        annotations=[
+            box_annotation,
+            polygon_annotation,
+            segmentation_annotation,
+        ]
+    )
+
+    # We don't export everything on the annotations in order to speed up export.
+    def clear_fields(annotation):
+        cleared_annotation = copy.deepcopy(annotation)
+        cleared_annotation.annotation_id = None
+        cleared_annotation.metadata = {}
+        return cleared_annotation
+
+    def sort_labelmap(segmentation_annotation):
+        segmentation_annotation.annotations = sorted(
+            segmentation_annotation.annotations, key=lambda x: x.index
+        )
+
+    exported = dataset.items_and_annotations()
+    assert exported[0][ITEM_KEY] == ds_items[0]
+    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == clear_fields(
+        box_annotation
+    )
+    assert sort_labelmap(
+        exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
+    ) == sort_labelmap(clear_fields(segmentation_annotation))
+    assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == clear_fields(
+        polygon_annotation
+    )

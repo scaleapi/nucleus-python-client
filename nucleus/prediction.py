@@ -1,6 +1,7 @@
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List
 from .annotation import (
     BoxAnnotation,
+    Point,
     PolygonAnnotation,
     Segment,
     SegmentationAnnotation,
@@ -102,7 +103,7 @@ class PolygonPrediction(PolygonAnnotation):
     def __init__(
         self,
         label: str,
-        vertices: List[Any],
+        vertices: List[Point],
         reference_id: Optional[str] = None,
         item_id: Optional[str] = None,
         confidence: Optional[float] = None,
@@ -135,7 +136,9 @@ class PolygonPrediction(PolygonAnnotation):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
             label=payload.get(LABEL_KEY, 0),
-            vertices=geometry.get(VERTICES_KEY, []),
+            vertices=[
+                Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
+            ],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),

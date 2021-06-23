@@ -67,6 +67,7 @@ from .annotation import (
     PolygonAnnotation,
     Segment,
     SegmentationAnnotation,
+    Point,
 )
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
