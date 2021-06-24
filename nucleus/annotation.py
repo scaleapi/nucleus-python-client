@@ -8,7 +8,9 @@ from .constants import (
     ANNOTATION_ID_KEY,
     ANNOTATIONS_KEY,
     BOX_TYPE,
+    CUBOID_TYPE,
     DATASET_ITEM_ID_KEY,
+    DIMENSIONS_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
     INDEX_KEY,
@@ -18,12 +20,15 @@ from .constants import (
     MASK_URL_KEY,
     METADATA_KEY,
     POLYGON_TYPE,
+    POSITION_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
     VERTICES_KEY,
     WIDTH_KEY,
     X_KEY,
+    YAW_KEY,
     Y_KEY,
+    Z_KEY,
 )
 
 
@@ -43,6 +48,8 @@ class Annotation:
             return BoxAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
             return PolygonAnnotation.from_json(payload)
+        elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
+            return CuboidAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
 
@@ -125,6 +132,7 @@ class SegmentationAnnotation(Annotation):
 class AnnotationTypes(Enum):
     BOX = BOX_TYPE
     POLYGON = POLYGON_TYPE
+    CUBOID = CUBOID_TYPE
 
 
 @dataclass  # pylint: disable=R0902
@@ -188,6 +196,20 @@ class Point:
 
 
 @dataclass
+class Point3D:
+    x: float
+    y: float
+    z: float
+
+    @classmethod
+    def from_json(cls, payload: Dict[str, float]):
+        return cls(payload[X_KEY], payload[Y_KEY], payload[Z_KEY])
+
+    def to_payload(self) -> dict:
+        return {X_KEY: self.x, Y_KEY: self.y, Z_KEY: self.z}
+
+
+@dataclass
 class PolygonAnnotation(Annotation):
     label: str
     vertices: List[Point]
@@ -239,6 +261,50 @@ class PolygonAnnotation(Annotation):
             METADATA_KEY: self.metadata,
         }
         return payload
+
+
+@dataclass  # pylint: disable=R0902
+class CuboidAnnotation(Annotation):  # pylint: disable=R0902
+    label: str
+    position: Point3D
+    dimensions: Point3D
+    yaw: float
+    reference_id: Optional[str] = None
+    item_id: Optional[str] = None
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self._check_ids()
+        self.metadata = self.metadata if self.metadata else {}
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        geometry = payload.get(GEOMETRY_KEY, {})
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            position=Point3D.from_json(geometry.get(POSITION_KEY, {})),
+            dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
+            yaw=payload.get(YAW_KEY, 0),
+            reference_id=payload.get(REFERENCE_ID_KEY, None),
+            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            LABEL_KEY: self.label,
+            TYPE_KEY: CUBOID_TYPE,
+            GEOMETRY_KEY: {
+                POSITION_KEY: self.position,
+                DIMENSIONS_KEY: self.dimensions,
+                YAW_KEY: self.yaw,
+            },
+            REFERENCE_ID_KEY: self.reference_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
+            METADATA_KEY: self.metadata,
+        }
 
 
 def check_all_annotation_paths_remote(
