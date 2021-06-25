@@ -35,7 +35,7 @@ class NucleusAPIError(Exception):
     def __init__(
         self, endpoint, command, requests_response=None, aiohttp_response=None
     ):
-        message = f"Your client is on version {nucleus_client_version}. Before reporting this error, please make sure you update to the latest version of the client by running pip install --upgrade scale-nucleus"
+        message = f"Your client is on version {nucleus_client_version}. Before reporting this error, please make sure you update to the latest version of the client by running pip install --upgrade scale-nucleus\n"
         if requests_response is not None:
             message += f"Tried to {command.__name__} {endpoint}, but received {requests_response.status_code}: {requests_response.reason}."
             if hasattr(requests_response, "text"):
