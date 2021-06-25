@@ -17,6 +17,17 @@ Nucleus is a new way—the right way—to develop ML models, helping us move awa
 
 `$ pip install scale-nucleus`
 
+## Common issues/FAQ
+
+### Outdated Client
+
+Nucleus is iterating rapidly and at the moment and as a result we do not perfectly preserve backwards compatibility with older versions of the client. If you run into any error, please make sure you first
+upgrade your version of the client by running
+
+```
+pip install --upgrade scale-nucleus
+```
+
 ## Usage
 
 The first step to using the Nucleus library is instantiating a client object.
