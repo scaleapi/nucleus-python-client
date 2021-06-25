@@ -21,9 +21,7 @@ Nucleus is a new way—the right way—to develop ML models, helping us move awa
 
 ### Outdated Client
 
-Nucleus is iterating rapidly and at the moment and as a result we do not perfectly preserve backwards compatibility with older versions of the client. If you run into any error, please make sure you first
-upgrade your version of the client by running
-
+Nucleus is iterating rapidly and as a result we do not always perfectly preserve backwards compatibility with older versions of the client. If you run into any unexpected error, it's a good idea to upgrade your version of the client by running
 ```
 pip install --upgrade scale-nucleus
 ```
