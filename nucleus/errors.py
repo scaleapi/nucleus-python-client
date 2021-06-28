@@ -1,3 +1,10 @@
+import pkg_resources
+
+nucleus_client_version = pkg_resources.get_distribution(
+    "scale-nucleus"
+).version
+
+
 class ModelCreationError(Exception):
     def __init__(self, message="Could not create the model"):
         self.message = message
@@ -28,9 +35,9 @@ class NucleusAPIError(Exception):
     def __init__(
         self, endpoint, command, requests_response=None, aiohttp_response=None
     ):
-
+        message = f"Your client is on version {nucleus_client_version}. Before reporting this error, please make sure you update to the latest version of the client by running pip install --upgrade scale-nucleus\n"
         if requests_response is not None:
-            message = f"Tried to {command.__name__} {endpoint}, but received {requests_response.status_code}: {requests_response.reason}."
+            message += f"Tried to {command.__name__} {endpoint}, but received {requests_response.status_code}: {requests_response.reason}."
             if hasattr(requests_response, "text"):
                 if requests_response.text:
                     message += (
@@ -39,7 +46,7 @@ class NucleusAPIError(Exception):
 
         if aiohttp_response is not None:
             status, reason, data = aiohttp_response
-            message = f"Tried to {command.__name__} {endpoint}, but received {status}: {reason}."
+            message += f"Tried to {command.__name__} {endpoint}, but received {status}: {reason}."
             if data:
                 message += f"\nThe detailed error is:\n{data}"
 
