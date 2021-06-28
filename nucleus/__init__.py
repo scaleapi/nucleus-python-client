@@ -54,6 +54,7 @@ import asyncio
 import json
 import logging
 import os
+import urllib.request
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
@@ -61,6 +62,8 @@ import pkg_resources
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
+
+from nucleus.url_utils import sanitize_string_args
 
 from .annotation import (
     BoxAnnotation,
@@ -300,6 +303,7 @@ class NucleusClient:
         """
         return self.make_request({}, f"dataset/{dataset_id}", requests.delete)
 
+    @sanitize_string_args
     def delete_dataset_item(
         self, dataset_id: str, item_id: str = None, reference_id: str = None
     ) -> dict:
@@ -862,6 +866,7 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/info", requests.get
         )
 
+    @sanitize_string_args
     def dataitem_ref_id(self, dataset_id: str, reference_id: str):
         """
         :param dataset_id: internally controlled dataset id
@@ -872,6 +877,7 @@ class NucleusClient:
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
         )
 
+    @sanitize_string_args
     def predictions_ref_id(self, model_run_id: str, ref_id: str):
         """
         Returns Model Run info For Dataset Item by model_run_id and item reference_id.

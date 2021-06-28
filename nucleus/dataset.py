@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 
 from nucleus.job import AsyncJob
+from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
     format_dataset_item_response,
@@ -34,7 +35,6 @@ from .dataset_item import (
     check_for_duplicate_reference_ids,
 )
 from .payload_constructor import construct_model_run_creation_payload
-
 
 WARN_FOR_LARGE_UPLOAD = 50000
 
@@ -83,6 +83,7 @@ class Dataset:
     def items(self) -> List[DatasetItem]:
         return self._client.get_dataset_items(self.id)
 
+    @sanitize_string_args
     def autotag_scores(self, autotag_name, for_scores_greater_than=0):
         """Export the autotag scores above a threshold, largest scores first.
 
