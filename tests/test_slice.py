@@ -154,6 +154,7 @@ def test_slice_append(dataset):
     )
 
 
+@pytest.mark.integration
 def test_slice_send_to_labeling(dataset):
     # Dataset upload
     ds_items = []

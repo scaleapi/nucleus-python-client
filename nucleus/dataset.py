@@ -9,6 +9,8 @@ from nucleus.utils import (
     serialize_and_write_to_presigned_url,
 )
 
+from nucleus.url_utils import sanitize_string_args
+
 from .annotation import Annotation, check_all_annotation_paths_remote
 from .constants import (
     DATASET_ITEM_IDS_KEY,
@@ -79,6 +81,7 @@ class Dataset:
     def items(self) -> List[DatasetItem]:
         return self._client.get_dataset_items(self.id)
 
+    @sanitize_string_args
     def autotag_scores(self, autotag_name, for_scores_greater_than=0):
         """Export the autotag scores above a threshold, largest scores first.
 

@@ -37,7 +37,6 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
-    TEST_SLICE_NAME,
     reference_id_from_url,
 )
 
@@ -342,6 +341,20 @@ def test_annotate_async_with_error(dataset: Dataset):
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
+
+
+def test_append_with_special_chars(dataset):
+    url = TEST_IMG_URLS[0]
+    ref_id = "test/reference/id"
+    ds_items = [
+        DatasetItem(
+            image_location=url,
+            reference_id=ref_id,
+            metadata={"test": "metadata"},
+        ),
+    ]
+    dataset.append(ds_items)
+    dataset.refloc(ref_id)
 
 
 def test_append_and_export(dataset):
