@@ -9,7 +9,11 @@ from nucleus.utils import (
     serialize_and_write_to_presigned_url,
 )
 
-from .annotation import Annotation, check_all_annotation_paths_remote
+from .annotation import (
+    Annotation,
+    CuboidAnnotation,
+    check_all_annotation_paths_remote,
+)
 from .constants import (
     DATASET_ITEM_IDS_KEY,
     DATASET_LENGTH_KEY,
@@ -163,6 +167,9 @@ class Dataset:
             "ignored_items": int,
         }
         """
+        if any((isinstance(ann, CuboidAnnotation) for ann in annotations)):
+            raise NotImplementedError("Cuboid annotations not yet supported")
+
         if asynchronous:
             check_all_annotation_paths_remote(annotations)
 

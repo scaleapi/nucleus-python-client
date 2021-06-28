@@ -68,6 +68,7 @@ from .annotation import (
     Segment,
     SegmentationAnnotation,
     Point,
+    CuboidAnnotation,
 )
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -115,6 +116,7 @@ from .payload_constructor import (
 )
 from .prediction import (
     BoxPrediction,
+    CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
@@ -565,6 +567,8 @@ class NucleusClient:
         :param update: whether to update or ignore conflicting annotations
         :return: {"dataset_id: str, "annotations_processed": int}
         """
+        if any((isinstance(ann, CuboidAnnotation) for ann in annotations)):
+            raise NotImplementedError("Cuboid annotations not yet supported")
 
         # Split payload into segmentations and Box/Polygon
         segmentations = [
@@ -723,6 +727,9 @@ class NucleusClient:
             "predictions_ignored": int,
         }
         """
+        if any((isinstance(ann, CuboidPrediction) for ann in annotations)):
+            raise NotImplementedError("Cuboid predictions not yet supported")
+
         segmentations = [
             ann
             for ann in annotations
