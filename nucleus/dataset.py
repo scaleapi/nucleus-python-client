@@ -171,9 +171,9 @@ class Dataset:
         if any((isinstance(ann, CuboidAnnotation) for ann in annotations)):
             raise NotImplementedError("Cuboid annotations not yet supported")
 
-        if asynchronous:
-            check_all_annotation_paths_remote(annotations)
+        check_all_annotation_paths_remote(annotations)
 
+        if asynchronous:
             request_id = serialize_and_write_to_presigned_url(
                 annotations, self.id, self._client
             )

@@ -76,6 +76,13 @@ def dataset(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
 
 
+def test_upload_nonsense(dataset):
+    response = dataset.append(
+        [DatasetItem(image_location="https://fake.com/image.jpeg")]
+    )
+    print(response)
+
+
 def make_dataset_items():
     ds_items_with_metadata = []
     for i, url in enumerate(TEST_IMG_URLS):
