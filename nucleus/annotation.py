@@ -37,7 +37,9 @@ class Annotation:
     item_id: Optional[str] = None
 
     def _check_ids(self):
-        if bool(self.reference_id) == bool(self.item_id):
+        if self.reference_id and self.item_id:
+            self.item_id = None  # Prefer reference id to item id.
+        if not (self.reference_id or self.item_id):
             raise Exception(
                 "You must specify either a reference_id or an item_id for an annotation."
             )
