@@ -48,9 +48,7 @@ class Model:
             model_id=payload["id"],
             name=payload["name"],
             reference_id=payload["ref_id"],
-            metadata=None
-            if payload["metadata"] == {}
-            else payload["metadata"],
+            metadata=payload["metadata"] or None,
             client=client,
         )
 

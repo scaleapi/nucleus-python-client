@@ -307,7 +307,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-def check_all_annotation_paths_remote(
+def check_all_mask_paths_remote(
     annotations: Sequence[Union[Annotation]],
 ):
     for annotation in annotations:

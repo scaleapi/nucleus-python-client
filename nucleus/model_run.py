@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Type, Union
 
-from nucleus.annotation import check_all_annotation_paths_remote
+from nucleus.annotation import check_all_mask_paths_remote
 from nucleus.job import AsyncJob
 from nucleus.utils import serialize_and_write_to_presigned_url
 
@@ -106,7 +106,7 @@ class ModelRun:
         }
         """
         if asynchronous:
-            check_all_annotation_paths_remote(annotations)
+            check_all_mask_paths_remote(annotations)
 
             request_id = serialize_and_write_to_presigned_url(
                 annotations, self._dataset_id, self._client

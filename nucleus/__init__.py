@@ -184,9 +184,7 @@ class NucleusClient:
                 model_id=model["id"],
                 name=model["name"],
                 reference_id=model["ref_id"],
-                metadata=None
-                if model["metadata"] == {}
-                else model["metadata"],
+                metadata=model["metadata"] or None,
                 client=self,
             )
             for model in model_objects["models"]
