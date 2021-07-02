@@ -559,7 +559,12 @@ class NucleusClient:
         self,
         dataset_id: str,
         annotations: List[
-            Union[BoxAnnotation, PolygonAnnotation, SegmentationAnnotation]
+            Union[
+                BoxAnnotation,
+                PolygonAnnotation,
+                CuboidAnnotation,
+                SegmentationAnnotation,
+            ]
         ],
         update: bool,
         batch_size: int = 5000,
@@ -567,13 +572,10 @@ class NucleusClient:
         """
         Uploads ground truth annotations for a given dataset.
         :param dataset_id: id of the dataset
-        :param annotations: List[Union[BoxAnnotation, PolygonAnnotation]]
+        :param annotations: List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]]
         :param update: whether to update or ignore conflicting annotations
         :return: {"dataset_id: str, "annotations_processed": int}
         """
-        if any((isinstance(ann, CuboidAnnotation) for ann in annotations)):
-            raise NotImplementedError("Cuboid annotations not yet supported")
-
         # Split payload into segmentations and Box/Polygon
         segmentations = [
             ann
@@ -714,14 +716,19 @@ class NucleusClient:
         self,
         model_run_id: str,
         annotations: List[
-            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
         ],
         update: bool,
         batch_size: int = 5000,
     ):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        :param annotations: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         :param update: bool
         :return:
         {
@@ -731,9 +738,6 @@ class NucleusClient:
             "predictions_ignored": int,
         }
         """
-        if any((isinstance(ann, CuboidPrediction) for ann in annotations)):
-            raise NotImplementedError("Cuboid predictions not yet supported")
-
         segmentations = [
             ann
             for ann in annotations
@@ -885,7 +889,7 @@ class NucleusClient:
         :param reference_id: reference_id of a dataset item.
         :return:
         {
-            "annotations": List[BoxPrediction],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         }
         """
         return self.make_request(
@@ -910,7 +914,7 @@ class NucleusClient:
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
         :return:
         {
-            "annotations": List[BoxPrediction],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         }
         """
         return self.make_request(
@@ -939,7 +943,7 @@ class NucleusClient:
         :param dataset_item_id: dataset_item_id of a dataset item.
         :return:
         {
-            "annotations": List[BoxPrediction],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         }
         """
         return self.make_request(

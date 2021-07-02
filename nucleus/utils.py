@@ -11,6 +11,7 @@ from requests.models import HTTPError
 from nucleus.annotation import (
     Annotation,
     BoxAnnotation,
+    CuboidAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
@@ -19,13 +20,14 @@ from .constants import (
     ANNOTATION_TYPES,
     ANNOTATIONS_KEY,
     BOX_TYPE,
+    CUBOID_TYPE,
     ITEM_KEY,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
     SEGMENTATION_TYPE,
 )
 from .dataset_item import DatasetItem
-from .prediction import BoxPrediction, PolygonPrediction
+from .prediction import BoxPrediction, CuboidPrediction, PolygonPrediction
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):
@@ -34,7 +36,10 @@ def _get_all_field_values(metadata_list: List[dict], key: str):
 
 def suggest_metadata_schema(
     data: Union[
-        List[DatasetItem], List[BoxPrediction], List[PolygonPrediction]
+        List[DatasetItem],
+        List[BoxPrediction],
+        List[PolygonPrediction],
+        List[CuboidPrediction],
     ]
 ):
     metadata_list: List[dict] = [
@@ -106,6 +111,9 @@ def convert_export_payload(api_payload):
         for box in row[BOX_TYPE]:
             box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
+        for cuboid in row[CUBOID_TYPE]:
+            cuboid[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[CUBOID_TYPE].append(CuboidAnnotation.from_json(cuboid))
         return_payload_row[ANNOTATIONS_KEY] = annotations
         return_payload.append(return_payload_row)
     return return_payload

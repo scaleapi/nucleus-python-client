@@ -12,7 +12,6 @@ from nucleus.utils import (
 
 from .annotation import (
     Annotation,
-    CuboidAnnotation,
     check_all_annotation_paths_remote,
 )
 from .constants import (
@@ -168,9 +167,6 @@ class Dataset:
             "ignored_items": int,
         }
         """
-        if any((isinstance(ann, CuboidAnnotation) for ann in annotations)):
-            raise NotImplementedError("Cuboid annotations not yet supported")
-
         if asynchronous:
             check_all_annotation_paths_remote(annotations)
 
@@ -257,7 +253,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
         }
         """
         response = self._client.dataitem_iloc(self.id, i)
@@ -270,7 +266,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
@@ -283,7 +279,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
         }
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)
