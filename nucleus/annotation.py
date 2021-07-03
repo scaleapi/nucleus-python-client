@@ -309,12 +309,12 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-def check_all_annotation_paths_remote(
+def check_all_mask_paths_remote(
     annotations: Sequence[Union[Annotation]],
 ):
     for annotation in annotations:
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
-                    f"Found an annotation with a local path, which cannot be uploaded asynchronously. Use a remote path instead. {annotation}"
+                    f"Found an annotation with a local path, which is not currently supported. Use a remote path instead. {annotation}"
                 )
