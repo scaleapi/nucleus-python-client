@@ -181,11 +181,11 @@ class NucleusClient:
 
         return [
             Model(
-                model["id"],
-                model["name"],
-                model["ref_id"],
-                model["metadata"],
-                self,
+                model_id=model["id"],
+                name=model["name"],
+                reference_id=model["ref_id"],
+                metadata=model["metadata"] or None,
+                client=self,
             )
             for model in model_objects["models"]
         ]
@@ -230,6 +230,19 @@ class NucleusClient:
         :return: dataset
         """
         return Dataset(dataset_id, self)
+
+    def get_model(self, model_id: str) -> Model:
+        """
+        Fetched a model for a given id
+        :param model_id: internally controlled dataset_id
+        :return: model
+        """
+        payload = self.make_request(
+            payload={},
+            route=f"model/{model_id}",
+            requests_command=requests.get,
+        )
+        return Model.from_json(payload=payload, client=self)
 
     def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
         """

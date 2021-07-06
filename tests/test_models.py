@@ -64,6 +64,10 @@ def test_model_creation_and_listing(CLIENT, dataset):
     # List the models
     ms = CLIENT.list_models()
 
+    # Get a model
+    m = CLIENT.get_model(model.id)
+    assert m == model
+
     assert model in ms
     assert list(set(ms) - set(models_before))[0] == model
 

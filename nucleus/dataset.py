@@ -12,7 +12,8 @@ from nucleus.utils import (
 
 from .annotation import (
     Annotation,
-    check_all_annotation_paths_remote,
+    CuboidAnnotation,
+    check_all_mask_paths_remote,
 )
 from .constants import (
     DATASET_ITEM_IDS_KEY,
@@ -167,9 +168,9 @@ class Dataset:
             "ignored_items": int,
         }
         """
-        if asynchronous:
-            check_all_annotation_paths_remote(annotations)
+        check_all_mask_paths_remote(annotations)
 
+        if asynchronous:
             request_id = serialize_and_write_to_presigned_url(
                 annotations, self.id, self._client
             )

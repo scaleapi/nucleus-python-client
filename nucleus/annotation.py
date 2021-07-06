@@ -37,7 +37,9 @@ class Annotation:
     item_id: Optional[str] = None
 
     def _check_ids(self):
-        if bool(self.reference_id) == bool(self.item_id):
+        if self.reference_id and self.item_id:
+            self.item_id = None  # Prefer reference id to item id.
+        if not (self.reference_id or self.item_id):
             raise Exception(
                 "You must specify either a reference_id or an item_id for an annotation."
             )
@@ -307,12 +309,12 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-def check_all_annotation_paths_remote(
+def check_all_mask_paths_remote(
     annotations: Sequence[Union[Annotation]],
 ):
     for annotation in annotations:
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
-                    f"Found an annotation with a local path, which cannot be uploaded asynchronously. Use a remote path instead. {annotation}"
+                    f"Found an annotation with a local path, which is not currently supported. Use a remote path instead. {annotation}"
                 )

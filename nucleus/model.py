@@ -33,10 +33,25 @@ class Model:
         return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, client={self._client})"
 
     def __eq__(self, other):
-        return self.id == other.id
+        return (
+            (self.id == other.id)
+            and (self.name == other.name)
+            and (self.metadata == other.metadata)
+            and (self._client == other._client)
+        )
 
     def __hash__(self):
         return hash(self.id)
+
+    @classmethod
+    def from_json(cls, payload: dict, client):
+        return cls(
+            model_id=payload["id"],
+            name=payload["name"],
+            reference_id=payload["ref_id"],
+            metadata=payload["metadata"] or None,
+            client=client,
+        )
 
     def create_run(
         self,
