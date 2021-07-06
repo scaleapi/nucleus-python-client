@@ -12,7 +12,6 @@ from nucleus.utils import (
 
 from .annotation import (
     Annotation,
-    CuboidAnnotation,
     check_all_mask_paths_remote,
 )
 from .constants import (
