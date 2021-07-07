@@ -289,7 +289,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
             yaw=payload.get(YAW_KEY, 0),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            item_id=payload.get(ITEM_ID_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -299,11 +299,12 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             LABEL_KEY: self.label,
             TYPE_KEY: CUBOID_TYPE,
             GEOMETRY_KEY: {
-                POSITION_KEY: self.position,
-                DIMENSIONS_KEY: self.dimensions,
+                POSITION_KEY: self.position.to_payload(),
+                DIMENSIONS_KEY: self.dimensions.to_payload(),
                 YAW_KEY: self.yaw,
             },
             REFERENCE_ID_KEY: self.reference_id,
+            ITEM_ID_KEY: self.item_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
