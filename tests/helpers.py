@@ -9,6 +9,7 @@ PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
+TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
@@ -19,6 +20,10 @@ TEST_IMG_URLS = [
     "https://homepages.cae.wisc.edu/~ece533/images/baboon.png",
     "https://homepages.cae.wisc.edu/~ece533/images/barbara.png",
     "https://homepages.cae.wisc.edu/~ece533/images/cat.png",
+]
+
+TEST_POINTCLOUD_URLS = [
+    "https://scale-us-attachments.s3.us-west-2.amazonaws.com/select/examples/kitti_example_frame.json",
 ]
 
 TEST_DATASET_ITEMS = [
@@ -70,6 +75,28 @@ TEST_POLYGON_ANNOTATIONS = [
         "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
     }
     for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_CUBOID_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Cuboid Annotation ${i}",
+        "geometry": {
+            "position": {
+                "x": 50 * i + 10,
+                "y": 60 * i + 10,
+                "z": 70 * i + 10,
+            },
+            "dimensions": {
+                "x": 10 * i,
+                "y": 20 * i,
+                "z": 30 * i,
+            },
+            "yaw": 5 * i,
+        },
+        "reference_id": reference_id_from_url(TEST_POINTCLOUD_URLS[i]),
+        "annotation_id": f"[Pytest] Cuboid Annotation Annotation Id{i}",
+    }
+    for i in range(len(TEST_POINTCLOUD_URLS))
 ]
 
 
@@ -155,6 +182,29 @@ def assert_polygon_annotation_matches_dict(
     ):
         assert instance_pt.x == dict_pt["x"]
         assert instance_pt.y == dict_pt["y"]
+
+
+def assert_cuboid_annotation_matches_dict(
+    annotation_instance, annotation_dict
+):
+    assert annotation_instance.label == annotation_dict["label"]
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
+    for instance_pt, dict_pt in zip(
+        annotation_instance.position, annotation_dict["geometry"]["position"]
+    ):
+        assert instance_pt.x == dict_pt["x"]
+        assert instance_pt.y == dict_pt["y"]
+        assert instance_pt.z == dict_pt["z"]
+    for instance_pt, dict_pt in zip(
+        annotation_instance.dimensions,
+        annotation_dict["geometry"]["dimensions"],
+    ):
+        assert instance_pt.x == dict_pt["x"]
+        assert instance_pt.y == dict_pt["y"]
+        assert instance_pt.z == dict_pt["z"]
+    assert annotation_instance.yaw == annotation_dict["geometry"]["yaw"]
 
 
 def assert_segmentation_annotation_matches_dict(
