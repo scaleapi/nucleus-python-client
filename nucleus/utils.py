@@ -3,6 +3,7 @@
 from collections import defaultdict
 import io
 import uuid
+import json
 from typing import IO, Dict, List, Sequence, Union
 
 import requests
@@ -120,11 +121,14 @@ def convert_export_payload(api_payload):
 
 
 def serialize_and_write(
-    upload_units: Sequence[Union[DatasetItem, Annotation]], file_pointer
+    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]], file_pointer
 ):
     for unit in upload_units:
         try:
-            file_pointer.write(unit.to_json() + "\n")
+            if isinstance(unit, (DatasetItem, Annotation)):
+                file_pointer.write(unit.to_json() + "\n")
+            else:
+                file_pointer.write(json.dumps(unit) + "\n")
         except TypeError as e:
             type_name = type(unit).__name__
             message = (
@@ -151,7 +155,7 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union["DatasetItem", Annotation]],
+    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]],
     dataset_id: str,
     client,
 ):

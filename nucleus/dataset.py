@@ -13,6 +13,7 @@ from nucleus.utils import (
 from .annotation import (
     Annotation,
     check_all_mask_paths_remote,
+    check_all_frame_paths_remote,
 )
 from .constants import (
     DATASET_ITEM_IDS_KEY,
@@ -245,6 +246,31 @@ class Dataset:
             update=update,
             batch_size=batch_size,
         )
+
+    def upload_scene(
+        self,
+        payload: dict,
+        update: Optional[bool] = False,
+        asynchronous: bool = False,
+    ) -> Union[dict, AsyncJob]:
+        """TODO: add docstring here"""
+        if asynchronous:
+            check_all_frame_paths_remote(payload["frames"])
+            request_id = serialize_and_write_to_presigned_url(
+                [payload], self.id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"{self.id}/upload_scene?async=1",
+            )
+            return AsyncJob(response["job_id"], self._client)
+
+        # TODO: create client method for sync scene upload
+        response = self._client.make_request(
+            payload=payload,
+            route=f"{self.id}/upload_scene",
+        )
+        return response
 
     def iloc(self, i: int) -> dict:
         """

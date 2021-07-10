@@ -289,7 +289,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
             yaw=payload.get(YAW_KEY, 0),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(ITEM_ID_KEY, None),
+            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -308,6 +308,15 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
+
+
+def check_all_frame_paths_remote(frames: List[str]):
+    for frame_url in frames:
+        if is_local_path(frame_url):
+            raise ValueError(
+                f"All paths must be remote, but {frame_url} is either "
+                "local, or a remote URL type that is not supported."
+            )
 
 
 def check_all_mask_paths_remote(

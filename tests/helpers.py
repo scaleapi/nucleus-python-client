@@ -23,8 +23,10 @@ TEST_IMG_URLS = [
 ]
 
 TEST_POINTCLOUD_URLS = [
-    "https://scale-us-attachments.s3.us-west-2.amazonaws.com/select/examples/kitti_example_frame.json",
+    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-0.json",
 ]
+
+TEST_LIDAR_FRAMES = {"frames": TEST_POINTCLOUD_URLS}
 
 TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[0], "1"),
@@ -93,7 +95,6 @@ TEST_CUBOID_ANNOTATIONS = [
             },
             "yaw": 5 * i,
         },
-        "reference_id": reference_id_from_url(TEST_POINTCLOUD_URLS[i]),
         "annotation_id": f"[Pytest] Cuboid Annotation Annotation Id{i}",
     }
     for i in range(len(TEST_POINTCLOUD_URLS))
@@ -191,19 +192,19 @@ def assert_cuboid_annotation_matches_dict(
     assert (
         annotation_instance.annotation_id == annotation_dict["annotation_id"]
     )
-    for instance_pt, dict_pt in zip(
-        annotation_instance.position, annotation_dict["geometry"]["position"]
-    ):
-        assert instance_pt.x == dict_pt["x"]
-        assert instance_pt.y == dict_pt["y"]
-        assert instance_pt.z == dict_pt["z"]
-    for instance_pt, dict_pt in zip(
-        annotation_instance.dimensions,
-        annotation_dict["geometry"]["dimensions"],
-    ):
-        assert instance_pt.x == dict_pt["x"]
-        assert instance_pt.y == dict_pt["y"]
-        assert instance_pt.z == dict_pt["z"]
+
+    instance_pos = annotation_instance.position
+    dict_pos = annotation_dict["geometry"]["position"]
+    assert instance_pos.x == dict_pos["x"]
+    assert instance_pos.y == dict_pos["y"]
+    assert instance_pos.z == dict_pos["z"]
+
+    instance_dim = annotation_instance.dimensions
+    dict_dim = annotation_dict["geometry"]["dimensions"]
+    assert instance_dim.x == dict_dim["x"]
+    assert instance_dim.y == dict_dim["y"]
+    assert instance_dim.z == dict_dim["z"]
+
     assert annotation_instance.yaw == annotation_dict["geometry"]["yaw"]
 
 

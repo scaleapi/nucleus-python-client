@@ -2,24 +2,19 @@ import pytest
 
 from .helpers import (
     TEST_DATASET_NAME,
-    TEST_DATASET_3D_NAME,
     TEST_IMG_URLS,
-    TEST_POINTCLOUD_URLS,
     TEST_BOX_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
-    TEST_CUBOID_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     reference_id_from_url,
     assert_box_annotation_matches_dict,
     assert_polygon_annotation_matches_dict,
-    assert_cuboid_annotation_matches_dict,
     assert_segmentation_annotation_matches_dict,
 )
 
 from nucleus import (
     BoxAnnotation,
     PolygonAnnotation,
-    CuboidAnnotation,
     SegmentationAnnotation,
     DatasetItem,
     Segment,
@@ -66,26 +61,6 @@ def dataset(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
 
 
-@pytest.fixture()
-def dataset_3d(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME)
-    ds_items = []
-    for url in TEST_POINTCLOUD_URLS:
-        ds_items.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-            )
-        )
-
-    response = ds.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
-    yield ds
-
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
-
 def test_box_gt_upload(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
@@ -117,24 +92,6 @@ def test_polygon_gt_upload(dataset):
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
         response_annotation, TEST_POLYGON_ANNOTATIONS[0]
-    )
-
-
-def test_cuboid_gt_upload(dataset_3d):
-    annotation = CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])
-    response = dataset_3d.annotate(annotations=[annotation])
-
-    assert response["dataset_id"] == dataset_3d.id
-    assert response["annotations_processed"] == 1
-    assert response["annotations_ignored"] == 0
-
-    response = dataset_3d.refloc(annotation.reference_id)["annotations"][
-        "cuboid"
-    ]
-    assert len(response) == 1
-    response_annotation = response[0]
-    assert_cuboid_annotation_matches_dict(
-        response_annotation, TEST_CUBOID_ANNOTATIONS[0]
     )
 
 
