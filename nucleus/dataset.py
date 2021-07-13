@@ -23,6 +23,7 @@ from .constants import (
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
+    FRAMES,
     JOB_ID_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
@@ -253,9 +254,23 @@ class Dataset:
         update: Optional[bool] = False,
         asynchronous: bool = False,
     ) -> Union[dict, AsyncJob]:
-        """TODO: add docstring here"""
+        """
+        Uploads scene with given frames to the dataset
+
+        Parameters:
+        :param payload: dictionary containing frames to be uploaded as a scene
+        :param update: if True, overwrite scene on collision
+        :param aynchronous: if True, return a job object representing asynchronous ingestion job
+        :return:
+        {
+            'dataset_id': str,
+            'new_items': int,
+            'updated_items': int,
+            'ignored_items': int,
+        }
+        """
         if asynchronous:
-            check_all_frame_paths_remote(payload["frames"])
+            check_all_frame_paths_remote(payload[FRAMES])
             request_id = serialize_and_write_to_presigned_url(
                 [payload], self.id, self._client
             )
