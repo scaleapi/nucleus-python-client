@@ -178,6 +178,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
                 WIDTH_KEY: self.width,
                 HEIGHT_KEY: self.height,
             },
+            ITEM_ID_KEY: self.item_id,
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,

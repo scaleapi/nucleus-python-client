@@ -77,6 +77,27 @@ def test_box_gt_upload(dataset):
     )
 
 
+def test_box_gt_upload_item_id(dataset):
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    annotation.item_id = dataset.refloc(annotation.reference_id)[
+        "item"
+    ].item_id
+    annotation.reference_id = None
+
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.loc(annotation.item_id)["annotations"]["box"]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_box_annotation_matches_dict(
+        response_annotation, TEST_BOX_ANNOTATIONS[0]
+    )
+
+
 def test_polygon_gt_upload(dataset):
     annotation = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
