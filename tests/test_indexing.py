@@ -39,7 +39,7 @@ def dataset(CLIENT):
 
 def test_index_integration(dataset):
     signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
-    create_response = dataset.create_custom_index(signed_embeddings_url)
+    create_response = dataset.create_custom_index([signed_embeddings_url])
     assert JOB_ID_KEY in create_response
     assert MESSAGE_KEY in create_response
     job_id = create_response[JOB_ID_KEY]
