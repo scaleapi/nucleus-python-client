@@ -171,7 +171,7 @@ def test_slice_send_to_labeling(dataset):
 
     # Slice creation
     slc = dataset.create_slice(
-        name=(TEST_SLICE_NAME + str(uuid.uuid4()[-10:])),
+        name=(TEST_SLICE_NAME + str(uuid.uuid4())[-10:]),
         reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
     )
 
