@@ -248,7 +248,7 @@ class Dataset:
             batch_size=batch_size,
         )
 
-    def upload_scene(
+    def upload_scenes(
         self,
         payload: dict,
         update: Optional[bool] = False,
@@ -276,14 +276,14 @@ class Dataset:
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
-                route=f"{self.id}/upload_scene?async=1",
+                route=f"{self.id}/upload_scenes?async=1",
             )
             return AsyncJob(response["job_id"], self._client)
 
         # TODO: create client method for sync scene upload
         response = self._client.make_request(
             payload=payload,
-            route=f"{self.id}/upload_scene",
+            route=f"{self.id}/upload_scenes",
         )
         return response
 

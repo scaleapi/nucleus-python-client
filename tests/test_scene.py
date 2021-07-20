@@ -23,7 +23,7 @@ def dataset(CLIENT):
 
 def test_scene_upload_sync(dataset):
     payload = TEST_LIDAR_FRAMES
-    response = dataset.upload_scene(payload)
+    response = dataset.upload_scenes(payload)
 
     assert response["dataset_id"] == dataset.id
     assert response["new_items"] == 1
@@ -34,7 +34,7 @@ def test_scene_upload_sync(dataset):
 @pytest.mark.integration
 def test_scene_and_cuboid_upload_sync(dataset):
     payload = TEST_LIDAR_FRAMES
-    response = dataset.upload_scene(payload)
+    response = dataset.upload_scenes(payload)
 
     assert response["dataset_id"] == dataset.id
     assert response["new_items"] == 1
