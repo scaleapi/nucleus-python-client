@@ -1105,6 +1105,15 @@ class NucleusClient:
     def create_custom_index(
         self, dataset_id: str, embeddings_urls: list, embedding_dim: int
     ):
+        """
+        Creates a custom index for a given dataset, which will then be used
+        for autotag and similarity search.
+
+        :param
+        dataset_id: id of dataset that the custom index is being added to.
+        embeddings_urls: list of urls, each of which being a json mapping dataset_item_id -> embedding vector
+        embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
+        """
         return self.make_request(
             {
                 EMBEDDINGS_URL_KEY: embeddings_urls,
