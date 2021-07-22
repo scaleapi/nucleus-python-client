@@ -357,3 +357,10 @@ class Dataset:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
+
+    def delete_annotations(
+        self, reference_ids: list = None, keep_history=False
+    ):
+        return self._client.delete_annotations(
+            self.id, reference_ids, keep_history
+        )

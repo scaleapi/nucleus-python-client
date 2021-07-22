@@ -89,6 +89,7 @@ from .constants import (
     IMAGE_URL_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
+    KEEP_HISTORY_KEY,
     MODEL_RUN_ID_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
@@ -1032,6 +1033,28 @@ class NucleusClient:
         response = self.make_request(
             {},
             f"slice/{slice_id}",
+            requests_command=requests.delete,
+        )
+        return response
+
+    def delete_annotations(
+        self, dataset_id: str, reference_ids: list = None, keep_history=False
+    ) -> dict:
+        """
+        This endpoint deletes annotations.
+
+        :param
+        slice_id: id of the slice
+
+        :return:
+        {}
+        """
+        payload = {KEEP_HISTORY_KEY: keep_history}
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+        response = self.make_request(
+            {},
+            f"annotation/{dataset_id}",
             requests_command=requests.delete,
         )
         return response
