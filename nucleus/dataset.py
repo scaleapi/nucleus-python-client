@@ -329,8 +329,12 @@ class Dataset:
     def list_autotags(self):
         return self._client.list_autotags(self.id)
 
-    def create_custom_index(self, embeddings_url: str):
-        return self._client.create_custom_index(self.id, embeddings_url)
+    def create_custom_index(self, embeddings_urls: list, embedding_dim: int):
+        return self._client.create_custom_index(
+            self.id,
+            embeddings_urls,
+            embedding_dim,
+        )
 
     def delete_custom_index(self):
         return self._client.delete_custom_index(self.id)
