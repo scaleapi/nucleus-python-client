@@ -1054,7 +1054,7 @@ class NucleusClient:
         if reference_ids:
             payload[REFERENCE_IDS_KEY] = reference_ids
         response = self.make_request(
-            {},
+            payload,
             f"annotation/{dataset_id}",
             requests_command=requests.delete,
         )
