@@ -82,6 +82,7 @@ from .constants import (
     DATASET_ITEM_IDS_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     EMBEDDINGS_URL_KEY,
+    EMBEDDING_DIMENSION_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
@@ -1101,9 +1102,23 @@ class NucleusClient:
         )
         return response
 
-    def create_custom_index(self, dataset_id: str, embeddings_url: str):
+    def create_custom_index(
+        self, dataset_id: str, embeddings_urls: list, embedding_dim: int
+    ):
+        """
+        Creates a custom index for a given dataset, which will then be used
+        for autotag and similarity search.
+
+        :param
+        dataset_id: id of dataset that the custom index is being added to.
+        embeddings_urls: list of urls, each of which being a json mapping dataset_item_id -> embedding vector
+        embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
+        """
         return self.make_request(
-            {EMBEDDINGS_URL_KEY: embeddings_url},
+            {
+                EMBEDDINGS_URL_KEY: embeddings_urls,
+                EMBEDDING_DIMENSION_KEY: embedding_dim,
+            },
             f"indexing/{dataset_id}",
             requests_command=requests.post,
         )
