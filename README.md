@@ -50,7 +50,10 @@ dataset = client.create_dataset("My Dataset")
 ```python
 datasets = client.list_datasets()
 ```
-
+### List Jobs
+```python
+jobs = client.list_jobs()
+```
 ### Delete a Dataset
 
 By specifying target dataset id.

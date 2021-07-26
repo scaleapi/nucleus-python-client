@@ -43,6 +43,22 @@ class AsyncJob:
             raise JobError(final_status, self)
 
 
+class Job:
+    def __init__(
+        self,
+        job_id,
+        job_status,
+        job_type,
+        job_creation_time,
+        client,
+    ) -> None:
+        self.job_id = job_id
+        self.job_status = job_status
+        self.job_type = job_type
+        self.job_creation_type = job_creation_time
+        self._client = client
+
+
 class JobError(Exception):
     def __init__(self, job_status: Dict[str, str], job: AsyncJob):
         final_status_message = job_status["message"]

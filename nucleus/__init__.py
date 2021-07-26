@@ -110,6 +110,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .job import Job
 from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (
@@ -198,6 +199,24 @@ class NucleusClient:
         :return: { datasets_ids }
         """
         return self.make_request({}, "dataset/", requests.get)
+
+    def list_jobs(self, show_completed=None, date_limit=None) -> List[Job]:
+        """
+        Lists jobs for user.
+        :return: jobs
+        """
+        payload = {show_completed: show_completed, date_limit: date_limit}
+        job_objects = self.make_request(payload, "jobs/", requests.get)
+        return [
+            Job(
+                job_id=job["job_id"],
+                job_status=["job_status"],
+                job_type=["job_type"],
+                job_creation_time=["job_creation_time"],
+                client=self,
+            )
+            for job in job_objects
+        ]
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
         """
