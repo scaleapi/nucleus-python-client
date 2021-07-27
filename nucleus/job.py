@@ -9,20 +9,23 @@ JOB_POLLING_INTERVAL = 5
 
 @dataclass
 class AsyncJob:
-    id: str
+    job_id: str
+    job_status: str
+    job_type: str
+    job_creation_time: str
     client: "NucleusClient"  # type: ignore # noqa: F821
 
     def status(self) -> Dict[str, str]:
         return self.client.make_request(
             payload={},
-            route=f"job/{self.id}",
+            route=f"job/{self.job_id}",
             requests_command=requests.get,
         )
 
     def errors(self) -> List[str]:
         return self.client.make_request(
             payload={},
-            route=f"job/{self.id}/errors",
+            route=f"job/{self.job_id}/errors",
             requests_command=requests.get,
         )
 
@@ -41,22 +44,6 @@ class AsyncJob:
         final_status = status
         if final_status["status"] == "Errored":
             raise JobError(final_status, self)
-
-
-class Job:
-    def __init__(
-        self,
-        job_id,
-        job_status,
-        job_type,
-        job_creation_time,
-        client,
-    ) -> None:
-        self.job_id = job_id
-        self.job_status = job_status
-        self.job_type = job_type
-        self.job_creation_type = job_creation_time
-        self._client = client
 
 
 class JobError(Exception):
