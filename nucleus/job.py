@@ -1,8 +1,13 @@
 from dataclasses import dataclass
 import time
 from typing import Dict, List
-
 import requests
+from nucleus.constants import (
+    JOB_CREATION_TIME_KEY,
+    JOB_ID_KEY,
+    JOB_STATUS_KEY,
+    JOB_TYPE_KEY,
+)
 
 JOB_POLLING_INTERVAL = 5
 
@@ -10,7 +15,7 @@ JOB_POLLING_INTERVAL = 5
 @dataclass
 class AsyncJob:
     job_id: str
-    job_status: str
+    job_last_known_status: str
     job_type: str
     job_creation_time: str
     client: "NucleusClient"  # type: ignore # noqa: F821
@@ -44,6 +49,16 @@ class AsyncJob:
         final_status = status
         if final_status["status"] == "Errored":
             raise JobError(final_status, self)
+
+    @classmethod
+    def from_json(cls, payload: dict, client):
+        return cls(
+            job_id=payload[JOB_ID_KEY],
+            job_last_known_status=payload[JOB_STATUS_KEY],
+            job_type=payload[JOB_TYPE_KEY],
+            job_creation_time=payload[JOB_CREATION_TIME_KEY],
+            client=client,
+        )
 
 
 class JobError(Exception):

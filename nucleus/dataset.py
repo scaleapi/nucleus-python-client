@@ -23,10 +23,6 @@ from .constants import (
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
-    JOB_ID_KEY,
-    JOB_STATUS_KEY,
-    JOB_TYPE_KEY,
-    JOB_CREATION_TIME_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
@@ -184,14 +180,7 @@ class Dataset:
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/annotate?async=1",
             )
-
-            return AsyncJob(
-                response[JOB_ID_KEY],
-                response[JOB_STATUS_KEY],
-                response[JOB_TYPE_KEY],
-                response[JOB_CREATION_TIME_KEY],
-                self._client,
-            )
+            return AsyncJob.from_json(response, self._client)
 
         return self._client.annotate_dataset(
             self.id, annotations, update=update, batch_size=batch_size
@@ -250,13 +239,7 @@ class Dataset:
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/append?async=1",
             )
-            return AsyncJob(
-                response[JOB_ID_KEY],
-                response[JOB_STATUS_KEY],
-                response[JOB_TYPE_KEY],
-                response[JOB_CREATION_TIME_KEY],
-                self._client,
-            )
+            return AsyncJob.from_json(response, self._client)
 
         return self._client.populate_dataset(
             self.id,

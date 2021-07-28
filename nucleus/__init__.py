@@ -95,6 +95,7 @@ from .constants import (
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
+    MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
@@ -216,7 +217,7 @@ class NucleusClient:
         return [
             AsyncJob(
                 job_id=job[JOB_ID_KEY],
-                job_status=job[JOB_STATUS_KEY],
+                job_last_known_status=job[JOB_STATUS_KEY],
                 job_type=job[JOB_TYPE_KEY],
                 job_creation_time=job[JOB_CREATION_TIME_KEY],
                 client=self,
@@ -1162,7 +1163,7 @@ class NucleusClient:
         embeddings_urls: list of urls, each of which being a json mapping dataset_item_id -> embedding vector
         embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
         """
-        return self.make_request(
+        response_objects = self.make_request(
             {
                 EMBEDDINGS_URL_KEY: embeddings_urls,
                 EMBEDDING_DIMENSION_KEY: embedding_dim,
@@ -1170,6 +1171,18 @@ class NucleusClient:
             f"indexing/{dataset_id}",
             requests_command=requests.post,
         )
+
+        job = AsyncJob(
+            job_id=response_objects[JOB_ID_KEY],
+            job_last_known_status=response_objects[JOB_STATUS_KEY],
+            job_type=response_objects[JOB_TYPE_KEY],
+            job_creation_time=response_objects[JOB_CREATION_TIME_KEY],
+            client=self,
+        )
+        dataset_id = response_objects[DATASET_ID_KEY]
+        message = response_objects[MESSAGE_KEY]
+
+        return dataset_id, job, message
 
     def check_index_status(self, job_id: str):
         return self.make_request(
