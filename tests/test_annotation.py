@@ -302,3 +302,19 @@ def test_polygon_gt_upload_ignore(dataset):
     assert_polygon_annotation_matches_dict(
         response_annotation, TEST_POLYGON_ANNOTATIONS[0]
     )
+
+    @pytest.mark.integration
+    def test_box_gt_deletion(dataset):
+        annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+
+        print(annotation)
+
+        response = dataset.annotate(annotations=[annotation])
+
+        assert response["annotations_processed"] == 1
+
+        job = dataset.delete_annotations()
+        job.sleep_until_complete()
+        job_status = job.status()
+        assert job_status["status"] == "Completed"
+        assert job_status["job_id"] == job.id

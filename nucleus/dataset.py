@@ -241,7 +241,7 @@ class Dataset:
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/append?async=1",
             )
-            return AsyncJob(response["job_id"], self._client)
+            return AsyncJob(response[JOB_ID_KEY], self._client)
 
         return self._client.populate_dataset(
             self.id,
@@ -361,3 +361,11 @@ class Dataset:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
+
+    def delete_annotations(
+        self, reference_ids: list = None, keep_history=False
+    ):
+        response = self._client.delete_annotations(
+            self.id, reference_ids, keep_history
+        )
+        return AsyncJob(response[JOB_ID_KEY], self._client)
