@@ -1171,14 +1171,7 @@ class NucleusClient:
             f"indexing/{dataset_id}",
             requests_command=requests.post,
         )
-
-        job = AsyncJob(
-            job_id=response_objects[JOB_ID_KEY],
-            job_last_known_status=response_objects[JOB_STATUS_KEY],
-            job_type=response_objects[JOB_TYPE_KEY],
-            job_creation_time=response_objects[JOB_CREATION_TIME_KEY],
-            client=self,
-        )
+        job = AsyncJob.from_json(response_objects, self)
         dataset_id = response_objects[DATASET_ID_KEY]
         message = response_objects[MESSAGE_KEY]
 

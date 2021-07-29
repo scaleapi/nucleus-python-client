@@ -21,11 +21,13 @@ class AsyncJob:
     client: "NucleusClient"  # type: ignore # noqa: F821
 
     def status(self) -> Dict[str, str]:
-        return self.client.make_request(
+        response = self.client.make_request(
             payload={},
             route=f"job/{self.job_id}",
             requests_command=requests.get,
         )
+        self.job_last_known_status = response["job_status"]
+        return response
 
     def errors(self) -> List[str]:
         return self.client.make_request(
