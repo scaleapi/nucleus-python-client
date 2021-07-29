@@ -87,7 +87,7 @@ from .constants import (
     ERROR_PAYLOAD,
     ERRORS_KEY,
     JOB_ID_KEY,
-    JOB_STATUS_KEY,
+    JOB_LAST_KNOWN_STATUS_KEY,
     JOB_TYPE_KEY,
     JOB_CREATION_TIME_KEY,
     IMAGE_KEY,
@@ -217,7 +217,7 @@ class NucleusClient:
         return [
             AsyncJob(
                 job_id=job[JOB_ID_KEY],
-                job_last_known_status=job[JOB_STATUS_KEY],
+                job_last_known_status=job[JOB_LAST_KNOWN_STATUS_KEY],
                 job_type=job[JOB_TYPE_KEY],
                 job_creation_time=job[JOB_CREATION_TIME_KEY],
                 client=self,

@@ -6,6 +6,7 @@ from nucleus.constants import (
     JOB_CREATION_TIME_KEY,
     JOB_ID_KEY,
     JOB_STATUS_KEY,
+    JOB_LAST_KNOWN_STATUS_KEY,
     JOB_TYPE_KEY,
 )
 
@@ -26,7 +27,7 @@ class AsyncJob:
             route=f"job/{self.job_id}",
             requests_command=requests.get,
         )
-        self.job_last_known_status = response["job_status"]
+        self.job_last_known_status = response[JOB_STATUS_KEY]
         return response
 
     def errors(self) -> List[str]:
@@ -56,7 +57,7 @@ class AsyncJob:
     def from_json(cls, payload: dict, client):
         return cls(
             job_id=payload[JOB_ID_KEY],
-            job_last_known_status=payload[JOB_STATUS_KEY],
+            job_last_known_status=payload[JOB_LAST_KNOWN_STATUS_KEY],
             job_type=payload[JOB_TYPE_KEY],
             job_creation_time=payload[JOB_CREATION_TIME_KEY],
             client=client,

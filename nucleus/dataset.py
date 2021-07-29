@@ -366,4 +366,4 @@ class Dataset:
         response = self._client.delete_annotations(
             self.id, reference_ids, keep_history
         )
-        return AsyncJob(response[JOB_ID_KEY], self._client)
+        return AsyncJob.from_json(response, self._client)
