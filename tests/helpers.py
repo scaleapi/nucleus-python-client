@@ -14,11 +14,11 @@ TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
 
 TEST_IMG_URLS = [
-    "https://d3jkudlc7u70kh.cloudfront.net/airplane-fact.jpg",
-    "https://www.activewild.com/wp-content/uploads/2016/01/Arctic-Hare-Facts-For-Kids-fb.jpg",
-    "https://thumbs-prod.si-cdn.com/Gd4SBf-ePT2OK6HDdW6Q3uOh5c8=/fit-in/1600x0/https://public-media.si-cdn.com/filer/23/a9/23a9a987-df8e-4d22-ac96-93f9091f9b8f/media_baboons_07_-_photo_by_catherine_markham.jpg",
-    "https://prod-images.tcm.com/Master-Profile-Images/BarbaraStanwyck.jpg",
-    "https://thumbs-prod.si-cdn.com/nnJARGtKrLypH4y3Vov2zGTG4xw=/fit-in/1600x0/filters:focal(554x699:555x700)/https://public-media.si-cdn.com/filer/a4/04/a404c799-7118-459a-8de4-89e4a44b124f/img_1317.jpg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/arctichare.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/baboon.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/barbara.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/cat.jpeg",
 ]
 
 TEST_DATASET_ITEMS = [
