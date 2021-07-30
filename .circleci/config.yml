@@ -44,7 +44,11 @@ jobs:
       - store_test_results:
           path: test_results
       - store_artifacts:
-          path: test_results
+          path: test_results      
+      - slack/notify:
+          channel: nucleus-builders
+          event: pass
+          template: basic_fail_1
       - slack/notify:
           channel: nucleus-builders
           branch_pattern: master
