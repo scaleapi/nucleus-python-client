@@ -39,19 +39,17 @@ jobs:
             poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml
             poetry run coverage report
             poetry run coverage html
+      - store_test_results:
+          path: htmlcov
+      - store_test_results:
+          path: test_results
+      - store_artifacts:
+          path: test_results
       - slack/notify:
+          channel: nucleus-builders
           branch_pattern: master
           event: fail
           template: basic_fail_1
-
-      - store_test_results:
-          path: htmlcov
-
-      - store_test_results:
-          path: test_results
-      
-      - store_artifacts:
-          path: test_results
   pypi_publish:
     docker:
       - image: cimg/python:3.6
@@ -97,7 +95,8 @@ workflows:
               only:
                 - master
     jobs:
-      - build_test
+      - build_test:
+          context: slack-secrets
   build_test_publish:
     jobs:
       - build_test:
