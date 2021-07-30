@@ -1,6 +1,7 @@
 # CircleCI jobs are only enabled to on Pull Requests and commits to master branch.
 # "Only build pull requests" enabled in Project's Advanced Settings.
 version: 2.1
+
 jobs:
   build_test:
     docker:
@@ -83,6 +84,16 @@ jobs:
             fi
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
 workflows:
+  nightly_build_test:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build_test
   build_test_publish:
     jobs:
       - build_test:
