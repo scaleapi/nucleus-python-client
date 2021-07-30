@@ -39,6 +39,10 @@ jobs:
             poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml
             poetry run coverage report
             poetry run coverage html
+      - slack/notify:
+          branch_pattern: master
+          event: fail
+          template: basic_fail_1
 
       - store_test_results:
           path: htmlcov
@@ -97,6 +101,7 @@ workflows:
   build_test_publish:
     jobs:
       - build_test:
+          context: slack-secrets
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
