@@ -29,13 +29,13 @@ TEST_POINTCLOUD_URLS = [
 TEST_LIDAR_SCENES = {
     "scenes": [
         {
-            "referenceId": "scene_1",
+            "reference_id": "scene_1",
             "frames": [
                 {
                     "lidar": {
                         "url": TEST_POINTCLOUD_URLS[0],
                         "type": "pointcloud",
-                        "referenceId": "lidar_frame_1",
+                        "reference_id": "lidar_frame_1",
                         "metadata": {},
                     },
                 },
