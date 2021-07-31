@@ -1,9 +1,10 @@
+from nucleus.constants import SCENES
 import pytest
 
 from .helpers import (
     TEST_DATASET_3D_NAME,
     TEST_CUBOID_ANNOTATIONS,
-    TEST_LIDAR_FRAMES,
+    TEST_LIDAR_SCENES,
     assert_cuboid_annotation_matches_dict,
 )
 
@@ -22,34 +23,30 @@ def dataset(CLIENT):
 
 
 def test_scene_upload_sync(dataset):
-    payload = TEST_LIDAR_FRAMES
+    payload = TEST_LIDAR_SCENES
     response = dataset.upload_scenes(payload)
 
     assert response["dataset_id"] == dataset.id
-    assert response["new_items"] == 1
-    assert response["updated_items"] == 0
-    assert response["ignored_items"] == 0
+    assert response["new_scenes"] == len(TEST_LIDAR_SCENES[SCENES])
 
 
 @pytest.mark.integration
 def test_scene_and_cuboid_upload_sync(dataset):
-    payload = TEST_LIDAR_FRAMES
+    payload = TEST_LIDAR_SCENES
     response = dataset.upload_scenes(payload)
 
     assert response["dataset_id"] == dataset.id
-    assert response["new_items"] == 1
-    assert response["updated_items"] == 0
-    assert response["ignored_items"] == 0
+    assert response["new_scenes"] == len(TEST_LIDAR_SCENES[SCENES])
 
     TEST_CUBOID_ANNOTATIONS[0]["dataset_item_id"] = dataset.items[0].item_id
-    annotation = CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])
-    response = dataset.annotate(annotations=[annotation])
+    annotations = [CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])]
+    response = dataset.annotate(annotations)
 
     assert response["dataset_id"] == dataset.id
-    assert response["annotations_processed"] == 1
+    assert response["annotations_processed"] == len(annotations)
     assert response["annotations_ignored"] == 0
 
-    response = dataset.loc(annotation.item_id)["annotations"]["cuboid"]
+    response = dataset.loc(annotations[0].item_id)["annotations"]["cuboid"]
     assert len(response) == 1
     response_annotation = response[0]
     assert_cuboid_annotation_matches_dict(

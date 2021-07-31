@@ -26,7 +26,24 @@ TEST_POINTCLOUD_URLS = [
     "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-0.json",
 ]
 
-TEST_LIDAR_FRAMES = {"frames": TEST_POINTCLOUD_URLS}
+TEST_LIDAR_SCENES = {
+    "scenes": [
+        {
+            "referenceId": "scene_1",
+            "frames": [
+                {
+                    "lidar": {
+                        "url": TEST_POINTCLOUD_URLS[0],
+                        "type": "pointcloud",
+                        "referenceId": "lidar_frame_1",
+                        "metadata": {},
+                    },
+                },
+            ],
+            "metadata": {},
+        },
+    ],
+}
 
 TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[0], "1"),
@@ -81,21 +98,21 @@ TEST_POLYGON_ANNOTATIONS = [
 
 TEST_CUBOID_ANNOTATIONS = [
     {
-        "label": f"[Pytest] Cuboid Annotation ${i}",
+        "label": f"[Pytest] Cuboid Annotation #{i}",
         "geometry": {
             "position": {
-                "x": 50 * i + 10,
-                "y": 60 * i + 10,
-                "z": 70 * i + 10,
+                "x": 50 * i + 5,
+                "y": 60 * i + 5,
+                "z": 70 * i + 5,
             },
             "dimensions": {
-                "x": 10 * i,
-                "y": 20 * i,
-                "z": 30 * i,
+                "x": 10 * i + 10,
+                "y": 20 * i + 10,
+                "z": 30 * i + 10,
             },
             "yaw": 5 * i,
         },
-        "annotation_id": f"[Pytest] Cuboid Annotation Annotation Id{i}",
+        "annotation_id": f"[Pytest] Cuboid Annotation Annotation Id {i}",
     }
     for i in range(len(TEST_POINTCLOUD_URLS))
 ]

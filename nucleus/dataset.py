@@ -28,7 +28,9 @@ from .constants import (
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    SCENES,
     UPDATE_KEY,
+    URL,
 )
 from .dataset_item import (
     DatasetItem,
@@ -255,22 +257,22 @@ class Dataset:
         asynchronous: bool = False,
     ) -> Union[dict, AsyncJob]:
         """
-        Uploads scene with given frames to the dataset
+        Uploads scenes with given frames to the dataset
 
         Parameters:
-        :param payload: dictionary containing frames to be uploaded as a scene
+        :param payload: dictionary containing scenes to be uploaded
         :param update: if True, overwrite scene on collision
         :param aynchronous: if True, return a job object representing asynchronous ingestion job
         :return:
         {
             'dataset_id': str,
-            'new_items': int,
-            'updated_items': int,
-            'ignored_items': int,
+            'new_scenes': int,
         }
         """
         if asynchronous:
-            check_all_frame_paths_remote(payload[FRAMES])
+            for scene in payload[SCENES]:
+                for frame in scene[FRAMES]:
+                    check_all_frame_paths_remote(frame[URL])
             request_id = serialize_and_write_to_presigned_url(
                 [payload], self.id, self._client
             )
