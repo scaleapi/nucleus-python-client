@@ -293,7 +293,7 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
         "job_id": job.id,
         "status": "Completed",
         "message": {
-            "annotation_upload": {
+            "prediction_upload": {
                 "epoch": 1,
                 "total": 2,
                 "errored": 0,
@@ -331,7 +331,7 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
         "job_id": job.id,
         "status": "Completed",
         "message": {
-            "annotation_upload": {
+            "prediction_upload": {
                 "epoch": 1,
                 "total": 2,
                 "errored": 1,
