@@ -1,8 +1,6 @@
 # CircleCI jobs are only enabled to on Pull Requests and commits to master branch.
 # "Only build pull requests" enabled in Project's Advanced Settings.
 version: 2.1
-orbs:
-  slack: circleci/slack@4.4.2
 
 jobs:
   build_test:
@@ -47,20 +45,7 @@ jobs:
           path: test_results
       - store_artifacts:
           path: test_results      
-      - slack/notify:
-          channel: nucleus-builders
-          event: pass
-          template: basic_fail_1
-      - slack/notify:
-          channel: nucleus-builders
-          event: fail
-          template: basic_fail_1
-      
-      - slack/notify:
-          channel: nucleus-builders
-          branch_pattern: master
-          event: fail
-          template: basic_fail_1
+
   pypi_publish:
     docker:
       - image: cimg/python:3.6
@@ -106,12 +91,10 @@ workflows:
               only:
                 - master
     jobs:
-      - build_test:
-          context: slack-secrets
+      - build_test
   build_test_publish:
     jobs:
       - build_test:
-          context: slack-secrets
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
