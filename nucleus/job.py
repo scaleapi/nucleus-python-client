@@ -5,9 +5,9 @@ import requests
 from nucleus.constants import (
     JOB_CREATION_TIME_KEY,
     JOB_ID_KEY,
-    JOB_STATUS_KEY,
     JOB_LAST_KNOWN_STATUS_KEY,
     JOB_TYPE_KEY,
+    STATUS_KEY,
 )
 
 JOB_POLLING_INTERVAL = 5
@@ -27,7 +27,7 @@ class AsyncJob:
             route=f"job/{self.job_id}",
             requests_command=requests.get,
         )
-        self.job_last_known_status = response[JOB_STATUS_KEY]
+        self.job_last_known_status = response[STATUS_KEY]
         return response
 
     def errors(self) -> List[str]:

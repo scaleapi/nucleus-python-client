@@ -1163,7 +1163,7 @@ class NucleusClient:
         embeddings_urls: list of urls, each of which being a json mapping dataset_item_id -> embedding vector
         embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
         """
-        response_objects = self.make_request(
+        return self.make_request(
             {
                 EMBEDDINGS_URL_KEY: embeddings_urls,
                 EMBEDDING_DIMENSION_KEY: embedding_dim,
@@ -1171,11 +1171,6 @@ class NucleusClient:
             f"indexing/{dataset_id}",
             requests_command=requests.post,
         )
-        job = AsyncJob.from_json(response_objects, self)
-        dataset_id = response_objects[DATASET_ID_KEY]
-        message = response_objects[MESSAGE_KEY]
-
-        return dataset_id, job, message
 
     def check_index_status(self, job_id: str):
         return self.make_request(

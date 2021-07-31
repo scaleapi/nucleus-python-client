@@ -169,12 +169,12 @@ def test_dataset_append_async(dataset: Dataset):
     status = job.status()
     status["message"]["PayloadUrl"] = ""
     assert status == {
-        "job_id": job.id,
+        "job_id": job.job_id,
         "status": "Completed",
         "message": {
             "PayloadUrl": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
-            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
+            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
             "ingest_to_reupload_queue": {
                 "epoch": 1,
                 "total": 5,
@@ -204,7 +204,7 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     status = job.status()
     status["message"]["PayloadUrl"] = ""
     assert status == {
-        "job_id": f"{job.id}",
+        "job_id": f"{job.job_id}",
         "status": "Errored",
         "message": {
             "PayloadUrl": "",
@@ -220,7 +220,7 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
                 "datasetId": f"{dataset.id}",
                 "processed": 5,
             },
-            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.id}",
+            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
@@ -286,7 +286,7 @@ def test_annotate_async(dataset: Dataset):
     )
     job.sleep_until_complete()
     assert job.status() == {
-        "job_id": job.id,
+        "job_id": job.job_id,
         "status": "Completed",
         "message": {
             "annotation_upload": {
@@ -321,7 +321,7 @@ def test_annotate_async_with_error(dataset: Dataset):
     job.sleep_until_complete()
 
     assert job.status() == {
-        "job_id": job.id,
+        "job_id": job.job_id,
         "status": "Completed",
         "message": {
             "annotation_upload": {

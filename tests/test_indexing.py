@@ -1,3 +1,4 @@
+from nucleus.job import AsyncJob
 import pytest
 
 from .helpers import (
@@ -42,7 +43,11 @@ def test_index_integration(dataset):
     create_response = dataset.create_custom_index(
         [signed_embeddings_url], embedding_dim=3
     )
-    assert JOB_ID_KEY in create_response
+    job = AsyncJob.from_json(create_response, client="Nucleus Client")
+    assert job.job_id
+    assert job.job_last_known_status
+    assert job.job_type
+    assert job.job_creation_time
     assert MESSAGE_KEY in create_response
     job_id = create_response[JOB_ID_KEY]
 

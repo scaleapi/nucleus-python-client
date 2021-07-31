@@ -28,4 +28,4 @@ def test_job_creation_and_listing(CLIENT):
     jobs = CLIENT.list_jobs()
 
     for job in jobs:
-        assert eval(print(job)) == job
+        assert eval(str(job)) == job
