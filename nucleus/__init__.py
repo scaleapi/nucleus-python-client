@@ -55,9 +55,11 @@ import json
 import logging
 import os
 import urllib.request
+from asyncio.tasks import Task
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
+import nest_asyncio
 import pkg_resources
 import requests
 import tqdm
@@ -67,11 +69,11 @@ from nucleus.url_utils import sanitize_string_args
 
 from .annotation import (
     BoxAnnotation,
+    CuboidAnnotation,
+    Point,
     PolygonAnnotation,
     Segment,
     SegmentationAnnotation,
-    Point,
-    CuboidAnnotation,
 )
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -81,8 +83,8 @@ from .constants import (
     DATASET_ID_KEY,
     DATASET_ITEM_IDS_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
-    EMBEDDINGS_URL_KEY,
     EMBEDDING_DIMENSION_KEY,
+    EMBEDDINGS_URL_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
@@ -462,13 +464,19 @@ class NucleusClient:
             files_per_request.append(get_files(batch))
             payload_items.append(batch)
 
-        loop = asyncio.get_event_loop()
-        responses = loop.run_until_complete(
-            self.make_many_files_requests_asynchronously(
-                files_per_request,
-                f"dataset/{dataset_id}/append",
-            )
+        future = self.make_many_files_requests_asynchronously(
+            files_per_request,
+            f"dataset/{dataset_id}/append",
         )
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # no event loop running:
+            loop = asyncio.new_event_loop()
+            responses = loop.run_until_complete(future)
+        else:
+            nest_asyncio.apply(loop)
+            return asyncio.run(loop.create_task(future))
 
         def close_files(request_items):
             for item in request_items:
