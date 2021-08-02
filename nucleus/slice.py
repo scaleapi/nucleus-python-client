@@ -6,7 +6,9 @@ from nucleus.annotation import Annotation
 from nucleus.dataset_item import DatasetItem
 from nucleus.job import AsyncJob
 from nucleus.utils import convert_export_payload, format_dataset_item_response
-from nucleus.constants import EXPORTED_ROWS
+from nucleus.constants import (
+    EXPORTED_ROWS,
+)
 
 
 class Slice:
@@ -122,7 +124,7 @@ class Slice:
         response = self._client.make_request(
             {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
         )
-        return AsyncJob(response["job_id"], self._client)
+        return AsyncJob.from_json(response, self._client)
 
 
 def check_annotations_are_in_slice(
