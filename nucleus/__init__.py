@@ -387,28 +387,33 @@ class NucleusClient:
 
         agg_response = UploadResponse(json={DATASET_ID_KEY: dataset_id})
 
-        tqdm_local_batches = self.tqdm_bar(local_batches)
-
-        tqdm_remote_batches = self.tqdm_bar(remote_batches)
-
         async_responses: List[Any] = []
 
-        for batch in tqdm_local_batches:
-            payload = construct_append_payload(batch, update)
-            responses = self._process_append_requests_local(
-                dataset_id, payload, update
+        if local_batches:
+            tqdm_local_batches = self.tqdm_bar(
+                local_batches, desc="Local file batches"
             )
-            async_responses.extend(responses)
 
-        for batch in tqdm_remote_batches:
-            payload = construct_append_payload(batch, update)
-            responses = self._process_append_requests(
-                dataset_id=dataset_id,
-                payload=payload,
-                update=update,
-                batch_size=batch_size,
+            for batch in tqdm_local_batches:
+                payload = construct_append_payload(batch, update)
+                responses = self._process_append_requests_local(
+                    dataset_id, payload, update
+                )
+                async_responses.extend(responses)
+
+        if remote_batches:
+            tqdm_remote_batches = self.tqdm_bar(
+                remote_batches, desc="Remote file batches"
             )
-            async_responses.extend(responses)
+            for batch in tqdm_remote_batches:
+                payload = construct_append_payload(batch, update)
+                responses = self._process_append_requests(
+                    dataset_id=dataset_id,
+                    payload=payload,
+                    update=update,
+                    batch_size=batch_size,
+                )
+                async_responses.extend(responses)
 
         for response in async_responses:
             agg_response.update_response(response)
@@ -423,6 +428,8 @@ class NucleusClient:
         local_batch_size: int = 10,
     ):
         def get_files(batch):
+            for item in batch:
+                item[UPDATE_KEY] = update
             request_payload = [
                 (
                     ITEMS_KEY,

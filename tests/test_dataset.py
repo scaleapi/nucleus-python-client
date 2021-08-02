@@ -113,6 +113,56 @@ def test_dataset_create_and_delete(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
 
 
+def test_dataset_update_metadata_local(dataset):
+    dataset.append(
+        [
+            DatasetItem(
+                image_location=LOCAL_FILENAME,
+                metadata={"snake_field": 0},
+                reference_id="test_image",
+            )
+        ]
+    )
+    dataset.append(
+        [
+            DatasetItem(
+                image_location=LOCAL_FILENAME,
+                metadata={"snake_field": 1},
+                reference_id="test_image",
+            )
+        ],
+        update=True,
+    )
+    resulting_item = dataset.iloc(0)["item"]
+    print(resulting_item)
+    assert resulting_item.metadata["snake_field"] == 1
+
+
+def test_dataset_update_metadata(dataset):
+    dataset.append(
+        [
+            DatasetItem(
+                image_location=TEST_IMG_URLS[0],
+                metadata={"snake_field": 0},
+                reference_id="test_image",
+            )
+        ]
+    )
+    dataset.append(
+        [
+            DatasetItem(
+                image_location=TEST_IMG_URLS[0],
+                metadata={"snake_field": 1},
+                reference_id="test_image",
+            )
+        ],
+        update=True,
+    )
+    resulting_item = dataset.iloc(0)["item"]
+    print(resulting_item)
+    assert resulting_item.metadata["snake_field"] == 1
+
+
 def test_dataset_append(dataset):
     def check_is_expected_response(response):
         assert isinstance(response, UploadResponse)
