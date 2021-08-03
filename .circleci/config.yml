@@ -14,7 +14,7 @@ jobs:
       - run:
           name: Install Environment Dependencies
           command: | # install dependencies
-            sudo apt-get install curl
+            su apt-get install curl
             pip install --upgrade pip 
             pip install poetry
             poetry install
