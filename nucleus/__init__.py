@@ -476,7 +476,7 @@ class NucleusClient:
             responses = loop.run_until_complete(future)
         else:
             nest_asyncio.apply(loop)
-            return asyncio.run(loop.create_task(future))
+            return loop.run_until_complete(future)
 
         def close_files(request_items):
             for item in request_items:
