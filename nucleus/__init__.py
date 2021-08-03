@@ -470,7 +470,7 @@ class NucleusClient:
         )
 
         try:
-            loop = asyncio.get_running_loop()
+            loop = asyncio.get_event_loop()
         except RuntimeError:  # no event loop running:
             loop = asyncio.new_event_loop()
             responses = loop.run_until_complete(future)
