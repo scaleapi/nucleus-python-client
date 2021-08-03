@@ -7,15 +7,13 @@ orbs:
 jobs:
   build_test:
     docker:
-      - image: python:3.6-slim-buster
+      - image: python:3.6-buster
     resource_class: small
     steps:
       - checkout # checkout source code to working directory
       - run:
           name: Install Environment Dependencies
           command: | # install dependencies
-            wget http://security.ubuntu.com/ubuntu/pool/main/a/apt/apt_1.0.1ubuntu2.17_amd64.deb -O apt.deb
-            su dpkg -i apt.deb
             su apt-get install curl
             pip install --upgrade pip 
             pip install poetry
