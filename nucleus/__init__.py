@@ -86,11 +86,16 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    JOB_ID_KEY,
+    JOB_LAST_KNOWN_STATUS_KEY,
+    JOB_TYPE_KEY,
+    JOB_CREATION_TIME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
+    MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
@@ -110,6 +115,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .job import AsyncJob
 from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (
@@ -198,6 +204,26 @@ class NucleusClient:
         :return: { datasets_ids }
         """
         return self.make_request({}, "dataset/", requests.get)
+
+    def list_jobs(
+        self, show_completed=None, date_limit=None
+    ) -> List[AsyncJob]:
+        """
+        Lists jobs for user.
+        :return: jobs
+        """
+        payload = {show_completed: show_completed, date_limit: date_limit}
+        job_objects = self.make_request(payload, "jobs/", requests.get)
+        return [
+            AsyncJob(
+                job_id=job[JOB_ID_KEY],
+                job_last_known_status=job[JOB_LAST_KNOWN_STATUS_KEY],
+                job_type=job[JOB_TYPE_KEY],
+                job_creation_time=job[JOB_CREATION_TIME_KEY],
+                client=self,
+            )
+            for job in job_objects
+        ]
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
         """

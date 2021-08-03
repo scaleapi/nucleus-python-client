@@ -48,11 +48,11 @@ jobs:
           path: test_results
       - store_artifacts:
           path: test_results
-      
       - slack/notify:
           branch_pattern: master
           event: fail
           template: basic_fail_1
+
   pypi_publish:
     docker:
       - image: cimg/python:3.6
