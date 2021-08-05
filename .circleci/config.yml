@@ -1,16 +1,20 @@
 # CircleCI jobs are only enabled to on Pull Requests and commits to master branch.
 # "Only build pull requests" enabled in Project's Advanced Settings.
 version: 2.1
+orbs:
+  slack: circleci/slack@4.4.2
+
 jobs:
   build_test:
     docker:
-      - image: python:3.6-slim-buster
+      - image: python:3.6-buster
     resource_class: small
     steps:
       - checkout # checkout source code to working directory
       - run:
           name: Install Environment Dependencies
           command: | # install dependencies
+            apt-get -y install curl
             pip install --upgrade pip 
             pip install poetry
             poetry install
@@ -38,15 +42,17 @@ jobs:
             poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml
             poetry run coverage report
             poetry run coverage html
-
       - store_test_results:
           path: htmlcov
-
       - store_test_results:
           path: test_results
-      
       - store_artifacts:
           path: test_results
+      - slack/notify:
+          branch_pattern: master
+          event: fail
+          template: basic_fail_1
+
   pypi_publish:
     docker:
       - image: cimg/python:3.6
@@ -83,9 +89,21 @@ jobs:
             fi
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
 workflows:
+  nightly_build_test:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build_test:
+          context: Nucleus
   build_test_publish:
     jobs:
       - build_test:
+          context: Nucleus
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]

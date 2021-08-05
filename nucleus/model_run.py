@@ -9,7 +9,6 @@ from .constants import (
     BOX_TYPE,
     CUBOID_TYPE,
     DEFAULT_ANNOTATION_UPDATE_MODE,
-    JOB_ID_KEY,
     POLYGON_TYPE,
     REQUEST_ID_KEY,
     SEGMENTATION_TYPE,
@@ -122,8 +121,7 @@ class ModelRun:
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"modelRun/{self.model_run_id}/predict?async=1",
             )
-
-            return AsyncJob(response[JOB_ID_KEY], self._client)
+            return AsyncJob.from_json(response, self._client)
         else:
             return self._client.predict(self.model_run_id, annotations, update)
 

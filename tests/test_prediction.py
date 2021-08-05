@@ -290,10 +290,10 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
     job.sleep_until_complete()
 
     assert job.status() == {
-        "job_id": job.id,
+        "job_id": job.job_id,
         "status": "Completed",
         "message": {
-            "annotation_upload": {
+            "prediction_upload": {
                 "epoch": 1,
                 "total": 2,
                 "errored": 0,
@@ -328,10 +328,10 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
     job.sleep_until_complete()
 
     assert job.status() == {
-        "job_id": job.id,
+        "job_id": job.job_id,
         "status": "Completed",
         "message": {
-            "annotation_upload": {
+            "prediction_upload": {
                 "epoch": 1,
                 "total": 2,
                 "errored": 1,

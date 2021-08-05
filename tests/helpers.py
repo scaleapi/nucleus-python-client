@@ -15,11 +15,11 @@ TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
 
 TEST_IMG_URLS = [
-    "https://homepages.cae.wisc.edu/~ece533/images/airplane.png",
-    "https://homepages.cae.wisc.edu/~ece533/images/arctichare.png",
-    "https://homepages.cae.wisc.edu/~ece533/images/baboon.png",
-    "https://homepages.cae.wisc.edu/~ece533/images/barbara.png",
-    "https://homepages.cae.wisc.edu/~ece533/images/cat.png",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/arctichare.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/baboon.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/barbara.jpeg",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/cat.jpeg",
 ]
 
 TEST_POINTCLOUD_URLS = [

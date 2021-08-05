@@ -55,9 +55,11 @@ import json
 import logging
 import os
 import urllib.request
+from asyncio.tasks import Task
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
+import nest_asyncio
 import pkg_resources
 import requests
 import tqdm
@@ -67,11 +69,11 @@ from nucleus.url_utils import sanitize_string_args
 
 from .annotation import (
     BoxAnnotation,
+    CuboidAnnotation,
+    Point,
     PolygonAnnotation,
     Segment,
     SegmentationAnnotation,
-    Point,
-    CuboidAnnotation,
 )
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -81,14 +83,21 @@ from .constants import (
     DATASET_ID_KEY,
     DATASET_ITEM_IDS_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
+    EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    JOB_ID_KEY,
+    JOB_LAST_KNOWN_STATUS_KEY,
+    JOB_TYPE_KEY,
+    JOB_CREATION_TIME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
+    KEEP_HISTORY_KEY,
+    MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
@@ -108,6 +117,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .job import AsyncJob
 from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (
@@ -196,6 +206,26 @@ class NucleusClient:
         :return: { datasets_ids }
         """
         return self.make_request({}, "dataset/", requests.get)
+
+    def list_jobs(
+        self, show_completed=None, date_limit=None
+    ) -> List[AsyncJob]:
+        """
+        Lists jobs for user.
+        :return: jobs
+        """
+        payload = {show_completed: show_completed, date_limit: date_limit}
+        job_objects = self.make_request(payload, "jobs/", requests.get)
+        return [
+            AsyncJob(
+                job_id=job[JOB_ID_KEY],
+                job_last_known_status=job[JOB_LAST_KNOWN_STATUS_KEY],
+                job_type=job[JOB_TYPE_KEY],
+                job_creation_time=job[JOB_CREATION_TIME_KEY],
+                client=self,
+            )
+            for job in job_objects
+        ]
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
         """
@@ -385,28 +415,33 @@ class NucleusClient:
 
         agg_response = UploadResponse(json={DATASET_ID_KEY: dataset_id})
 
-        tqdm_local_batches = self.tqdm_bar(local_batches)
-
-        tqdm_remote_batches = self.tqdm_bar(remote_batches)
-
         async_responses: List[Any] = []
 
-        for batch in tqdm_local_batches:
-            payload = construct_append_payload(batch, update)
-            responses = self._process_append_requests_local(
-                dataset_id, payload, update
+        if local_batches:
+            tqdm_local_batches = self.tqdm_bar(
+                local_batches, desc="Local file batches"
             )
-            async_responses.extend(responses)
 
-        for batch in tqdm_remote_batches:
-            payload = construct_append_payload(batch, update)
-            responses = self._process_append_requests(
-                dataset_id=dataset_id,
-                payload=payload,
-                update=update,
-                batch_size=batch_size,
+            for batch in tqdm_local_batches:
+                payload = construct_append_payload(batch, update)
+                responses = self._process_append_requests_local(
+                    dataset_id, payload, update
+                )
+                async_responses.extend(responses)
+
+        if remote_batches:
+            tqdm_remote_batches = self.tqdm_bar(
+                remote_batches, desc="Remote file batches"
             )
-            async_responses.extend(responses)
+            for batch in tqdm_remote_batches:
+                payload = construct_append_payload(batch, update)
+                responses = self._process_append_requests(
+                    dataset_id=dataset_id,
+                    payload=payload,
+                    update=update,
+                    batch_size=batch_size,
+                )
+                async_responses.extend(responses)
 
         for response in async_responses:
             agg_response.update_response(response)
@@ -421,6 +456,8 @@ class NucleusClient:
         local_batch_size: int = 10,
     ):
         def get_files(batch):
+            for item in batch:
+                item[UPDATE_KEY] = update
             request_payload = [
                 (
                     ITEMS_KEY,
@@ -453,13 +490,19 @@ class NucleusClient:
             files_per_request.append(get_files(batch))
             payload_items.append(batch)
 
-        loop = asyncio.get_event_loop()
-        responses = loop.run_until_complete(
-            self.make_many_files_requests_asynchronously(
-                files_per_request,
-                f"dataset/{dataset_id}/append",
-            )
+        future = self.make_many_files_requests_asynchronously(
+            files_per_request,
+            f"dataset/{dataset_id}/append",
         )
+
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:  # no event loop running:
+            loop = asyncio.new_event_loop()
+            responses = loop.run_until_complete(future)
+        else:
+            nest_asyncio.apply(loop)
+            return loop.run_until_complete(future)
 
         def close_files(request_items):
             for item in request_items:
@@ -1040,6 +1083,28 @@ class NucleusClient:
         )
         return response
 
+    def delete_annotations(
+        self, dataset_id: str, reference_ids: list = None, keep_history=False
+    ) -> dict:
+        """
+        This endpoint deletes annotations.
+
+        :param
+        slice_id: id of the slice
+
+        :return:
+        {}
+        """
+        payload = {KEEP_HISTORY_KEY: keep_history}
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+        response = self.make_request(
+            payload,
+            f"annotation/{dataset_id}",
+            requests_command=requests.delete,
+        )
+        return response
+
     def append_to_slice(
         self,
         slice_id: str,
@@ -1105,9 +1170,23 @@ class NucleusClient:
         )
         return response
 
-    def create_custom_index(self, dataset_id: str, embeddings_url: str):
+    def create_custom_index(
+        self, dataset_id: str, embeddings_urls: list, embedding_dim: int
+    ):
+        """
+        Creates a custom index for a given dataset, which will then be used
+        for autotag and similarity search.
+
+        :param
+        dataset_id: id of dataset that the custom index is being added to.
+        embeddings_urls: list of urls, each of which being a json mapping dataset_item_id -> embedding vector
+        embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
+        """
         return self.make_request(
-            {EMBEDDINGS_URL_KEY: embeddings_url},
+            {
+                EMBEDDINGS_URL_KEY: embeddings_urls,
+                EMBEDDING_DIMENSION_KEY: embedding_dim,
+            },
             f"indexing/{dataset_id}",
             requests_command=requests.post,
         )
