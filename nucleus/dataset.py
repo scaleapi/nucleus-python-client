@@ -24,7 +24,6 @@ from .constants import (
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     FRAMES,
-    JOB_ID_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
@@ -279,7 +278,7 @@ class Dataset:
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"{self.id}/upload_scenes?async=1",
             )
-            return AsyncJob(response["job_id"], self._client)
+            return AsyncJob.from_json(response, self._client)
 
         # TODO: create client method for sync scene upload
         response = self._client.make_request(
