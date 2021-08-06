@@ -32,6 +32,10 @@ def _get_all_field_values(metadata_list: List[dict], key: str):
     return {metadata[key] for metadata in metadata_list if key in metadata}
 
 
+def flatten(t):
+    return [item for sublist in t for item in sublist]
+
+
 def suggest_metadata_schema(
     data: Union[
         List[DatasetItem], List[BoxPrediction], List[PolygonPrediction]
