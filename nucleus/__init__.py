@@ -274,15 +274,13 @@ class NucleusClient:
         )
         return Model.from_json(payload=payload, client=self)
 
-    def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
+    def get_model_run(self, model_run_id: str) -> ModelRun:
         """
         Fetches a model_run for given id
         :param model_run_id: internally controlled model_run_id
-        :param dataset_id: the dataset id which may determine the prediction schema
-            for this model run if present on the dataset.
         :return: model_run
         """
-        return ModelRun(model_run_id, dataset_id, self)
+        return ModelRun(model_run_id, self)
 
     def delete_model_run(self, model_run_id: str):
         """
@@ -762,9 +760,7 @@ class NucleusClient:
         if response.get(STATUS_CODE_KEY, None):
             raise ModelRunCreationError(response.get("error"))
 
-        return ModelRun(
-            response[MODEL_RUN_ID_KEY], dataset_id=dataset_id, client=self
-        )
+        return ModelRun(response[MODEL_RUN_ID_KEY], client=self)
 
     def predict(
         self,

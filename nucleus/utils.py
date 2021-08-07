@@ -144,13 +144,13 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 def serialize_and_write_to_presigned_url(
     upload_units: Sequence[Union["DatasetItem", Annotation]],
-    dataset_id: str,
+    request_id: str,
     client,
 ):
     request_id = uuid.uuid4().hex
     response = client.make_request(
         payload={},
-        route=f"dataset/{dataset_id}/signedUrl/{request_id}",
+        route=f"dataset/{request_id}/signedUrl/{request_id}",
         requests_command=requests.get,
     )
 
