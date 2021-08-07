@@ -147,10 +147,10 @@ def serialize_and_write_to_presigned_url(
     request_id: str,
     client,
 ):
-    request_id = uuid.uuid4().hex
+    request_uuid = uuid.uuid4().hex
     response = client.make_request(
         payload={},
-        route=f"dataset/{request_id}/signedUrl/{request_id}",
+        route=f"dataset/{request_id}/signedUrl/{request_uuid}",
         requests_command=requests.get,
     )
 
@@ -158,4 +158,4 @@ def serialize_and_write_to_presigned_url(
     serialize_and_write(upload_units, strio)
     strio.seek(0)
     upload_to_presigned_url(response["signed_url"], strio)
-    return request_id
+    return request_uuid
