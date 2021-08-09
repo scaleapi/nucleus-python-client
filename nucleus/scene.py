@@ -1,10 +1,12 @@
 import json
 from dataclasses import dataclass
-from typing import Optional, Dict, List, Set
+from typing import Optional, Union, Dict, List, Set
 from enum import Enum
 from nucleus.constants import (
     CAMERA_PARAMS_KEY,
     FRAMES_KEY,
+    INDEX_KEY,
+    ITEMS_KEY,
     METADATA_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
@@ -70,6 +72,7 @@ class SceneDatasetItem:
 
 @dataclass
 class Frame:
+    index: Union[int, None] = None
     items: Dict[str, SceneDatasetItem] = {}
 
     def __post_init__(self):
@@ -84,8 +87,11 @@ class Frame:
 
     def to_payload(self) -> dict:
         return {
-            sensor: scene_dataset_item.to_payload()
-            for sensor, scene_dataset_item in self.items.items()
+            INDEX_KEY: self.index,
+            ITEMS_KEY: {
+                sensor: scene_dataset_item.to_payload()
+                for sensor, scene_dataset_item in self.items.items()
+            },
         }
 
 
@@ -95,8 +101,14 @@ class Scene:
     frames: List[Frame] = []
     metadata: Optional[dict] = None
 
-    # TODO: move validation to scene upload
     def __post_init__(self):
+        self.check_valid_frame_indices()
+        if(all([frame.index is not None for frame in self.frames])):
+            self.frames_dict = {frame.index: frame for frame in self.frames}
+        else:
+            self.frames_dict = {i: frame for i, frame in enumerate(self.frames)}
+
+        # TODO: move validation to scene upload
         assert isinstance(self.frames, List), "frames must be a list"
         for frame in self.frames:
             assert isinstance(
@@ -107,13 +119,34 @@ class Scene:
             self.reference_id, str
         ), "reference_id must be a string"
 
-    def add_frame(self, frame: Frame):
-        self.frames.append(frame)
+    def check_valid_frame_indices(self):
+        infer_from_list_position = all([frame.index is None for frame in self.frames])
+        explicit_frame_order = all([frame.index is not None for frame in self.frames])
+        assert infer_from_list_position or explicit_frame_order, "Must specify index explicitly for all frames or implicitly for all frames (inferred from list position)"
+
+    def add_item(self, item: SceneDatasetItem, index: int, sensor_name: str):
+        if index not in self.frames_dict:
+            new_frame = Frame(index, {sensor_name: item})
+            self.frames_dict[index] = new_frame
+        else:
+            self.frames_dict[index].items[sensor_name] = item
+
+    def add_frame(self, frame: Frame, update: bool = False):
+        assert frame.index is not None, "Must specify index explicitly when calling add_frame"
+        if frame.index not in self.frames_dict or frame.index in self.frames_dict and update:
+            self.frames_dict[frame.index] = frame
 
     def to_payload(self) -> dict:
+        frames_payload = [frame.to_payload() for frame in self.frames]
+        if len(frames_payload) > 0 and frames_payload[0].index is None:
+            for i in range(len(frames_payload)):
+                frames_payload[INDEX_KEY] = i
+        else:
+            frames_payload.sort(lambda x: x[INDEX_KEY])
+
         return {
             REFERENCE_ID_KEY: self.reference_id,
-            FRAMES_KEY: [frame.to_payload() for frame in self.frames],
+            FRAMES_KEY: frames_payload,
             METADATA_KEY: self.metadata,
         }
 
