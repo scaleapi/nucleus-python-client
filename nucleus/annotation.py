@@ -299,14 +299,24 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             LABEL_KEY: self.label,
             TYPE_KEY: CUBOID_TYPE,
             GEOMETRY_KEY: {
-                POSITION_KEY: self.position,
-                DIMENSIONS_KEY: self.dimensions,
+                POSITION_KEY: self.position.to_payload(),
+                DIMENSIONS_KEY: self.dimensions.to_payload(),
                 YAW_KEY: self.yaw,
             },
             REFERENCE_ID_KEY: self.reference_id,
+            ITEM_ID_KEY: self.item_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
+
+
+def check_all_frame_paths_remote(frames: List[str]):
+    for frame_url in frames:
+        if is_local_path(frame_url):
+            raise ValueError(
+                f"All paths must be remote, but {frame_url} is either "
+                "local, or a remote URL type that is not supported."
+            )
 
 
 def check_all_mask_paths_remote(

@@ -12,8 +12,8 @@ from nucleus.utils import (
 
 from .annotation import (
     Annotation,
-    CuboidAnnotation,
     check_all_mask_paths_remote,
+    check_all_frame_paths_remote,
 )
 from .constants import (
     DATASET_ITEM_IDS_KEY,
@@ -23,10 +23,13 @@ from .constants import (
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
+    FRAMES,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    SCENES,
     UPDATE_KEY,
+    URL,
 )
 from .dataset_item import (
     DatasetItem,
@@ -167,9 +170,6 @@ class Dataset:
             "ignored_items": int,
         }
         """
-        if any((isinstance(ann, CuboidAnnotation) for ann in annotations)):
-            raise NotImplementedError("Cuboid annotations not yet supported")
-
         check_all_mask_paths_remote(annotations)
 
         if asynchronous:
@@ -248,6 +248,45 @@ class Dataset:
             batch_size=batch_size,
         )
 
+    def upload_scenes(
+        self,
+        payload: dict,
+        update: Optional[bool] = False,
+        asynchronous: bool = False,
+    ) -> Union[dict, AsyncJob]:
+        """
+        Uploads scenes with given frames to the dataset
+
+        Parameters:
+        :param payload: dictionary containing scenes to be uploaded
+        :param update: if True, overwrite scene on collision
+        :param aynchronous: if True, return a job object representing asynchronous ingestion job
+        :return:
+        {
+            'dataset_id': str,
+            'new_scenes': int,
+        }
+        """
+        if asynchronous:
+            for scene in payload[SCENES]:
+                for frame in scene[FRAMES]:
+                    check_all_frame_paths_remote(frame[URL])
+            request_id = serialize_and_write_to_presigned_url(
+                [payload], self.id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"{self.id}/upload_scenes?async=1",
+            )
+            return AsyncJob.from_json(response, self._client)
+
+        # TODO: create client method for sync scene upload
+        response = self._client.make_request(
+            payload=payload,
+            route=f"{self.id}/upload_scenes",
+        )
+        return response
+
     def iloc(self, i: int) -> dict:
         """
         Returns Dataset Item Info By Dataset Item Number.
@@ -255,7 +294,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
         }
         """
         response = self._client.dataitem_iloc(self.id, i)
@@ -268,7 +307,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
         }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
@@ -281,7 +320,7 @@ class Dataset:
         :return:
         {
             "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation]],
+            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
         }
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)

@@ -2,11 +2,13 @@ from typing import List, Optional, Dict, Union
 from .dataset_item import DatasetItem
 from .annotation import (
     BoxAnnotation,
+    CuboidAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
 from .prediction import (
     BoxPrediction,
+    CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
@@ -39,7 +41,14 @@ def construct_append_payload(
 
 
 def construct_annotation_payload(
-    annotation_items: List[Union[BoxAnnotation, PolygonAnnotation]],
+    annotation_items: List[
+        Union[
+            BoxAnnotation,
+            PolygonAnnotation,
+            CuboidAnnotation,
+            SegmentationAnnotation,
+        ]
+    ],
     update: bool,
 ) -> dict:
     annotations = []
@@ -63,7 +72,9 @@ def construct_segmentation_payload(
 
 
 def construct_box_predictions_payload(
-    box_predictions: List[Union[BoxPrediction, PolygonPrediction]],
+    box_predictions: List[
+        Union[BoxPrediction, PolygonPrediction, CuboidPrediction]
+    ],
     update: bool,
 ) -> dict:
     predictions = []

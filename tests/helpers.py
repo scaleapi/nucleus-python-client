@@ -9,6 +9,7 @@ PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
+TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
@@ -20,6 +21,29 @@ TEST_IMG_URLS = [
     "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/barbara.jpeg",
     "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/cat.jpeg",
 ]
+
+TEST_POINTCLOUD_URLS = [
+    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-0.json",
+]
+
+TEST_LIDAR_SCENES = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "frames": [
+                {
+                    "lidar": {
+                        "url": TEST_POINTCLOUD_URLS[0],
+                        "type": "pointcloud",
+                        "reference_id": "lidar_frame_1",
+                        "metadata": {},
+                    },
+                },
+            ],
+            "metadata": {},
+        },
+    ],
+}
 
 TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[0], "1"),
@@ -70,6 +94,27 @@ TEST_POLYGON_ANNOTATIONS = [
         "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
     }
     for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_CUBOID_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Cuboid Annotation #{i}",
+        "geometry": {
+            "position": {
+                "x": 50 * i + 5,
+                "y": 60 * i + 5,
+                "z": 70 * i + 5,
+            },
+            "dimensions": {
+                "x": 10 * i + 10,
+                "y": 20 * i + 10,
+                "z": 30 * i + 10,
+            },
+            "yaw": 5 * i,
+        },
+        "annotation_id": f"[Pytest] Cuboid Annotation Annotation Id {i}",
+    }
+    for i in range(len(TEST_POINTCLOUD_URLS))
 ]
 
 
@@ -155,6 +200,29 @@ def assert_polygon_annotation_matches_dict(
     ):
         assert instance_pt.x == dict_pt["x"]
         assert instance_pt.y == dict_pt["y"]
+
+
+def assert_cuboid_annotation_matches_dict(
+    annotation_instance, annotation_dict
+):
+    assert annotation_instance.label == annotation_dict["label"]
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
+
+    instance_pos = annotation_instance.position
+    dict_pos = annotation_dict["geometry"]["position"]
+    assert instance_pos.x == dict_pos["x"]
+    assert instance_pos.y == dict_pos["y"]
+    assert instance_pos.z == dict_pos["z"]
+
+    instance_dim = annotation_instance.dimensions
+    dict_dim = annotation_dict["geometry"]["dimensions"]
+    assert instance_dim.x == dict_dim["x"]
+    assert instance_dim.y == dict_dim["y"]
+    assert instance_dim.z == dict_dim["z"]
+
+    assert annotation_instance.yaw == annotation_dict["geometry"]["yaw"]
 
 
 def assert_segmentation_annotation_matches_dict(
