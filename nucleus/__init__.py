@@ -135,6 +135,7 @@ from .prediction import (
 )
 from .slice import Slice
 from .upload_response import UploadResponse
+from .scene import Scene, LidarScene
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.

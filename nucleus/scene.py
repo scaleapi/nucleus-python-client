@@ -108,17 +108,6 @@ class Scene:
         else:
             self.frames_dict = dict(enumerate(self.frames))
 
-        # TODO: move validation to scene upload
-        assert isinstance(self.frames, List), "frames must be a list"
-        for frame in self.frames:
-            assert isinstance(
-                frame, Frame
-            ), "each element of frames must be a Frame object"
-        assert len(self.frames) > 0, "frames must have length of at least 1"
-        assert isinstance(
-            self.reference_id, str
-        ), "reference_id must be a string"
-
     def check_valid_frame_indices(self):
         infer_from_list_position = all(
             (frame.index is None for frame in self.frames)
@@ -129,6 +118,18 @@ class Scene:
         assert (
             infer_from_list_position or explicit_frame_order
         ), "Must specify index explicitly for all frames or implicitly for all frames (inferred from list position)"
+    
+    # TODO: move validation to scene upload
+    def validate_scene(self):
+        assert isinstance(self.frames, List), "frames must be a list"
+        assert len(self.frames) > 0, "frames must have length of at least 1"
+        for frame in self.frames:
+            assert isinstance(
+                frame, Frame
+            ), "each element of frames must be a Frame object"
+        assert isinstance(
+            self.reference_id, str
+        ), "reference_id must be a string"
 
     def add_item(self, item: SceneDatasetItem, index: int, sensor_name: str):
         if index not in self.frames_dict:
