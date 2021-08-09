@@ -4,6 +4,7 @@ from typing import Optional, Dict, List, Set
 from enum import Enum
 from nucleus.constants import (
     CAMERA_PARAMS_KEY,
+    FRAMES_KEY,
     METADATA_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
@@ -69,7 +70,7 @@ class SceneDatasetItem:
 
 @dataclass
 class Frame:
-    items: Dict[str, SceneDatasetItem]
+    items: Dict[str, SceneDatasetItem] = {}
 
     def __post_init__(self):
         for key, value in self.items.items():
@@ -81,13 +82,20 @@ class Frame:
     def add_item(self, item: SceneDatasetItem, sensor_name: str):
         self.items[sensor_name] = item
 
+    def to_payload(self) -> dict:
+        return {
+            sensor: scene_dataset_item.to_payload()
+            for sensor, scene_dataset_item in self.items.items()
+        }
+
 
 @dataclass
 class Scene:
-    frames: List[Frame]
     reference_id: str
+    frames: List[Frame] = []
     metadata: Optional[dict] = None
 
+    # TODO: move validation to scene upload
     def __post_init__(self):
         assert isinstance(self.frames, List), "frames must be a list"
         for frame in self.frames:
@@ -98,6 +106,16 @@ class Scene:
         assert isinstance(
             self.reference_id, str
         ), "reference_id must be a string"
+
+    def add_frame(self, frame: Frame):
+        self.frames.append(frame)
+
+    def to_payload(self) -> dict:
+        return {
+            REFERENCE_ID_KEY: self.reference_id,
+            FRAMES_KEY: [frame.to_payload() for frame in self.frames],
+            METADATA_KEY: self.metadata,
+        }
 
 
 @dataclass
