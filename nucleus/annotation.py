@@ -319,6 +319,7 @@ def check_all_frame_paths_remote(frames: List[str]):
             )
 
 
+# local uploads are currently unsupoorted from segmentation masks
 def check_all_mask_paths_remote(
     annotations: Sequence[Union[Annotation]],
 ):
