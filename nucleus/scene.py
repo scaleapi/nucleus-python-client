@@ -1,17 +1,27 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Optional, Union, Dict, List, Set
+from typing import Optional, Union, Any, Dict, List, Set
 from enum import Enum
 from nucleus.constants import (
     CAMERA_PARAMS_KEY,
+    CX_KEY,
+    CY_KEY,
     FRAMES_KEY,
+    FX_KEY,
+    FY_KEY,
+    HEADING_KEY,
     INDEX_KEY,
     ITEMS_KEY,
     METADATA_KEY,
+    POSITION_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
     URL_KEY,
+    W_KEY,
+    X_KEY,
+    Y_KEY,
+    Z_KEY,
 )
 from .annotation import Point3D
 from .utils import flatten
@@ -29,6 +39,20 @@ class Quaternion:
     z: float
     w: float
 
+    @classmethod
+    def from_json(cls, payload: Dict[str, float]):
+        return cls(
+            payload[X_KEY], payload[Y_KEY], payload[Z_KEY], payload[W_KEY]
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            X_KEY: self.x,
+            Y_KEY: self.y,
+            Z_KEY: self.z,
+            W_KEY: self.w,
+        }
+
 
 @dataclass
 class CameraParams:
@@ -38,6 +62,27 @@ class CameraParams:
     fy: float
     cx: float
     cy: float
+
+    @classmethod
+    def from_json(cls, payload: Dict[str, Any]):
+        return cls(
+            Point3D.from_json(payload[POSITION_KEY]),
+            Quaternion.from_json(payload[HEADING_KEY]),
+            payload[FX_KEY],
+            payload[FY_KEY],
+            payload[CX_KEY],
+            payload[CY_KEY],
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            POSITION_KEY: self.position.to_payload(),
+            HEADING_KEY: self.heading.to_payload(),
+            FX_KEY: self.fx,
+            FY_KEY: self.fy,
+            CX_KEY: self.cx,
+            CY_KEY: self.cy,
+        }
 
 
 @dataclass
@@ -60,17 +105,21 @@ class SceneDatasetItem:
             type=payload.get(TYPE_KEY, ""),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, None),
-            camera_params=payload.get(CAMERA_PARAMS_KEY, None),
+            camera_params=CameraParams.from_json(
+                payload.get(CAMERA_PARAMS_KEY, {})
+            ),
         )
 
     def to_payload(self) -> dict:
-        return {
+        payload = {
             URL_KEY: self.url,
             TYPE_KEY: self.type,
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
-            CAMERA_PARAMS_KEY: self.camera_params,
         }
+        if self.camera_params:
+            payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
+        return payload
 
     def to_json(self) -> str:
         return json.dumps(self.to_payload(), allow_nan=False)
