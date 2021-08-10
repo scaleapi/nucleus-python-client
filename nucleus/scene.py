@@ -1,4 +1,5 @@
 import json
+from abc import ABC
 from dataclasses import dataclass, field
 from typing import Optional, Union, Dict, List, Set
 from enum import Enum
@@ -96,7 +97,7 @@ class Frame:
 
 
 @dataclass
-class Scene:
+class Scene(ABC):
     reference_id: str
     frames: List[Frame] = field(default_factory=list)
     metadata: Optional[dict] = None
@@ -106,7 +107,11 @@ class Scene:
         if all((frame.index is not None for frame in self.frames)):
             self.frames_dict = {frame.index: frame for frame in self.frames}
         else:
-            self.frames_dict = dict(enumerate(self.frames))
+            indexed_frames = [
+                Frame(index=i, items=frame.items)
+                for i, frame in enumerate(self.frames)
+            ]
+            self.frames_dict = dict(enumerate(indexed_frames))
 
     def check_valid_frame_indices(self):
         infer_from_list_position = all(
@@ -117,21 +122,18 @@ class Scene:
         )
         assert (
             infer_from_list_position or explicit_frame_order
-        ), "Must specify index explicitly for all frames or implicitly for all frames (inferred from list position)"
-    
-    # TODO: move validation to scene upload
-    def validate_scene(self):
-        assert isinstance(self.frames, List), "frames must be a list"
-        assert len(self.frames) > 0, "frames must have length of at least 1"
-        for frame in self.frames:
+        ), "Must specify index explicitly for all frames or infer from list position for all frames"
+
+    def validate(self):
+        assert (
+            len(self.frames_dict) > 0
+        ), "Must have at least 1 frame in a scene"
+        for frame in self.frames_dict.values():
             assert isinstance(
                 frame, Frame
-            ), "each element of frames must be a Frame object"
-        assert isinstance(
-            self.reference_id, str
-        ), "reference_id must be a string"
+            ), "Each frame in a scene must be a Frame object"
 
-    def add_item(self, item: SceneDatasetItem, index: int, sensor_name: str):
+    def add_item(self, index: int, sensor_name: str, item: SceneDatasetItem):
         if index not in self.frames_dict:
             new_frame = Frame(index, {sensor_name: item})
             self.frames_dict[index] = new_frame
@@ -150,13 +152,13 @@ class Scene:
             self.frames_dict[frame.index] = frame
 
     def to_payload(self) -> dict:
-        frames_payload = [frame.to_payload() for frame in self.frames]
-        if len(frames_payload) > 0 and frames_payload[0][INDEX_KEY] is None:
-            for i, _ in enumerate(frames_payload):
-                frames_payload[i][INDEX_KEY] = i
-        else:
-            frames_payload.sort(key=lambda x: x[INDEX_KEY])
-
+        ordered_frames = [
+            frame
+            for _, frame in sorted(
+                self.frames_dict.items(), key=lambda x: x[0]
+            )
+        ]
+        frames_payload = [frame.to_payload() for frame in ordered_frames]
         return {
             REFERENCE_ID_KEY: self.reference_id,
             FRAMES_KEY: frames_payload,
@@ -166,7 +168,9 @@ class Scene:
 
 @dataclass
 class LidarScene(Scene):
+    # TODO: call validate in scene upload
     def validate(self):
+        super().validate()
         lidar_sources = flatten(
             [
                 [
@@ -174,14 +178,14 @@ class LidarScene(Scene):
                     for source in frame.items.keys()
                     if frame.items[source].type == DatasetItemType.POINTCLOUD
                 ]
-                for frame in self.frames
+                for frame in self.frames_dict.values()
             ]
         )
         assert (
             len(Set(lidar_sources)) == 1
         ), "Each lidar scene must have exactly one lidar source"
 
-        for frame in self.frames:
+        for frame in self.frames_dict.values():
             num_pointclouds = sum(
                 [
                     int(item.type == DatasetItemType.POINTCLOUD)
