@@ -43,10 +43,15 @@ class CameraParams:
 @dataclass
 class SceneDatasetItem:
     url: str
-    type: DatasetItemType
+    type: str
     reference_id: Optional[str] = None
     metadata: Optional[dict] = None
     camera_params: Optional[CameraParams] = None
+
+    def __post_init__(self):
+        assert self.type in [
+            e.value for e in DatasetItemType
+        ], "type must be one of DatasetItemType's enum values i.e. `image` or `pointcloud`"
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -176,7 +181,8 @@ class LidarScene(Scene):
                 [
                     source
                     for source in frame.items.keys()
-                    if frame.items[source].type == DatasetItemType.POINTCLOUD
+                    if frame.items[source].type
+                    == DatasetItemType.POINTCLOUD.value
                 ]
                 for frame in self.frames_dict.values()
             ]
