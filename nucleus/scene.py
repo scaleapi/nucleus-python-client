@@ -100,23 +100,28 @@ class SceneDatasetItem:
 
     @classmethod
     def from_json(cls, payload: dict):
+        camera_params = (
+            CameraParams.from_json(payload[CAMERA_PARAMS_KEY])
+            if payload.get(CAMERA_PARAMS_KEY, None)
+            else None
+        )
         return cls(
-            url=payload.get(URL_KEY, ""),
-            type=payload.get(TYPE_KEY, ""),
+            url=payload[URL_KEY],
+            type=payload[TYPE_KEY],
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, None),
-            camera_params=CameraParams.from_json(
-                payload.get(CAMERA_PARAMS_KEY, {})
-            ),
+            camera_params=camera_params,
         )
 
     def to_payload(self) -> dict:
-        payload = {
+        payload: Dict[str, Any] = {
             URL_KEY: self.url,
             TYPE_KEY: self.type,
-            REFERENCE_ID_KEY: self.reference_id,
-            METADATA_KEY: self.metadata,
         }
+        if self.reference_id:
+            payload[REFERENCE_ID_KEY] = self.reference_id
+        if self.metadata:
+            payload[METADATA_KEY] = self.metadata
         if self.camera_params:
             payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
         return payload
@@ -213,11 +218,13 @@ class Scene(ABC):
             )
         ]
         frames_payload = [frame.to_payload() for frame in ordered_frames]
-        return {
+        payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
             FRAMES_KEY: frames_payload,
-            METADATA_KEY: self.metadata,
         }
+        if self.metadata:
+            payload[METADATA_KEY] = self.metadata
+        return payload
 
 
 @dataclass
@@ -243,8 +250,8 @@ class LidarScene(Scene):
         for frame in self.frames_dict.values():
             num_pointclouds = sum(
                 [
-                    int(item.type == DatasetItemType.POINTCLOUD)
-                    for item in frame.values()
+                    int(item.type == DatasetItemType.POINTCLOUD.value)
+                    for item in frame.items.values()
                 ]
             )
             assert (
