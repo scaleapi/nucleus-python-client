@@ -3,6 +3,7 @@
 from collections import defaultdict
 import io
 import uuid
+import json
 from typing import IO, Dict, List, Sequence, Union
 
 import requests
@@ -11,6 +12,7 @@ from requests.models import HTTPError
 from nucleus.annotation import (
     Annotation,
     BoxAnnotation,
+    CuboidAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
@@ -19,13 +21,14 @@ from .constants import (
     ANNOTATION_TYPES,
     ANNOTATIONS_KEY,
     BOX_TYPE,
+    CUBOID_TYPE,
     ITEM_KEY,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
     SEGMENTATION_TYPE,
 )
 from .dataset_item import DatasetItem
-from .prediction import BoxPrediction, PolygonPrediction
+from .prediction import BoxPrediction, CuboidPrediction, PolygonPrediction
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):
@@ -38,7 +41,10 @@ def flatten(t):
 
 def suggest_metadata_schema(
     data: Union[
-        List[DatasetItem], List[BoxPrediction], List[PolygonPrediction]
+        List[DatasetItem],
+        List[BoxPrediction],
+        List[PolygonPrediction],
+        List[CuboidPrediction],
     ]
 ):
     metadata_list: List[dict] = [
@@ -110,17 +116,23 @@ def convert_export_payload(api_payload):
         for box in row[BOX_TYPE]:
             box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
+        for cuboid in row[CUBOID_TYPE]:
+            cuboid[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[CUBOID_TYPE].append(CuboidAnnotation.from_json(cuboid))
         return_payload_row[ANNOTATIONS_KEY] = annotations
         return_payload.append(return_payload_row)
     return return_payload
 
 
 def serialize_and_write(
-    upload_units: Sequence[Union[DatasetItem, Annotation]], file_pointer
+    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]], file_pointer
 ):
     for unit in upload_units:
         try:
-            file_pointer.write(unit.to_json() + "\n")
+            if isinstance(unit, (DatasetItem, Annotation)):
+                file_pointer.write(unit.to_json() + "\n")
+            else:
+                file_pointer.write(json.dumps(unit) + "\n")
         except TypeError as e:
             type_name = type(unit).__name__
             message = (
@@ -147,7 +159,7 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union["DatasetItem", Annotation]],
+    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]],
     dataset_id: str,
     client,
 ):
