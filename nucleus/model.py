@@ -2,6 +2,7 @@ from typing import List, Optional, Dict, Union
 from .dataset import Dataset
 from .prediction import (
     BoxPrediction,
+    CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
@@ -57,7 +58,12 @@ class Model:
         name: str,
         dataset: Dataset,
         predictions: List[
-            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
         ],
         metadata: Optional[Dict] = None,
         asynchronous: bool = False,

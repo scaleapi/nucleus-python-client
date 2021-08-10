@@ -7,6 +7,7 @@ from nucleus.utils import serialize_and_write_to_presigned_url
 from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
+    CUBOID_TYPE,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     POLYGON_TYPE,
     REQUEST_ID_KEY,
@@ -15,6 +16,7 @@ from .constants import (
 )
 from .prediction import (
     BoxPrediction,
+    CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
@@ -89,14 +91,19 @@ class ModelRun:
     def predict(
         self,
         annotations: List[
-            Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
         ],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         asynchronous: bool = False,
     ) -> Union[dict, AsyncJob]:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param annotations: List[Union[BoxPrediction, PolygonPrediction]],
+        :param annotations: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         :return:
         {
             "model_run_id": str,
@@ -122,7 +129,7 @@ class ModelRun:
         """
         Returns Model Run Info For Dataset Item by its number.
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
-        :return: List[Union[BoxPrediction, PolygonPrediction]],
+        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         }
         """
         response = self._client.predictions_iloc(self.model_run_id, i)
@@ -132,7 +139,7 @@ class ModelRun:
         """
         Returns Model Run Info For Dataset Item by its reference_id.
         :param reference_id: reference_id of a dataset item.
-        :return: List[Union[BoxPrediction, PolygonPrediction]],
+        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         """
         response = self._client.predictions_ref_id(
             self.model_run_id, reference_id
@@ -167,7 +174,14 @@ class ModelRun:
         self, response: dict
     ) -> Union[
         dict,
-        List[Union[BoxPrediction, PolygonPrediction, SegmentationPrediction]],
+        List[
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
+        ],
     ]:
         annotation_payload = response.get(ANNOTATIONS_KEY, None)
         if not annotation_payload:
@@ -179,11 +193,13 @@ class ModelRun:
             Union[
                 Type[BoxPrediction],
                 Type[PolygonPrediction],
+                Type[CuboidPrediction],
                 Type[SegmentationPrediction],
             ],
         ] = {
             BOX_TYPE: BoxPrediction,
             POLYGON_TYPE: PolygonPrediction,
+            CUBOID_TYPE: CuboidPrediction,
             SEGMENTATION_TYPE: SegmentationPrediction,
         }
         for type_key in annotation_payload:
