@@ -24,7 +24,7 @@ from nucleus.constants import (
     Z_KEY,
 )
 from .annotation import Point3D
-from .utils import flatten
+from .dataset_item import is_local_path
 
 
 class DatasetItemType(Enum):
@@ -257,3 +257,18 @@ class LidarScene(Scene):
             assert (
                 num_pointclouds == 1
             ), "Each frame of a lidar scene must have exactly 1 pointcloud"
+
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]
+
+
+def check_all_scene_paths_remote(scenes: List[LidarScene]):
+    for scene in scenes:
+        for frame in scene.frames_dict.values():
+            for item in frame.items.values():
+                if is_local_path(getattr(item, URL_KEY)):
+                    raise ValueError(
+                        f"All paths for SceneDatasetItems must be remote, but {item.url} is either "
+                        "local, or a remote URL type that is not supported."
+                    )

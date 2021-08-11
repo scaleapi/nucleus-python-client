@@ -29,14 +29,11 @@ from .constants import (
 )
 from .dataset_item import DatasetItem
 from .prediction import BoxPrediction, CuboidPrediction, PolygonPrediction
+from .scene import LidarScene
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):
     return {metadata[key] for metadata in metadata_list if key in metadata}
-
-
-def flatten(t):
-    return [item for sublist in t for item in sublist]
 
 
 def suggest_metadata_schema(
@@ -125,7 +122,7 @@ def convert_export_payload(api_payload):
 
 
 def serialize_and_write(
-    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]], file_pointer
+    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]], file_pointer
 ):
     for unit in upload_units:
         try:
@@ -159,7 +156,7 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]],
+    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
     dataset_id: str,
     client,
 ):

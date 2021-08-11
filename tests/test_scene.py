@@ -1,4 +1,4 @@
-from nucleus.constants import SCENES
+from nucleus.constants import SCENES_KEY
 import pytest
 
 from .helpers import (
@@ -27,7 +27,7 @@ def test_scene_upload_sync(dataset):
     response = dataset.upload_scenes(payload)
 
     assert response["dataset_id"] == dataset.id
-    assert response["new_scenes"] == len(TEST_LIDAR_SCENES[SCENES])
+    assert response["new_scenes"] == len(TEST_LIDAR_SCENES[SCENES_KEY])
 
 
 @pytest.mark.integration
@@ -36,7 +36,7 @@ def test_scene_and_cuboid_upload_sync(dataset):
     response = dataset.upload_scenes(payload)
 
     assert response["dataset_id"] == dataset.id
-    assert response["new_scenes"] == len(TEST_LIDAR_SCENES[SCENES])
+    assert response["new_scenes"] == len(TEST_LIDAR_SCENES[SCENES_KEY])
 
     TEST_CUBOID_ANNOTATIONS[0]["dataset_item_id"] = dataset.items[0].item_id
     annotations = [CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])]

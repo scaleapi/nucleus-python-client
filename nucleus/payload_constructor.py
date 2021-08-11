@@ -1,5 +1,6 @@
 from typing import List, Optional, Dict, Union
 from .dataset_item import DatasetItem
+from .scene import LidarScene
 from .annotation import (
     BoxAnnotation,
     CuboidAnnotation,
@@ -19,6 +20,7 @@ from .constants import (
     REFERENCE_ID_KEY,
     ANNOTATIONS_KEY,
     ITEMS_KEY,
+    SCENES_KEY,
     UPDATE_KEY,
     MODEL_ID_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -38,6 +40,15 @@ def construct_append_payload(
         if not force
         else {ITEMS_KEY: items, UPDATE_KEY: True}
     )
+
+
+def construct_append_scenes_payload(
+    scene_list: List[LidarScene], update: Optional[bool] = False
+) -> dict:
+    scenes = []
+    for scene in scene_list:
+        scenes.append(scene.to_payload())
+    return {SCENES_KEY: scenes, UPDATE_KEY: update}
 
 
 def construct_annotation_payload(
