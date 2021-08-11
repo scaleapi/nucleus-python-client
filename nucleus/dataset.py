@@ -376,6 +376,12 @@ class Dataset:
     def delete_custom_index(self):
         return self._client.delete_custom_index(self.id)
 
+    def toggle_continuous_indexing(self, enable: bool = True):
+        return self._client.toggle_continuous_indexing(self.id, enable)
+
+    def kickoff_image_indexing(self):
+        return self._client.kickoff_image_indexing(self.id)
+
     def check_index_status(self, job_id: str):
         return self._client.check_index_status(job_id)
 

@@ -94,6 +94,7 @@ from .constants import (
     JOB_CREATION_TIME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
+    INDEX_CONTINUOUS_ENABLE_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
@@ -1203,6 +1204,37 @@ class NucleusClient:
             {},
             f"indexing/{dataset_id}",
             requests_command=requests.delete,
+        )
+
+    def toggle_continuous_indexing(self, dataset_id: str, enable: bool = True):
+        """
+        Toggles continuous indexing for a given dataset, which will automatically generate embeddings whenever
+        new images are uploaded. This endpoint is currently locked for most users. Please contact the nucleus team if
+        you wish to use this endpoint.
+
+        :param
+        dataset_id: id of dataset that continuous indexing is being toggled for
+        enable: boolean, sets whether we are enabling or disabling continuous indexing. The default behavior is to enable.
+        """
+        return self.make_request(
+            {INDEX_CONTINUOUS_ENABLE_KEY: enable},
+            f"indexing/{dataset_id}/toggleContinuous",
+            requests_command=requests.post,
+        )
+
+    def kickoff_image_indexing(self, dataset_id: str, enable: bool = True):
+        """
+        Starts indexing generating embeddings for images without embeddings in a given dataset. These embeddings will
+        be used for autotag and similarity search. This endpoint is currently locked for most users.
+        Please contact the nucleus team if you wish to use this endpoint.
+
+        :param
+        dataset_id: id of dataset for generating embeddings on.
+        """
+        return self.make_request(
+            {},
+            f"indexing/{dataset_id}/kickoffImage",
+            requests_command=requests.post,
         )
 
     def make_request(
