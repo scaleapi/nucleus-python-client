@@ -127,7 +127,7 @@ def serialize_and_write(
 ):
     for unit in upload_units:
         try:
-            if isinstance(unit, (DatasetItem, Annotation)):
+            if isinstance(unit, (DatasetItem, Annotation, LidarScene)):
                 file_pointer.write(unit.to_json() + "\n")
             else:
                 file_pointer.write(json.dumps(unit) + "\n")

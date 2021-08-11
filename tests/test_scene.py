@@ -37,6 +37,33 @@ def test_scene_upload_sync(dataset):
 
 
 @pytest.mark.integration
+def test_scene_upload_async(dataset):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    job = dataset.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+    status = job.status()
+
+    assert status == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "SceneUploadResponse": {
+                "errors": [],
+                "dataset_id": dataset.id,
+                "new_scenes": len(scenes),
+                "ignored_scenes": 0,
+                "scenes_errored": 0,
+            }
+        },
+    }
+
+
+@pytest.mark.integration
 def test_scene_and_cuboid_upload_sync(dataset):
     payload = TEST_LIDAR_SCENES
     scenes = [

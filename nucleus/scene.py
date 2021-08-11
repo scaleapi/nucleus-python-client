@@ -248,6 +248,9 @@ class Scene(ABC):
             payload[METADATA_KEY] = self.metadata
         return payload
 
+    def to_json(self) -> str:
+        return json.dumps(self.to_payload(), allow_nan=False)
+
 
 @dataclass
 class LidarScene(Scene):
