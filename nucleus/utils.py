@@ -122,7 +122,8 @@ def convert_export_payload(api_payload):
 
 
 def serialize_and_write(
-    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]], file_pointer
+    upload_units: Sequence[Union[DatasetItem, Annotation, Dict, LidarScene]],
+    file_pointer,
 ):
     for unit in upload_units:
         try:
@@ -156,7 +157,7 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
+    upload_units: Sequence[Union[DatasetItem, Annotation, Dict, LidarScene]],
     dataset_id: str,
     client,
 ):

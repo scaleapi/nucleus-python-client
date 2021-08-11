@@ -23,13 +23,13 @@ from .constants import (
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
-    FRAMES,
+    FRAMES_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SCENES_KEY,
     UPDATE_KEY,
-    URL,
+    URL_KEY,
 )
 from .dataset_item import (
     DatasetItem,
@@ -209,7 +209,7 @@ class Dataset:
         asynchronous=False,
     ) -> Union[dict, AsyncJob]:
         """
-        Appends scenes or images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
+        Appends images with metadata (dataset items) or scenes to the dataset. Overwrites images on collision if forced.
 
         Parameters:
         :param items: items to upload
@@ -224,20 +224,20 @@ class Dataset:
             'ignored_items': int,
         }
         """
-        all_dataset_items = all(
-            (isinstance(item, DatasetItem) for item in items)
-        )
-        all_scenes = all((isinstance(item, LidarScene) for item in items))
-        if not all_dataset_items and not all_scenes:
+        dataset_items = [
+            item for item in items if isinstance(item, DatasetItem)
+        ]
+        scenes = [item for item in items if isinstance(item, LidarScene)]
+        if dataset_items and scenes:
             raise Exception(
                 "You must append either DatasetItems or Scenes to the dataset."
             )
-        if all_scenes:
-            return self.append_scenes(items, update, asynchronous)
+        if scenes:
+            return self.append_scenes(scenes, update, asynchronous)
 
-        check_for_duplicate_reference_ids(items)
+        check_for_duplicate_reference_ids(dataset_items)
 
-        if len(items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
+        if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
                 "Tip: for large uploads, get faster performance by importing your data "
                 "into Nucleus directly from a cloud storage provider. See "
@@ -246,9 +246,9 @@ class Dataset:
             )
 
         if asynchronous:
-            check_all_paths_remote(items)
+            check_all_paths_remote(dataset_items)
             request_id = serialize_and_write_to_presigned_url(
-                items, self.id, self._client
+                dataset_items, self.id, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
@@ -258,7 +258,7 @@ class Dataset:
 
         return self._client.populate_dataset(
             self.id,
-            items,
+            dataset_items,
             update=update,
             batch_size=batch_size,
         )
@@ -309,8 +309,8 @@ class Dataset:
         """
         if asynchronous:
             for scene in payload[SCENES_KEY]:
-                for frame in scene[FRAMES]:
-                    check_all_frame_paths_remote(frame[URL])
+                for frame in scene[FRAMES_KEY]:
+                    check_all_frame_paths_remote(frame[URL_KEY])
             request_id = serialize_and_write_to_presigned_url(
                 [payload], self.id, self._client
             )
