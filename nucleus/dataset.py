@@ -270,6 +270,9 @@ class Dataset:
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
         """TODO: Add updated docstring here"""
+        for scene in scenes:
+            scene.validate()
+
         if asynchronous:
             check_all_scene_paths_remote(scenes)
             request_id = serialize_and_write_to_presigned_url(

@@ -32,17 +32,21 @@ TEST_LIDAR_SCENES = {
             "reference_id": "scene_1",
             "frames": [
                 {
-                    "lidar": {
-                        "url": TEST_POINTCLOUD_URLS[0],
-                        "type": "pointcloud",
-                        "reference_id": "lidar_frame_1",
-                        "metadata": {},
+                    "index": 0,
+                    "items": {
+                        "lidar": {
+                            "url": TEST_POINTCLOUD_URLS[0],
+                            "type": "pointcloud",
+                            "reference_id": "lidar_frame_1",
+                            "metadata": {},
+                        },
                     },
-                },
+                }
             ],
             "metadata": {},
         },
     ],
+    "update": False,
 }
 
 TEST_DATASET_ITEMS = [
