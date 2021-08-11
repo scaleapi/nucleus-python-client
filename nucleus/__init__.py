@@ -1206,11 +1206,11 @@ class NucleusClient:
             requests_command=requests.delete,
         )
 
-    def toggle_continuous_indexing(self, dataset_id: str, enable: bool = True):
+    def set_continuous_indexing(self, dataset_id: str, enable: bool = True):
         """
-        Toggles continuous indexing for a given dataset, which will automatically generate embeddings whenever
-        new images are uploaded. This endpoint is currently locked for most users. Please contact the nucleus team if
-        you wish to use this endpoint.
+        Sets continuous indexing for a given dataset, which will automatically generate embeddings whenever
+        new images are uploaded. This endpoint is currently only enabled for enterprise customers.
+        Please reach out to nucleus@scale.com if you wish to learn more.
 
         :param
         dataset_id: id of dataset that continuous indexing is being toggled for
@@ -1218,22 +1218,22 @@ class NucleusClient:
         """
         return self.make_request(
             {INDEX_CONTINUOUS_ENABLE_KEY: enable},
-            f"indexing/{dataset_id}/toggleContinuous",
+            f"indexing/{dataset_id}/setContinuous",
             requests_command=requests.post,
         )
 
-    def kickoff_image_indexing(self, dataset_id: str, enable: bool = True):
+    def create_image_index(self, dataset_id: str):
         """
-        Starts indexing generating embeddings for images without embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint is currently locked for most users.
-        Please contact the nucleus team if you wish to use this endpoint.
+        Starts generating embeddings for images that don't have embeddings in a given dataset. These embeddings will
+        be used for autotag and similarity search. This endpoint is currently only enabled for enterprise customers.
+        Please reach out to nucleus@scale.com if you wish to learn more.
 
         :param
         dataset_id: id of dataset for generating embeddings on.
         """
         return self.make_request(
             {},
-            f"indexing/{dataset_id}/kickoffImage",
+            f"indexing/{dataset_id}/internal/image",
             requests_command=requests.post,
         )
 
