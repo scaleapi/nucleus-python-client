@@ -43,7 +43,6 @@ def test_reprs():
     test_repr(
         ModelRun(
             client=client,
-            dataset_id="fake_dataset_id",
             model_run_id="fake_model_run_id",
         )
     )

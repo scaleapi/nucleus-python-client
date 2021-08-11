@@ -107,7 +107,7 @@ class ModelRun:
             check_all_mask_paths_remote(annotations)
 
             request_id = serialize_and_write_to_presigned_url(
-                annotations, self.model_run_id, self._client
+                annotations, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},

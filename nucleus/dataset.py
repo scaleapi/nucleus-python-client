@@ -174,7 +174,7 @@ class Dataset:
 
         if asynchronous:
             request_id = serialize_and_write_to_presigned_url(
-                annotations, self.id, self._client
+                annotations, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
@@ -233,7 +233,7 @@ class Dataset:
         if asynchronous:
             check_all_paths_remote(dataset_items)
             request_id = serialize_and_write_to_presigned_url(
-                dataset_items, self.id, self._client
+                dataset_items, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
