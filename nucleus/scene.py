@@ -1,7 +1,7 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Optional, Union, Any, Dict, List, Set
+from typing import Optional, Union, Any, Dict, List
 from enum import Enum
 from nucleus.constants import (
     CAMERA_PARAMS_KEY,
@@ -11,8 +11,6 @@ from nucleus.constants import (
     FX_KEY,
     FY_KEY,
     HEADING_KEY,
-    INDEX_KEY,
-    ITEMS_KEY,
     METADATA_KEY,
     POSITION_KEY,
     REFERENCE_ID_KEY,
@@ -145,13 +143,18 @@ class Frame:
     def add_item(self, item: SceneDatasetItem, sensor_name: str):
         self.items[sensor_name] = item
 
+    @classmethod
+    def from_json(cls, payload: dict):
+        items = {
+            sensor: SceneDatasetItem.from_json(item)
+            for sensor, item in payload.items()
+        }
+        return cls(items=items)
+
     def to_payload(self) -> dict:
         return {
-            INDEX_KEY: self.index,
-            ITEMS_KEY: {
-                sensor: scene_dataset_item.to_payload()
-                for sensor, scene_dataset_item in self.items.items()
-            },
+            sensor: scene_dataset_item.to_payload()
+            for sensor, scene_dataset_item in self.items.items()
         }
 
 
@@ -210,7 +213,26 @@ class Scene(ABC):
         ):
             self.frames_dict[frame.index] = frame
 
+    def validate_frames_dict(self):
+        is_continuous = set(list(range(len(self.frames_dict)))) == set(
+            self.frames_dict.keys()
+        )
+        assert (
+            is_continuous
+        ), "frames must be 0-indexed and continuous (no missing frames)"
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        frames_payload = payload.get(FRAMES_KEY, [])
+        frames = [Frame.from_json(frame) for frame in frames_payload]
+        return cls(
+            reference_id=payload[REFERENCE_ID_KEY],
+            frames=frames,
+            metadata=payload.get(METADATA_KEY, None),
+        )
+
     def to_payload(self) -> dict:
+        self.validate_frames_dict()
         ordered_frames = [
             frame
             for _, frame in sorted(
@@ -244,7 +266,7 @@ class LidarScene(Scene):
             ]
         )
         assert (
-            len(Set(lidar_sources)) == 1
+            len(set(lidar_sources)) == 1
         ), "Each lidar scene must have exactly one lidar source"
 
         for frame in self.frames_dict.values():
