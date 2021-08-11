@@ -196,7 +196,7 @@ class CuboidPrediction(CuboidAnnotation):
             label=payload.get(LABEL_KEY, 0),
             position=Point3D.from_json(geometry.get(POSITION_KEY, {})),
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
-            yaw=payload.get(YAW_KEY, 0),
+            yaw=geometry.get(YAW_KEY, 0),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
