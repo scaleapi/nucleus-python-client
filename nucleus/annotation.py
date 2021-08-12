@@ -310,15 +310,6 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-def check_all_frame_paths_remote(frames: List[str]):
-    for frame_url in frames:
-        if is_local_path(frame_url):
-            raise ValueError(
-                f"All paths must be remote, but {frame_url} is either "
-                "local, or a remote URL type that is not supported."
-            )
-
-
 def check_all_mask_paths_remote(
     annotations: Sequence[Union[Annotation]],
 ):

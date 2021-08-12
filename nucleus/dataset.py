@@ -13,7 +13,6 @@ from nucleus.utils import (
 from .annotation import (
     Annotation,
     check_all_mask_paths_remote,
-    check_all_frame_paths_remote,
 )
 from .constants import (
     DATASET_ITEM_IDS_KEY,
@@ -23,13 +22,10 @@ from .constants import (
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
-    FRAMES_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
-    SCENES_KEY,
     UPDATE_KEY,
-    URL_KEY,
 )
 from .dataset_item import (
     DatasetItem,
@@ -43,6 +39,7 @@ from .payload_constructor import (
 )
 
 WARN_FOR_LARGE_UPLOAD = 50000
+WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
 class Dataset:
@@ -269,9 +266,32 @@ class Dataset:
         update: Optional[bool] = False,
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
-        """TODO: Add updated docstring here"""
+        """
+        Appends scenes with given frames (containing pointclouds and optional images) to the dataset
+
+        Parameters:
+        :param scenes: scenes to upload
+        :param update: if True, overwrite scene on collision
+        :param asynchronous: if True, return a job object representing asynchronous ingestion job
+        :return:
+        {
+            'dataset_id': str,
+            'new_scenes': int,
+            'ignored_scenes': int,
+            'scenes_errored': int,
+            'errors': List[str],
+        }
+        """
         for scene in scenes:
             scene.validate()
+
+        if len(scenes) > WARN_FOR_LARGE_SCENES_UPLOAD and not asynchronous:
+            print(
+                "Tip: for large uploads, get faster performance by importing your data "
+                "into Nucleus directly from a cloud storage provider. See "
+                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+                " for details."
+            )
 
         if asynchronous:
             check_all_scene_paths_remote(scenes)
@@ -285,45 +305,6 @@ class Dataset:
             return AsyncJob.from_json(response, self._client)
 
         payload = construct_append_scenes_payload(scenes, update)
-        response = self._client.make_request(
-            payload=payload,
-            route=f"{self.id}/upload_scenes",
-        )
-        return response
-
-    def upload_scenes(
-        self,
-        payload: dict,
-        update: Optional[bool] = False,
-        asynchronous: bool = False,
-    ) -> Union[dict, AsyncJob]:
-        """
-        Uploads scenes with given frames to the dataset
-
-        Parameters:
-        :param payload: dictionary containing scenes to be uploaded
-        :param update: if True, overwrite scene on collision
-        :param aynchronous: if True, return a job object representing asynchronous ingestion job
-        :return:
-        {
-            'dataset_id': str,
-            'new_scenes': int,
-        }
-        """
-        if asynchronous:
-            for scene in payload[SCENES_KEY]:
-                for frame in scene[FRAMES_KEY]:
-                    check_all_frame_paths_remote(frame[URL_KEY])
-            request_id = serialize_and_write_to_presigned_url(
-                [payload], self.id, self._client
-            )
-            response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
-                route=f"{self.id}/upload_scenes?async=1",
-            )
-            return AsyncJob.from_json(response, self._client)
-
-        # TODO: create client method for sync scene upload
         response = self._client.make_request(
             payload=payload,
             route=f"{self.id}/upload_scenes",

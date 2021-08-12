@@ -1,16 +1,16 @@
-from nucleus.constants import SCENES_KEY, UPDATE_KEY
 import pytest
+from nucleus.constants import SCENES_KEY, UPDATE_KEY
+
+from nucleus import (
+    CuboidAnnotation,
+    LidarScene,
+)
 
 from .helpers import (
     TEST_DATASET_3D_NAME,
     TEST_CUBOID_ANNOTATIONS,
     TEST_LIDAR_SCENES,
     assert_cuboid_annotation_matches_dict,
-)
-
-from nucleus import (
-    CuboidAnnotation,
-    LidarScene,
 )
 
 

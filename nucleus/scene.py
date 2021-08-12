@@ -130,8 +130,8 @@ class SceneDatasetItem:
 
 @dataclass
 class Frame:
-    index: Union[int, None] = None
     items: Dict[str, SceneDatasetItem] = field(default_factory=dict)
+    index: Union[int, None] = None
 
     def __post_init__(self):
         for key, value in self.items.items():
@@ -197,7 +197,7 @@ class Scene(ABC):
 
     def add_item(self, index: int, sensor_name: str, item: SceneDatasetItem):
         if index not in self.frames_dict:
-            new_frame = Frame(index, {sensor_name: item})
+            new_frame = Frame(index=index, items={sensor_name: item})
             self.frames_dict[index] = new_frame
         else:
             self.frames_dict[index].items[sensor_name] = item
@@ -254,7 +254,6 @@ class Scene(ABC):
 
 @dataclass
 class LidarScene(Scene):
-    # TODO: call validate in scene upload
     def validate(self):
         super().validate()
         lidar_sources = flatten(
