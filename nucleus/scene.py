@@ -2,159 +2,43 @@ import json
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import Optional, Union, Any, Dict, List
-from enum import Enum
 from nucleus.constants import (
-    CAMERA_PARAMS_KEY,
-    CX_KEY,
-    CY_KEY,
     FRAMES_KEY,
-    FX_KEY,
-    FY_KEY,
-    HEADING_KEY,
     METADATA_KEY,
-    POSITION_KEY,
     REFERENCE_ID_KEY,
-    TYPE_KEY,
-    URL_KEY,
-    W_KEY,
-    X_KEY,
-    Y_KEY,
-    Z_KEY,
+    POINTCLOUD_LOCATION_KEY,
 )
-from .annotation import Point3D
-from .dataset_item import is_local_path
-
-
-class DatasetItemType(Enum):
-    IMAGE = "image"
-    POINTCLOUD = "pointcloud"
-
-
-@dataclass
-class Quaternion:
-    x: float
-    y: float
-    z: float
-    w: float
-
-    @classmethod
-    def from_json(cls, payload: Dict[str, float]):
-        return cls(
-            payload[X_KEY], payload[Y_KEY], payload[Z_KEY], payload[W_KEY]
-        )
-
-    def to_payload(self) -> dict:
-        return {
-            X_KEY: self.x,
-            Y_KEY: self.y,
-            Z_KEY: self.z,
-            W_KEY: self.w,
-        }
-
-
-@dataclass
-class CameraParams:
-    position: Point3D
-    heading: Quaternion
-    fx: float
-    fy: float
-    cx: float
-    cy: float
-
-    @classmethod
-    def from_json(cls, payload: Dict[str, Any]):
-        return cls(
-            Point3D.from_json(payload[POSITION_KEY]),
-            Quaternion.from_json(payload[HEADING_KEY]),
-            payload[FX_KEY],
-            payload[FY_KEY],
-            payload[CX_KEY],
-            payload[CY_KEY],
-        )
-
-    def to_payload(self) -> dict:
-        return {
-            POSITION_KEY: self.position.to_payload(),
-            HEADING_KEY: self.heading.to_payload(),
-            FX_KEY: self.fx,
-            FY_KEY: self.fy,
-            CX_KEY: self.cx,
-            CY_KEY: self.cy,
-        }
-
-
-@dataclass
-class SceneDatasetItem:
-    url: str
-    type: str
-    reference_id: Optional[str] = None
-    metadata: Optional[dict] = None
-    camera_params: Optional[CameraParams] = None
-
-    def __post_init__(self):
-        assert self.type in [
-            e.value for e in DatasetItemType
-        ], "type must be one of DatasetItemType's enum values i.e. `image` or `pointcloud`"
-
-    @classmethod
-    def from_json(cls, payload: dict):
-        camera_params = (
-            CameraParams.from_json(payload[CAMERA_PARAMS_KEY])
-            if payload.get(CAMERA_PARAMS_KEY, None)
-            else None
-        )
-        return cls(
-            url=payload[URL_KEY],
-            type=payload[TYPE_KEY],
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            metadata=payload.get(METADATA_KEY, None),
-            camera_params=camera_params,
-        )
-
-    def to_payload(self) -> dict:
-        payload: Dict[str, Any] = {
-            URL_KEY: self.url,
-            TYPE_KEY: self.type,
-        }
-        if self.reference_id:
-            payload[REFERENCE_ID_KEY] = self.reference_id
-        if self.metadata:
-            payload[METADATA_KEY] = self.metadata
-        if self.camera_params:
-            payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
-        return payload
-
-    def to_json(self) -> str:
-        return json.dumps(self.to_payload(), allow_nan=False)
+from .annotation import is_local_path
+from .dataset_item import DatasetItemType, DatasetItem
 
 
 @dataclass
 class Frame:
-    items: Dict[str, SceneDatasetItem] = field(default_factory=dict)
+    items: Dict[str, DatasetItem] = field(default_factory=dict)
     index: Union[int, None] = None
 
     def __post_init__(self):
         for key, value in self.items.items():
             assert isinstance(key, str), "All keys must be names of sensors"
             assert isinstance(
-                value, SceneDatasetItem
-            ), "All values must be SceneDatasetItems"
+                value, DatasetItem
+            ), "All values must be DatasetItems"
 
-    def add_item(self, item: SceneDatasetItem, sensor_name: str):
+    def add_item(self, item: DatasetItem, sensor_name: str):
         self.items[sensor_name] = item
 
     @classmethod
     def from_json(cls, payload: dict):
         items = {
-            sensor: SceneDatasetItem.from_json(item)
+            sensor: DatasetItem.from_json(item, is_scene=True)
             for sensor, item in payload.items()
         }
         return cls(items=items)
 
     def to_payload(self) -> dict:
         return {
-            sensor: scene_dataset_item.to_payload()
-            for sensor, scene_dataset_item in self.items.items()
+            sensor: dataset_item.to_payload(is_scene=True)
+            for sensor, dataset_item in self.items.items()
         }
 
 
@@ -195,7 +79,7 @@ class Scene(ABC):
                 frame, Frame
             ), "Each frame in a scene must be a Frame object"
 
-    def add_item(self, index: int, sensor_name: str, item: SceneDatasetItem):
+    def add_item(self, index: int, sensor_name: str, item: DatasetItem):
         if index not in self.frames_dict:
             new_frame = Frame(index=index, items={sensor_name: item})
             self.frames_dict[index] = new_frame
@@ -261,8 +145,7 @@ class LidarScene(Scene):
                 [
                     source
                     for source in frame.items.keys()
-                    if frame.items[source].type
-                    == DatasetItemType.POINTCLOUD.value
+                    if frame.items[source].type == DatasetItemType.POINTCLOUD
                 ]
                 for frame in self.frames_dict.values()
             ]
@@ -274,7 +157,7 @@ class LidarScene(Scene):
         for frame in self.frames_dict.values():
             num_pointclouds = sum(
                 [
-                    int(item.type == DatasetItemType.POINTCLOUD.value)
+                    int(item.type == DatasetItemType.POINTCLOUD)
                     for item in frame.items.values()
                 ]
             )
@@ -291,8 +174,8 @@ def check_all_scene_paths_remote(scenes: List[LidarScene]):
     for scene in scenes:
         for frame in scene.frames_dict.values():
             for item in frame.items.values():
-                if is_local_path(getattr(item, URL_KEY)):
+                if is_local_path(getattr(item, POINTCLOUD_LOCATION_KEY)):
                     raise ValueError(
-                        f"All paths for SceneDatasetItems must be remote, but {item.url} is either "
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.url} is either "
                         "local, or a remote URL type that is not supported."
                     )

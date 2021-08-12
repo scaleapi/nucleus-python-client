@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Union
-from nucleus.dataset_item import is_local_path
+from urllib.parse import urlparse
 
 from .constants import (
     ANNOTATION_ID_KEY,
@@ -308,6 +308,10 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
+
+
+def is_local_path(path: str) -> bool:
+    return urlparse(path).scheme not in {"https", "http", "s3", "gs"}
 
 
 def check_all_mask_paths_remote(

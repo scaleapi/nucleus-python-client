@@ -33,8 +33,7 @@ TEST_LIDAR_SCENES = {
             "frames": [
                 {
                     "lidar": {
-                        "url": TEST_POINTCLOUD_URLS[0],
-                        "type": "pointcloud",
+                        "pointcloud_url": TEST_POINTCLOUD_URLS[0],
                         "reference_id": "lidar_frame_1",
                         "metadata": {},
                     },
