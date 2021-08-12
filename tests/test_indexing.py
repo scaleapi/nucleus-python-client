@@ -57,3 +57,10 @@ def test_index_integration(dataset):
     assert STATUS_KEY in job_status_response
     assert JOB_ID_KEY in job_status_response
     assert MESSAGE_KEY in job_status_response
+
+
+def test_generate_image_index_integration(dataset):
+    job = dataset.create_image_index()
+    job.sleep_until_complete()
+    job.status()
+    assert job.job_last_known_status == "Completed"
