@@ -7,6 +7,7 @@ from nucleus.constants import (
     METADATA_KEY,
     REFERENCE_ID_KEY,
     POINTCLOUD_LOCATION_KEY,
+    IMAGE_LOCATION_KEY,
 )
 from .annotation import is_local_path
 from .dataset_item import DatasetItemType, DatasetItem
@@ -174,8 +175,15 @@ def check_all_scene_paths_remote(scenes: List[LidarScene]):
     for scene in scenes:
         for frame in scene.frames_dict.values():
             for item in frame.items.values():
-                if is_local_path(getattr(item, POINTCLOUD_LOCATION_KEY)):
+                pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
+                if pointcloud_location and is_local_path(pointcloud_location):
                     raise ValueError(
-                        f"All paths for DatasetItems in a Scene must be remote, but {item.url} is either "
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                        "local, or a remote URL type that is not supported."
+                    )
+                image_location = getattr(item, IMAGE_LOCATION_KEY)
+                if image_location and is_local_path(image_location):
+                    raise ValueError(
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
                         "local, or a remote URL type that is not supported."
                     )
