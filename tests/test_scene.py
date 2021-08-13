@@ -1,5 +1,13 @@
 import pytest
-from nucleus.constants import SCENES_KEY, UPDATE_KEY
+from nucleus.constants import (
+    ANNOTATIONS_KEY,
+    DATASET_ITEM_ID_KEY,
+    FRAMES_KEY,
+    ITEM_KEY,
+    REFERENCE_ID_KEY,
+    SCENES_KEY,
+    UPDATE_KEY,
+)
 
 from nucleus import (
     CuboidAnnotation,
@@ -76,7 +84,12 @@ def test_scene_and_cuboid_upload_sync(dataset):
     assert response["dataset_id"] == dataset.id
     assert response["new_scenes"] == len(scenes)
 
-    TEST_CUBOID_ANNOTATIONS[0]["dataset_item_id"] = dataset.items[0].item_id
+    lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
+        REFERENCE_ID_KEY
+    ]
+    lidar_item = dataset.refloc(lidar_item_ref)[ITEM_KEY]
+    TEST_CUBOID_ANNOTATIONS[0][DATASET_ITEM_ID_KEY] = lidar_item.item_id
+
     annotations = [CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])]
     response = dataset.annotate(annotations)
 
@@ -84,9 +97,12 @@ def test_scene_and_cuboid_upload_sync(dataset):
     assert response["annotations_processed"] == len(annotations)
     assert response["annotations_ignored"] == 0
 
-    response = dataset.loc(annotations[0].item_id)["annotations"]["cuboid"]
+    response = dataset.loc(annotations[0].item_id)[ANNOTATIONS_KEY]["cuboid"]
     assert len(response) == 1
     response_annotation = response[0]
     assert_cuboid_annotation_matches_dict(
         response_annotation, TEST_CUBOID_ANNOTATIONS[0]
     )
+
+    lidar_item_ann = dataset.refloc(lidar_item_ref)[ANNOTATIONS_KEY]["cuboid"]
+    assert annotations == lidar_item_ann
