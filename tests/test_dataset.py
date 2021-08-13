@@ -218,6 +218,7 @@ def test_dataset_append_async(dataset: Dataset):
     job.sleep_until_complete()
     status = job.status()
     status["message"]["PayloadUrl"] = ""
+    print(status)
     assert status == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -225,12 +226,6 @@ def test_dataset_append_async(dataset: Dataset):
             "PayloadUrl": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
-            "ingest_to_reupload_queue": {
-                "epoch": 1,
-                "total": 5,
-                "datasetId": f"{dataset.id}",
-                "processed": 5,
-            },
         },
     }
 
@@ -258,18 +253,7 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
         "status": "Errored",
         "message": {
             "PayloadUrl": "",
-            "final_error": (
-                "One or more of the images you attempted to upload did not process"
-                " correctly. Please see the status for an overview and the errors for "
-                "more detailed messages."
-            ),
             "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
-            "ingest_to_reupload_queue": {
-                "epoch": 1,
-                "total": 5,
-                "datasetId": f"{dataset.id}",
-                "processed": 5,
-            },
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
     }
