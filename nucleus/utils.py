@@ -29,6 +29,7 @@ from .constants import (
 )
 from .dataset_item import DatasetItem
 from .prediction import BoxPrediction, CuboidPrediction, PolygonPrediction
+from .scene import LidarScene
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):
@@ -121,11 +122,12 @@ def convert_export_payload(api_payload):
 
 
 def serialize_and_write(
-    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]], file_pointer
+    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
+    file_pointer,
 ):
     for unit in upload_units:
         try:
-            if isinstance(unit, (DatasetItem, Annotation)):
+            if isinstance(unit, (DatasetItem, Annotation, LidarScene)):
                 file_pointer.write(unit.to_json() + "\n")
             else:
                 file_pointer.write(json.dumps(unit) + "\n")
@@ -155,7 +157,7 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union[DatasetItem, Annotation, Dict]],
+    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
     dataset_id: str,
     client,
 ):

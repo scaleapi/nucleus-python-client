@@ -13,7 +13,6 @@ from nucleus.utils import (
 from .annotation import (
     Annotation,
     check_all_mask_paths_remote,
-    check_all_frame_paths_remote,
 )
 from .constants import (
     DATASET_ITEM_IDS_KEY,
@@ -23,22 +22,24 @@ from .constants import (
     DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
-    FRAMES,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
-    SCENES,
     UPDATE_KEY,
-    URL,
 )
 from .dataset_item import (
     DatasetItem,
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
-from .payload_constructor import construct_model_run_creation_payload
+from .scene import LidarScene, check_all_scene_paths_remote
+from .payload_constructor import (
+    construct_append_scenes_payload,
+    construct_model_run_creation_payload,
+)
 
 WARN_FOR_LARGE_UPLOAD = 50000
+WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
 class Dataset:
@@ -199,16 +200,16 @@ class Dataset:
 
     def append(
         self,
-        dataset_items: List[DatasetItem],
+        items: Union[List[DatasetItem], List[LidarScene]],
         update: Optional[bool] = False,
         batch_size: Optional[int] = 20,
         asynchronous=False,
     ) -> Union[dict, AsyncJob]:
         """
-        Appends images with metadata (dataset items) to the dataset. Overwrites images on collision if forced.
+        Appends images with metadata (dataset items) or scenes to the dataset. Overwrites images on collision if forced.
 
         Parameters:
-        :param dataset_items: items to upload
+        :param items: items to upload
         :param update: if True overwrites images and metadata on collision
         :param batch_size: batch parameter for long uploads
         :param aynchronous: if True, return a job object representing asynchronous ingestion job.
@@ -220,6 +221,17 @@ class Dataset:
             'ignored_items': int,
         }
         """
+        dataset_items = [
+            item for item in items if isinstance(item, DatasetItem)
+        ]
+        scenes = [item for item in items if isinstance(item, LidarScene)]
+        if dataset_items and scenes:
+            raise Exception(
+                "You must append either DatasetItems or Scenes to the dataset."
+            )
+        if scenes:
+            return self.append_scenes(scenes, update, asynchronous)
+
         check_for_duplicate_reference_ids(dataset_items)
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
@@ -248,31 +260,43 @@ class Dataset:
             batch_size=batch_size,
         )
 
-    def upload_scenes(
+    def append_scenes(
         self,
-        payload: dict,
+        scenes: List[LidarScene],
         update: Optional[bool] = False,
-        asynchronous: bool = False,
+        asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
         """
-        Uploads scenes with given frames to the dataset
+        Appends scenes with given frames (containing pointclouds and optional images) to the dataset
 
         Parameters:
-        :param payload: dictionary containing scenes to be uploaded
+        :param scenes: scenes to upload
         :param update: if True, overwrite scene on collision
-        :param aynchronous: if True, return a job object representing asynchronous ingestion job
+        :param asynchronous: if True, return a job object representing asynchronous ingestion job
         :return:
         {
             'dataset_id': str,
             'new_scenes': int,
+            'ignored_scenes': int,
+            'scenes_errored': int,
+            'errors': List[str],
         }
         """
+        for scene in scenes:
+            scene.validate()
+
+        if len(scenes) > WARN_FOR_LARGE_SCENES_UPLOAD and not asynchronous:
+            print(
+                "Tip: for large uploads, get faster performance by importing your data "
+                "into Nucleus directly from a cloud storage provider. See "
+                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+                " for details."
+            )
+
         if asynchronous:
-            for scene in payload[SCENES]:
-                for frame in scene[FRAMES]:
-                    check_all_frame_paths_remote(frame[URL])
+            check_all_scene_paths_remote(scenes)
             request_id = serialize_and_write_to_presigned_url(
-                [payload], self.id, self._client
+                scenes, self.id, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
@@ -280,7 +304,7 @@ class Dataset:
             )
             return AsyncJob.from_json(response, self._client)
 
-        # TODO: create client method for sync scene upload
+        payload = construct_append_scenes_payload(scenes, update)
         response = self._client.make_request(
             payload=payload,
             route=f"{self.id}/upload_scenes",

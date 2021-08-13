@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Union
-from nucleus.dataset_item import is_local_path
+from urllib.parse import urlparse
 
 from .constants import (
     ANNOTATION_ID_KEY,
@@ -310,13 +310,8 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         }
 
 
-def check_all_frame_paths_remote(frames: List[str]):
-    for frame_url in frames:
-        if is_local_path(frame_url):
-            raise ValueError(
-                f"All paths must be remote, but {frame_url} is either "
-                "local, or a remote URL type that is not supported."
-            )
+def is_local_path(path: str) -> bool:
+    return urlparse(path).scheme not in {"https", "http", "s3", "gs"}
 
 
 def check_all_mask_paths_remote(

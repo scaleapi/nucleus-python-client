@@ -109,7 +109,7 @@ from .constants import (
     UPDATE_KEY,
 )
 from .dataset import Dataset
-from .dataset_item import DatasetItem
+from .dataset_item import DatasetItem, CameraParams
 from .errors import (
     DatasetItemRetrievalError,
     ModelCreationError,
@@ -135,6 +135,7 @@ from .prediction import (
 )
 from .slice import Slice
 from .upload_response import UploadResponse
+from .scene import Frame, Scene, LidarScene
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.

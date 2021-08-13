@@ -33,16 +33,35 @@ TEST_LIDAR_SCENES = {
             "frames": [
                 {
                     "lidar": {
-                        "url": TEST_POINTCLOUD_URLS[0],
-                        "type": "pointcloud",
+                        "pointcloud_url": TEST_POINTCLOUD_URLS[0],
                         "reference_id": "lidar_frame_1",
                         "metadata": {},
                     },
-                },
+                    "camera": {
+                        "image_url": TEST_IMG_URLS[0],
+                        "reference_id": "camera_frame_1",
+                        "metadata": {
+                            "camera_params": {
+                                "position": {"x": 0, "y": 0, "z": 0},
+                                "heading": {
+                                    "w": 0.6,
+                                    "x": -0.6,
+                                    "y": 0.3,
+                                    "z": -0.3,
+                                },
+                                "fx": 1000,
+                                "fy": 1000,
+                                "cx": 1000,
+                                "cy": 500,
+                            }
+                        },
+                    },
+                }
             ],
             "metadata": {},
         },
     ],
+    "update": False,
 }
 
 TEST_DATASET_ITEMS = [
