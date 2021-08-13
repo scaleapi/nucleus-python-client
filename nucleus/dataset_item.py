@@ -161,7 +161,7 @@ class DatasetItem:  # pylint: disable=R0902
         if self.item_id:
             payload[DATASET_ITEM_ID_KEY] = self.item_id
         if self.camera_params:
-            payload[CAMERA_PARAMS_KEY] = self.camera_params
+            payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
 
         return payload
 
