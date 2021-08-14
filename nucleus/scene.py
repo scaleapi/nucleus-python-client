@@ -145,6 +145,10 @@ class Scene(ABC):
     def get_sensors(self):
         return list(self.sensors)
 
+    def get_item(self, index: int, sensor_name: str):
+        frame = self.get_frame(index)
+        return frame.get_item(sensor_name)
+
     def get_items_from_sensor(self, sensor_name: str):
         if sensor_name not in self.sensors:
             raise ValueError(
