@@ -101,7 +101,7 @@ class Scene(ABC):
         ), "Must specify index explicitly for all frames or infer from list position for all frames"
 
     def validate(self):
-        assert self.length() > 0, "Must have at least 1 frame in a scene"
+        assert self.length > 0, "Must have at least 1 frame in a scene"
         for frame in self.frames_dict.values():
             assert isinstance(
                 frame, Frame
@@ -170,8 +170,8 @@ class Scene(ABC):
     def info(self):
         return {
             REFERENCE_ID_KEY: self.reference_id,
-            LENGTH_KEY: self.length(),
-            NUM_SENSORS_KEY: self.num_sensors(),
+            LENGTH_KEY: self.length,
+            NUM_SENSORS_KEY: self.num_sensors,
         }
 
     def validate_frames_dict(self):
