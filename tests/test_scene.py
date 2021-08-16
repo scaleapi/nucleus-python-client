@@ -3,10 +3,12 @@ from nucleus.constants import (
     ANNOTATIONS_KEY,
     FRAMES_KEY,
     IMAGE_KEY,
+    IMAGE_URL_KEY,
     LENGTH_KEY,
     METADATA_KEY,
     NUM_SENSORS_KEY,
     POINTCLOUD_KEY,
+    POINTCLOUD_URL_KEY,
     REFERENCE_ID_KEY,
     SCENES_KEY,
     TYPE_KEY,
@@ -18,6 +20,7 @@ from nucleus import (
     CuboidAnnotation,
     LidarScene,
     Frame,
+    DatasetItem,
 )
 
 from nucleus.scene import (
@@ -43,7 +46,7 @@ def dataset(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
 
 
-def test_frame_add_item(dataset):
+def test_frame_add_item():
     frame = Frame(index=0)
     frame.add_item(TEST_DATASET_ITEMS[0], "camera")
     frame.add_item(TEST_LIDAR_ITEMS[0], "lidar")
@@ -69,7 +72,51 @@ def test_frame_add_item(dataset):
     }
 
 
-def test_scene_property_methods(dataset):
+def test_scene_from_json():
+    payload = TEST_LIDAR_SCENES
+    scene_json = payload[SCENES_KEY][0]
+    scene = LidarScene.from_json(scene_json)
+
+    frames = scene_json[FRAMES_KEY]
+    camera_item_1 = frames[0]["camera"]
+    camera_item = DatasetItem(
+        camera_item_1[IMAGE_URL_KEY],
+        camera_item_1[REFERENCE_ID_KEY],
+        metadata=camera_item_1[METADATA_KEY],
+    )
+    lidar_item_1 = frames[0]["lidar"]
+    lidar_item_f1 = DatasetItem(
+        pointcloud_location=lidar_item_1[POINTCLOUD_URL_KEY],
+        reference_id=lidar_item_1[REFERENCE_ID_KEY],
+        metadata=lidar_item_1[METADATA_KEY],
+    )
+    expected_items_1 = {
+        "camera": camera_item,
+        "lidar": lidar_item_f1,
+    }
+    lidar_item_2 = frames[1]["lidar"]
+    lidar_item_f2 = DatasetItem(
+        pointcloud_location=lidar_item_2[POINTCLOUD_URL_KEY],
+        reference_id=lidar_item_2[REFERENCE_ID_KEY],
+        metadata=lidar_item_2[METADATA_KEY],
+    )
+    expected_items_2 = {
+        "lidar": lidar_item_f2,
+    }
+
+    expected_frames = [Frame(expected_items_1), Frame(expected_items_2)]
+    expected_scene = LidarScene(
+        scene_json[REFERENCE_ID_KEY], expected_frames, metadata={}
+    )
+    assert sorted(
+        scene.get_items(), key=lambda item: item.reference_id
+    ) == sorted(expected_scene.get_items(), key=lambda item: item.reference_id)
+    assert scene.get_frames() == expected_scene.get_frames()
+    assert set(scene.get_sensors()) == set(expected_scene.get_sensors())
+    assert scene.to_payload() == expected_scene.to_payload()
+
+
+def test_scene_property_methods():
     payload = TEST_LIDAR_SCENES
     scene_json = payload[SCENES_KEY][0]
     scene = LidarScene.from_json(scene_json)
@@ -86,7 +133,7 @@ def test_scene_property_methods(dataset):
     }
 
 
-def test_scene_add_item(dataset):
+def test_scene_add_item():
     scene_ref_id = "scene_1"
     scene = LidarScene(scene_ref_id)
     scene.add_item(0, "camera", TEST_DATASET_ITEMS[0])
@@ -139,7 +186,7 @@ def test_scene_add_item(dataset):
     }
 
 
-def test_scene_add_frame(dataset):
+def test_scene_add_frame():
     frame_1 = Frame()
     frame_1.add_item(TEST_DATASET_ITEMS[0], "camera")
     frame_1.add_item(TEST_LIDAR_ITEMS[0], "lidar")

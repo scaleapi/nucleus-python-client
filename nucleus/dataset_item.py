@@ -118,14 +118,14 @@ class DatasetItem:  # pylint: disable=R0902
 
     @classmethod
     def from_json(cls, payload: dict, is_scene=False):
-        image_url = payload.get(IMAGE_URL_KEY, "") or payload.get(
-            ORIGINAL_IMAGE_URL_KEY, ""
+        image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
+            ORIGINAL_IMAGE_URL_KEY, None
         )
 
         if is_scene:
             return cls(
                 image_location=image_url,
-                pointcloud_location=payload.get(POINTCLOUD_URL_KEY, ""),
+                pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),
                 reference_id=payload.get(REFERENCE_ID_KEY, None),
                 item_id=payload.get(DATASET_ITEM_ID_KEY, None),
                 metadata=payload.get(METADATA_KEY, {}),
