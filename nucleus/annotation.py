@@ -295,7 +295,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         )
 
     def to_payload(self) -> dict:
-        return {
+        payload = {
             LABEL_KEY: self.label,
             TYPE_KEY: CUBOID_TYPE,
             GEOMETRY_KEY: {
@@ -303,11 +303,15 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
                 DIMENSIONS_KEY: self.dimensions.to_payload(),
                 YAW_KEY: self.yaw,
             },
-            REFERENCE_ID_KEY: self.reference_id,
-            ITEM_ID_KEY: self.item_id,
-            ANNOTATION_ID_KEY: self.annotation_id,
-            METADATA_KEY: self.metadata,
         }
+        if self.reference_id:
+            payload[REFERENCE_ID_KEY] = self.reference_id
+        if self.annotation_id:
+            payload[ANNOTATION_ID_KEY] = self.annotation_id
+        if self.metadata:
+            payload[METADATA_KEY] = self.metadata
+
+        return payload
 
 
 def is_local_path(path: str) -> bool:
