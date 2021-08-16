@@ -24,6 +24,10 @@ TEST_IMG_URLS = [
 
 TEST_POINTCLOUD_URLS = [
     "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-0.json",
+    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-1.json",
+    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-2.json",
+    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-3.json",
+    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-4.json",
 ]
 
 TEST_LIDAR_SCENES = {
@@ -56,7 +60,14 @@ TEST_LIDAR_SCENES = {
                             }
                         },
                     },
-                }
+                },
+                {
+                    "lidar": {
+                        "pointcloud_url": TEST_POINTCLOUD_URLS[0],
+                        "reference_id": "lidar_frame_2",
+                        "metadata": {},
+                    },
+                },
             ],
             "metadata": {},
         },
@@ -69,6 +80,14 @@ TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[1], "2"),
     DatasetItem(TEST_IMG_URLS[2], "3"),
     DatasetItem(TEST_IMG_URLS[3], "4"),
+]
+
+TEST_LIDAR_ITEMS = [
+    DatasetItem(pointcloud_location=TEST_POINTCLOUD_URLS[0], reference_id="1"),
+    DatasetItem(pointcloud_location=TEST_POINTCLOUD_URLS[1], reference_id="2"),
+    DatasetItem(pointcloud_location=TEST_POINTCLOUD_URLS[2], reference_id="3"),
+    DatasetItem(pointcloud_location=TEST_POINTCLOUD_URLS[3], reference_id="4"),
+    DatasetItem(pointcloud_location=TEST_POINTCLOUD_URLS[4], reference_id="5"),
 ]
 
 LOCAL_FILENAME = "tests/test_img.jpg"

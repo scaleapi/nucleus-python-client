@@ -38,10 +38,10 @@ class Frame:
         return self.items[sensor_name]
 
     def get_items(self):
-        return self.items.values()
+        return list(self.items.values())
 
     def get_sensors(self):
-        return self.items.keys()
+        return list(self.items.keys())
 
     def get_index(self):
         return self.index
