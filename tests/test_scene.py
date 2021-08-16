@@ -1,22 +1,27 @@
 import pytest
 from nucleus.constants import (
     ANNOTATIONS_KEY,
-    DATASET_ITEM_ID_KEY,
     FRAMES_KEY,
     IMAGE_KEY,
-    IMAGE_URL_KEY,
-    ITEM_KEY,
+    LENGTH_KEY,
+    METADATA_KEY,
+    NUM_SENSORS_KEY,
     POINTCLOUD_KEY,
-    POINTCLOUD_URL_KEY,
     REFERENCE_ID_KEY,
     SCENES_KEY,
+    TYPE_KEY,
     UPDATE_KEY,
+    URL_KEY,
 )
 
 from nucleus import (
     CuboidAnnotation,
     LidarScene,
     Frame,
+)
+
+from nucleus.scene import (
+    flatten,
 )
 
 from .helpers import (
@@ -50,17 +55,151 @@ def test_frame_add_item(dataset):
     assert frame.get_item("lidar") == TEST_LIDAR_ITEMS[0]
     assert frame.to_payload() == {
         "camera": {
-            "url": TEST_DATASET_ITEMS[0].image_location,
-            "reference_id": TEST_DATASET_ITEMS[0].reference_id,
-            "type": IMAGE_KEY,
-            "metadata": TEST_DATASET_ITEMS[0].metadata or {},
+            URL_KEY: TEST_DATASET_ITEMS[0].image_location,
+            REFERENCE_ID_KEY: TEST_DATASET_ITEMS[0].reference_id,
+            TYPE_KEY: IMAGE_KEY,
+            METADATA_KEY: TEST_DATASET_ITEMS[0].metadata or {},
         },
         "lidar": {
-            "url": TEST_LIDAR_ITEMS[0].pointcloud_location,
-            "reference_id": TEST_LIDAR_ITEMS[0].reference_id,
-            "type": POINTCLOUD_KEY,
-            "metadata": TEST_LIDAR_ITEMS[0].metadata or {},
+            URL_KEY: TEST_LIDAR_ITEMS[0].pointcloud_location,
+            REFERENCE_ID_KEY: TEST_LIDAR_ITEMS[0].reference_id,
+            TYPE_KEY: POINTCLOUD_KEY,
+            METADATA_KEY: TEST_LIDAR_ITEMS[0].metadata or {},
         },
+    }
+
+
+def test_scene_property_methods(dataset):
+    payload = TEST_LIDAR_SCENES
+    scene_json = payload[SCENES_KEY][0]
+    scene = LidarScene.from_json(scene_json)
+
+    expected_length = len(scene_json[FRAMES_KEY])
+    assert scene.length == expected_length
+    sensors = flatten([list(frame.keys()) for frame in scene_json[FRAMES_KEY]])
+    expected_num_sensors = len(set(sensors))
+    assert scene.num_sensors == expected_num_sensors
+    assert scene.info() == {
+        REFERENCE_ID_KEY: scene_json[REFERENCE_ID_KEY],
+        LENGTH_KEY: expected_length,
+        NUM_SENSORS_KEY: expected_num_sensors,
+    }
+
+
+def test_scene_add_item(dataset):
+    scene_ref_id = "scene_1"
+    scene = LidarScene(scene_ref_id)
+    scene.add_item(0, "camera", TEST_DATASET_ITEMS[0])
+    scene.add_item(0, "lidar", TEST_LIDAR_ITEMS[0])
+    scene.add_item(1, "lidar", TEST_LIDAR_ITEMS[1])
+
+    assert set(scene.get_sensors()) == set(["camera", "lidar"])
+    assert scene.get_item(1, "lidar") == TEST_LIDAR_ITEMS[1]
+    assert scene.get_items_from_sensor("lidar") == [
+        TEST_LIDAR_ITEMS[0],
+        TEST_LIDAR_ITEMS[1],
+    ]
+    assert scene.get_items_from_sensor("camera") == [
+        TEST_DATASET_ITEMS[0],
+        None,
+    ]
+    for item in scene.get_items():
+        assert item in [
+            TEST_DATASET_ITEMS[0],
+            TEST_LIDAR_ITEMS[0],
+            TEST_LIDAR_ITEMS[1],
+        ]
+
+    assert scene.to_payload() == {
+        REFERENCE_ID_KEY: scene_ref_id,
+        FRAMES_KEY: [
+            {
+                "camera": {
+                    URL_KEY: TEST_DATASET_ITEMS[0].image_location,
+                    REFERENCE_ID_KEY: TEST_DATASET_ITEMS[0].reference_id,
+                    TYPE_KEY: IMAGE_KEY,
+                    METADATA_KEY: TEST_DATASET_ITEMS[0].metadata or {},
+                },
+                "lidar": {
+                    URL_KEY: TEST_LIDAR_ITEMS[0].pointcloud_location,
+                    REFERENCE_ID_KEY: TEST_LIDAR_ITEMS[0].reference_id,
+                    TYPE_KEY: POINTCLOUD_KEY,
+                    METADATA_KEY: TEST_LIDAR_ITEMS[0].metadata or {},
+                },
+            },
+            {
+                "lidar": {
+                    URL_KEY: TEST_LIDAR_ITEMS[1].pointcloud_location,
+                    REFERENCE_ID_KEY: TEST_LIDAR_ITEMS[1].reference_id,
+                    TYPE_KEY: POINTCLOUD_KEY,
+                    METADATA_KEY: TEST_LIDAR_ITEMS[1].metadata or {},
+                }
+            },
+        ],
+    }
+
+
+def test_scene_add_frame(dataset):
+    frame_1 = Frame()
+    frame_1.add_item(TEST_DATASET_ITEMS[0], "camera")
+    frame_1.add_item(TEST_LIDAR_ITEMS[0], "lidar")
+
+    scene_ref_id = "scene_1"
+    frames = [frame_1]
+    scene = LidarScene(scene_ref_id, frames=frames)
+
+    frame_2 = Frame(index=1)
+    frame_2.add_item(TEST_LIDAR_ITEMS[1], "lidar")
+    scene.add_frame(frame_2)
+    frames.append(frame_2)
+
+    assert scene.length == len(frames)
+    assert set(scene.get_sensors()) == set(["camera", "lidar"])
+    expected_frame_1 = Frame(
+        index=0,
+        items={
+            "camera": TEST_DATASET_ITEMS[0],
+            "lidar": TEST_LIDAR_ITEMS[0],
+        },
+    )
+    assert scene.get_frame(0) == expected_frame_1
+    expected_frame_2 = Frame(
+        index=1,
+        items={
+            "lidar": TEST_LIDAR_ITEMS[1],
+        },
+    )
+    expected_frames = [expected_frame_1, expected_frame_2]
+    assert scene.get_frames() == expected_frames
+    for item in scene.get_items_from_sensor("lidar"):
+        assert item in [TEST_LIDAR_ITEMS[0], TEST_LIDAR_ITEMS[1]]
+
+    assert scene.to_payload() == {
+        REFERENCE_ID_KEY: scene_ref_id,
+        FRAMES_KEY: [
+            {
+                "camera": {
+                    URL_KEY: TEST_DATASET_ITEMS[0].image_location,
+                    REFERENCE_ID_KEY: TEST_DATASET_ITEMS[0].reference_id,
+                    TYPE_KEY: IMAGE_KEY,
+                    METADATA_KEY: TEST_DATASET_ITEMS[0].metadata or {},
+                },
+                "lidar": {
+                    URL_KEY: TEST_LIDAR_ITEMS[0].pointcloud_location,
+                    REFERENCE_ID_KEY: TEST_LIDAR_ITEMS[0].reference_id,
+                    TYPE_KEY: POINTCLOUD_KEY,
+                    METADATA_KEY: TEST_LIDAR_ITEMS[0].metadata or {},
+                },
+            },
+            {
+                "lidar": {
+                    URL_KEY: TEST_LIDAR_ITEMS[1].pointcloud_location,
+                    REFERENCE_ID_KEY: TEST_LIDAR_ITEMS[1].reference_id,
+                    TYPE_KEY: POINTCLOUD_KEY,
+                    METADATA_KEY: TEST_LIDAR_ITEMS[1].metadata or {},
+                }
+            },
+        ],
     }
 
 
