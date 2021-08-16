@@ -87,8 +87,7 @@ def test_scene_and_cuboid_upload_sync(dataset):
     lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
         REFERENCE_ID_KEY
     ]
-    lidar_item = dataset.refloc(lidar_item_ref)[ITEM_KEY]
-    TEST_CUBOID_ANNOTATIONS[0][DATASET_ITEM_ID_KEY] = lidar_item.item_id
+    TEST_CUBOID_ANNOTATIONS[0][REFERENCE_ID_KEY] = lidar_item_ref
 
     annotations = [CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])]
     response = dataset.annotate(annotations)
@@ -97,12 +96,10 @@ def test_scene_and_cuboid_upload_sync(dataset):
     assert response["annotations_processed"] == len(annotations)
     assert response["annotations_ignored"] == 0
 
-    response = dataset.loc(annotations[0].item_id)[ANNOTATIONS_KEY]["cuboid"]
-    assert len(response) == 1
-    response_annotation = response[0]
+    response_annotations = dataset.refloc(lidar_item_ref)[ANNOTATIONS_KEY][
+        "cuboid"
+    ]
+    assert len(response_annotations) == 1
     assert_cuboid_annotation_matches_dict(
-        response_annotation, TEST_CUBOID_ANNOTATIONS[0]
+        response_annotations[0], TEST_CUBOID_ANNOTATIONS[0]
     )
-
-    lidar_item_ann = dataset.refloc(lidar_item_ref)[ANNOTATIONS_KEY]["cuboid"]
-    assert annotations == lidar_item_ann
