@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 from typing import Optional, Union, Any, Dict, List
 from nucleus.constants import (
     FRAMES_KEY,
+    LENGTH_KEY,
     METADATA_KEY,
+    NUM_SENSORS_KEY,
     REFERENCE_ID_KEY,
     POINTCLOUD_LOCATION_KEY,
     IMAGE_LOCATION_KEY,
@@ -27,6 +29,22 @@ class Frame:
 
     def add_item(self, item: DatasetItem, sensor_name: str):
         self.items[sensor_name] = item
+
+    def get_item(self, sensor_name: str):
+        if sensor_name not in self.items:
+            raise ValueError(
+                f"This frame does not have a {sensor_name} sensor"
+            )
+        return self.items[sensor_name]
+
+    def get_items(self):
+        return self.items.values()
+
+    def get_sensors(self):
+        return self.items.keys()
+
+    def get_index(self):
+        return self.index
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -51,6 +69,9 @@ class Scene(ABC):
 
     def __post_init__(self):
         self.check_valid_frame_indices()
+        self.sensors = set(
+            flatten([frame.get_sensors() for frame in self.frames])
+        )
         if all((frame.index is not None for frame in self.frames)):
             self.frames_dict = {frame.index: frame for frame in self.frames}
         else:
@@ -59,6 +80,14 @@ class Scene(ABC):
                 for i, frame in enumerate(self.frames)
             ]
             self.frames_dict = dict(enumerate(indexed_frames))
+
+    @property
+    def length(self) -> int:
+        return len(self.frames_dict)
+
+    @property
+    def num_sensors(self) -> int:
+        return len(self.get_sensors())
 
     def check_valid_frame_indices(self):
         infer_from_list_position = all(
@@ -72,15 +101,14 @@ class Scene(ABC):
         ), "Must specify index explicitly for all frames or infer from list position for all frames"
 
     def validate(self):
-        assert (
-            len(self.frames_dict) > 0
-        ), "Must have at least 1 frame in a scene"
+        assert self.length > 0, "Must have at least 1 frame in a scene"
         for frame in self.frames_dict.values():
             assert isinstance(
                 frame, Frame
             ), "Each frame in a scene must be a Frame object"
 
     def add_item(self, index: int, sensor_name: str, item: DatasetItem):
+        self.sensors.add(sensor_name)
         if index not in self.frames_dict:
             new_frame = Frame(index=index, items={sensor_name: item})
             self.frames_dict[index] = new_frame
@@ -97,6 +125,54 @@ class Scene(ABC):
             and update
         ):
             self.frames_dict[frame.index] = frame
+            self.sensors.update(frame.get_sensors())
+
+    def get_frame(self, index: int):
+        if index not in self.frames_dict:
+            raise ValueError(
+                f"This scene does not have a frame at index {index}"
+            )
+        return self.frames_dict[index]
+
+    def get_frames(self):
+        return [
+            frame
+            for _, frame in sorted(
+                self.frames_dict.items(), key=lambda x: x[0]
+            )
+        ]
+
+    def get_sensors(self):
+        return list(self.sensors)
+
+    def get_item(self, index: int, sensor_name: str):
+        frame = self.get_frame(index)
+        return frame.get_item(sensor_name)
+
+    def get_items_from_sensor(self, sensor_name: str):
+        if sensor_name not in self.sensors:
+            raise ValueError(
+                f"This scene does not have a {sensor_name} sensor"
+            )
+        items_from_sensor = []
+        for frame in self.frames_dict.values():
+            try:
+                sensor_item = frame.get_item(sensor_name)
+                items_from_sensor.append(sensor_item)
+            except ValueError:
+                # This sensor is not present at current frame
+                items_from_sensor.append(None)
+        return items_from_sensor
+
+    def get_items(self):
+        return flatten([frame.get_items() for frame in self.get_frames()])
+
+    def info(self):
+        return {
+            REFERENCE_ID_KEY: self.reference_id,
+            LENGTH_KEY: self.length,
+            NUM_SENSORS_KEY: self.num_sensors,
+        }
 
     def validate_frames_dict(self):
         is_continuous = set(list(range(len(self.frames_dict)))) == set(
@@ -118,12 +194,7 @@ class Scene(ABC):
 
     def to_payload(self) -> dict:
         self.validate_frames_dict()
-        ordered_frames = [
-            frame
-            for _, frame in sorted(
-                self.frames_dict.items(), key=lambda x: x[0]
-            )
-        ]
+        ordered_frames = self.get_frames()
         frames_payload = [frame.to_payload() for frame in ordered_frames]
         payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
@@ -141,25 +212,25 @@ class Scene(ABC):
 class LidarScene(Scene):
     def validate(self):
         super().validate()
-        lidar_sources = flatten(
+        lidar_sensors = flatten(
             [
                 [
-                    source
-                    for source in frame.items.keys()
-                    if frame.items[source].type == DatasetItemType.POINTCLOUD
+                    sensor
+                    for sensor in frame.items.keys()
+                    if frame.items[sensor].type == DatasetItemType.POINTCLOUD
                 ]
                 for frame in self.frames_dict.values()
             ]
         )
         assert (
-            len(set(lidar_sources)) == 1
-        ), "Each lidar scene must have exactly one lidar source"
+            len(set(lidar_sensors)) == 1
+        ), "Each lidar scene must have exactly one lidar sensor"
 
         for frame in self.frames_dict.values():
             num_pointclouds = sum(
                 [
                     int(item.type == DatasetItemType.POINTCLOUD)
-                    for item in frame.items.values()
+                    for item in frame.get_items()
                 ]
             )
             assert (
@@ -173,17 +244,16 @@ def flatten(t):
 
 def check_all_scene_paths_remote(scenes: List[LidarScene]):
     for scene in scenes:
-        for frame in scene.frames_dict.values():
-            for item in frame.items.values():
-                pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
-                if pointcloud_location and is_local_path(pointcloud_location):
-                    raise ValueError(
-                        f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
-                        "local, or a remote URL type that is not supported."
-                    )
-                image_location = getattr(item, IMAGE_LOCATION_KEY)
-                if image_location and is_local_path(image_location):
-                    raise ValueError(
-                        f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
-                        "local, or a remote URL type that is not supported."
-                    )
+        for item in scene.get_items():
+            pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
+            if pointcloud_location and is_local_path(pointcloud_location):
+                raise ValueError(
+                    f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                    "local, or a remote URL type that is not supported."
+                )
+            image_location = getattr(item, IMAGE_LOCATION_KEY)
+            if image_location and is_local_path(image_location):
+                raise ValueError(
+                    f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
+                    "local, or a remote URL type that is not supported."
+                )
