@@ -277,8 +277,8 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
         "job_progress": "1.00",
-        "completed_steps": 4,
-        "total_steps": 4,
+        "completed_steps": 1,
+        "total_steps": 1,
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (

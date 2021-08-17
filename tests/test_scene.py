@@ -68,8 +68,8 @@ def test_scene_upload_async(dataset):
                 "scenes_errored": 0,
             }
         },
-        "job_progress": "0.00",
-        "completed_steps": 0,
+        "job_progress": "1.00",
+        "completed_steps": 1,
         "total_steps": 1,
     }
 
