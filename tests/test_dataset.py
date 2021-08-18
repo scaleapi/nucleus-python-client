@@ -226,7 +226,16 @@ def test_dataset_append_async(dataset: Dataset):
             "PayloadUrl": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
         },
+        "job_progress": "1.00",
+        "completed_steps": 5,
+        "total_steps": 5,
     }
 
 
@@ -253,9 +262,23 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
         "status": "Errored",
         "message": {
             "PayloadUrl": "",
+            "final_error": (
+                "One or more of the images you attempted to upload did not process"
+                " correctly. Please see the status for an overview and the errors for "
+                "more detailed messages."
+            ),
             "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
+        "job_progress": "1.00",
+        "completed_steps": 1,
+        "total_steps": 1,
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (
@@ -337,6 +360,9 @@ def test_annotate_async(dataset: Dataset):
                 "processed": 1,
             },
         },
+        "job_progress": "1.00",
+        "completed_steps": 3,
+        "total_steps": 3,
     }
 
 
@@ -372,6 +398,9 @@ def test_annotate_async_with_error(dataset: Dataset):
                 "processed": 1,
             },
         },
+        "job_progress": "0.67",
+        "completed_steps": 2,
+        "total_steps": 3,
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
