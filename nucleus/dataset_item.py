@@ -96,10 +96,12 @@ class DatasetItem:  # pylint: disable=R0902
     pointcloud_location: Optional[str] = None
 
     def __post_init__(self):
-        self.local = is_local_path(self.image_location)
         assert bool(self.image_location) != bool(
             self.pointcloud_location
         ), "Must specify exactly one of the image_location, pointcloud_location parameters"
+        self.local = (
+            is_local_path(self.image_location) if self.image_location else None
+        )
         self.type = (
             DatasetItemType.IMAGE
             if self.image_location
@@ -116,14 +118,14 @@ class DatasetItem:  # pylint: disable=R0902
 
     @classmethod
     def from_json(cls, payload: dict, is_scene=False):
-        image_url = payload.get(IMAGE_URL_KEY, "") or payload.get(
-            ORIGINAL_IMAGE_URL_KEY, ""
+        image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
+            ORIGINAL_IMAGE_URL_KEY, None
         )
 
         if is_scene:
             return cls(
                 image_location=image_url,
-                pointcloud_location=payload.get(POINTCLOUD_URL_KEY, ""),
+                pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),
                 reference_id=payload.get(REFERENCE_ID_KEY, None),
                 item_id=payload.get(DATASET_ITEM_ID_KEY, None),
                 metadata=payload.get(METADATA_KEY, {}),
@@ -143,6 +145,10 @@ class DatasetItem:  # pylint: disable=R0902
         payload: Dict[str, Any] = {
             METADATA_KEY: self.metadata or {},
         }
+        if self.reference_id:
+            payload[REFERENCE_ID_KEY] = self.reference_id
+        if self.item_id:
+            payload[DATASET_ITEM_ID_KEY] = self.item_id
 
         if is_scene:
             if self.image_location:
@@ -150,18 +156,13 @@ class DatasetItem:  # pylint: disable=R0902
             elif self.pointcloud_location:
                 payload[URL_KEY] = self.pointcloud_location
             payload[TYPE_KEY] = self.type.value
+            if self.camera_params:
+                payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
         else:
             assert (
                 self.image_location
-            ), "Must specify image_location for DatasetItems not in a Scene"
+            ), "Must specify image_location for DatasetItems not in a LidarScene"
             payload[IMAGE_URL_KEY] = self.image_location
-
-        if self.reference_id:
-            payload[REFERENCE_ID_KEY] = self.reference_id
-        if self.item_id:
-            payload[DATASET_ITEM_ID_KEY] = self.item_id
-        if self.camera_params:
-            payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
 
         return payload
 
