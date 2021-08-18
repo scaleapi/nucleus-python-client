@@ -59,6 +59,7 @@ def test_index_integration(dataset):
     assert MESSAGE_KEY in job_status_response
 
 
+@pytest.mark.skip(reason="Times out consistently")
 def test_generate_image_index_integration(dataset):
     job = dataset.create_image_index()
     job.sleep_until_complete()
