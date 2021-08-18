@@ -27,6 +27,9 @@ class Frame:
                 value, DatasetItem
             ), "All values must be DatasetItems"
 
+    def __repr__(self) -> str:
+        return f"Frame(index={self.index}, items={self.items})"
+
     def add_item(self, item: DatasetItem, sensor_name: str):
         self.items[sensor_name] = item
 
@@ -210,6 +213,9 @@ class Scene(ABC):
 
 @dataclass
 class LidarScene(Scene):
+    def __repr__(self) -> str:
+        return f"LidarScene(reference_id='{self.reference_id}', frames={self.get_frames()}, metadata={self.metadata})"
+
     def validate(self):
         super().validate()
         lidar_sensors = flatten(
