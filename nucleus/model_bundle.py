@@ -1,10 +1,15 @@
 from .dataset import Dataset
 from typing import Any
+import tempfile
+import dill
+
 
 class ModelBundle:
-    def __init__(self):
-        # TODO: stub
-        pass
+    """
+    Represents a ModelBundle
+    """
+    def __init__(self, name):
+        self.name = name
 
 
 class ModelEndpoint:
@@ -17,8 +22,12 @@ class ModelEndpoint:
         raise NotImplementedError
 
 
+# TODO: add these to __init__
+
 def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, reference_id: str):
-    # TODO: stub
+    # TODO: stub, types of model and load_predict_fn
+
+
     raise NotImplementedError
 
 
