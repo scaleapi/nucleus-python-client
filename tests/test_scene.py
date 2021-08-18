@@ -262,6 +262,23 @@ def test_scene_upload_sync(dataset):
     assert response["dataset_id"] == dataset.id
     assert response["new_scenes"] == len(scenes)
 
+    assert status == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "SceneUploadResponse": {
+                "errors": [],
+                "dataset_id": dataset.id,
+                "new_scenes": len(scenes),
+                "ignored_scenes": 0,
+                "scenes_errored": 0,
+            }
+        },
+        "job_progress": "1.00",
+        "completed_steps": 1,
+        "total_steps": 1,
+    }
+
 
 @pytest.mark.integration
 def test_scene_and_cuboid_upload_sync(dataset):
