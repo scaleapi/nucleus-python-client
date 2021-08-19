@@ -1,7 +1,7 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Optional, Union, Any, Dict, List
+from typing import Optional, Any, Dict, List
 from nucleus.constants import (
     FRAMES_KEY,
     LENGTH_KEY,
