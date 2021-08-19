@@ -53,7 +53,7 @@ class Frame:
             sensor: DatasetItem.from_json(item, is_scene=True)
             for sensor, item in payload.items()
         }
-        return cls(items=items)
+        return cls(**items)
 
     def to_payload(self) -> dict:
         return {
@@ -92,7 +92,7 @@ class Scene(ABC):
     def add_item(self, index: int, sensor_name: str, item: DatasetItem):
         self.sensors.add(sensor_name)
         if index not in self.frames_dict:
-            new_frame = Frame(items={sensor_name: item})
+            new_frame = Frame(**{sensor_name: item})
             self.frames_dict[index] = new_frame
         else:
             self.frames_dict[index].items[sensor_name] = item
