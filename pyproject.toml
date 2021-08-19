@@ -31,6 +31,10 @@ repository = "https://github.com/scaleapi/nucleus-python-client"
 documentation = "https://dashboard.scale.com/nucleus/docs/api"
 packages = [{include="nucleus"}]
 
+[[tool.poetry.source]]
+name = "pytorch-wheel-source"
+url = "https://vxlabs.com/pypi//simple/"
+
 [tool.poetry.dependencies]
 python = "^3.6.2"
 requests = "^2.23.0"
@@ -49,7 +53,7 @@ flake8 = "^3.9.1"
 mypy = "^0.812"
 coverage = "^5.5"
 pre-commit = "^2.12.1"
-torch = {url = "https://download.pytorch.org/whl/cpu/torch-1.7.1-cp38-none-macosx_10_9_x86_64.whl"} # TODO this horribly breaks testing for others
+torch = "1.7.1" # Test uploading model bundles only
 smart_open = "^1.9.0" # Temporarily for uploading model bundles directly to s3
 boto3 = "^1.12.32" # Temporarily for uploading model bundles directly to s3
 
