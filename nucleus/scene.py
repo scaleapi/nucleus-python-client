@@ -15,10 +15,11 @@ from .annotation import is_local_path
 from .dataset_item import DatasetItemType, DatasetItem
 
 
-@dataclass
 class Frame:
-    items: Dict[str, DatasetItem] = field(default_factory=dict)
-    index: Union[int, None] = None
+    def __init__(self, **kwargs):
+        self.items = {}
+        for key, value in kwargs.items():
+            self.items[key] = value
 
     def __post_init__(self):
         for key, value in self.items.items():
@@ -28,7 +29,7 @@ class Frame:
             ), "All values must be DatasetItems"
 
     def __repr__(self) -> str:
-        return f"Frame(index={self.index}, items={self.items})"
+        return f"Frame(items={self.items})"
 
     def add_item(self, item: DatasetItem, sensor_name: str):
         self.items[sensor_name] = item
@@ -45,9 +46,6 @@ class Frame:
 
     def get_sensors(self):
         return list(self.items.keys())
-
-    def get_index(self):
-        return self.index
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -71,18 +69,10 @@ class Scene(ABC):
     metadata: Optional[dict] = None
 
     def __post_init__(self):
-        self.check_valid_frame_indices()
         self.sensors = set(
             flatten([frame.get_sensors() for frame in self.frames])
         )
-        if all((frame.index is not None for frame in self.frames)):
-            self.frames_dict = {frame.index: frame for frame in self.frames}
-        else:
-            indexed_frames = [
-                Frame(index=i, items=frame.items)
-                for i, frame in enumerate(self.frames)
-            ]
-            self.frames_dict = dict(enumerate(indexed_frames))
+        self.frames_dict = dict(enumerate(self.frames))
 
     @property
     def length(self) -> int:
@@ -91,17 +81,6 @@ class Scene(ABC):
     @property
     def num_sensors(self) -> int:
         return len(self.get_sensors())
-
-    def check_valid_frame_indices(self):
-        infer_from_list_position = all(
-            (frame.index is None for frame in self.frames)
-        )
-        explicit_frame_order = all(
-            (frame.index is not None for frame in self.frames)
-        )
-        assert (
-            infer_from_list_position or explicit_frame_order
-        ), "Must specify index explicitly for all frames or infer from list position for all frames"
 
     def validate(self):
         assert self.length > 0, "Must have at least 1 frame in a scene"
@@ -113,21 +92,18 @@ class Scene(ABC):
     def add_item(self, index: int, sensor_name: str, item: DatasetItem):
         self.sensors.add(sensor_name)
         if index not in self.frames_dict:
-            new_frame = Frame(index=index, items={sensor_name: item})
+            new_frame = Frame(items={sensor_name: item})
             self.frames_dict[index] = new_frame
         else:
             self.frames_dict[index].items[sensor_name] = item
 
-    def add_frame(self, frame: Frame, update: bool = False):
-        assert (
-            frame.index is not None
-        ), "Must specify index explicitly when calling add_frame"
+    def add_frame(self, frame: Frame, index: int, update: bool = False):
         if (
-            frame.index not in self.frames_dict
-            or frame.index in self.frames_dict
+            index not in self.frames_dict
+            or index in self.frames_dict
             and update
         ):
-            self.frames_dict[frame.index] = frame
+            self.frames_dict[index] = frame
             self.sensors.update(frame.get_sensors())
 
     def get_frame(self, index: int):
