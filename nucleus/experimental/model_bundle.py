@@ -1,9 +1,17 @@
 from nucleus.dataset import Dataset
 from typing import Any
 import tempfile
+import logging
 import dill
 import smart_open
+import requests
 from boto3 import Session
+
+HOSTED_INFERENCE_ENDPOINT = "hostedinference.ml-serving-internal.scale.com"
+DEFAULT_NETWORK_TIMEOUT_SEC = 120
+
+logger = logging.getLogger(__name__)
+logging.basicConfig()
 
 
 class ModelBundle:
@@ -24,7 +32,38 @@ class ModelEndpoint:
         raise NotImplementedError
 
 
+def make_hosted_inference_request(
+    payload: dict, route: str, requests_command=requests.post
+) -> dict:
+    """
+    Makes a request to Nucleus endpoint and logs a warning if not
+    successful.
+
+    :param payload: given payload
+    :param route: route for the request
+    :param requests_command: requests.post, requests.get, requests.delete
+    :return: response JSON
+    """
+    endpoint = f"{HOSTED_INFERENCE_ENDPOINT}/{route}"
+
+    logger.info("Posting to %s", endpoint)
+
+    response = requests_command(
+        endpoint,
+        json=payload,
+        headers={"Content-Type": "application/json"},
+        #auth=(self.api_key, ""), # or something
+        timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+    )
+    logger.info("API request has response code %s", response.status_code)
+
+    if not response.ok:
+        raise Exception("Response was not ok")
+
+    return response.json()
+
 # TODO: add these to __init__
+
 
 def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, reference_id: str):
     """
@@ -50,6 +89,9 @@ def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, referenc
 
     # TODO make request to hosted model inference (hmm how will that work?
     #  We probably want to abstract out the make_request thing but there's already some work inside this library)
+    make_hosted_inference_request(dict(model_name=model_name, reference_id=reference_id))
+
+    return f"{model_name}_{reference_id}"  # Placeholder return value, this should return what the model bundle service returns
 
     # raise NotImplementedError
 
