@@ -36,4 +36,4 @@ def test_add_model_bundle():
 
     add_model_bundle(model_name=model_name, model=model, load_predict_fn=load_predict_fn, reference_id=reference_id)
 
-    # TODO idk how to test this lmao
+    # TODO more granular tests?
