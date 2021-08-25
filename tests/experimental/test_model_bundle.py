@@ -35,7 +35,7 @@ def test_add_model_bundle():
 
         return predict
 
-    model_bundle_name = add_model_bundle(model_name=model_name, model=model, load_predict_fn=load_predict_fn, reference_id=reference_id)
-    assert model_bundle_name == f"{model_name}_{reference_id}", "Model bundle name is not correct"
+    model_bundle = add_model_bundle(model_name=model_name, model=model, load_predict_fn=load_predict_fn, reference_id=reference_id)
+    assert model_bundle.name == f"{model_name}_{reference_id}", "Model bundle name is not correct"
 
     # TODO more granular tests?

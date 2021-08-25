@@ -89,7 +89,9 @@ def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, referenc
 
     # TODO make request to hosted model inference (hmm how will that work?
     #  We probably want to abstract out the make_request thing but there's already some work inside this library)
-    return make_hosted_inference_request(dict(model_name=model_name, reference_id=reference_id), route="model-bundle/create")['model_bundle']
+    model_bundle_name = make_hosted_inference_request(dict(model_name=model_name, reference_id=reference_id), route="model-bundle/create")['model_bundle']
+
+    return ModelBundle(model_bundle_name)
 
     # raise NotImplementedError
 
