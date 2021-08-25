@@ -7,7 +7,7 @@ import smart_open
 import requests
 from boto3 import Session
 
-HOSTED_INFERENCE_ENDPOINT = "hostedinference.ml-serving-internal.scale.com"
+HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-staging-internal.scale.com"  # TODO this isn't https
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
 logger = logging.getLogger(__name__)
@@ -89,9 +89,7 @@ def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, referenc
 
     # TODO make request to hosted model inference (hmm how will that work?
     #  We probably want to abstract out the make_request thing but there's already some work inside this library)
-    make_hosted_inference_request(dict(model_name=model_name, reference_id=reference_id))
-
-    return f"{model_name}_{reference_id}"  # Placeholder return value, this should return what the model bundle service returns
+    return make_hosted_inference_request(dict(model_name=model_name, reference_id=reference_id), route="model-bundle/create")['model_bundle']
 
     # raise NotImplementedError
 

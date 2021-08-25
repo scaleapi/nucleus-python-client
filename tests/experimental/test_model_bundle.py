@@ -6,7 +6,8 @@ from nucleus.experimental.model_bundle import add_model_bundle
 
 @pytest.mark.integration
 def test_add_model_bundle():
-    # perhaps this belongs in some other test script? This is a pretty heavy test
+    # perhaps this belongs in some other test script? This is a pretty heavy/end-to-end test
+    # Tests both client and server functionality
 
     model_name = "TestModel"
     reference_id = "12345"
@@ -34,6 +35,7 @@ def test_add_model_bundle():
 
         return predict
 
-    add_model_bundle(model_name=model_name, model=model, load_predict_fn=load_predict_fn, reference_id=reference_id)
+    model_bundle_name = add_model_bundle(model_name=model_name, model=model, load_predict_fn=load_predict_fn, reference_id=reference_id)
+    assert model_bundle_name == f"{model_name}_{reference_id}", "Model bundle name is not correct"
 
     # TODO more granular tests?
