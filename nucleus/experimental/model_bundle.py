@@ -1,11 +1,12 @@
-from nucleus.dataset import Dataset
-from typing import Any
-import tempfile
 import logging
+from typing import Any
+
 import dill
-import smart_open
 import requests
+import smart_open
 from boto3 import Session
+
+from nucleus.dataset import Dataset
 
 HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-staging-internal.scale.com"  # TODO this isn't https
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
@@ -81,9 +82,10 @@ def add_model_bundle(
     # For now we do some s3 string manipulation
     s3_path = f"s3://scale-ml/hosted-model-inference/bundles/{model_name}_{reference_id}.pkl"
     # this might be an invalid url but this is temporary anyways
-    kwargs = dict()
+    kwargs = {
+        "transport_params": {"session": Session(profile_name="ml-worker")}
+    }
 
-    kwargs["transport_params"] = {"session": Session(profile_name="ml-worker")}
     with smart_open.open(s3_path, "wb", **kwargs) as bundle_pkl:
         bundle = dict(model=model, load_predict_fn=load_predict_fn)
         # TODO does this produce a performance bottleneck
