@@ -18,6 +18,7 @@ class ModelBundle:
     """
     Represents a ModelBundle
     """
+
     def __init__(self, name):
         self.name = name
 
@@ -52,7 +53,7 @@ def make_hosted_inference_request(
         endpoint,
         json=payload,
         headers={"Content-Type": "application/json"},
-        #auth=(self.api_key, ""), # or something
+        # auth=(self.api_key, ""), # or something
         timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
     )
     logger.info("API request has response code %s", response.status_code)
@@ -62,10 +63,13 @@ def make_hosted_inference_request(
 
     return response.json()
 
+
 # TODO: add these to __init__
 
 
-def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, reference_id: str):
+def add_model_bundle(
+    model_name: str, model: Any, load_predict_fn: Any, reference_id: str
+):
     """
     Uploads to s3 (for now, will upload to actual service later) a model bundle, i.e. a dictionary
     {
@@ -89,14 +93,27 @@ def add_model_bundle(model_name: str, model: Any, load_predict_fn: Any, referenc
 
     # TODO make request to hosted model inference (hmm how will that work?
     #  We probably want to abstract out the make_request thing but there's already some work inside this library)
-    model_bundle_name = make_hosted_inference_request(dict(model_name=model_name, reference_id=reference_id), route="model-bundle/create")['model_bundle']
+    model_bundle_name = make_hosted_inference_request(
+        dict(model_name=model_name, reference_id=reference_id),
+        route="model-bundle/create",
+    )["model_bundle"]
 
     return ModelBundle(model_bundle_name)
 
     # raise NotImplementedError
 
 
-def create_model_endpoint(endpoint_name: str, model_bundle: ModelBundle, cpus: int, memory: str, gpus: int, gpu_type: str, sync_type: str, min_workers: int, max_workers: int):
+def create_model_endpoint(
+    endpoint_name: str,
+    model_bundle: ModelBundle,
+    cpus: int,
+    memory: str,
+    gpus: int,
+    gpu_type: str,
+    sync_type: str,
+    min_workers: int,
+    max_workers: int,
+):
     # TODO: stub
     # TODO: input validation?
     # This should make an HTTP request to the Hosted Model Inference server at the "create model endpoint" endpoint
