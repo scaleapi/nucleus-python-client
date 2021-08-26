@@ -80,7 +80,8 @@ def add_model_bundle(
     """
     # TODO: types of model and load_predict_fn
     # For now we do some s3 string manipulation
-    s3_path = f"s3://scale-ml/hosted-model-inference/bundles/{model_name}_{reference_id}.pkl"
+    model_bundle_name = f"{model_name}_{reference_id}"
+    s3_path = f"s3://scale-ml/hosted-model-inference/bundles/{model_bundle_name}.pkl"
     # this might be an invalid url but this is temporary anyways
     kwargs = {
         "transport_params": {"session": Session(profile_name="ml-worker")}
@@ -94,10 +95,10 @@ def add_model_bundle(
         # TODO upload the file via http request later
 
     # Make request to hosted inference service
-    model_bundle_name = make_hosted_inference_request(
+    make_hosted_inference_request(
         dict(model_name=model_name, reference_id=reference_id),
         route="model-bundle",
-    )["model_bundle"]
+    )
 
     return ModelBundle(model_bundle_name)
 
