@@ -96,7 +96,7 @@ def add_model_bundle(
     # Make request to hosted inference service
     model_bundle_name = make_hosted_inference_request(
         dict(model_name=model_name, reference_id=reference_id),
-        route="model-bundle/create",
+        route="model-bundle",
     )["model_bundle"]
 
     return ModelBundle(model_bundle_name)
