@@ -5,16 +5,19 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_BOX_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
+    TEST_CATEGORY_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     reference_id_from_url,
     assert_box_annotation_matches_dict,
     assert_polygon_annotation_matches_dict,
+    assert_category_annotation_matches_dict,
     assert_segmentation_annotation_matches_dict,
 )
 
 from nucleus import (
     BoxAnnotation,
     PolygonAnnotation,
+    CategoryAnnotation,
     SegmentationAnnotation,
     DatasetItem,
     Segment,
@@ -92,6 +95,24 @@ def test_polygon_gt_upload(dataset):
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
         response_annotation, TEST_POLYGON_ANNOTATIONS[0]
+    )
+
+
+def test_category_gt_upload(dataset):
+    annotation = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, TEST_CATEGORY_ANNOTATIONS[0]
     )
 
 

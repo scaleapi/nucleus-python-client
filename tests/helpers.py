@@ -155,6 +155,14 @@ TEST_CUBOID_ANNOTATIONS = [
     for i in range(len(TEST_POINTCLOUD_URLS))
 ]
 
+TEST_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Category Annotation ${i}",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Category Annotation Annotation Id{i}",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
 
 TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
 
@@ -261,6 +269,16 @@ def assert_cuboid_annotation_matches_dict(
     assert instance_dim.z == dict_dim["z"]
 
     assert annotation_instance.yaw == annotation_dict["geometry"]["yaw"]
+
+
+def assert_category_annotation_matches_dict(
+    annotation_instance, annotation_dict
+):
+    assert annotation_instance.label == annotation_dict["label"]
+
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
 
 
 def assert_segmentation_annotation_matches_dict(
