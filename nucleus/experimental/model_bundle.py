@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Dict
 
 import cloudpickle
 import requests
@@ -114,8 +114,27 @@ def create_model_endpoint(
     sync_type: str,
     min_workers: int,
     max_workers: int,
+    per_worker: int,
+    requirements: Dict[str, str],
 ):
     # TODO: stub
     # TODO: input validation?
     # This should make an HTTP request to the Hosted Model Inference server at the "create model endpoint" endpoint
-    raise NotImplementedError
+    env_params = requirements  # TODO how do we get env_params?
+    payload = dict(
+        service_name=endpoint_name,
+        env_params=env_params,
+        bundle_id=model_bundle.name,
+        cpus=cpus,
+        memory=memory,
+        gpus=gpus,
+        gpu_type=gpu_type,
+        min_workers=min_workers,
+        max_workers=max_workers,
+        per_worker=per_worker,
+        requirements=requirements,
+    )
+
+    return make_hosted_inference_request(
+        payload, "endpoints", requests_command=requests.post
+    )
