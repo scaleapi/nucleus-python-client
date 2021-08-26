@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-import dill
+import cloudpickle
 import requests
 import smart_open
 from boto3 import Session
@@ -89,12 +89,11 @@ def add_model_bundle(
     with smart_open.open(s3_path, "wb", **kwargs) as bundle_pkl:
         bundle = dict(model=model, load_predict_fn=load_predict_fn)
         # TODO does this produce a performance bottleneck
-        dill.dump(bundle, bundle_pkl, recurse=True)
+        cloudpickle.dump(bundle, bundle_pkl)
 
         # TODO upload the file via http request later
 
-    # TODO make request to hosted model inference (hmm how will that work?
-    #  We probably want to abstract out the make_request thing but there's already some work inside this library)
+    # Make request to hosted inference service
     model_bundle_name = make_hosted_inference_request(
         dict(model_name=model_name, reference_id=reference_id),
         route="model-bundle/create",
