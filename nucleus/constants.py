@@ -86,6 +86,7 @@ SUCCESS_STATUS_CODES = [200, 201, 202]
 TYPE_KEY = "type"
 UPDATED_ITEMS = "updated_items"
 UPDATE_KEY = "update"
+UPLOAD_TO_SCALE_KEY = "uploadToScale"
 URL_KEY = "url"
 VERTICES_KEY = "vertices"
 WIDTH_KEY = "width"

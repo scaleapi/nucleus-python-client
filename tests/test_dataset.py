@@ -1,5 +1,7 @@
 import copy
 import math
+from nucleus.model import Model
+from nucleus.prediction import BoxPrediction
 import os
 
 import pytest
@@ -176,8 +178,11 @@ def test_dataset_append(dataset):
 
     # Plain image upload
     ds_items_plain = []
-    for url in TEST_IMG_URLS:
-        ds_items_plain.append(DatasetItem(image_location=url))
+    for i, url in enumerate(TEST_IMG_URLS):
+        upload_to_scale = i == 0
+        ds_items_plain.append(
+            DatasetItem(image_location=url, upload_to_scale=upload_to_scale)
+        )
     response = dataset.append(ds_items_plain)
     check_is_expected_response(response)
 
