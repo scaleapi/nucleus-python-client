@@ -47,11 +47,10 @@ def dataset(CLIENT):
 
 
 def test_frame_add_item():
-    frame = Frame(index=0)
+    frame = Frame()
     frame.add_item(TEST_DATASET_ITEMS[0], "camera")
     frame.add_item(TEST_LIDAR_ITEMS[0], "lidar")
 
-    assert frame.get_index() == 0
     assert frame.get_sensors() == ["camera", "lidar"]
     for item in frame.get_items():
         assert item in [TEST_DATASET_ITEMS[0], TEST_LIDAR_ITEMS[0]]
@@ -104,14 +103,19 @@ def test_scene_from_json():
         "lidar": lidar_item_f2,
     }
 
-    expected_frames = [Frame(expected_items_1), Frame(expected_items_2)]
+    expected_frames = [Frame(**expected_items_1), Frame(**expected_items_2)]
     expected_scene = LidarScene(
         scene_json[REFERENCE_ID_KEY], expected_frames, metadata={}
     )
+
     assert sorted(
         scene.get_items(), key=lambda item: item.reference_id
     ) == sorted(expected_scene.get_items(), key=lambda item: item.reference_id)
-    assert scene.get_frames() == expected_scene.get_frames()
+    scene_frames = [frame.to_payload() for frame in scene.get_frames()]
+    expected_scene_frames = [
+        frame.to_payload() for frame in expected_scene.get_frames()
+    ]
+    assert scene_frames == expected_scene_frames
     assert set(scene.get_sensors()) == set(expected_scene.get_sensors())
     assert scene.to_payload() == expected_scene.to_payload()
 
@@ -195,29 +199,26 @@ def test_scene_add_frame():
     frames = [frame_1]
     scene = LidarScene(scene_ref_id, frames=frames)
 
-    frame_2 = Frame(index=1)
+    frame_2 = Frame()
     frame_2.add_item(TEST_LIDAR_ITEMS[1], "lidar")
-    scene.add_frame(frame_2)
+    scene.add_frame(frame_2, index=1)
     frames.append(frame_2)
 
     assert scene.length == len(frames)
     assert set(scene.get_sensors()) == set(["camera", "lidar"])
     expected_frame_1 = Frame(
-        index=0,
-        items={
+        **{
             "camera": TEST_DATASET_ITEMS[0],
             "lidar": TEST_LIDAR_ITEMS[0],
         },
     )
-    assert scene.get_frame(0) == expected_frame_1
+    assert scene.get_frame(0).to_payload() == expected_frame_1.to_payload()
     expected_frame_2 = Frame(
-        index=1,
-        items={
+        **{
             "lidar": TEST_LIDAR_ITEMS[1],
         },
     )
-    expected_frames = [expected_frame_1, expected_frame_2]
-    assert scene.get_frames() == expected_frames
+    assert scene.get_frame(1).to_payload() == expected_frame_2.to_payload()
     for item in scene.get_items_from_sensor("lidar"):
         assert item in [TEST_LIDAR_ITEMS[0], TEST_LIDAR_ITEMS[1]]
 
