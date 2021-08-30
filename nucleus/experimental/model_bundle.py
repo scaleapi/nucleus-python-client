@@ -90,6 +90,9 @@ def add_model_bundle(
     with smart_open.open(s3_path, "wb", **kwargs) as bundle_pkl:
         bundle = dict(model=model, load_predict_fn=load_predict_fn)
         # TODO does this produce a performance bottleneck
+        # This might be a bit slow, the "correct" thing to do is probably to
+        # dump the pickle locally, zip it, and upload the corresponding zip to s3
+        # In any case, this is temporary.
         cloudpickle.dump(bundle, bundle_pkl)
 
         # TODO upload the file via http request later
