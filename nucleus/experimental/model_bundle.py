@@ -8,6 +8,7 @@ from boto3 import Session
 
 from nucleus.dataset import Dataset
 
+# TODO temporary endpoint, will be replaced with some https://api.scale.com/hostedinference/<sub-route>
 HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-staging-internal.scale.com"  # TODO this isn't https
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
@@ -38,7 +39,7 @@ def make_hosted_inference_request(
     payload: dict, route: str, requests_command=requests.post
 ) -> dict:
     """
-    Makes a request to Nucleus endpoint and logs a warning if not
+    Makes a request to Hosted Inference endpoint and logs a warning if not
     successful.
 
     :param payload: given payload
@@ -72,7 +73,7 @@ def add_model_bundle(
     model_name: str, model: Any, load_predict_fn: Any, reference_id: str
 ):
     """
-    Uploads to s3 (for now, will upload to actual service later) a model bundle, i.e. a dictionary
+    Uploads to s3 (for now, will upload to s3 signed url later) a model bundle, i.e. a dictionary
     {
         "model": model
         "load_predict_fn": load_predict_fn
@@ -120,11 +121,15 @@ def create_model_endpoint(
     max_workers: int,
     per_worker: int,
     requirements: Dict[str, str],
+    env_params: Dict[str, str],
 ):
+    """
+    requirements: A Dictionary containing package name -> version string for the endpoint.
+    env_params: A Dictionary containing keys framework_type, pytorch_version, cuda_version, cudnn_version.
+    """
     # TODO: stub
     # TODO: input validation?
     # This should make an HTTP request to the Hosted Model Inference server at the "create model endpoint" endpoint
-    env_params = requirements  # TODO how do we get env_params?
     payload = dict(
         service_name=endpoint_name,
         env_params=env_params,
