@@ -313,7 +313,13 @@ class NucleusClient:
         if name:
             payload["name"] = name
         response = self.make_request(payload, "dataset/create_from_project")
-        return Dataset(response[DATASET_ID_KEY], self)
+        return Dataset(response[DATASET_ID_KEY], self), AsyncJob(
+            job_id=response[JOB_ID_KEY],
+            job_last_known_status=response[JOB_LAST_KNOWN_STATUS_KEY],
+            job_type=response[JOB_TYPE_KEY],
+            job_creation_time=response[JOB_CREATION_TIME_KEY],
+            client=self,
+        )
 
     def create_dataset(
         self,
