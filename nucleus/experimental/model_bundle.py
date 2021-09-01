@@ -166,7 +166,6 @@ def create_model_endpoint(
     requirements: A Dictionary containing package name -> version string for the endpoint.
     env_params: A Dictionary containing keys framework_type, pytorch_version, cuda_version, cudnn_version.
     """
-    # TODO: stub
     # TODO: input validation?
     # This should make an HTTP request to the Hosted Model Inference server at the "create model endpoint" endpoint
     payload = dict(
@@ -187,7 +186,8 @@ def create_model_endpoint(
         payload, "endpoints", requests_command=requests.post
     )
 
+    # TODO what is the format of response?
     endpoint_name = resp["endpoint_name"]
     endpoint_url = resp["endpoint_url"]
 
-    return ModelEndpoint(endpoint_name, endpoint_url)  # TODO what is the format of response?
+    return ModelEndpoint(endpoint_name, endpoint_url)
