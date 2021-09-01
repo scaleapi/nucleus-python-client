@@ -40,10 +40,9 @@ class ModelEndpoint:
     """
     Represents an endpoint on Hosted Model Inference
     """
-    def __init__(self):
-        # TODO: stub
-        # self.endpoint = endpoint # probably
-        pass
+    def __init__(self, endpoint_name, endpoint_url):
+        self.endpoint_name = endpoint_name
+        self.endpoint_url = endpoint_url
 
     def create_run_job(self, model_name: str, dataset: Dataset):
         # TODO: stub
@@ -64,10 +63,16 @@ class ModelEndpoint:
         elif dataset_item_type == DatasetItemType.POINTCLOUD:
             s3URLs = [data.pointcloud_location for data in dataset.items]
 
-        # TODO: pass s3URLs to some endpoint that needs to be provided
+        # TODO: pass s3URLs to some run job creation endpoint
+        # payload = {"model_name": model_name}
+        # make_hosted_inference_request()
 
         # return ModelEndpointAsyncJob
 
+        raise NotImplementedError
+
+    def status(self):
+        # Makes call to model status endpoint
         raise NotImplementedError
 
 
@@ -132,7 +137,7 @@ def add_model_bundle(
         # In any case, this is temporary.
         cloudpickle.dump(bundle, bundle_pkl)
 
-        # TODO upload the file via http request later
+        # TODO upload the file to a signed url
 
     # Make request to hosted inference service
     make_hosted_inference_request(
@@ -141,8 +146,6 @@ def add_model_bundle(
     )
 
     return ModelBundle(model_bundle_name)
-
-    # raise NotImplementedError
 
 
 def create_model_endpoint(
@@ -184,4 +187,7 @@ def create_model_endpoint(
         payload, "endpoints", requests_command=requests.post
     )
 
-    return ModelEndpoint(resp)  # TODO what is the format of response?
+    endpoint_name = resp["endpoint_name"]
+    endpoint_url = resp["endpoint_url"]
+
+    return ModelEndpoint(endpoint_name, endpoint_url)  # TODO what is the format of response?
