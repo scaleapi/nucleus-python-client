@@ -7,6 +7,7 @@ import smart_open
 from boto3 import Session
 
 from nucleus.dataset import Dataset
+from nucleus.dataset_item import DatasetItemType
 
 # TODO temporary endpoint, will be replaced with some https://api.scale.com/hostedinference/<sub-route>
 HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-staging-internal.scale.com"  # TODO this isn't https
@@ -25,13 +26,48 @@ class ModelBundle:
         self.name = name
 
 
+class ModelEndpointAsyncJob:
+    # TODO Everything
+    def __init__(self):
+        pass
+
+    def is_done(self):
+        # TODO: make some request to some endpoint
+        raise NotImplementedError
+
+
 class ModelEndpoint:
+    """
+    Represents an endpoint on Hosted Model Inference
+    """
     def __init__(self):
         # TODO: stub
+        # self.endpoint = endpoint # probably
         pass
 
     def create_run_job(self, model_name: str, dataset: Dataset):
         # TODO: stub
+        # TODO: take the dataset, translate to s3URLs
+
+        # TODO support lidar point clouds
+        if len(dataset.items) == 0:
+            logger.warning("Passed a dataset of length 0")
+            return None  # TODO return type?
+        dataset_item_type = dataset.items[0].type
+        if not all([data.type == dataset_item_type for data in dataset.items]):
+            logger.warning("Dataset has multiple item types")
+            raise Exception  # TODO too broad exception
+
+        # Do we need to keep track of nucleus ids?
+        if dataset_item_type == DatasetItemType.IMAGE:
+            s3URLs = [data.image_location for data in dataset.items]
+        elif dataset_item_type == DatasetItemType.POINTCLOUD:
+            s3URLs = [data.pointcloud_location for data in dataset.items]
+
+        # TODO: pass s3URLs to some endpoint that needs to be provided
+
+        # return ModelEndpointAsyncJob
+
         raise NotImplementedError
 
 
@@ -122,7 +158,7 @@ def create_model_endpoint(
     per_worker: int,
     requirements: Dict[str, str],
     env_params: Dict[str, str],
-):
+) -> ModelEndpoint:
     """
     requirements: A Dictionary containing package name -> version string for the endpoint.
     env_params: A Dictionary containing keys framework_type, pytorch_version, cuda_version, cudnn_version.
@@ -144,6 +180,8 @@ def create_model_endpoint(
         requirements=requirements,
     )
 
-    return make_hosted_inference_request(
+    resp = make_hosted_inference_request(
         payload, "endpoints", requests_command=requests.post
     )
+
+    return ModelEndpoint(resp)  # TODO what is the format of response?
