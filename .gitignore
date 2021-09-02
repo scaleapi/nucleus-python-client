@@ -134,3 +134,6 @@ dmypy.json
 
 # Poetry lockfile (no need for deploys, best practice is to not check this in)
 poetry.lock
+
+# vscode
+.vscode/
