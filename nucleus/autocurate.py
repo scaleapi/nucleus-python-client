@@ -9,6 +9,9 @@ from nucleus.job import AsyncJob
 
 
 def entropy(name, model_runs, client):
+    assert (
+        len({model_run.dataset_id for model_run in model_runs}) == 1
+    ), f"Model runs have conflicting dataset ids: {model_runs}"
     model_run_ids = [model_run.model_run_id for model_run in model_runs]
     dataset_id = model_runs[0].dataset_id
     response = client.make_request(
