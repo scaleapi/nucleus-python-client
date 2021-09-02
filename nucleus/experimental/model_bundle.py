@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 import cloudpickle
 import requests
@@ -10,7 +10,7 @@ from nucleus.dataset import Dataset
 from nucleus.dataset_item import DatasetItemType
 
 # TODO temporary endpoint, will be replaced with some https://api.scale.com/hostedinference/<sub-route>
-HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-staging-internal.scale.com"  # TODO this isn't https
+HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-internal.scale.com:5000"  # TODO this isn't https
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,25 @@ class ModelEndpointAsyncJob:
         raise NotImplementedError
 
 
+def _nucleus_ds_to_s3url_list(dataset: Dataset) -> Sequence[str]:
+    # TODO support lidar point clouds
+    if len(dataset.items) == 0:
+        logger.warning("Passed a dataset of length 0")
+        return None  # TODO return type?
+    dataset_item_type = dataset.items[0].type
+    if not all([data.type == dataset_item_type for data in dataset.items]):
+        logger.warning("Dataset has multiple item types")
+        raise Exception  # TODO too broad exception
+
+    # Do we need to keep track of nucleus ids?
+    if dataset_item_type == DatasetItemType.IMAGE:
+        s3Urls = [data.image_location for data in dataset.items]
+    elif dataset_item_type == DatasetItemType.POINTCLOUD:
+        s3Urls = [data.pointcloud_location for data in dataset.items]
+    # TODO for demo
+    return s3Urls
+
+
 class ModelEndpoint:
     """
     Represents an endpoint on Hosted Model Inference
@@ -45,31 +64,39 @@ class ModelEndpoint:
         self.endpoint_url = endpoint_url
 
     def create_run_job(self, model_name: str, dataset: Dataset):
-        # TODO: stub
-        # TODO: take the dataset, translate to s3URLs
+        # TODO: for demo
 
-        # TODO support lidar point clouds
-        if len(dataset.items) == 0:
-            logger.warning("Passed a dataset of length 0")
-            return None  # TODO return type?
-        dataset_item_type = dataset.items[0].type
-        if not all([data.type == dataset_item_type for data in dataset.items]):
-            logger.warning("Dataset has multiple item types")
-            raise Exception  # TODO too broad exception
-
-        # Do we need to keep track of nucleus ids?
-        if dataset_item_type == DatasetItemType.IMAGE:
-            s3URLs = [data.image_location for data in dataset.items]
-        elif dataset_item_type == DatasetItemType.POINTCLOUD:
-            s3URLs = [data.pointcloud_location for data in dataset.items]
+        s3urls = _nucleus_ds_to_s3url_list(dataset)
 
         # TODO: pass s3URLs to some run job creation endpoint
         # payload = {"model_name": model_name}
         # make_hosted_inference_request()
 
+        # Try to upload resulting predictions to nucleus
+
         # return ModelEndpointAsyncJob
 
         raise NotImplementedError
+
+    def _infer(self, s3urls: Sequence[str]):
+        # TODO for demo
+        # Make inference requests to the endpoint,
+        # if batches are possible make this aware you can pass batches
+
+        # TODO batches once those are out
+
+        responses = {s3url: None for s3url in s3urls}
+
+        for s3url in s3urls:
+            # make the request to the endpoint
+            # payload = {"s3_url": s3url, "endpoint": self.endpoint_url} # or something
+            # make_hosted_inference_request(payload, f"something/{self.endpoint_name}, post)
+            pass
+
+        # poll endpoint
+
+
+        pass
 
     def status(self):
         # Makes call to model status endpoint
@@ -103,7 +130,7 @@ def make_hosted_inference_request(
 
     if not response.ok:
         raise Exception("Response was not ok")
-
+    print(response)
     return response.json()
 
 
@@ -121,7 +148,8 @@ def add_model_bundle(
     }
     """
     # TODO: types of model and load_predict_fn
-    # For now we do some s3 string manipulation
+    # (Temporary) For now we do some s3 string manipulation, later on get an s3URL from some
+    # getPresignedURL endpoint
     model_bundle_name = f"{model_name}_{reference_id}"
     s3_path = f"s3://scale-ml/hosted-model-inference/bundles/{model_bundle_name}.pkl"
     # this might be an invalid url but this is temporary anyways
@@ -149,13 +177,12 @@ def add_model_bundle(
 
 
 def create_model_endpoint(
-    endpoint_name: str,
+    service_name: str,
     model_bundle: ModelBundle,
     cpus: int,
     memory: str,
     gpus: int,
     gpu_type: str,
-    sync_type: str,
     min_workers: int,
     max_workers: int,
     per_worker: int,
@@ -169,7 +196,7 @@ def create_model_endpoint(
     # TODO: input validation?
     # This should make an HTTP request to the Hosted Model Inference server at the "create model endpoint" endpoint
     payload = dict(
-        service_name=endpoint_name,
+        service_name=service_name,
         env_params=env_params,
         bundle_id=model_bundle.name,
         cpus=cpus,
