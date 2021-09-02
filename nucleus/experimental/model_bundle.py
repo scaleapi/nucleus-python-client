@@ -37,6 +37,8 @@ class ModelEndpointAsyncJob:
 
 
 def _nucleus_ds_to_s3url_list(dataset: Dataset) -> Sequence[str]:
+    # TODO I'm not sure if dataset items are necessarily s3URLs
+    # Does this matter?
     # TODO support lidar point clouds
     if len(dataset.items) == 0:
         logger.warning("Passed a dataset of length 0")

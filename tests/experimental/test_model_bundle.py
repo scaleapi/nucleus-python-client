@@ -1,7 +1,9 @@
 import pytest
 import torch
 
-from nucleus.experimental.model_bundle import add_model_bundle
+from nucleus import Dataset
+from nucleus.experimental.model_bundle import add_model_bundle, _nucleus_ds_to_s3url_list
+from tests.helpers import TEST_DATASET_ITEMS, TEST_DATASET_NAME
 
 
 @pytest.mark.integration
@@ -46,3 +48,10 @@ def test_add_model_bundle():
     ), "Model bundle name is not correct"
 
     # TODO more granular tests?
+
+
+def test_nucleus_ds_to_s3url_list(dataset):
+    # This is a weird test, verification is roughly as hard as the actual code
+    s3urls = _nucleus_ds_to_s3url_list(dataset)
+    assert len(s3urls) == len(dataset.items), "number of s3urls isn't number of dataset.items"
+    assert s3urls == [item.image_location for item in TEST_DATASET_ITEMS], "S3URLs are different from items' image_locations"
