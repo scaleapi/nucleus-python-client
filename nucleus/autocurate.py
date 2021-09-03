@@ -19,6 +19,7 @@ def entropy(name, model_runs, client):
         route=f"autocurate/{dataset_id}/single_model_entropy/{name}",
         requests_command=requests.post,
     )
+    # TODO: the response should already have the below three fields populated
     response[JOB_LAST_KNOWN_STATUS_KEY] = "Started"
     response[JOB_TYPE_KEY] = "autocurateEntropy"
     response[JOB_CREATION_TIME_KEY] = (
