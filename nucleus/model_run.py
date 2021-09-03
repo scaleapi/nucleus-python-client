@@ -31,10 +31,10 @@ class ModelRun:
     def __init__(self, model_run_id: str, dataset_id: str, client):
         self.model_run_id = model_run_id
         self._client = client
-        self._dataset_id = dataset_id
+        self.dataset_id = dataset_id
 
     def __repr__(self):
-        return f"ModelRun(model_run_id='{self.model_run_id}', dataset_id='{self._dataset_id}', client={self._client})"
+        return f"ModelRun(model_run_id='{self.model_run_id}', dataset_id='{self.dataset_id}', client={self._client})"
 
     def __eq__(self, other):
         if self.model_run_id == other.model_run_id:
@@ -115,7 +115,7 @@ class ModelRun:
             check_all_mask_paths_remote(annotations)
 
             request_id = serialize_and_write_to_presigned_url(
-                annotations, self._dataset_id, self._client
+                annotations, self.dataset_id, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
