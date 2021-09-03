@@ -7,7 +7,6 @@ from enum import Enum
 
 from .annotation import is_local_path, Point3D
 from .constants import (
-    DATASET_ITEM_ID_KEY,
     IMAGE_URL_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
@@ -92,12 +91,12 @@ class DatasetItemType(Enum):
 class DatasetItem:  # pylint: disable=R0902
     image_location: Optional[str] = None
     reference_id: Optional[str] = None
-    item_id: Optional[str] = None
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     upload_to_scale: Optional[bool] = True
 
     def __post_init__(self):
+        assert self.reference_id is not None, "reference_id is required."
         assert bool(self.image_location) != bool(
             self.pointcloud_location
         ), "Must specify exactly one of the image_location, pointcloud_location parameters"
@@ -133,14 +132,12 @@ class DatasetItem:  # pylint: disable=R0902
                 image_location=image_url,
                 pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),
                 reference_id=payload.get(REFERENCE_ID_KEY, None),
-                item_id=payload.get(DATASET_ITEM_ID_KEY, None),
                 metadata=payload.get(METADATA_KEY, {}),
             )
 
         return cls(
             image_location=image_url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, None),
         )
@@ -152,10 +149,8 @@ class DatasetItem:  # pylint: disable=R0902
         payload: Dict[str, Any] = {
             METADATA_KEY: self.metadata or {},
         }
-        if self.reference_id:
-            payload[REFERENCE_ID_KEY] = self.reference_id
-        if self.item_id:
-            payload[DATASET_ITEM_ID_KEY] = self.item_id
+
+        payload[REFERENCE_ID_KEY] = self.reference_id
 
         if is_scene:
             if self.image_location:

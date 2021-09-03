@@ -182,8 +182,13 @@ def test_dataset_append(dataset):
         # Upload just the first item in privacy mode
         upload_to_scale = i == 0
         ds_items_plain.append(
-            DatasetItem(image_location=url, upload_to_scale=upload_to_scale)
+            DatasetItem(
+                image_location=url,
+                upload_to_scale=upload_to_scale,
+                reference_id=url.split("/")[-1] + "_plain",
+            )
         )
+
     response = dataset.append(ds_items_plain)
     check_is_expected_response(response)
 
@@ -195,7 +200,11 @@ def test_dataset_append(dataset):
 
 def test_dataset_append_local(CLIENT, dataset):
     ds_items_local_error = [
-        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": math.nan})
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": math.nan},
+            reference_id="bad",
+        )
     ]
     with pytest.raises(ValueError) as e:
         dataset.append(ds_items_local_error)
@@ -203,7 +212,11 @@ def test_dataset_append_local(CLIENT, dataset):
             e.value
         )
     ds_items_local = [
-        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": 0})
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": 0},
+            reference_id=LOCAL_FILENAME.split("/")[-1],
+        )
     ]
 
     response = dataset.append(ds_items_local)
