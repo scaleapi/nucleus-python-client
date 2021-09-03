@@ -26,5 +26,5 @@ args = {
     "requirements": [],
 }
 
-create_model_endpoint(**args)
+model_endpoint = create_model_endpoint(**args)
 

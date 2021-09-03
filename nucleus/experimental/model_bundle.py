@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Sequence
+from typing import Any, Callable, Dict, Sequence
 
 import cloudpickle
 import requests
@@ -27,13 +27,51 @@ class ModelBundle:
 
 
 class ModelEndpointAsyncJob:
-    # TODO Everything
-    def __init__(self):
-        pass
+    """
+    Currently represents a list of async inference requests to a specific endpoint
 
-    def is_done(self):
+    Invariant: set keys for self.request_ids and self.responses are equal
+
+    """
+    def __init__(self, request_ids: Dict[str, str], model_endpoint: "ModelEndpoint"):
+        # TODO is it weird for ModelEndpointAsyncJob to know about ModelEndpoint?
+        # probably not, but we might not need model_endpoint anyways heh, depending on
+        # the format of the Get Task Result url
+        self.request_ids = request_ids.copy()  # s3url -> task_id
+        self.responses = {s3url: None for s3url in request_ids.keys()}
+        self.model_endpoint = model_endpoint  # TODO unused?
+
+    def poll_endpoints(self):
+        """
+        Runs one round of polling the endpoint for async task results
+        """
+
+        # TODO: make requests in parallel
+        for s3url, request_id in self.request_ids.items():
+            current_response = self.responses[s3url]
+            if current_response is None:
+                payload = {}
+                response = make_hosted_inference_request(payload, f"task/result/{request_id}", requests_command=requests.get)
+                if "result" not in response:  # TODO no idea what response looks like as of now
+                    continue
+                else:
+                    self.responses[s3url] = response["result"]
+
+    def is_done(self, poll=True):
+        """
+        Checks if all the tasks from this round of requests are done, according to
+        the internal state of this object.
+        Optionally polls the endpoints
+        """
         # TODO: make some request to some endpoint
-        raise NotImplementedError
+        if poll:
+            self.poll_endpoints()
+        return all([resp is not None for resp in self.responses.values()])
+
+    def get_responses(self):
+        if not self.is_done(poll=False):
+            raise ValueError("Not all responses are done")
+        return self.responses.copy()
 
 
 def _nucleus_ds_to_s3url_list(dataset: Dataset) -> Sequence[str]:
@@ -53,6 +91,8 @@ def _nucleus_ds_to_s3url_list(dataset: Dataset) -> Sequence[str]:
         s3Urls = [data.image_location for data in dataset.items]
     elif dataset_item_type == DatasetItemType.POINTCLOUD:
         s3Urls = [data.pointcloud_location for data in dataset.items]
+    else:
+        raise NotImplementedError(f"Dataset Item Type {dataset_item_type} not implemented")
     # TODO for demo
     return s3Urls
 
@@ -62,6 +102,7 @@ class ModelEndpoint:
     Represents an endpoint on Hosted Model Inference
     """
     def __init__(self, endpoint_name, endpoint_url):
+        # TODO what are endpoint_name and endpoint_url?
         self.endpoint_name = endpoint_name
         self.endpoint_url = endpoint_url
 
@@ -71,14 +112,10 @@ class ModelEndpoint:
         s3urls = _nucleus_ds_to_s3url_list(dataset)
 
         # TODO: pass s3URLs to some run job creation endpoint
-        # payload = {"model_name": model_name}
-        # make_hosted_inference_request()
+
+        return self._infer(s3urls)
 
         # Try to upload resulting predictions to nucleus
-
-        # return ModelEndpointAsyncJob
-
-        raise NotImplementedError
 
     def _infer(self, s3urls: Sequence[str]):
         # TODO for demo
@@ -88,17 +125,17 @@ class ModelEndpoint:
         # TODO batches once those are out
 
         responses = {s3url: None for s3url in s3urls}
+        request_ids = {}  # Dict of s3url -> request id
 
+        request_endpoint = f"task_async/{self.endpoint_name}"  # is endpoint_name correct?
         for s3url in s3urls:
-            # make the request to the endpoint
-            # payload = {"s3_url": s3url, "endpoint": self.endpoint_url} # or something
-            # make_hosted_inference_request(payload, f"something/{self.endpoint_name}, post)
-            pass
+            payload = dict(img_url=s3url)  # TODO format idk
+            # TODO make these requests in parallel instead of making them serially
+            inference_request = make_hosted_inference_request(payload=payload, route=request_endpoint, requests_command=requests.post)
+            request_ids[s3url] = inference_request['task_id']
+            # make the request to the endpoint (in parallel or something)
 
-        # poll endpoint
-
-
-        pass
+        return ModelEndpointAsyncJob(request_ids=request_ids, model_endpoint=self)
 
     def status(self):
         # Makes call to model status endpoint
@@ -134,6 +171,14 @@ def make_hosted_inference_request(
         raise Exception("Response was not ok")
     print(response)
     return response.json()
+
+
+def make_multiple_hosted_inference_requests(payload_route_commands: Sequence[dict, str, Callable]):
+    """
+    Make multiple requests in parallel
+    """
+    # TODO make parallel requests
+    raise NotImplementedError
 
 
 # TODO: add these to __init__
