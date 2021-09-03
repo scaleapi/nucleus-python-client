@@ -37,10 +37,10 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    DATASET_WITH_AUTOTAG,
+    NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
 )
-
-TEST_AUTOTAG_DATASET = "ds_bz43jm2jwm70060b3890"
 
 
 def test_reprs():
@@ -325,17 +325,17 @@ def test_raises_error_for_duplicate():
 def test_dataset_export_autotag_scores(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("HAS_ACCESS_TO_TEST_DATA", False):
-        dataset = CLIENT.get_dataset(TEST_AUTOTAG_DATASET)
+    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
             dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
         assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {TEST_AUTOTAG_DATASET}"
+            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
             in str(api_error.value)
         )
 
-        scores = dataset.autotag_scores(autotag_name="TestTag")
+        scores = dataset.autotag_scores(autotag_name="PytestTestTag")
 
         for column in ["dataset_item_ids", "ref_ids", "scores"]:
             assert column in scores
@@ -484,3 +484,10 @@ def test_append_and_export(dataset):
     assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == clear_fields(
         polygon_annotation
     )
+
+
+def test_export_embeddings(CLIENT):
+    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+        embeddings = Dataset(DATASET_WITH_AUTOTAG, CLIENT).export_embeddings()
+        assert "embedding_vector" in embeddings[0]
+        assert "reference_id" in embeddings[0]

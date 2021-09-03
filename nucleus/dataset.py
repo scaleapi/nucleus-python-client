@@ -430,6 +430,24 @@ class Dataset:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
+    def export_embeddings(
+        self,
+    ) -> List[Dict[str, Union[str, List[float]]]]:
+        """Returns a pd.Dataframe-ready format of dataset embeddings.
+
+        Returns:
+            A list, where each item is a dict with two keys representing a row
+            in the dataset.
+            * One value in the dict is the reference id
+            * The other value is a list of the embedding values
+        """
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/embeddings",
+            requests_command=requests.get,
+        )
+        return api_payload
+
     def delete_annotations(
         self, reference_ids: list = None, keep_history=False
     ):
