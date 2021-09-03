@@ -52,10 +52,11 @@ class ModelEndpointAsyncJob:
             if current_response is None:
                 payload = {}
                 response = make_hosted_inference_request(payload, f"task/result/{request_id}", requests_command=requests.get)
-                if "result" not in response:  # TODO no idea what response looks like as of now
+                print(response)
+                if "result_url" not in response:  # TODO no idea what response looks like as of now
                     continue
                 else:
-                    self.responses[s3url] = response["result"]
+                    self.responses[s3url] = response["result_url"]
 
     def is_done(self, poll=True):
         """
