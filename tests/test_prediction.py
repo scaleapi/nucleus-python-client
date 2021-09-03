@@ -298,7 +298,7 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
                 "total": 2,
                 "errored": 0,
                 "ignored": 0,
-                "datasetId": model_run._dataset_id,
+                "datasetId": model_run.dataset_id,
                 "processed": 2,
             },
             "segmentation_upload": {
@@ -339,7 +339,7 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
                 "total": 2,
                 "errored": 1,
                 "ignored": 0,
-                "datasetId": model_run._dataset_id,
+                "datasetId": model_run.dataset_id,
                 "processed": 1,
             },
             "segmentation_upload": {
