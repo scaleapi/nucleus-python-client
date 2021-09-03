@@ -126,6 +126,24 @@ class Slice:
         )
         return AsyncJob.from_json(response, self._client)
 
+    def export_embeddings(
+        self,
+    ) -> List[Dict[str, Union[str, List[float]]]]:
+        """Returns a pd.Dataframe-ready format of dataset embeddings.
+
+        Returns:
+            A list, where each item is a dict with two keys representing a row
+            in the dataset.
+            * One value in the dict is the reference id
+            * The other value is a list of the embedding values
+        """
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.slice_id}/embeddings",
+            requests_command=requests.get,
+        )
+        return api_payload
+
 
 def check_annotations_are_in_slice(
     annotations: List[Annotation], slice_to_check: Slice

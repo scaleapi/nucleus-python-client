@@ -1,7 +1,7 @@
 import copy
 import pytest
 import uuid
-from nucleus import Slice, NucleusClient, DatasetItem, BoxAnnotation
+from nucleus import Slice, NucleusClient, DatasetItem, BoxAnnotation, Dataset
 from nucleus.constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
@@ -14,6 +14,8 @@ from .helpers import (
     TEST_SLICE_NAME,
     TEST_BOX_ANNOTATIONS,
     TEST_PROJECT_ID,
+    DATASET_WITH_AUTOTAG,
+    NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
 )
 from nucleus.job import AsyncJob
@@ -181,3 +183,11 @@ def test_slice_send_to_labeling(dataset):
 
     response = slc.send_to_labeling(TEST_PROJECT_ID)
     assert isinstance(response, AsyncJob)
+
+
+def test_export_slice_embeddings(CLIENT):
+    test_slice = CLIENT.get_slice("slc_c4s4ts3v7bw00b1hkj0g")
+    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+        embeddings = test_slice.export_embeddings()
+        assert "embedding_vector" in embeddings[0]
+        assert "reference_id" in embeddings[0]
