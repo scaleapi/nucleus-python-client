@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, Sequence
+from typing import Any, Callable, Dict, Sequence, Tuple
 
 import cloudpickle
 import requests
@@ -106,7 +106,7 @@ class ModelEndpoint:
         self.endpoint_name = endpoint_name
         self.endpoint_url = endpoint_url
 
-    def create_run_job(self, model_name: str, dataset: Dataset):
+    def create_run_job(self, dataset: Dataset):
         # TODO: for demo
 
         s3urls = _nucleus_ds_to_s3url_list(dataset)
@@ -124,14 +124,14 @@ class ModelEndpoint:
 
         # TODO batches once those are out
 
-        responses = {s3url: None for s3url in s3urls}
         request_ids = {}  # Dict of s3url -> request id
 
         request_endpoint = f"task_async/{self.endpoint_name}"  # is endpoint_name correct?
         for s3url in s3urls:
-            payload = dict(img_url=s3url)  # TODO format idk
+            # payload = dict(img_url=s3url)  # TODO format idk
+            payload = s3url
             # TODO make these requests in parallel instead of making them serially
-            inference_request = make_hosted_inference_request(payload=payload, route=request_endpoint, requests_command=requests.post)
+            inference_request = make_hosted_inference_request(payload=payload, route=request_endpoint, requests_command=requests.post, use_json=False)  # Avoid using json because endpoint expects raw url
             request_ids[s3url] = inference_request['task_id']
             # make the request to the endpoint (in parallel or something)
 
@@ -143,7 +143,7 @@ class ModelEndpoint:
 
 
 def make_hosted_inference_request(
-    payload: dict, route: str, requests_command=requests.post
+    payload: dict, route: str, requests_command=requests.post, use_json: bool=True
 ) -> dict:
     """
     Makes a request to Hosted Inference endpoint and logs a warning if not
@@ -152,28 +152,37 @@ def make_hosted_inference_request(
     :param payload: given payload
     :param route: route for the request
     :param requests_command: requests.post, requests.get, requests.delete
+    :param use_json: whether we should use a json-formatted payload or not
     :return: response JSON
     """
     endpoint = f"{HOSTED_INFERENCE_ENDPOINT}/{route}"
 
     logger.info("Posting to %s", endpoint)
 
-    response = requests_command(
-        endpoint,
-        json=payload,
-        headers={"Content-Type": "application/json"},
-        # auth=(self.api_key, ""), # or something
-        timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-    )
+    if use_json:
+        response = requests_command(
+            endpoint,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            # auth=(self.api_key, ""), # or something
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+        )
+    else:
+        response = requests_command(
+            endpoint,
+            data=payload,
+            timeout=DEFAULT_NETWORK_TIMEOUT_SEC
+        )
     logger.info("API request has response code %s", response.status_code)
 
     if not response.ok:
+        logger.warning(f"Request failed at route {route}, payload {payload}, code {response.status_code}")
         raise Exception("Response was not ok")
     print(response)
     return response.json()
 
 
-def make_multiple_hosted_inference_requests(payload_route_commands: Sequence[dict, str, Callable]):
+def make_multiple_hosted_inference_requests(payload_route_commands: Sequence[Tuple[dict, str, Callable]]):
     """
     Make multiple requests in parallel
     """
@@ -261,6 +270,9 @@ def create_model_endpoint(
     )
 
     # TODO what is the format of response?
+
+    print("Temp resp format:", resp)
+
     endpoint_name = resp["endpoint_name"]
     endpoint_url = resp["endpoint_url"]
 
