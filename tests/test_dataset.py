@@ -1,5 +1,7 @@
 import copy
 import math
+from nucleus.model import Model
+from nucleus.prediction import BoxPrediction
 import os
 
 import pytest
@@ -176,12 +178,17 @@ def test_dataset_append(dataset):
 
     # Plain image upload
     ds_items_plain = []
-    for url in TEST_IMG_URLS:
+    for i, url in enumerate(TEST_IMG_URLS):
+        # Upload just the first item in privacy mode
+        upload_to_scale = i == 0
         ds_items_plain.append(
             DatasetItem(
-                image_location=url, reference_id=url.split("/")[-1] + "_plain"
+                image_location=url,
+                upload_to_scale=upload_to_scale,
+                reference_id=url.split("/")[-1] + "_plain",
             )
         )
+
     response = dataset.append(ds_items_plain)
     check_is_expected_response(response)
 
@@ -289,8 +296,8 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": 4,
+        "total_steps": 4,
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (
