@@ -300,10 +300,10 @@ class NucleusClient:
     def create_dataset_from_project(
         self,
         project_id: str,
-        last_n_tasks: int = None,
         name: str = None,
+        last_n_tasks: int = None,
         exclude_pending: bool = None,
-    ) -> Dataset:
+    ) -> Tuple[Dataset, AsyncJob]:
         """
         Creates a new dataset based on payload params:
         name -- A human-readable name of the dataset.
