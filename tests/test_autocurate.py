@@ -48,8 +48,6 @@ def model_run(CLIENT):
 
 @pytest.mark.integration
 def test_autocurate_integration(model_run, CLIENT):
-    job = autocurate.entropy(
-        "Test Autocurate Integration", [model_run], CLIENT
-    )
+    job = autocurate.entropy("Test Autocurate Integration", model_run, CLIENT)
     job.sleep_until_complete()
     assert job.job_last_known_status == "Completed"
