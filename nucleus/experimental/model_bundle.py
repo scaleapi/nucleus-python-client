@@ -6,8 +6,10 @@ import requests
 import smart_open
 from boto3 import Session
 
+import nucleus
+from nucleus import NucleusClient
 from nucleus.dataset import Dataset
-from nucleus.dataset_item import DatasetItemType
+from nucleus.dataset_item import DatasetItemType, DatasetItem
 
 # TODO temporary endpoint, will be replaced with some https://api.scale.com/hostedinference/<sub-route>
 HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-internal.scale.com:5000"  # TODO this isn't https
@@ -33,12 +35,13 @@ class ModelEndpointAsyncJob:
     Invariant: set keys for self.request_ids and self.responses are equal
 
     """
-    def __init__(self, request_ids: Dict[str, str], model_endpoint: "ModelEndpoint"):
+    def __init__(self, request_ids: Dict[str, str], s3url_to_dataset_map: Dict[str, DatasetItem], model_endpoint: "ModelEndpoint"):
         # TODO is it weird for ModelEndpointAsyncJob to know about ModelEndpoint?
         # probably not, but we might not need model_endpoint anyways heh, depending on
         # the format of the Get Task Result url
         self.request_ids = request_ids.copy()  # s3url -> task_id
         self.responses = {s3url: None for s3url in request_ids.keys()}
+        self.s3url_to_dataset_map = s3url_to_dataset_map
         self.model_endpoint = model_endpoint  # TODO unused?
 
     def poll_endpoints(self):
@@ -74,10 +77,37 @@ class ModelEndpointAsyncJob:
             raise ValueError("Not all responses are done")
         return self.responses.copy()
 
+    def upload_responses_to_nucleus(self, nucleus_client: NucleusClient, dataset: Dataset, model=None):
+        """
+
+        """
+        # TODO untested
+
+        if not self.is_done(poll=False):
+            raise ValueError("Not all responses are done")
+        # TODO create a nucleus Model object, or take one in as an argument
+        if model is None:
+            model = nucleus_client.add_model(name="TODO", reference_id="TODO")
+        model_run = model.create_run(name="TODO", dataset=dataset, predictions=[])
+        prediction_items = []
+        for s3url, dataset_item in self.s3url_to_dataset_map.items():
+            item_link = self.responses[s3url]
+            # TODO download data at item_link
+            item_link = [(100,100,500,500,0)]  # Temporary, hardcoded box
+            # TODO convert the data into a Prediction object
+            ref_id = dataset_item.reference_id
+            for box in item_link:
+                # TODO assuming box is a list of (x, y, w, h, label). This is probably not the case
+                pred_item = nucleus.BoxPrediction(label=str(box[4]), x=box[0], y=box[1], width=box[2], height=box[3], reference_id=ref_id)
+                prediction_items.append(pred_item)
+
+        job = model_run.predict(prediction_items, asynchronous=True)
+        job.sleep_until_complete()
+        job.errors()
+
 
 def _nucleus_ds_to_s3url_list(dataset: Dataset) -> Sequence[str]:
-    # TODO I'm not sure if dataset items are necessarily s3URLs
-    # Does this matter?
+    # TODO I'm not sure if dataset items are necessarily s3URLs. Does this matter?
     # TODO support lidar point clouds
     if len(dataset.items) == 0:
         logger.warning("Passed a dataset of length 0")
@@ -85,17 +115,20 @@ def _nucleus_ds_to_s3url_list(dataset: Dataset) -> Sequence[str]:
     dataset_item_type = dataset.items[0].type
     if not all([data.type == dataset_item_type for data in dataset.items]):
         logger.warning("Dataset has multiple item types")
-        raise Exception  # TODO too broad exception
+        raise Exception  # TODO (code style) too broad exception
 
+    s3url_to_dataset_map = {}
     # Do we need to keep track of nucleus ids?
     if dataset_item_type == DatasetItemType.IMAGE:
         s3Urls = [data.image_location for data in dataset.items]
+        s3url_to_dataset_map = {data.image_location: data for data in dataset.items}
     elif dataset_item_type == DatasetItemType.POINTCLOUD:
         s3Urls = [data.pointcloud_location for data in dataset.items]
+        s3url_to_dataset_map = {data.pointcloud_location: data for data in dataset.items}
     else:
         raise NotImplementedError(f"Dataset Item Type {dataset_item_type} not implemented")
     # TODO for demo
-    return s3Urls
+    return s3Urls, s3url_to_dataset_map  # TODO duplicated data in returned values
 
 
 class ModelEndpoint:
@@ -110,15 +143,15 @@ class ModelEndpoint:
     def create_run_job(self, dataset: Dataset):
         # TODO: for demo
 
-        s3urls = _nucleus_ds_to_s3url_list(dataset)
+        s3urls, s3url_to_dataset_map = _nucleus_ds_to_s3url_list(dataset)
 
         # TODO: pass s3URLs to some run job creation endpoint
 
-        return self._infer(s3urls)
+        return self._infer(s3urls, s3url_to_dataset_map)
 
         # Try to upload resulting predictions to nucleus
 
-    def _infer(self, s3urls: Sequence[str]):
+    def _infer(self, s3urls: Sequence[str], s3url_to_dataset_map: Dict[str, DatasetItem]):
         # TODO for demo
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
@@ -136,7 +169,7 @@ class ModelEndpoint:
             request_ids[s3url] = inference_request['task_id']
             # make the request to the endpoint (in parallel or something)
 
-        return ModelEndpointAsyncJob(request_ids=request_ids, model_endpoint=self)
+        return ModelEndpointAsyncJob(request_ids=request_ids, model_endpoint=self, dataset_to_s3url_map=s3url_to_dataset_map)
 
     def status(self):
         # Makes call to model status endpoint
