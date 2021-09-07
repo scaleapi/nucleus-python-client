@@ -77,18 +77,23 @@ class ModelEndpointAsyncJob:
             raise ValueError("Not all responses are done")
         return self.responses.copy()
 
-    def upload_responses_to_nucleus(self, nucleus_client: NucleusClient, dataset: Dataset, model=None):
+    def upload_responses_to_nucleus(self, nucleus_client: NucleusClient, dataset: Dataset, model_run_name: str, model=None, model_name=None, model_ref_id=None):
         """
 
         """
+        # TODO it seems weird to pass in a Dataset again, since this AsyncJob knows about the dataset items themselves
         # TODO untested
 
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
-        # TODO create a nucleus Model object, or take one in as an argument
+
+        # Create a Nucleus model if we don't have one
         if model is None:
-            model = nucleus_client.add_model(name="TODO", reference_id="TODO")
-        model_run = model.create_run(name="TODO", dataset=dataset, predictions=[])
+            assert model_name is not None and model_ref_id is not None, "If you don't pass a nucleus model you better pass a model name and reference id"
+            model = nucleus_client.add_model(name=model_name, reference_id=model_ref_id)
+
+        # Create a Nucleus model run
+        model_run = model.create_run(name=model_run_name, dataset=dataset, predictions=[])
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
             item_link = self.responses[s3url]
@@ -97,7 +102,8 @@ class ModelEndpointAsyncJob:
             # TODO convert the data into a Prediction object
             ref_id = dataset_item.reference_id
             for box in item_link:
-                # TODO assuming box is a list of (x, y, w, h, label). This is probably not the case
+                # TODO assuming box is a list of (x, y, w, h, label). This is almost certainly not the case.
+                # Also, label is probably returned as an integer instead of a label that makes semantic sense
                 pred_item = nucleus.BoxPrediction(label=str(box[4]), x=box[0], y=box[1], width=box[2], height=box[3], reference_id=ref_id)
                 prediction_items.append(pred_item)
 

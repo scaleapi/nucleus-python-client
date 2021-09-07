@@ -36,7 +36,7 @@ def create_endpoint():
     print(model_endpoint.endpoint_url, model_endpoint.endpoint_name)
 
 
-def make_task_call():
+def make_task_call(upload_to_nucleus = True):
     print("Need to export NUCLEUS_API_KEY=live_<your live api key here>")
     client = nucleus.NucleusClient(os.environ["NUCLEUS_API_KEY"])
     datasets = client.list_datasets()
@@ -54,6 +54,9 @@ def make_task_call():
 
     print("Predictions complete!")
     print(model_endpoint_async_job.get_responses())
+
+    if upload_to_nucleus:
+        model_endpoint_async_job.upload_responses_to_nucleus(client, ds, str(time.time()), model_name="Test HMI upload", model_ref_id="test_hmi_upload")
 
 urls = [
     "S3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557539856/undistorted/back_camera/1557539884.400195lf.jpg",
