@@ -43,7 +43,7 @@ def make_task_call():
     print(datasets)
 
     #ds = client.get_dataset(datasets['dataset_ids'][0])  # Hopefully this is a small dataset
-    ds = client.get_dataset("ds_c4s8stfv54200487yvrg")
+    ds = client.get_dataset("ds_c4s8stfv54200487yvrg")  # pandaset clone in sean's account
 
     model_endpoint = ModelEndpoint(endpoint_name="seantest", endpoint_url="idk")
     model_endpoint_async_job = model_endpoint.create_run_job(dataset=ds)
