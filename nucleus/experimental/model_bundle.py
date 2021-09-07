@@ -175,7 +175,7 @@ class ModelEndpoint:
             request_ids[s3url] = inference_request['task_id']
             # make the request to the endpoint (in parallel or something)
 
-        return ModelEndpointAsyncJob(request_ids=request_ids, model_endpoint=self, dataset_to_s3url_map=s3url_to_dataset_map)
+        return ModelEndpointAsyncJob(request_ids=request_ids, model_endpoint=self, s3url_to_dataset_map=s3url_to_dataset_map)
 
     def status(self):
         # Makes call to model status endpoint
