@@ -82,7 +82,6 @@ from .constants import (
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
     DATASET_ID_KEY,
-    DATASET_ITEM_IDS_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -1111,8 +1110,7 @@ class NucleusClient:
     def append_to_slice(
         self,
         slice_id: str,
-        dataset_item_ids: List[str] = None,
-        reference_ids: List[str] = None,
+        reference_ids: List[str],
     ) -> dict:
         """
         Appends to a slice from items already present in a dataset.
@@ -1128,18 +1126,10 @@ class NucleusClient:
             "slice_id": str,
         }
         """
-        if dataset_item_ids and reference_ids:
-            raise Exception(
-                "You cannot specify both dataset_item_ids and reference_ids"
-            )
 
-        ids_to_append: Dict[str, Any] = {}
-        if dataset_item_ids:
-            ids_to_append[DATASET_ITEM_IDS_KEY] = dataset_item_ids
-        if reference_ids:
-            ids_to_append[REFERENCE_IDS_KEY] = reference_ids
-
-        response = self.make_request(ids_to_append, f"slice/{slice_id}/append")
+        response = self.make_request(
+            {REFERENCE_IDS_KEY: reference_ids}, f"slice/{slice_id}/append"
+        )
         return response
 
     def list_autotags(self, dataset_id: str) -> List[str]:

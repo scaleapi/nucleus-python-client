@@ -9,12 +9,10 @@ from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CUBOID_TYPE,
-    DATASET_ITEM_ID_KEY,
     DIMENSIONS_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
     INDEX_KEY,
-    ITEM_ID_KEY,
     LABEL_KEY,
     MASK_TYPE,
     MASK_URL_KEY,
@@ -33,16 +31,7 @@ from .constants import (
 
 
 class Annotation:
-    reference_id: Optional[str] = None
-    item_id: Optional[str] = None
-
-    def _check_ids(self):
-        if self.reference_id and self.item_id:
-            self.item_id = None  # Prefer reference id to item id.
-        if not (self.reference_id or self.item_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for an annotation."
-            )
+    reference_id: str
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -93,14 +82,12 @@ class Segment:
 class SegmentationAnnotation(Annotation):
     mask_url: str
     annotations: List[Segment]
+    reference_id: str
     annotation_id: Optional[str] = None
-    reference_id: Optional[str] = None
-    item_id: Optional[str] = None
 
     def __post_init__(self):
         if not self.mask_url:
             raise Exception("You must specify a mask_url.")
-        self._check_ids()
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -112,8 +99,7 @@ class SegmentationAnnotation(Annotation):
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])
             ],
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
         )
 
@@ -124,10 +110,9 @@ class SegmentationAnnotation(Annotation):
             ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
             ANNOTATION_ID_KEY: self.annotation_id,
         }
-        if self.reference_id:
-            payload[REFERENCE_ID_KEY] = self.reference_id
-        else:
-            payload[ITEM_ID_KEY] = self.item_id
+
+        payload[REFERENCE_ID_KEY] = self.reference_id
+
         return payload
 
 
@@ -144,14 +129,14 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     y: Union[float, int]
     width: Union[float, int]
     height: Union[float, int]
-    reference_id: Optional[str] = None
-    item_id: Optional[str] = None
+    reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
-        self._check_ids()
         self.metadata = self.metadata if self.metadata else {}
+        if self.annotation_id is None:
+            self.annotation_id = f"{self.label}-{self.x}-{self.y}-{self.width}-{self.height}-{self.reference_id}"
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -162,8 +147,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             y=geometry.get(Y_KEY, 0),
             width=geometry.get(WIDTH_KEY, 0),
             height=geometry.get(HEIGHT_KEY, 0),
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -215,13 +199,11 @@ class Point3D:
 class PolygonAnnotation(Annotation):
     label: str
     vertices: List[Point]
-    reference_id: Optional[str] = None
-    item_id: Optional[str] = None
+    reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
-        self._check_ids()
         self.metadata = self.metadata if self.metadata else {}
         if len(self.vertices) > 0:
             if not hasattr(self.vertices[0], X_KEY) or not hasattr(
@@ -245,8 +227,7 @@ class PolygonAnnotation(Annotation):
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -271,13 +252,11 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     position: Point3D
     dimensions: Point3D
     yaw: float
-    reference_id: Optional[str] = None
-    item_id: Optional[str] = None
+    reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
-        self._check_ids()
         self.metadata = self.metadata if self.metadata else {}
 
     @classmethod
@@ -288,8 +267,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             position=Point3D.from_json(geometry.get(POSITION_KEY, {})),
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
             yaw=geometry.get(YAW_KEY, 0),
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -304,8 +282,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
                 YAW_KEY: self.yaw,
             },
         }
-        if self.reference_id:
-            payload[REFERENCE_ID_KEY] = self.reference_id
+        payload[REFERENCE_ID_KEY] = self.reference_id
         if self.annotation_id:
             payload[ANNOTATION_ID_KEY] = self.annotation_id
         if self.metadata:

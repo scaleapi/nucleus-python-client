@@ -147,7 +147,7 @@ class Slice:
 
 def check_annotations_are_in_slice(
     annotations: List[Annotation], slice_to_check: Slice
-) -> Tuple[bool, Set[str], Set[str]]:
+) -> Tuple[bool, Set[str]]:
     """Check membership of the annotation targets within this slice.
 
     annotations: Annnotations with ids referring to targets.
@@ -162,13 +162,6 @@ def check_annotations_are_in_slice(
     """
     info = slice_to_check.info()
 
-    item_ids_not_found_in_slice = {
-        annotation.item_id
-        for annotation in annotations
-        if annotation.item_id is not None
-    }.difference(
-        {item_metadata["id"] for item_metadata in info["dataset_items"]}
-    )
     reference_ids_not_found_in_slice = {
         annotation.reference_id
         for annotation in annotations
@@ -176,13 +169,12 @@ def check_annotations_are_in_slice(
     }.difference(
         {item_metadata["ref_id"] for item_metadata in info["dataset_items"]}
     )
-    if item_ids_not_found_in_slice or reference_ids_not_found_in_slice:
+    if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False
     else:
         annotations_are_in_slice = True
 
     return (
         annotations_are_in_slice,
-        item_ids_not_found_in_slice,
         reference_ids_not_found_in_slice,
     )
