@@ -407,6 +407,13 @@ class Dataset:
         response = self._client.create_image_index(self.id)
         return AsyncJob.from_json(response, self._client)
 
+    def add_taxonomy(
+        self, taxonomy_name: str, taxonomy_type: str, labels: List[str]
+    ):
+        return self._client.add_taxonomy(
+            self.id, taxonomy_name, taxonomy_type, labels
+        )
+
     def check_index_status(self, job_id: str):
         return self._client.check_index_status(job_id)
 

@@ -128,6 +128,7 @@ from .payload_constructor import (
     construct_box_predictions_payload,
     construct_model_creation_payload,
     construct_segmentation_payload,
+    construct_taxonomy_payload,
 )
 from .prediction import (
     BoxPrediction,
@@ -1246,6 +1247,27 @@ class NucleusClient:
         return self.make_request(
             {},
             f"indexing/{dataset_id}/internal/image",
+            requests_command=requests.post,
+        )
+
+    def add_taxonomy(
+        self,
+        dataset_id: str,
+        taxonomy_name: str,
+        taxonomy_type: str,
+        labels: List[str],
+    ):
+        """
+        Creates a new taxonomy.
+        Returns a response with dataset_id, taxonomy_name and type for the new taxonomy.
+        :param dataset_id: id of dataset to add the taxonomy to
+        :param taxonomy_name: name of the taxonomy
+        :param type: type of the taxonomy
+        :param labels: list of possible labels for the taxonomy
+        """
+        return self.make_request(
+            construct_taxonomy_payload(taxonomy_name, taxonomy_type, labels),
+            f"dataset/{dataset_id}/add_taxonomy",
             requests_command=requests.post,
         )
 

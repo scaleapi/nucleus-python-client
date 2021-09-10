@@ -25,6 +25,9 @@ from .constants import (
     MODEL_ID_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     SEGMENTATIONS_KEY,
+    TAXONOMY_NAME_KEY,
+    TYPE_KEY,
+    LABELS_KEY,
 )
 
 
@@ -125,4 +128,14 @@ def construct_model_run_creation_payload(
         REFERENCE_ID_KEY: reference_id,
         METADATA_KEY: metadata if metadata else {},
         ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
+    }
+
+
+def construct_taxonomy_payload(
+    taxonomy_name: str, taxonomy_type: str, labels: List[str]
+) -> dict:
+    return {
+        TAXONOMY_NAME_KEY: taxonomy_name,
+        TYPE_KEY: taxonomy_type,
+        LABELS_KEY: labels,
     }
