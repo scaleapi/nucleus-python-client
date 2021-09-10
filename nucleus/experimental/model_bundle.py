@@ -97,15 +97,27 @@ class ModelEndpointAsyncJob:
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
             item_link = self.responses[s3url]
-            # TODO download data at item_link
-            item_link = [(100,100,500,500,0)]  # Temporary, hardcoded box
-            # TODO convert the data into a Prediction object
-            ref_id = dataset_item.reference_id
-            for box in item_link:
-                # TODO assuming box is a list of (x, y, w, h, label). This is almost certainly not the case.
-                # Also, label is probably returned as an integer instead of a label that makes semantic sense
-                pred_item = nucleus.BoxPrediction(label=str(box[4]), x=box[0], y=box[1], width=box[2], height=box[3], reference_id=ref_id)
-                prediction_items.append(pred_item)
+            print(f"item_link={item_link}")
+            # e.g. s3://scale-ml/tmp/hosted-model-inference-outputs/a224499e-50ac-4b08-ad0c-c18e74c14184.pkl
+            kwargs = {
+                "transport_params": {"session": Session(profile_name="ml-worker")}
+            }
+
+            with smart_open.open(item_link, "rb", **kwargs) as bundle_pkl:
+                inference_result = cloudpickle.load(bundle_pkl)
+                ref_id = dataset_item.reference_id
+                for box in inference_result:
+                    # TODO assuming box is a list of (x, y, w, h, label). This is almost certainly not the case.
+                    # Also, label is probably returned as an integer instead of a label that makes semantic sense
+                    pred_item = nucleus.BoxPrediction(
+                        label=box["label"],
+                        x=box["left"],
+                        y=box["top"],
+                        width=box["width"],
+                        height=box["height"],
+                        reference_id=ref_id
+                    )
+                    prediction_items.append(pred_item)
 
         job = model_run.predict(prediction_items, asynchronous=True)
         job.sleep_until_complete()

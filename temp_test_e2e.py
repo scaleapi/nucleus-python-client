@@ -36,55 +36,54 @@ def create_endpoint():
     print(model_endpoint.endpoint_url, model_endpoint.endpoint_name)
 
 
-def make_task_call(upload_to_nucleus = True):
+def make_task_call(endpoint_name: str, dataset_id: str, upload_to_nucleus = True):
     print("Need to export NUCLEUS_API_KEY=live_<your live api key here>")
     client = nucleus.NucleusClient(os.environ["NUCLEUS_API_KEY"])
-    datasets = client.list_datasets()
-    print(datasets)
 
-    #ds = client.get_dataset(datasets['dataset_ids'][0])  # Hopefully this is a small dataset
-    ds = client.get_dataset("ds_c4s8stfv54200487yvrg")  # pandaset clone in sean's account
+    dataset = client.get_dataset(dataset_id)
 
-    model_endpoint = ModelEndpoint(endpoint_name="seantest", endpoint_url="idk")
-    model_endpoint_async_job = model_endpoint.create_run_job(dataset=ds)
+    model_endpoint = ModelEndpoint(endpoint_name=endpoint_name, endpoint_url="idk")
+    model_endpoint_async_job = model_endpoint.create_run_job(dataset=dataset)
 
     while not model_endpoint_async_job.is_done(poll=True):
         print("Waiting for predictions to finish...")
         time.sleep(5)
 
     print("Predictions complete!")
-    print(model_endpoint_async_job.get_responses())
+    predictions = model_endpoint_async_job.get_responses()
+    print(predictions)
 
     if upload_to_nucleus:
-        model_endpoint_async_job.upload_responses_to_nucleus(client, ds, str(time.time()), model_name="Test HMI upload", model_ref_id="test_hmi_upload")
-
-urls = [
-    "S3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557539856/undistorted/back_camera/1557539884.400195lf.jpg",
-    "S3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557539856/undistorted/back_camera/1557539885.999947lf.jpg",
-    "S3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557539856/undistorted/back_camera/1557539887.600534lf.jpg",
-    "S3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557539856/undistorted/back_camera/1557539889.200816lf.jpg",
-    "S3://scaleapi-cust-lidar/Hesai/raw_data/2019-5-11/hesai_data_1557539856/undistorted/back_camera/1557539890.800669lf.jpg",
-]
+        ts = str(time.time())
+        model_endpoint_async_job.upload_responses_to_nucleus(client, dataset, ts, model_name="Test HMI upload", model_ref_id=f"test_hmi_upload_{ts}")
 
 
 def temp_clone_pandaset():
     print("Need to export NUCLEUS_API_KEY=live_<your live api key here>")
-    client = nucleus.NucleusClient(os.environ["NUCLEUS_API_KEY"])
-    #pandaset = client.get_dataset("ds_bwhjbyfb8mjj0ykagxf0")
-    #print(pandaset)
-    new_dataset = client.create_dataset("Pandaset clone")
-    # TODO clone some dataset_items over into the new dataset
-    new_dis = []
-    #ditems = pandaset.items
-    for i in range(5):
-        new_di = nucleus.DatasetItem(image_location=urls[i], reference_id=str(i))
-        new_dis.append(new_di)
+    public_dataset_client = nucleus.NucleusClient(os.environ["NUCLEUS_PUBLIC_DATASET_API_KEY"])
 
-    print(new_dis)
-    new_dataset.append(new_dis)
+    dataset = public_dataset_client.get_dataset("ds_bwhjbyfb8mjj0ykagxf0")  # Public Pandaset Dataset id
+    dataset_items = dataset.items
+
+    client = nucleus.NucleusClient(os.environ["NUCLEUS_API_KEY"])
+    cloned_dataset = client.create_dataset("Pandaset clone - small")
+    cloned_dataset_items = [
+        nucleus.DatasetItem(
+            image_location=x.image_location, reference_id=x.reference_id, metadata=x.metadata
+        ) for x in dataset_items[:1]
+    ]
+    cloned_dataset.append(cloned_dataset_items)
 
 
 # create_endpoint()
-make_task_call()
 
 #temp_clone_pandaset()
+
+if __name__ == "__main__":
+    make_task_call(
+        endpoint_name="yi-tf-test",
+        #dataset_id="ds_c4wht080x81g060m0nfg",
+        dataset_id="ds_c4x8s3m6n260060cngs0",
+        upload_to_nucleus=True
+    )
+    #temp_clone_pandaset()
