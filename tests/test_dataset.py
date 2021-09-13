@@ -471,7 +471,6 @@ def test_append_and_export(dataset):
     # We don't export everything on the annotations in order to speed up export.
     def clear_fields(annotation):
         cleared_annotation = copy.deepcopy(annotation)
-        cleared_annotation.annotation_id = None
         cleared_annotation.metadata = {}
         return cleared_annotation
 

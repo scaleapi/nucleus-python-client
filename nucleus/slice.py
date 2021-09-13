@@ -54,7 +54,6 @@ class Slice:
 
     def append(
         self,
-        dataset_item_ids: List[str] = None,
         reference_ids: List[str] = None,
     ) -> dict:
         """
@@ -73,7 +72,6 @@ class Slice:
         """
         response = self._client.append_to_slice(
             slice_id=self.slice_id,
-            dataset_item_ids=dataset_item_ids,
             reference_ids=reference_ids,
         )
         return response

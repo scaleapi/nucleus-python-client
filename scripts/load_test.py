@@ -12,6 +12,8 @@ from absl import flags
 
 FLAGS = flags.FLAGS
 
+IMAGE_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg"
+
 # Global flags
 flags.DEFINE_string(
     "api_key",
@@ -22,7 +24,7 @@ flags.DEFINE_string(
 # Dataset upload flags
 flags.DEFINE_enum(
     "create_or_reuse_dataset",
-    "reuse",
+    "create",
     ["create", "reuse"],
     "If create, upload a new dataset. If reuse, use the dataset id flag to reuse an existing dataset.",
 )
@@ -38,7 +40,7 @@ flags.DEFINE_integer(
     lower_bound=0,
 )
 flags.DEFINE_bool(
-    "cleanup_dataset", False, "Whether to delete the dataset after the test."
+    "cleanup_dataset", True, "Whether to delete the dataset after the test."
 )
 
 # Annotation upload flags
@@ -52,9 +54,9 @@ flags.DEFINE_integer(
 # Prediction upload flags
 flags.DEFINE_integer(
     "num_predictions_per_dataset_item",
-    1,
+    0,
     "Number of annotations per dataset item",
-    lower_bound=1,
+    lower_bound=0,
 )
 
 
@@ -73,7 +75,7 @@ def generate_fake_metadata(index):
 def dataset_item_generator():
     for i in range(FLAGS.num_dataset_items):
         yield nucleus.DatasetItem(
-            image_location=f"https://fake_url_that_wont_be_read_since_its_privacy_mode/{i}",
+            image_location=IMAGE_URL,
             reference_id=str(i),
             metadata=generate_fake_metadata(i),
             upload_to_scale=False,
@@ -143,7 +145,7 @@ def upload_annotations(dataset: Dataset):
     print("Starting annotation upload")
     tic = time.time()
     job = dataset.annotate(
-        list(annotation_generator()), update=True, asynchronous=True
+        list(annotation_generator()), update=False, asynchronous=True
     )
     try:
         job.sleep_until_complete(False)
@@ -154,17 +156,27 @@ def upload_annotations(dataset: Dataset):
 
 
 def upload_predictions(dataset: Dataset):
-    print("Starting Prediction upload")
+    model = client().add_model(
+        name="Load test model", reference_id="model_" + str(time.time())
+    )
+    run = model.create_run(
+        name="Test model run", dataset=dataset, predictions=[]
+    )
+
     tic = time.time()
-    job = dataset.predict(
+
+    print("Starting prediction upload")
+
+    job = run.predict(
         list(prediction_generator()), update=True, asynchronous=True
     )
+
     try:
         job.sleep_until_complete(False)
     except JobError:
         print(job.errors())
     toc = time.time()
-    print("Finished prediciton upload: %s" % (toc - tic))
+    print("Finished prediction upload: %s" % (toc - tic))
 
 
 def main(unused_argv):
@@ -173,10 +185,12 @@ def main(unused_argv):
         upload_annotations(dataset)
     except Exception as e:
         print(e)
+
     try:
         upload_predictions(dataset)
     except Exception as e:
         print(e)
+
     if FLAGS.cleanup_dataset and FLAGS.create_or_reuse_dataset == "create":
         client().delete_dataset(dataset.id)
 
