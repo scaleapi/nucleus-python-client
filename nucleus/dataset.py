@@ -419,7 +419,6 @@ class Dataset:
             route=f"dataset/{self.id}/exportForTraining",
             requests_command=requests.get,
         )
-        print(api_payload)
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
     def export_embeddings(
