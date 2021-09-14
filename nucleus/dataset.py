@@ -360,8 +360,7 @@ class Dataset:
         as a means of identifying items in the dataset.
 
         :param name: The human-readable name of the slice.
-        :param dataset_item_ids: An optional list of dataset item ids for the items in the slice
-        :param reference_ids: An optional list of user-specified identifier for the items in the slice
+        :param reference_ids: A list of user-specified identifier for the items in the slice
 
         :return: new Slice object
         """
@@ -369,13 +368,9 @@ class Dataset:
             self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
         )
 
-    def delete_item(self, item_id: str = None, reference_id: str = None):
-        if bool(item_id) == bool(reference_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for a DatasetItem."
-            )
+    def delete_item(self, reference_id: str):
         return self._client.delete_dataset_item(
-            self.id, reference_id=reference_id, item_id=item_id
+            self.id, reference_id=reference_id
         )
 
     def list_autotags(self):

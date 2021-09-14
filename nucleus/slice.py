@@ -62,7 +62,6 @@ class Slice:
         as a means of identifying items in the dataset.
 
         :param
-        dataset_item_ids: List[str],
         reference_ids: List[str],
 
         :return:
