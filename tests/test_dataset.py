@@ -417,8 +417,8 @@ def test_annotate_async_with_error(dataset: Dataset):
                 "processed": 1,
             },
         },
-        "job_progress": "0.67",
-        "completed_steps": 2,
+        "job_progress": "1.00",
+        "completed_steps": 3,
         "total_steps": 3,
     }
 
@@ -467,11 +467,10 @@ def test_append_and_export(dataset):
             segmentation_annotation,
         ]
     )
+    # We don't export everything on segmentation annotations in order to speed up export.
 
-    # We don't export everything on the annotations in order to speed up export.
     def clear_fields(annotation):
         cleared_annotation = copy.deepcopy(annotation)
-        cleared_annotation.annotation_id = None
         cleared_annotation.metadata = {}
         return cleared_annotation
 
@@ -482,15 +481,11 @@ def test_append_and_export(dataset):
 
     exported = dataset.items_and_annotations()
     assert exported[0][ITEM_KEY] == ds_items[0]
-    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == clear_fields(
-        box_annotation
-    )
+    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == box_annotation
     assert sort_labelmap(
         exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
     ) == sort_labelmap(clear_fields(segmentation_annotation))
-    assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == clear_fields(
-        polygon_annotation
-    )
+    assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
 
 
 def test_export_embeddings(CLIENT):
