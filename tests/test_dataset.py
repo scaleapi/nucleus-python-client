@@ -417,8 +417,8 @@ def test_annotate_async_with_error(dataset: Dataset):
                 "processed": 1,
             },
         },
-        "job_progress": "0.67",
-        "completed_steps": 2,
+        "job_progress": "1.00",
+        "completed_steps": 3,
         "total_steps": 3,
     }
 
