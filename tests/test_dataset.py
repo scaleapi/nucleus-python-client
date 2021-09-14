@@ -468,6 +468,7 @@ def test_append_and_export(dataset):
         ]
     )
     # We don't export everything on segmentation annotations in order to speed up export.
+
     def clear_fields(annotation):
         cleared_annotation = copy.deepcopy(annotation)
         cleared_annotation.metadata = {}
