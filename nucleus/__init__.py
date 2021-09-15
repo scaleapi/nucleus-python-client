@@ -1157,6 +1157,16 @@ class NucleusClient:
         )
         return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
 
+    def delete_autotag(self, autotag_id: str) -> dict:
+        """
+        Deletes an autotag based on autotagId.
+        Returns an empty payload where response status `200` indicates
+        the autotag has been successfully deleted.
+        :param autotag_id: id of the autotag to delete.
+        :return: {}
+        """
+        return self.make_request({}, f"autotag/{autotag_id}", requests.delete)
+
     def delete_model(self, model_id: str) -> dict:
         """
         This endpoint deletes the specified model, along with all

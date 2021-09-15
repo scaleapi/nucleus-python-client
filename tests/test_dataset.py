@@ -1,5 +1,7 @@
 import copy
 import math
+from nucleus.model import Model
+from nucleus.prediction import BoxPrediction
 import os
 
 import pytest
@@ -37,10 +39,10 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    DATASET_WITH_AUTOTAG,
+    NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
 )
-
-TEST_AUTOTAG_DATASET = "ds_bz43jm2jwm70060b3890"
 
 
 def test_reprs():
@@ -176,8 +178,17 @@ def test_dataset_append(dataset):
 
     # Plain image upload
     ds_items_plain = []
-    for url in TEST_IMG_URLS:
-        ds_items_plain.append(DatasetItem(image_location=url))
+    for i, url in enumerate(TEST_IMG_URLS):
+        # Upload just the first item in privacy mode
+        upload_to_scale = i == 0
+        ds_items_plain.append(
+            DatasetItem(
+                image_location=url,
+                upload_to_scale=upload_to_scale,
+                reference_id=url.split("/")[-1] + "_plain",
+            )
+        )
+
     response = dataset.append(ds_items_plain)
     check_is_expected_response(response)
 
@@ -189,7 +200,11 @@ def test_dataset_append(dataset):
 
 def test_dataset_append_local(CLIENT, dataset):
     ds_items_local_error = [
-        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": math.nan})
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": math.nan},
+            reference_id="bad",
+        )
     ]
     with pytest.raises(ValueError) as e:
         dataset.append(ds_items_local_error)
@@ -197,7 +212,11 @@ def test_dataset_append_local(CLIENT, dataset):
             e.value
         )
     ds_items_local = [
-        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": 0})
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": 0},
+            reference_id=LOCAL_FILENAME.split("/")[-1],
+        )
     ]
 
     response = dataset.append(ds_items_local)
@@ -276,9 +295,9 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
             },
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "job_progress": "0.80",
+        "completed_steps": 4,
+        "total_steps": 5,
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (
@@ -313,17 +332,17 @@ def test_raises_error_for_duplicate():
 def test_dataset_export_autotag_scores(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("HAS_ACCESS_TO_TEST_DATA", False):
-        dataset = CLIENT.get_dataset(TEST_AUTOTAG_DATASET)
+    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
             dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
         assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {TEST_AUTOTAG_DATASET}"
+            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
             in str(api_error.value)
         )
 
-        scores = dataset.autotag_scores(autotag_name="TestTag")
+        scores = dataset.autotag_scores(autotag_name="PytestTestTag")
 
         for column in ["dataset_item_ids", "ref_ids", "scores"]:
             assert column in scores
@@ -472,3 +491,10 @@ def test_append_and_export(dataset):
     assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == clear_fields(
         polygon_annotation
     )
+
+
+def test_export_embeddings(CLIENT):
+    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+        embeddings = Dataset(DATASET_WITH_AUTOTAG, CLIENT).export_embeddings()
+        assert "embedding_vector" in embeddings[0]
+        assert "reference_id" in embeddings[0]
