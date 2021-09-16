@@ -10,7 +10,6 @@ from .annotation import (
 )
 from .constants import (
     ANNOTATION_ID_KEY,
-    DATASET_ITEM_ID_KEY,
     REFERENCE_ID_KEY,
     METADATA_KEY,
     GEOMETRY_KEY,
@@ -23,7 +22,6 @@ from .constants import (
     CONFIDENCE_KEY,
     VERTICES_KEY,
     ANNOTATIONS_KEY,
-    ITEM_ID_KEY,
     MASK_URL_KEY,
     POSITION_KEY,
     DIMENSIONS_KEY,
@@ -42,8 +40,7 @@ class SegmentationPrediction(SegmentationAnnotation):
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])
             ],
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
         )
 
@@ -56,8 +53,7 @@ class BoxPrediction(BoxAnnotation):
         y: int,
         width: int,
         height: int,
-        reference_id: Optional[str] = None,
-        item_id: Optional[str] = None,
+        reference_id: str,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -70,7 +66,6 @@ class BoxPrediction(BoxAnnotation):
             width=width,
             height=height,
             reference_id=reference_id,
-            item_id=item_id,
             annotation_id=annotation_id,
             metadata=metadata,
         )
@@ -95,8 +90,7 @@ class BoxPrediction(BoxAnnotation):
             y=geometry.get(Y_KEY, 0),
             width=geometry.get(WIDTH_KEY, 0),
             height=geometry.get(HEIGHT_KEY, 0),
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -109,8 +103,7 @@ class PolygonPrediction(PolygonAnnotation):
         self,
         label: str,
         vertices: List[Point],
-        reference_id: Optional[str] = None,
-        item_id: Optional[str] = None,
+        reference_id: str,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -120,7 +113,6 @@ class PolygonPrediction(PolygonAnnotation):
             label=label,
             vertices=vertices,
             reference_id=reference_id,
-            item_id=item_id,
             annotation_id=annotation_id,
             metadata=metadata,
         )
@@ -144,8 +136,7 @@ class PolygonPrediction(PolygonAnnotation):
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -160,8 +151,7 @@ class CuboidPrediction(CuboidAnnotation):
         position: Point3D,
         dimensions: Point3D,
         yaw: float,
-        reference_id: Optional[str] = None,
-        item_id: Optional[str] = None,
+        reference_id: str,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -173,7 +163,6 @@ class CuboidPrediction(CuboidAnnotation):
             dimensions=dimensions,
             yaw=yaw,
             reference_id=reference_id,
-            item_id=item_id,
             annotation_id=annotation_id,
             metadata=metadata,
         )
@@ -197,8 +186,7 @@ class CuboidPrediction(CuboidAnnotation):
             position=Point3D.from_json(geometry.get(POSITION_KEY, {})),
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
             yaw=geometry.get(YAW_KEY, 0),
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),

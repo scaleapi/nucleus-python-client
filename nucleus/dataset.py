@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
 
@@ -15,7 +15,6 @@ from .annotation import (
     check_all_mask_paths_remote,
 )
 from .constants import (
-    DATASET_ITEM_IDS_KEY,
     DATASET_LENGTH_KEY,
     DATASET_MODEL_RUNS_KEY,
     DATASET_NAME_KEY,
@@ -155,7 +154,7 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: List[Annotation],
+        annotations: Sequence[Annotation],
         update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
         asynchronous: bool = False,
@@ -201,7 +200,7 @@ class Dataset:
 
     def append(
         self,
-        items: Union[List[DatasetItem], List[LidarScene]],
+        items: Union[Sequence[DatasetItem], Sequence[LidarScene]],
         update: Optional[bool] = False,
         batch_size: Optional[int] = 20,
         asynchronous=False,
@@ -354,8 +353,7 @@ class Dataset:
     def create_slice(
         self,
         name: str,
-        dataset_item_ids: List[str] = None,
-        reference_ids: List[str] = None,
+        reference_ids: List[str],
     ):
         """
         Creates a slice from items already present in a dataset.
@@ -363,29 +361,17 @@ class Dataset:
         as a means of identifying items in the dataset.
 
         :param name: The human-readable name of the slice.
-        :param dataset_item_ids: An optional list of dataset item ids for the items in the slice
-        :param reference_ids: An optional list of user-specified identifier for the items in the slice
+        :param reference_ids: A list of user-specified identifier for the items in the slice
 
         :return: new Slice object
         """
-        if bool(dataset_item_ids) == bool(reference_ids):
-            raise Exception(
-                "You must specify exactly one of dataset_item_ids or reference_ids."
-            )
-        payload: Dict[str, Any] = {NAME_KEY: name}
-        if dataset_item_ids:
-            payload[DATASET_ITEM_IDS_KEY] = dataset_item_ids
-        if reference_ids:
-            payload[REFERENCE_IDS_KEY] = reference_ids
-        return self._client.create_slice(self.id, payload)
+        return self._client.create_slice(
+            self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
+        )
 
-    def delete_item(self, item_id: str = None, reference_id: str = None):
-        if bool(item_id) == bool(reference_id):
-            raise Exception(
-                "You must specify either a reference_id or an item_id for a DatasetItem."
-            )
+    def delete_item(self, reference_id: str):
         return self._client.delete_dataset_item(
-            self.id, reference_id=reference_id, item_id=item_id
+            self.id, reference_id=reference_id
         )
 
     def list_autotags(self):

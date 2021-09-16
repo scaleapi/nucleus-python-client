@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.1.18"
+version = "0.1.19"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -49,6 +49,7 @@ mypy = "^0.812"
 coverage = "^5.5"
 pre-commit = "^2.12.1"
 jupyterlab = "^3.1.10"
+absl-py = "^0.13.0"
 
 [tool.pytest.ini_options]
 markers = [
