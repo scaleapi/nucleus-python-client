@@ -102,8 +102,6 @@ def test_slice_create_and_export(dataset):
     dataset.annotate(annotations=[annotation_in_slice])
 
     expected_box_annotation = copy.deepcopy(annotation_in_slice)
-    expected_box_annotation.annotation_id = None
-    expected_box_annotation.metadata = {}
 
     exported = slc.items_and_annotations()
     assert exported[0][ITEM_KEY] == ds_items[0]

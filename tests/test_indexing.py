@@ -38,6 +38,7 @@ def dataset(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
 
 
+@pytest.mark.integration
 def test_index_integration(dataset):
     signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
     create_response = dataset.create_custom_index(

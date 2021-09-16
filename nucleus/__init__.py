@@ -1,54 +1,7 @@
 """
 Nucleus Python Library.
 
-Data formats used:
-
-_____________________________________________________________________________________________________
-
-DatasetItem
-
-image_url       |   str     |   The URL containing the image for the given row of data.\n
-reference_id    |   str     |   An optional user-specified identifier to reference this given image.\n
-metadata        |   dict    |   All of column definitions for this item.
-                |           |   The keys should match the user-specified column names,
-                |           |   and the corresponding values will populate the cell under the column.\n
-_____________________________________________________________________________________________________
-
-
-Box2DGeometry:
-
-x               |   float   |   The distance, in pixels, between the left border of the bounding box
-                |           |   and the left border of the image.\n
-y               |   float   |   The distance, in pixels, between the top border of the bounding box
-                |           |   and the top border of the image.\n
-width	        |   float   |   The width in pixels of the annotation.\n
-height	        |   float   |   The height in pixels of the annotation.\n
-
-Box2DAnnotation:
-
-item_id         |   str     |   The internally-controlled item identifier to associate this annotation with.
-                |           |   The reference_id field should be empty if this field is populated.\n
-reference_id    |   str     |   The user-specified reference identifier to associate this annotation with.\n
-                |           |   The item_id field should be empty if this field is populated.
-label	        |   str     |	The label for this annotation (e.g. car, pedestrian, bicycle).\n
-type	        |   str     |   The type of this annotation. It should always be the box string literal.\n
-geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
-metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
-
-_____________________________________________________________________________________________________
-
-Box2DDetection:
-
-item_id         |   str     |   The internally-controlled item identifier to associate this annotation with.
-                |           |   The reference_id field should be empty if this field is populated.\n
-reference_id    |   str     |   The user-specified reference identifier to associate this annotation with.
-                |           |   The item_id field should be empty if this field is populated.\n
-label	        |   str     |	The label for this annotation (e.g. car, pedestrian, bicycle).\n
-type	        |   str     |   The type of this annotation. It should always be the box string literal.\n
-confidence      |   float   |   The optional confidence level of this annotation.
-                |           |   It should be between 0 and 1 (inclusive).\n
-geometry        |   dict    |   Representation of the bounding box in the Box2DGeometry format.\n
-metadata        |   dict    |   An arbitrary metadata blob for the annotation.\n
+For full documentation see: https://dashboard.scale.com/nucleus/docs/api?language=python
 """
 import asyncio
 import json
@@ -83,7 +36,6 @@ from .constants import (
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
     DATASET_ID_KEY,
-    DATASET_ITEM_IDS_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -246,11 +198,8 @@ class NucleusClient:
             for item in dataset_items:
                 image_url = item.get("original_image_url")
                 metadata = item.get("metadata", None)
-                item_id = item.get("id", None)
                 ref_id = item.get("ref_id", None)
-                dataset_item = DatasetItem(
-                    image_url, ref_id, item_id, metadata
-                )
+                dataset_item = DatasetItem(image_url, ref_id, metadata)
                 constructed_dataset_items.append(dataset_item)
         elif error:
             raise DatasetItemRetrievalError(message=error)
@@ -351,9 +300,7 @@ class NucleusClient:
         return self.make_request({}, f"dataset/{dataset_id}", requests.delete)
 
     @sanitize_string_args
-    def delete_dataset_item(
-        self, dataset_id: str, item_id: str = None, reference_id: str = None
-    ) -> dict:
+    def delete_dataset_item(self, dataset_id: str, reference_id) -> dict:
         """
         Deletes a private dataset based on datasetId.
         Returns an empty payload where response status `200` indicates
@@ -361,16 +308,11 @@ class NucleusClient:
         :param payload: { "name": str }
         :return: { "dataset_id": str, "name": str }
         """
-        if item_id:
-            return self.make_request(
-                {}, f"dataset/{dataset_id}/{item_id}", requests.delete
-            )
-        else:  # Assume reference_id is provided
-            return self.make_request(
-                {},
-                f"dataset/{dataset_id}/refloc/{reference_id}",
-                requests.delete,
-            )
+        return self.make_request(
+            {},
+            f"dataset/{dataset_id}/refloc/{reference_id}",
+            requests.delete,
+        )
 
     def populate_dataset(
         self,
@@ -1018,9 +960,6 @@ class NucleusClient:
         as a means of identifying items in the dataset.
 
         "name" -- The human-readable name of the slice.
-
-        "dataset_item_ids" -- An optional list of dataset item ids for the items in the slice
-
         "reference_ids" -- An optional list of user-specified identifier for the items in the slice
 
         :param
@@ -1028,7 +967,6 @@ class NucleusClient:
         payload:
         {
             "name": str,
-            "dataset_item_ids": List[str],
             "reference_ids": List[str],
         }
         :return: new Slice object
@@ -1054,14 +992,12 @@ class NucleusClient:
 
         :param
         slice_id: id of the slice
-        id_type: the type of IDs you want in response (either "reference_id" or "dataset_item_id")
-        to identify the DatasetItems
 
         :return:
         {
             "name": str,
             "dataset_id": str,
-            "dataset_item_ids": List[str],
+            "reference_ids": List[str],
         }
         """
         response = self.make_request(
@@ -1113,8 +1049,7 @@ class NucleusClient:
     def append_to_slice(
         self,
         slice_id: str,
-        dataset_item_ids: List[str] = None,
-        reference_ids: List[str] = None,
+        reference_ids: List[str],
     ) -> dict:
         """
         Appends to a slice from items already present in a dataset.
@@ -1122,7 +1057,6 @@ class NucleusClient:
         as a means of identifying items in the dataset.
 
         :param
-        dataset_item_ids: List[str],
         reference_ids: List[str],
 
         :return:
@@ -1130,18 +1064,10 @@ class NucleusClient:
             "slice_id": str,
         }
         """
-        if dataset_item_ids and reference_ids:
-            raise Exception(
-                "You cannot specify both dataset_item_ids and reference_ids"
-            )
 
-        ids_to_append: Dict[str, Any] = {}
-        if dataset_item_ids:
-            ids_to_append[DATASET_ITEM_IDS_KEY] = dataset_item_ids
-        if reference_ids:
-            ids_to_append[REFERENCE_IDS_KEY] = reference_ids
-
-        response = self.make_request(ids_to_append, f"slice/{slice_id}/append")
+        response = self.make_request(
+            {REFERENCE_IDS_KEY: reference_ids}, f"slice/{slice_id}/append"
+        )
         return response
 
     def list_autotags(self, dataset_id: str) -> List[str]:
@@ -1194,7 +1120,7 @@ class NucleusClient:
 
         :param
         dataset_id: id of dataset that the custom index is being added to.
-        embeddings_urls: list of urls, each of which being a json mapping dataset_item_id -> embedding vector
+        embeddings_urls: list of urls, each of which being a json mapping reference_id -> embedding vector
         embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
         """
         return self.make_request(
