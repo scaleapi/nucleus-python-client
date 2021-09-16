@@ -336,7 +336,7 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
+            dataset.autotag_items(autotag_name="NONSENSE_GARBAGE")
         assert (
             f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
             in str(api_error.value)
@@ -366,7 +366,7 @@ def test_dataset_export_autotag_training_items(CLIENT):
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
+            dataset.autotag_training_items(autotag_name="NONSENSE_GARBAGE")
         assert (
             f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
             in str(api_error.value)
