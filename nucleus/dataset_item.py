@@ -193,6 +193,5 @@ def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
             for key, value in Counter(ref_ids).items()
         }
         raise ValueError(
-            "Duplicate reference ids found among dataset_items: %s"
-            % duplicates
+            f"Duplicate reference ids found among dataset_items: {duplicates}"
         )
