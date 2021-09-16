@@ -24,6 +24,7 @@ from .constants import (
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    AUTOTAG_SCORE_THRESHOLD,
     UPDATE_KEY,
 )
 from .dataset_item import (
@@ -86,21 +87,36 @@ class Dataset:
         return self._client.get_dataset_items(self.id)
 
     @sanitize_string_args
-    def autotag_scores(self, autotag_name, for_scores_greater_than=0):
-        """Export the autotag scores above a threshold, largest scores first.
-
-        If you have pandas installed, you can create a pandas dataframe using
-
-        pandas.Dataframe(dataset.autotag_scores(autotag_name))
+    def autotag_items(self, autotag_name, for_scores_greater_than=0):
+        """For a given Autotag of this dataset, export its tagged items with scores above a threshold, largest scores first.
 
         :return: dictionary of the form
-            {'ref_ids': List[str],
-             'datset_item_ids': List[str],
-             'score': List[float]}
+            {
+                'autotagItems': AutotagItem[],
+                'autotag': Autotag
+            }
+        See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-items for more details on the return types.
+        """
+        response = self._client.make_request(
+            payload={AUTOTAG_SCORE_THRESHOLD: for_scores_greater_than},
+            route=f"autotag/dataset/{self.id}/autotag/{autotag_name}/taggedItems",
+            requests_command=requests.get,
+        )
+        return response
+
+    def autotag_training_items(self, autotag_name):
+        """For a given Autotag of this dataset, export its training items. These are user selected positives during refinement.
+
+        :return: dictionary of the form
+            {
+                'autotagTrainingItems': AutotagTrainingItem[],
+                'autotag': Autotag
+            }
+        See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-training-items for more details on the return types.
         """
         response = self._client.make_request(
             payload={},
-            route=f"autotag/{self.id}/{autotag_name}/{for_scores_greater_than}",
+            route=f"autotag/dataset/{self.id}/autotag/{autotag_name}/trainingItems",
             requests_command=requests.get,
         )
         return response
