@@ -23,6 +23,7 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
+    TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
     WIDTH_KEY,
@@ -319,9 +320,9 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
 @dataclass
 class CategoryAnnotation(Annotation):
     label: str
+    taxonomy_name: str
     reference_id: Optional[str] = None
     item_id: Optional[str] = None
-    annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
@@ -330,22 +331,21 @@ class CategoryAnnotation(Annotation):
 
     @classmethod
     def from_json(cls, payload: dict):
-        # TODO: Remove? geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
             label=payload.get(LABEL_KEY, 0),
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             item_id=payload.get(DATASET_ITEM_ID_KEY, None),
-            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
     def to_payload(self) -> dict:
         return {
             LABEL_KEY: self.label,
+            TAXONOMY_NAME_KEY: self.taxonomy_name,
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
-            ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
         }
 

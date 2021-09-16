@@ -84,6 +84,7 @@ SLICE_ID_KEY = "slice_id"
 STATUS_CODE_KEY = "status_code"
 STATUS_KEY = "status"
 SUCCESS_STATUS_CODES = [200, 201, 202]
+TAXONOMY_NAME_KEY = "taxonomy_name"
 TYPE_KEY = "type"
 UPDATED_ITEMS = "updated_items"
 UPDATE_KEY = "update"

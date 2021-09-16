@@ -162,7 +162,7 @@ TEST_CATEGORY_ANNOTATIONS = [
     {
         "label": f"[Pytest] Category Annotation ${i}",
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
-        "annotation_id": f"[Pytest] Category Annotation Annotation Id{i}",
+        "taxonomy_name": f"[Pytest] Category Taxonomy{i}",
     }
     for i in range(len(TEST_IMG_URLS))
 ]
@@ -278,9 +278,8 @@ def assert_category_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert annotation_instance.label == annotation_dict["label"]
-
     assert (
-        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+        annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
     )
 
 

@@ -66,7 +66,9 @@ def dataset(CLIENT):
 
 def test_box_gt_upload(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    print(annotation)
     response = dataset.annotate(annotations=[annotation])
+    print(response)
 
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 1
@@ -322,6 +324,63 @@ def test_polygon_gt_upload_ignore(dataset):
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
         response_annotation, TEST_POLYGON_ANNOTATIONS[0]
+    )
+
+
+def test_category_gt_upload_update(dataset):
+    annotation = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_CATEGORY_ANNOTATIONS[1])
+    annotation_update_params["reference_id"] = TEST_CATEGORY_ANNOTATIONS[0][
+        "reference_id"
+    ]
+
+    annotation_update = CategoryAnnotation.from_json(annotation_update_params)
+    response = dataset.annotate(annotations=[annotation_update], update=True)
+
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, annotation_update_params
+    )
+
+
+def test_category_gt_upload_ignore(dataset):
+    annotation = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_CATEGORY_ANNOTATIONS[1])
+    annotation_update_params["reference_id"] = TEST_CATEGORY_ANNOTATIONS[0][
+        "reference_id"
+    ]
+
+    annotation_update = CategoryAnnotation.from_json(annotation_update_params)
+    # Default behavior is ignore.
+    response = dataset.annotate(annotations=[annotation_update])
+
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 1
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, TEST_CATEGORY_ANNOTATIONS[0]
     )
 
     @pytest.mark.integration
