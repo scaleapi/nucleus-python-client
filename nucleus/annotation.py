@@ -43,6 +43,8 @@ class Annotation:
             return PolygonAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
             return CuboidAnnotation.from_json(payload)
+        elif payload.get(TYPE_KEY, None) == CATEGORY_TYPE:
+            return CategoryAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
 
