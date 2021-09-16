@@ -329,7 +329,7 @@ def test_raises_error_for_duplicate():
     )
 
 
-def test_dataset_export_autotag_scores(CLIENT):
+def test_dataset_export_autotag_tagged_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
     if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
@@ -342,11 +342,51 @@ def test_dataset_export_autotag_scores(CLIENT):
             in str(api_error.value)
         )
 
-        scores = dataset.autotag_scores(autotag_name="PytestTestTag")
+        items = dataset.autotag_items(autotag_name="PytestTestTag")
 
-        for column in ["dataset_item_ids", "ref_ids", "scores"]:
-            assert column in scores
-            assert len(scores[column]) > 0
+        assert "autotagItems" in items
+        assert "autotag" in items
+
+        autotagItems = items["autotagItems"]
+        autotag = items["autotag"]
+
+        assert len(autotagItems) > 0
+        for item in autotagItems:
+            for column in ["ref_id", "score"]:
+                assert column in item
+
+        for column in ["id", "name", "status", "autotag_level"]:
+            assert column in autotag
+
+
+def test_dataset_export_autotag_training_items(CLIENT):
+    # This test can only run for the test user who has an indexed dataset.
+    # TODO: if/when we can create autotags via api, create one instead.
+    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
+
+        with pytest.raises(NucleusAPIError) as api_error:
+            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
+        assert (
+            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
+            in str(api_error.value)
+        )
+
+        items = dataset.autotag_training_items(autotag_name="PytestTestTag")
+
+        assert "autotagItems" in items
+        assert "autotag" in items
+
+        autotagTrainingItems = items["autotagPositiveTrainingItems"]
+        autotag = items["autotag"]
+
+        assert len(autotagTrainingItems) > 0
+        for item in autotagTrainingItems:
+            for column in ["ref_id"]:
+                assert column in item
+
+        for column in ["id", "name", "status", "autotag_level"]:
+            assert column in autotag
 
 
 @pytest.mark.integration

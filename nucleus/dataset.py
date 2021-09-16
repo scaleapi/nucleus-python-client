@@ -93,8 +93,18 @@ class Dataset:
 
         :return: dictionary of the form
             {
-                'autotagItems': AutotagItem[],
-                'autotag': Autotag
+                'autotagItems': {
+                    ref_id: str,
+                    score: float,
+                    model_prediction_id: str | None
+                    ground_truth_annotation_id: str | None,
+                }[],
+                'autotag': {
+                    id: str,
+                    name: str,
+                    status: 'started' | 'completed',
+                    autotag_level: 'Image' | 'Object'
+                }
             }
         See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-items for more details on the return types.
         """
@@ -110,8 +120,17 @@ class Dataset:
 
         :return: dictionary of the form
             {
-                'autotagTrainingItems': AutotagTrainingItem[],
-                'autotag': Autotag
+                'autotagPositiveTrainingItems': {
+                    ref_id: str,
+                    model_prediction_id: str | None,
+                    ground_truth_annotation_id: str | None,
+                }[],
+                'autotag': {
+                    id: str,
+                    name: str,
+                    status: 'started' | 'completed',
+                    autotag_level: 'Image' | 'Object'
+                }
             }
         See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-training-items for more details on the return types.
         """
