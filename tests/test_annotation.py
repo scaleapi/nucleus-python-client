@@ -73,9 +73,7 @@ def dataset(CLIENT):
 
 def test_box_gt_upload(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
-    print(annotation)
     response = dataset.annotate(annotations=[annotation])
-    print(response)
 
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 1
