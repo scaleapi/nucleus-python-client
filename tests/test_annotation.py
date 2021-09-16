@@ -64,7 +64,6 @@ def dataset(CLIENT):
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
-    assert ERROR_PAYLOAD not in response.json()
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)

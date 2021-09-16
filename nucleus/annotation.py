@@ -307,8 +307,8 @@ class CategoryAnnotation(Annotation):
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
-            label=payload.get(LABEL_KEY, 0),
-            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+            label=payload[LABEL_KEY],
+            taxonomy_name=payload[TAXONOMY_NAME_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             metadata=payload.get(METADATA_KEY, {}),
         )
