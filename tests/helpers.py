@@ -160,9 +160,9 @@ TEST_CUBOID_ANNOTATIONS = [
 
 TEST_CATEGORY_ANNOTATIONS = [
     {
-        "label": f"[Pytest] Category Annotation ${i}",
+        "label": f"[Pytest] Category Label ${i}",
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
-        "taxonomy_name": f"[Pytest] Category Taxonomy{i}",
+        "taxonomy_name": "[Pytest] Category Taxonomy 1",
     }
     for i in range(len(TEST_IMG_URLS))
 ]
