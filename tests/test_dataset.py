@@ -374,7 +374,7 @@ def test_dataset_export_autotag_training_items(CLIENT):
 
         items = dataset.autotag_training_items(autotag_name="PytestTestTag")
 
-        assert "autotagItems" in items
+        assert "autotagPositiveTrainingItems" in items
         assert "autotag" in items
 
         autotagTrainingItems = items["autotagPositiveTrainingItems"]
