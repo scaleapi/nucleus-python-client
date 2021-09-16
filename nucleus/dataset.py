@@ -35,6 +35,7 @@ from .scene import LidarScene, check_all_scene_paths_remote
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
+    construct_taxonomy_payload,
 )
 
 WARN_FOR_LARGE_UPLOAD = 50000
@@ -392,6 +393,25 @@ class Dataset:
     def create_image_index(self):
         response = self._client.create_image_index(self.id)
         return AsyncJob.from_json(response, self._client)
+
+    def add_taxonomy(
+        self,
+        taxonomy_name: str,
+        taxonomy_type: str,
+        labels: List[str],
+    ):
+        """
+        Creates a new taxonomy.
+        Returns a response with dataset_id, taxonomy_name and type for the new taxonomy.
+        :param taxonomy_name: name of the taxonomy
+        :param type: type of the taxonomy
+        :param labels: list of possible labels for the taxonomy
+        """
+        return self._client.make_request(
+            construct_taxonomy_payload(taxonomy_name, taxonomy_type, labels),
+            f"dataset/{self.id}/add_taxonomy",
+            requests_command=requests.post,
+        )
 
     def check_index_status(self, job_id: str):
         return self._client.check_index_status(job_id)
