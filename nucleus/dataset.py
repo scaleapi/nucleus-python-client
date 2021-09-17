@@ -110,7 +110,7 @@ class Dataset:
         """
         response = self._client.make_request(
             payload={AUTOTAG_SCORE_THRESHOLD: for_scores_greater_than},
-            route=f"autotag/dataset/{self.id}/autotag/{autotag_name}/taggedItems",
+            route=f"dataset/{self.id}/autotag/{autotag_name}/taggedItems",
             requests_command=requests.get,
         )
         return response
@@ -136,7 +136,7 @@ class Dataset:
         """
         response = self._client.make_request(
             payload={},
-            route=f"autotag/dataset/{self.id}/autotag/{autotag_name}/trainingItems",
+            route=f"dataset/{self.id}/autotag/{autotag_name}/trainingItems",
             requests_command=requests.get,
         )
         return response

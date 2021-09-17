@@ -332,11 +332,11 @@ def test_raises_error_for_duplicate():
 def test_dataset_export_autotag_tagged_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+    if NUCLEUS_PYTEST_USER_ID in os.environ["NUCLEUS_PYTEST_USER_ID"]:
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
+            dataset.autotag_items(autotag_name="NONSENSE_GARBAGE")
         assert (
             f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
             in str(api_error.value)
@@ -362,11 +362,11 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
 def test_dataset_export_autotag_training_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+    if NUCLEUS_PYTEST_USER_ID in os.environ["NUCLEUS_PYTEST_USER_ID"]:
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
+            dataset.autotag_training_items(autotag_name="NONSENSE_GARBAGE")
         assert (
             f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
             in str(api_error.value)
@@ -374,7 +374,7 @@ def test_dataset_export_autotag_training_items(CLIENT):
 
         items = dataset.autotag_training_items(autotag_name="PytestTestTag")
 
-        assert "autotagItems" in items
+        assert "autotagPositiveTrainingItems" in items
         assert "autotag" in items
 
         autotagTrainingItems = items["autotagPositiveTrainingItems"]
