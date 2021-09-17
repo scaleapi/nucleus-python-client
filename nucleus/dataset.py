@@ -96,7 +96,7 @@ class Dataset:
                 'autotagItems': {
                     ref_id: str,
                     score: float,
-                    model_prediction_id: str | None
+                    model_prediction_annotation_id: str | None
                     ground_truth_annotation_id: str | None,
                 }[],
                 'autotag': {
@@ -122,7 +122,7 @@ class Dataset:
             {
                 'autotagPositiveTrainingItems': {
                     ref_id: str,
-                    model_prediction_id: str | None,
+                    model_prediction_annotation_id: str | None,
                     ground_truth_annotation_id: str | None,
                 }[],
                 'autotag': {
