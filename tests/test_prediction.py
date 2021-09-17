@@ -1,7 +1,12 @@
 from nucleus.job import AsyncJob
+import os
 import pytest
 import time
 from .helpers import (
+    DATASET_WITH_PREDICTIONS,
+    DATASET_WITH_PREDICTIONS_MODEL_RUN_ID,
+    DATASET_WITH_PREDICTIONS_SAMPLE_PREDICTION_ID,
+    NUCLEUS_PYTEST_USER_ID,
     TEST_DATASET_NAME,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
@@ -74,6 +79,19 @@ def model_run(CLIENT):
     assert response == {"message": "Beginning dataset deletion..."}
     response = CLIENT.delete_model(model.id)
     assert response == {}
+
+
+def test_pred_loc(CLIENT):
+    if NUCLEUS_PYTEST_USER_ID in os.environ["NUCLEUS_PYTEST_USER_ID"]:
+        run = CLIENT.get_model_run(
+            DATASET_WITH_PREDICTIONS_MODEL_RUN_ID, DATASET_WITH_PREDICTIONS
+        )
+        response = run.prediction_loc(
+            DATASET_WITH_PREDICTIONS_SAMPLE_PREDICTION_ID
+        )
+
+        assert response["ref_id"] is not None
+        assert response["prediction"] is not None
 
 
 def test_box_pred_upload(model_run):

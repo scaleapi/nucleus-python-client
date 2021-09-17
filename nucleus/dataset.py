@@ -22,6 +22,7 @@ from .constants import (
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     NAME_KEY,
+    REFERENCE_ID_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     AUTOTAG_SCORE_THRESHOLD,
@@ -384,6 +385,28 @@ class Dataset:
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)
         return format_dataset_item_response(response)
+
+    def ground_truth_loc(self, ground_truth_id: str):
+        """
+        Returns info for single ground truth Annotation by its id.
+        :param prediction_id: internally controlled id for ground truth annotations.
+        :return:
+        {
+            "ref_id": Reference id of dataset item associated with this annotation
+            "groundTruth": BoxAnnotation | PolygonAnnotation | CuboidAnnotation
+        }
+        """
+        response = self._client.ground_truth_loc(self.id, ground_truth_id)
+        annotation_type = response["groundTruth"].keys()[0]
+        return {
+            "ref_id": response["ref_id"],
+            "ground_truth": Annotation.from_json(
+                {
+                    REFERENCE_ID_KEY: response["ref_id"],
+                    **response["groundTruth"][annotation_type],
+                }
+            ),
+        }
 
     def create_slice(
         self,

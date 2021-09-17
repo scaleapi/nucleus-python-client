@@ -160,6 +160,26 @@ class ModelRun:
         )
         return self._format_prediction_response(response)
 
+    def prediction_loc(self, prediction_id: str):
+        """
+        Returns info for single Prediction by its id.
+        :param prediction_id: internally controlled id for model predictions.
+        :return:
+        {
+            "ref_id": Reference id of dataset item associated with this prediction
+            "prediction": BoxPrediction | PolygonPrediction | CuboidPrediction
+        }
+        """
+        response = self._client.prediction_loc(
+            self.model_run_id, prediction_id
+        )
+        return {
+            "ref_id": response["ref_id"],
+            "prediction": self._format_prediction_response(
+                {"predictions": [response["prediction"]]}
+            ),
+        }
+
     def ungrouped_export(self):
         json_response = self._client.make_request(
             payload={},
