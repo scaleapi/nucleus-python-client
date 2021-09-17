@@ -14,6 +14,7 @@ from nucleus.annotation import (
     BoxAnnotation,
     CuboidAnnotation,
     PolygonAnnotation,
+    CategoryAnnotation,
     SegmentationAnnotation,
 )
 
@@ -22,6 +23,7 @@ from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CUBOID_TYPE,
+    CATEGORY_TYPE,
     ITEM_KEY,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
@@ -116,6 +118,11 @@ def convert_export_payload(api_payload):
         for cuboid in row[CUBOID_TYPE]:
             cuboid[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[CUBOID_TYPE].append(CuboidAnnotation.from_json(cuboid))
+        for category in row[CATEGORY_TYPE]:
+            category[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[CATEGORY_TYPE].append(
+                CategoryAnnotation.from_json(category)
+            )
         return_payload_row[ANNOTATIONS_KEY] = annotations
         return_payload.append(return_payload_row)
     return return_payload

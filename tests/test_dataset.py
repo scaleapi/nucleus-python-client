@@ -16,8 +16,10 @@ from nucleus.annotation import (
     BoxAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
+    CategoryAnnotation,
 )
 from nucleus.constants import (
+    CATEGORY_TYPE,
     DATASET_ID_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
@@ -39,6 +41,7 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    TEST_CATEGORY_ANNOTATIONS,
     DATASET_WITH_AUTOTAG,
     NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
@@ -72,6 +75,13 @@ def test_reprs():
 @pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+
+    response = ds.add_taxonomy(
+        "[Pytest] Category Taxonomy 1",
+        "category",
+        [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
+    )
+
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
@@ -449,6 +459,9 @@ def test_append_and_export(dataset):
     polygon_annotation = PolygonAnnotation.from_json(
         TEST_POLYGON_ANNOTATIONS[0]
     )
+    category_annotation = CategoryAnnotation.from_json(
+        TEST_CATEGORY_ANNOTATIONS[0]
+    )
 
     ds_items = [
         DatasetItem(
@@ -465,6 +478,7 @@ def test_append_and_export(dataset):
             box_annotation,
             polygon_annotation,
             segmentation_annotation,
+            category_annotation,
         ]
     )
     # We don't export everything on segmentation annotations in order to speed up export.
@@ -486,6 +500,9 @@ def test_append_and_export(dataset):
         exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
     ) == sort_labelmap(clear_fields(segmentation_annotation))
     assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
+    assert (
+        exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
+    )
 
 
 def test_export_embeddings(CLIENT):
