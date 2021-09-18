@@ -365,9 +365,10 @@ def test_annotate_async(dataset: Dataset):
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
 
     job: AsyncJob = dataset.annotate(
-        annotations=[semseg, polygon, bbox],
+        annotations=[semseg, polygon, bbox, category],
         asynchronous=True,
     )
     job.sleep_until_complete()
@@ -377,8 +378,47 @@ def test_annotate_async(dataset: Dataset):
         "message": {
             "annotation_upload": {
                 "epoch": 1,
-                "total": 2,
+                "total": 3,
                 "errored": 0,
+                "ignored": 0,
+                "datasetId": dataset.id,
+                "processed": 3,
+            },
+            "segmentation_upload": {
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 1,
+            },
+        },
+        "job_progress": "1.00",
+        "completed_steps": 4,
+        "total_steps": 4,
+    }
+
+
+@pytest.mark.integration
+def test_annotate_async_with_error(dataset: Dataset):
+    dataset.append(make_dataset_items())
+    semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
+    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
+    category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    bbox.reference_id = "fake_garbage"
+
+    job: AsyncJob = dataset.annotate(
+        annotations=[semseg, polygon, bbox, category],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 3,
+                "errored": 1,
                 "ignored": 0,
                 "datasetId": dataset.id,
                 "processed": 2,
@@ -390,46 +430,8 @@ def test_annotate_async(dataset: Dataset):
             },
         },
         "job_progress": "1.00",
-        "completed_steps": 3,
-        "total_steps": 3,
-    }
-
-
-@pytest.mark.integration
-def test_annotate_async_with_error(dataset: Dataset):
-    dataset.append(make_dataset_items())
-    semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
-    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
-    bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
-    bbox.reference_id = "fake_garbage"
-
-    job: AsyncJob = dataset.annotate(
-        annotations=[semseg, polygon, bbox],
-        asynchronous=True,
-    )
-    job.sleep_until_complete()
-
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "epoch": 1,
-                "total": 2,
-                "errored": 1,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 1,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 3,
-        "total_steps": 3,
+        "completed_steps": 4,
+        "total_steps": 4,
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())

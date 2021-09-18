@@ -402,3 +402,19 @@ def test_category_gt_upload_ignore(dataset):
         job_status = job.status()
         assert job_status["status"] == "Completed"
         assert job_status["job_id"] == job.id
+
+    @pytest.mark.integration
+    def test_category_gt_deletion(dataset):
+        annotation = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+
+        print(annotation)
+
+        response = dataset.annotate(annotations=[annotation])
+
+        assert response["annotations_processed"] == 1
+
+        job = dataset.delete_annotations()
+        job.sleep_until_complete()
+        job_status = job.status()
+        assert job_status["status"] == "Completed"
+        assert job_status["job_id"] == job.id
