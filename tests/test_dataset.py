@@ -33,8 +33,6 @@ from nucleus.constants import (
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
-    DATASET_WITH_GROUND_TRUTH,
-    DATASET_WITH_GROUND_TRUTH_SAMPLE_GROUND_TRUTH_ID,
     LOCAL_FILENAME,
     TEST_BOX_ANNOTATIONS,
     TEST_DATASET_NAME,
@@ -100,15 +98,6 @@ def make_dataset_items():
             )
         )
     return ds_items_with_metadata
-
-
-def test_dataset_ground_truth_loc(CLIENT):
-    ds = CLIENT.get_dataset(DATASET_WITH_GROUND_TRUTH)
-    response = ds.ground_truth_loc(
-        DATASET_WITH_GROUND_TRUTH_SAMPLE_GROUND_TRUTH_ID
-    )
-    assert response["ref_id"] is not None
-    assert response["ground_truth"] is not None
 
 
 def test_dataset_create_and_delete(CLIENT):

@@ -951,40 +951,6 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
 
-    def prediction_loc(self, model_run_id: str, prediction_id: str):
-        """
-        Returns info for single Prediction by its id.
-        :param model_run_id: id of the model run
-        :param prediction_id: internally controlled id for model predictions.
-        :return:
-        {
-            "ref_id": Reference id of dataset item associated with this prediction
-            "prediction": BoxPrediction | PolygonPrediction | CuboidPrediction
-        }
-        """
-        return self.make_request(
-            {},
-            f"modelRun/{model_run_id}/prediction/loc/{prediction_id}",
-            requests.get,
-        )
-
-    def ground_truth_loc(self, dataset_id: str, ground_truth_id: str):
-        """
-        Returns info for single Prediction by its id.
-        :param dataset_id: id of the dataset
-        :param ground_truth_id: internally controlled id for ground truth annotations.
-        :return:
-        {
-            "ref_id": Reference id of dataset item associated with this prediction
-            "ground_truth": BoxAnnotation | PolygonAnnotation | CuboidAnnotation
-        }
-        """
-        return self.make_request(
-            {},
-            f"dataset/{dataset_id}/groundTruth/loc/{ground_truth_id}",
-            requests.get,
-        )
-
     def create_slice(self, dataset_id: str, payload: dict) -> Slice:
         """
         Creates a slice from items already present in a dataset.

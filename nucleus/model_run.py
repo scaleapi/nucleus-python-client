@@ -19,6 +19,7 @@ from .prediction import (
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
+    from_json,
 )
 
 
@@ -160,25 +161,22 @@ class ModelRun:
         )
         return self._format_prediction_response(response)
 
-    def prediction_loc(self, prediction_id: str):
+    def prediction_loc(self, reference_id: str, annotation_id: str):
         """
-        Returns info for single Prediction by its id.
-        :param prediction_id: internally controlled id for model predictions.
+        Returns info for single Prediction by its reference id and annotation id.
+        :param reference_id: the user specified id for the image
+        :param annotation_id: the user specified id for the prediction
         :return:
-        {
-            "ref_id": Reference id of dataset item associated with this prediction
-            "prediction": BoxPrediction | PolygonPrediction | CuboidPrediction
-        }
+         BoxPrediction | PolygonPrediction | CuboidPrediction
         """
-        response = self._client.prediction_loc(
-            self.model_run_id, prediction_id
+
+        response = self._client.make_request(
+            {},
+            f"modelRun/{self.model_run_id}/prediction/loc/{reference_id}/{annotation_id}",
+            requests.get,
         )
-        return {
-            "ref_id": response["ref_id"],
-            "prediction": self._format_prediction_response(
-                {"predictions": [response["prediction"]]}
-            ),
-        }
+
+        return from_json(response)
 
     def ungrouped_export(self):
         json_response = self._client.make_request(

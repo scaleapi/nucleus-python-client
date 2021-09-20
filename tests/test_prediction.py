@@ -3,10 +3,6 @@ import os
 import pytest
 import time
 from .helpers import (
-    DATASET_WITH_PREDICTIONS,
-    DATASET_WITH_PREDICTIONS_MODEL_RUN_ID,
-    DATASET_WITH_PREDICTIONS_SAMPLE_PREDICTION_ID,
-    NUCLEUS_PYTEST_USER_ID,
     TEST_DATASET_NAME,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
@@ -25,13 +21,9 @@ from nucleus import (
     PolygonPrediction,
     SegmentationPrediction,
     DatasetItem,
-    Segment,
     ModelRun,
-    Point,
 )
 from nucleus.constants import ERROR_PAYLOAD
-
-from nucleus import utils
 
 
 def test_reprs():
@@ -81,19 +73,6 @@ def model_run(CLIENT):
     assert response == {}
 
 
-def test_pred_loc(CLIENT):
-    if NUCLEUS_PYTEST_USER_ID in os.environ["NUCLEUS_PYTEST_USER_ID"]:
-        run = CLIENT.get_model_run(
-            DATASET_WITH_PREDICTIONS_MODEL_RUN_ID, DATASET_WITH_PREDICTIONS
-        )
-        response = run.prediction_loc(
-            DATASET_WITH_PREDICTIONS_SAMPLE_PREDICTION_ID
-        )
-
-        assert response["ref_id"] is not None
-        assert response["prediction"] is not None
-
-
 def test_box_pred_upload(model_run):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
@@ -103,6 +82,10 @@ def test_box_pred_upload(model_run):
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["box"]
+    single_prediction = model_run.prediction_loc(
+        prediction.reference_id, prediction.annotation_id
+    )
+    assert response[0] == single_prediction
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
