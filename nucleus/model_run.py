@@ -165,7 +165,7 @@ class ModelRun:
         """
         Returns info for single Prediction by its reference id and annotation id.
         :param reference_id: the user specified id for the image
-        :param annotation_id: the user specified id for the prediction
+        :param annotation_id: the user specified id for the prediction, or if one was not provided, the Scale internally generated id for the prediction
         :return:
          BoxPrediction | PolygonPrediction | CuboidPrediction
         """
