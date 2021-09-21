@@ -389,7 +389,8 @@ class Dataset:
     def ground_truth_loc(self, reference_id: str, annotation_id: str):
         """
         Returns info for single ground truth Annotation by its id.
-        :param annotation_id: internally controlled id for ground truth annotations.
+        :param reference_id: User specified id for the dataset item the ground truth is attached to
+        :param annotation_id: User specified, or auto-generated id for the annotation
         :return:
         BoxAnnotation | PolygonAnnotation | CuboidAnnotation
         """
