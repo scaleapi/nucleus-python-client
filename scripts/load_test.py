@@ -4,6 +4,8 @@ from nucleus.job import JobError
 import nucleus
 import os
 
+from itertools import zip_longest
+
 import time
 
 
@@ -21,6 +23,8 @@ flags.DEFINE_string(
     "API Key to use. Defaults to NUCLEUS_PYTEST_API_KEY environment variable",
 )
 
+flags.DEFINE_integer("job_parallelism", 8, "Amount of concurrent jobs to use.")
+
 # Dataset upload flags
 flags.DEFINE_enum(
     "create_or_reuse_dataset",
@@ -35,12 +39,12 @@ flags.DEFINE_string(
 )
 flags.DEFINE_integer(
     "num_dataset_items",
-    100000,
+    10000000,
     "Number of dataset items to create if creating a dataset",
     lower_bound=0,
 )
 flags.DEFINE_bool(
-    "cleanup_dataset", True, "Whether to delete the dataset after the test."
+    "cleanup_dataset", False, "Whether to delete the dataset after the test."
 )
 
 # Annotation upload flags
@@ -54,10 +58,20 @@ flags.DEFINE_integer(
 # Prediction upload flags
 flags.DEFINE_integer(
     "num_predictions_per_dataset_item",
-    0,
+    1,
     "Number of annotations per dataset item",
     lower_bound=0,
 )
+
+TIMINGS = {}
+
+
+def chunk(iterable, chunk_size, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    args = [iter(iterable)] * chunk_size
+
+    for chunk_iterable in zip_longest(*args, fillvalue=fillvalue):
+        yield filter(lambda x: x is not None, chunk_iterable)
 
 
 def client():
@@ -126,15 +140,23 @@ def create_or_get_dataset():
         dataset = client().create_dataset("Privacy Mode Load Test Dataset")
         print("Starting dataset item upload")
         tic = time.time()
-        job = dataset.append(
-            dataset_item_generator(), update=True, asynchronous=True
-        )
-        try:
-            job.sleep_until_complete(False)
-        except JobError:
-            print(job.errors())
+        chunk_size = FLAGS.num_dataset_items // FLAGS.job_parallelism
+        jobs = []
+        for dataset_item_chunk in chunk(dataset_item_generator(), chunk_size):
+            jobs.append(
+                dataset.append(
+                    dataset_item_chunk, update=True, asynchronous=True
+                )
+            )
+
+        for job in jobs:
+            try:
+                job.sleep_until_complete(False)
+            except JobError:
+                print(job.errors())
         toc = time.time()
         print("Finished dataset item upload: %s" % (toc - tic))
+        TIMINGS[f"Dataset Item Upload {FLAGS.num_dataset_items}"] = toc - tic
     else:
         print(f"Reusing dataset {FLAGS.dataset_id}")
         dataset = client().get_dataset(FLAGS.dataset_id)
@@ -144,15 +166,26 @@ def create_or_get_dataset():
 def upload_annotations(dataset: Dataset):
     print("Starting annotation upload")
     tic = time.time()
-    job = dataset.annotate(
-        list(annotation_generator()), update=False, asynchronous=True
+    jobs = []
+    num_annotations = (
+        FLAGS.num_dataset_items * FLAGS.num_annotations_per_dataset_item
     )
-    try:
-        job.sleep_until_complete(False)
-    except JobError:
-        print(job.errors())
+    chunk_size = num_annotations // FLAGS.job_parallelism
+    for annotation_chunk in chunk(annotation_generator(), chunk_size):
+        jobs.append(
+            dataset.annotate(
+                list(annotation_chunk), update=False, asynchronous=True
+            )
+        )
+
+    for job in jobs:
+        try:
+            job.sleep_until_complete(False)
+        except JobError:
+            print(job.errors())
     toc = time.time()
     print("Finished annotation upload: %s" % (toc - tic))
+    TIMINGS[f"Annotation Upload {num_annotations}"] = toc - tic
 
 
 def upload_predictions(dataset: Dataset):
@@ -167,16 +200,24 @@ def upload_predictions(dataset: Dataset):
 
     print("Starting prediction upload")
 
-    job = run.predict(
-        list(prediction_generator()), update=True, asynchronous=True
+    num_predictions = (
+        FLAGS.num_dataset_items * FLAGS.num_predictions_per_dataset_item
     )
+    chunk_size = num_predictions // FLAGS.job_parallelism
+    jobs = []
+    for prediction_chunk in chunk(prediction_generator(), chunk_size):
+        jobs.append(
+            run.predict(list(prediction_chunk), update=True, asynchronous=True)
+        )
 
-    try:
-        job.sleep_until_complete(False)
-    except JobError:
-        print(job.errors())
+    for job in jobs:
+        try:
+            job.sleep_until_complete(False)
+        except JobError:
+            print(job.errors())
     toc = time.time()
     print("Finished prediction upload: %s" % (toc - tic))
+    TIMINGS[f"Prediction Upload {num_predictions}"] = toc - tic
 
 
 def main(unused_argv):
@@ -193,6 +234,8 @@ def main(unused_argv):
 
     if FLAGS.cleanup_dataset and FLAGS.create_or_reuse_dataset == "create":
         client().delete_dataset(dataset.id)
+
+    print(TIMINGS)
 
 
 if __name__ == "__main__":

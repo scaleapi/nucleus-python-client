@@ -10,10 +10,14 @@ from .annotation import (
 )
 from .constants import (
     ANNOTATION_ID_KEY,
+    BOX_TYPE,
+    CUBOID_TYPE,
+    POLYGON_TYPE,
     REFERENCE_ID_KEY,
     METADATA_KEY,
     GEOMETRY_KEY,
     LABEL_KEY,
+    TYPE_KEY,
     X_KEY,
     Y_KEY,
     WIDTH_KEY,
@@ -27,6 +31,17 @@ from .constants import (
     DIMENSIONS_KEY,
     YAW_KEY,
 )
+
+
+def from_json(payload: dict):
+    if payload.get(TYPE_KEY, None) == BOX_TYPE:
+        return BoxPrediction.from_json(payload)
+    elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
+        return PolygonPrediction.from_json(payload)
+    elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
+        return CuboidPrediction.from_json(payload)
+    else:
+        return SegmentationPrediction.from_json(payload)
 
 
 class SegmentationPrediction(SegmentationAnnotation):

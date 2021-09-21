@@ -385,6 +385,21 @@ class Dataset:
         response = self._client.dataitem_loc(self.id, dataset_item_id)
         return format_dataset_item_response(response)
 
+    def ground_truth_loc(self, reference_id: str, annotation_id: str):
+        """
+        Returns info for single ground truth Annotation by its id.
+        :param reference_id: User specified id for the dataset item the ground truth is attached to
+        :param annotation_id: User specified, or auto-generated id for the annotation
+        :return:
+        BoxAnnotation | PolygonAnnotation | CuboidAnnotation
+        """
+        response = self._client.make_request(
+            {},
+            f"dataset/{self.id}/groundTruth/loc/{reference_id}/{annotation_id}",
+            requests.get,
+        )
+        return Annotation.from_json(response)
+
     def create_slice(
         self,
         name: str,

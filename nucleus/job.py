@@ -40,13 +40,13 @@ class AsyncJob:
     def sleep_until_complete(self, verbose_std_out=True):
         while 1:
             status = self.status()
-
             time.sleep(JOB_POLLING_INTERVAL)
 
             if verbose_std_out:
                 print(f"Status at {time.ctime()}: {status}")
             if status["status"] == "Running":
                 continue
+
             break
 
         final_status = status

@@ -1,4 +1,5 @@
 from nucleus.job import AsyncJob
+import os
 import pytest
 import time
 from .helpers import (
@@ -20,13 +21,11 @@ from nucleus import (
     PolygonPrediction,
     SegmentationPrediction,
     DatasetItem,
-    Segment,
     ModelRun,
+    Segment,
     Point,
 )
 from nucleus.constants import ERROR_PAYLOAD
-
-from nucleus import utils
 
 
 def test_reprs():
@@ -85,6 +84,10 @@ def test_box_pred_upload(model_run):
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["box"]
+    single_prediction = model_run.prediction_loc(
+        prediction.reference_id, prediction.annotation_id
+    )
+    assert response[0] == single_prediction
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
