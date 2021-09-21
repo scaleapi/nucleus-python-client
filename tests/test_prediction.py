@@ -22,6 +22,7 @@ from nucleus import (
     SegmentationPrediction,
     DatasetItem,
     ModelRun,
+    Segment,
 )
 from nucleus.constants import ERROR_PAYLOAD
 

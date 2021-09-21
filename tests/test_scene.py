@@ -320,6 +320,7 @@ def test_scene_upload_async(dataset):
                 "new_scenes": len(scenes),
                 "ignored_scenes": 0,
                 "scenes_errored": 0,
+                "updated_scenes": 0,
             }
         },
         "job_progress": "1.00",

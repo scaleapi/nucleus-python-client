@@ -332,7 +332,7 @@ def test_raises_error_for_duplicate():
 def test_dataset_export_autotag_tagged_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if NUCLEUS_PYTEST_USER_ID in os.environ["NUCLEUS_PYTEST_USER_ID"]:
+    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
@@ -362,7 +362,7 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
 def test_dataset_export_autotag_training_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if NUCLEUS_PYTEST_USER_ID in os.environ["NUCLEUS_PYTEST_USER_ID"]:
+    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
