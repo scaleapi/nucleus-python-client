@@ -23,6 +23,7 @@ from nucleus import (
     DatasetItem,
     ModelRun,
     Segment,
+    Point,
 )
 from nucleus.constants import ERROR_PAYLOAD
 
