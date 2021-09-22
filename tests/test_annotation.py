@@ -79,6 +79,11 @@ def test_box_gt_upload(dataset):
     assert response["annotations_ignored"] == 0
 
     response = dataset.refloc(annotation.reference_id)["annotations"]["box"]
+    single_annotation_response = dataset.ground_truth_loc(
+        annotation.reference_id, annotation.annotation_id
+    )
+
+    assert response[0] == single_annotation_response
     assert len(response) == 1
     response_annotation = response[0]
     assert_box_annotation_matches_dict(

@@ -19,6 +19,7 @@ ANNOTATION_TYPES = (
 )
 ANNOTATION_UPDATE_KEY = "update"
 AUTOTAGS_KEY = "autotags"
+AUTOTAG_SCORE_THRESHOLD = "score_threshold"
 EXPORTED_ROWS = "exportedRows"
 CAMERA_PARAMS_KEY = "camera_params"
 CLASS_PDF_KEY = "class_pdf"

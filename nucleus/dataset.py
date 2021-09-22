@@ -24,6 +24,7 @@ from .constants import (
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    AUTOTAG_SCORE_THRESHOLD,
     UPDATE_KEY,
 )
 from .dataset_item import (
@@ -87,21 +88,55 @@ class Dataset:
         return self._client.get_dataset_items(self.id)
 
     @sanitize_string_args
-    def autotag_scores(self, autotag_name, for_scores_greater_than=0):
-        """Export the autotag scores above a threshold, largest scores first.
-
-        If you have pandas installed, you can create a pandas dataframe using
-
-        pandas.Dataframe(dataset.autotag_scores(autotag_name))
+    def autotag_items(self, autotag_name, for_scores_greater_than=0):
+        """For a given Autotag of this dataset, export its tagged items with scores above a threshold, largest scores first.
 
         :return: dictionary of the form
-            {'ref_ids': List[str],
-             'datset_item_ids': List[str],
-             'score': List[float]}
+            {
+                'autotagItems': {
+                    ref_id: str,
+                    score: float,
+                    model_prediction_annotation_id: str | None
+                    ground_truth_annotation_id: str | None,
+                }[],
+                'autotag': {
+                    id: str,
+                    name: str,
+                    status: 'started' | 'completed',
+                    autotag_level: 'Image' | 'Object'
+                }
+            }
+        See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-items for more details on the return types.
+        """
+        response = self._client.make_request(
+            payload={AUTOTAG_SCORE_THRESHOLD: for_scores_greater_than},
+            route=f"dataset/{self.id}/autotag/{autotag_name}/taggedItems",
+            requests_command=requests.get,
+        )
+        return response
+
+    def autotag_training_items(self, autotag_name):
+        """For a given Autotag of this dataset, export its training items. These are user selected positives during refinement.
+
+        :return: dictionary of the form
+            {
+                'autotagPositiveTrainingItems': {
+                    ref_id: str,
+                    model_prediction_annotation_id: str | None,
+                    ground_truth_annotation_id: str | None,
+                }[],
+                'autotag': {
+                    id: str,
+                    name: str,
+                    status: 'started' | 'completed',
+                    autotag_level: 'Image' | 'Object'
+                }
+            }
+        See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-training-items for more details on the return types.
         """
         response = self._client.make_request(
             payload={},
-            route=f"autotag/{self.id}/{autotag_name}/{for_scores_greater_than}",
+            route=f"dataset/{self.id}/autotag/{autotag_name}/trainingItems",
             requests_command=requests.get,
         )
         return response
@@ -348,6 +383,21 @@ class Dataset:
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)
         return format_dataset_item_response(response)
+
+    def ground_truth_loc(self, reference_id: str, annotation_id: str):
+        """
+        Returns info for single ground truth Annotation by its id.
+        :param reference_id: User specified id for the dataset item the ground truth is attached to
+        :param annotation_id: User specified, or auto-generated id for the annotation
+        :return:
+        BoxAnnotation | PolygonAnnotation | CuboidAnnotation
+        """
+        response = self._client.make_request(
+            {},
+            f"dataset/{self.id}/groundTruth/loc/{reference_id}/{annotation_id}",
+            requests.get,
+        )
+        return Annotation.from_json(response)
 
     def create_slice(
         self,
