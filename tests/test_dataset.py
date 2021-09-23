@@ -16,8 +16,10 @@ from nucleus.annotation import (
     BoxAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
+    CategoryAnnotation,
 )
 from nucleus.constants import (
+    CATEGORY_TYPE,
     DATASET_ID_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
@@ -39,6 +41,7 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    TEST_CATEGORY_ANNOTATIONS,
     DATASET_WITH_AUTOTAG,
     NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
@@ -72,6 +75,13 @@ def test_reprs():
 @pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+
+    response = ds.add_taxonomy(
+        "[Pytest] Category Taxonomy 1",
+        "category",
+        [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
+    )
+
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
@@ -395,9 +405,10 @@ def test_annotate_async(dataset: Dataset):
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
 
     job: AsyncJob = dataset.annotate(
-        annotations=[semseg, polygon, bbox],
+        annotations=[semseg, polygon, bbox, category],
         asynchronous=True,
     )
     job.sleep_until_complete()
@@ -407,8 +418,47 @@ def test_annotate_async(dataset: Dataset):
         "message": {
             "annotation_upload": {
                 "epoch": 1,
-                "total": 2,
+                "total": 3,
                 "errored": 0,
+                "ignored": 0,
+                "datasetId": dataset.id,
+                "processed": 3,
+            },
+            "segmentation_upload": {
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 1,
+            },
+        },
+        "job_progress": "1.00",
+        "completed_steps": 4,
+        "total_steps": 4,
+    }
+
+
+@pytest.mark.integration
+def test_annotate_async_with_error(dataset: Dataset):
+    dataset.append(make_dataset_items())
+    semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
+    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
+    category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    bbox.reference_id = "fake_garbage"
+
+    job: AsyncJob = dataset.annotate(
+        annotations=[semseg, polygon, bbox, category],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 3,
+                "errored": 1,
                 "ignored": 0,
                 "datasetId": dataset.id,
                 "processed": 2,
@@ -420,46 +470,8 @@ def test_annotate_async(dataset: Dataset):
             },
         },
         "job_progress": "1.00",
-        "completed_steps": 3,
-        "total_steps": 3,
-    }
-
-
-@pytest.mark.integration
-def test_annotate_async_with_error(dataset: Dataset):
-    dataset.append(make_dataset_items())
-    semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
-    polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
-    bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
-    bbox.reference_id = "fake_garbage"
-
-    job: AsyncJob = dataset.annotate(
-        annotations=[semseg, polygon, bbox],
-        asynchronous=True,
-    )
-    job.sleep_until_complete()
-
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "epoch": 1,
-                "total": 2,
-                "errored": 1,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 1,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 3,
-        "total_steps": 3,
+        "completed_steps": 4,
+        "total_steps": 4,
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
@@ -489,6 +501,9 @@ def test_append_and_export(dataset):
     polygon_annotation = PolygonAnnotation.from_json(
         TEST_POLYGON_ANNOTATIONS[0]
     )
+    category_annotation = CategoryAnnotation.from_json(
+        TEST_CATEGORY_ANNOTATIONS[0]
+    )
 
     ds_items = [
         DatasetItem(
@@ -505,6 +520,7 @@ def test_append_and_export(dataset):
             box_annotation,
             polygon_annotation,
             segmentation_annotation,
+            category_annotation,
         ]
     )
     # We don't export everything on segmentation annotations in order to speed up export.
@@ -526,6 +542,9 @@ def test_append_and_export(dataset):
         exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
     ) == sort_labelmap(clear_fields(segmentation_annotation))
     assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
+    assert (
+        exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
+    )
 
 
 def test_export_embeddings(CLIENT):

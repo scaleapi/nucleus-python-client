@@ -8,6 +8,7 @@ from .constants import (
     ANNOTATION_ID_KEY,
     ANNOTATIONS_KEY,
     BOX_TYPE,
+    CATEGORY_TYPE,
     CUBOID_TYPE,
     DIMENSIONS_KEY,
     GEOMETRY_KEY,
@@ -20,6 +21,7 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
+    TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
     WIDTH_KEY,
@@ -41,6 +43,8 @@ class Annotation:
             return PolygonAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
             return CuboidAnnotation.from_json(payload)
+        elif payload.get(TYPE_KEY, None) == CATEGORY_TYPE:
+            return CategoryAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
 
@@ -120,6 +124,7 @@ class AnnotationTypes(Enum):
     BOX = BOX_TYPE
     POLYGON = POLYGON_TYPE
     CUBOID = CUBOID_TYPE
+    CATEGORY = CATEGORY_TYPE
 
 
 @dataclass  # pylint: disable=R0902
@@ -289,6 +294,36 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             payload[METADATA_KEY] = self.metadata
 
         return payload
+
+
+@dataclass
+class CategoryAnnotation(Annotation):
+    label: str
+    taxonomy_name: str
+    reference_id: str
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self.metadata = self.metadata if self.metadata else {}
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            label=payload[LABEL_KEY],
+            taxonomy_name=payload[TAXONOMY_NAME_KEY],
+            reference_id=payload[REFERENCE_ID_KEY],
+            metadata=payload.get(METADATA_KEY, {}),
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            LABEL_KEY: self.label,
+            TAXONOMY_NAME_KEY: self.taxonomy_name,
+            TYPE_KEY: CATEGORY_TYPE,
+            GEOMETRY_KEY: {},
+            REFERENCE_ID_KEY: self.reference_id,
+            METADATA_KEY: self.metadata,
+        }
 
 
 def is_local_path(path: str) -> bool:

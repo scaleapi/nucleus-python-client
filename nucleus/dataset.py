@@ -217,7 +217,6 @@ class Dataset:
                 route=f"dataset/{self.id}/annotate?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-
         return self._client.annotate_dataset(
             self.id, annotations, update=update, batch_size=batch_size
         )
