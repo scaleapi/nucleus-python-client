@@ -46,7 +46,6 @@ def test_index_integration(dataset):
     assert job.job_last_known_status
     assert job.job_type
     assert job.job_creation_time
-    job.sleep_until_complete()
 
     job_status_response = job.status()
     assert STATUS_KEY in job_status_response
