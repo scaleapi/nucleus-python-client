@@ -428,10 +428,13 @@ class Dataset:
         return self._client.list_autotags(self.id)
 
     def create_custom_index(self, embeddings_urls: list, embedding_dim: int):
-        return self._client.create_custom_index(
-            self.id,
-            embeddings_urls,
-            embedding_dim,
+        return AsyncJob.from_json(
+            self._client.create_custom_index(
+                self.id,
+                embeddings_urls,
+                embedding_dim,
+            ),
+            self._client,
         )
 
     def delete_custom_index(self):

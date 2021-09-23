@@ -7,8 +7,6 @@ import asyncio
 import json
 import logging
 import os
-import urllib.request
-from asyncio.tasks import Task
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
@@ -17,6 +15,7 @@ import pkg_resources
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
+import time
 
 from nucleus.url_utils import sanitize_string_args
 
@@ -103,6 +102,11 @@ logging.basicConfig()
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(
     logging.ERROR
 )
+
+
+class RetryStrategy:
+    statuses = {503, 504}
+    sleep_times = [1, 3, 9]
 
 
 class NucleusClient:
@@ -511,28 +515,41 @@ class NucleusClient:
                 content_type=file[1][2],
             )
 
-        async with session.post(
-            endpoint,
-            data=form,
-            auth=aiohttp.BasicAuth(self.api_key, ""),
-            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-        ) as response:
-            logger.info("API request has response code %s", response.status)
-
-            try:
-                data = await response.json()
-            except aiohttp.client_exceptions.ContentTypeError:
-                # In case of 404, the server returns text
-                data = await response.text()
-
-            if not response.ok:
-                self.handle_bad_response(
-                    endpoint,
-                    session.post,
-                    aiohttp_response=(response.status, response.reason, data),
+        for sleep_time in RetryStrategy.sleep_times + [""]:
+            async with session.post(
+                endpoint,
+                data=form,
+                auth=aiohttp.BasicAuth(self.api_key, ""),
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+            ) as response:
+                logger.info(
+                    "API request has response code %s", response.status
                 )
 
-            return data
+                try:
+                    data = await response.json()
+                except aiohttp.client_exceptions.ContentTypeError:
+                    # In case of 404, the server returns text
+                    data = await response.text()
+                if (
+                    response.status in RetryStrategy.statuses
+                    and sleep_time != ""
+                ):
+                    time.sleep(sleep_time)
+                    continue
+
+                if not response.ok:
+                    self.handle_bad_response(
+                        endpoint,
+                        session.post,
+                        aiohttp_response=(
+                            response.status,
+                            response.reason,
+                            data,
+                        ),
+                    )
+
+                return data
 
     def _process_append_requests(
         self,
@@ -1191,14 +1208,20 @@ class NucleusClient:
 
         logger.info("Posting to %s", endpoint)
 
-        response = requests_command(
-            endpoint,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            auth=(self.api_key, ""),
-            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-        )
-        logger.info("API request has response code %s", response.status_code)
+        for retry_wait_time in RetryStrategy.sleep_times:
+            response = requests_command(
+                endpoint,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                auth=(self.api_key, ""),
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+            )
+            logger.info(
+                "API request has response code %s", response.status_code
+            )
+            if response.status_code not in RetryStrategy.statuses:
+                break
+            time.sleep(retry_wait_time)
 
         if not response.ok:
             self.handle_bad_response(endpoint, requests_command, response)
