@@ -7,6 +7,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
@@ -15,7 +16,6 @@ import pkg_resources
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
-import time
 
 from nucleus.url_utils import sanitize_string_args
 
@@ -40,15 +40,15 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
-    JOB_ID_KEY,
-    JOB_LAST_KNOWN_STATUS_KEY,
-    JOB_TYPE_KEY,
-    JOB_CREATION_TIME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
+    JOB_CREATION_TIME_KEY,
+    JOB_ID_KEY,
+    JOB_LAST_KNOWN_STATUS_KEY,
+    JOB_TYPE_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
@@ -62,7 +62,7 @@ from .constants import (
     UPDATE_KEY,
 )
 from .dataset import Dataset
-from .dataset_item import DatasetItem, CameraParams, Quaternion
+from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .errors import (
     DatasetItemRetrievalError,
     ModelCreationError,
@@ -86,9 +86,9 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
+from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
-from .scene import Frame, LidarScene
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -515,7 +515,7 @@ class NucleusClient:
                 content_type=file[1][2],
             )
 
-        for sleep_time in RetryStrategy.sleep_times + [""]:
+        for sleep_time in RetryStrategy.sleep_times + [-1]:
             async with session.post(
                 endpoint,
                 data=form,
@@ -533,7 +533,7 @@ class NucleusClient:
                     data = await response.text()
                 if (
                     response.status in RetryStrategy.statuses
-                    and sleep_time != ""
+                    and sleep_time != -1
                 ):
                     time.sleep(sleep_time)
                     continue
