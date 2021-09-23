@@ -7,8 +7,7 @@ import asyncio
 import json
 import logging
 import os
-import urllib.request
-from asyncio.tasks import Task
+import time
 from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
@@ -41,15 +40,15 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
-    JOB_ID_KEY,
-    JOB_LAST_KNOWN_STATUS_KEY,
-    JOB_TYPE_KEY,
-    JOB_CREATION_TIME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
+    JOB_CREATION_TIME_KEY,
+    JOB_ID_KEY,
+    JOB_LAST_KNOWN_STATUS_KEY,
+    JOB_TYPE_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
@@ -63,7 +62,7 @@ from .constants import (
     UPDATE_KEY,
 )
 from .dataset import Dataset
-from .dataset_item import DatasetItem, CameraParams, Quaternion
+from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .errors import (
     DatasetItemRetrievalError,
     ModelCreationError,
@@ -87,9 +86,9 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
+from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
-from .scene import Frame, LidarScene
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -103,6 +102,11 @@ logging.basicConfig()
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(
     logging.ERROR
 )
+
+
+class RetryStrategy:
+    statuses = {503, 504}
+    sleep_times = [1, 3, 9]
 
 
 class NucleusClient:
@@ -511,28 +515,41 @@ class NucleusClient:
                 content_type=file[1][2],
             )
 
-        async with session.post(
-            endpoint,
-            data=form,
-            auth=aiohttp.BasicAuth(self.api_key, ""),
-            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-        ) as response:
-            logger.info("API request has response code %s", response.status)
-
-            try:
-                data = await response.json()
-            except aiohttp.client_exceptions.ContentTypeError:
-                # In case of 404, the server returns text
-                data = await response.text()
-
-            if not response.ok:
-                self.handle_bad_response(
-                    endpoint,
-                    session.post,
-                    aiohttp_response=(response.status, response.reason, data),
+        for sleep_time in RetryStrategy.sleep_times + [-1]:
+            async with session.post(
+                endpoint,
+                data=form,
+                auth=aiohttp.BasicAuth(self.api_key, ""),
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+            ) as response:
+                logger.info(
+                    "API request has response code %s", response.status
                 )
 
-            return data
+                try:
+                    data = await response.json()
+                except aiohttp.client_exceptions.ContentTypeError:
+                    # In case of 404, the server returns text
+                    data = await response.text()
+                if (
+                    response.status in RetryStrategy.statuses
+                    and sleep_time != -1
+                ):
+                    time.sleep(sleep_time)
+                    continue
+
+                if not response.ok:
+                    self.handle_bad_response(
+                        endpoint,
+                        session.post,
+                        aiohttp_response=(
+                            response.status,
+                            response.reason,
+                            data,
+                        ),
+                    )
+
+                return data
 
     def _process_append_requests(
         self,
@@ -1130,13 +1147,6 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
-    def check_index_status(self, job_id: str):
-        return self.make_request(
-            {},
-            f"indexing/{job_id}",
-            requests_command=requests.get,
-        )
-
     def delete_custom_index(self, dataset_id: str):
         return self.make_request(
             {},
@@ -1191,14 +1201,20 @@ class NucleusClient:
 
         logger.info("Posting to %s", endpoint)
 
-        response = requests_command(
-            endpoint,
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            auth=(self.api_key, ""),
-            timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-        )
-        logger.info("API request has response code %s", response.status_code)
+        for retry_wait_time in RetryStrategy.sleep_times:
+            response = requests_command(
+                endpoint,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                auth=(self.api_key, ""),
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+            )
+            logger.info(
+                "API request has response code %s", response.status_code
+            )
+            if response.status_code not in RetryStrategy.statuses:
+                break
+            time.sleep(retry_wait_time)
 
         if not response.ok:
             self.handle_bad_response(endpoint, requests_command, response)
