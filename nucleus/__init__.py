@@ -1147,13 +1147,6 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
-    def check_index_status(self, job_id: str):
-        return self.make_request(
-            {},
-            f"indexing/{job_id}",
-            requests_command=requests.get,
-        )
-
     def delete_custom_index(self, dataset_id: str):
         return self.make_request(
             {},

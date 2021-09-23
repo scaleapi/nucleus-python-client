@@ -466,9 +466,6 @@ class Dataset:
             requests_command=requests.post,
         )
 
-    def check_index_status(self, job_id: str):
-        return self._client.check_index_status(job_id)
-
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
