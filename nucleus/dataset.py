@@ -319,10 +319,11 @@ class Dataset:
         for scene in scenes:
             scene.validate()
 
-        if len(scenes) > WARN_FOR_LARGE_SCENES_UPLOAD and not asynchronous:
+        if not asynchronous:
             print(
-                "Tip: for large uploads, get faster performance by importing your data "
-                "into Nucleus directly from a cloud storage provider. See "
+                "WARNING: Processing lidar pointclouds usually takes several seconds. As a result, sychronous scene upload"
+                "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
+                "to avoid HTTP timeouts. Please see"
                 "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
                 " for details."
             )
