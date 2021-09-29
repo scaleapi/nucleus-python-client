@@ -260,6 +260,10 @@ def test_scene_upload_sync(dataset):
 
     response = dataset.append(scenes, update=update)
 
+    first_scene = dataset.get_scene(scenes[0].reference_id)
+
+    assert first_scene == scenes[0]
+
     assert response["dataset_id"] == dataset.id
     assert response["new_scenes"] == len(scenes)
 

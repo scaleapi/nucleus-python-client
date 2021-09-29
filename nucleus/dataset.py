@@ -32,7 +32,7 @@ from .dataset_item import (
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
-from .scene import LidarScene, check_all_scene_paths_remote
+from .scene import LidarScene, Scene, check_all_scene_paths_remote
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
@@ -511,3 +511,17 @@ class Dataset:
             self.id, reference_ids, keep_history
         )
         return AsyncJob.from_json(response, self._client)
+
+    def get_scene(self, reference_id) -> Scene:
+        """Returns a scene by reference id
+
+        Returns:
+            a Scene object representing all dataset items organized into frames
+        """
+        return Scene.from_json(
+            self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/scene/{reference_id}",
+                requests_command=requests.get,
+            )
+        )

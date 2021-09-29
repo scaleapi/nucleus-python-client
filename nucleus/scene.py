@@ -31,6 +31,14 @@ class Frame:
     def __repr__(self) -> str:
         return f"Frame(items={self.items})"
 
+    def __eq__(self, other):
+        for key, value in self.items.items():
+            if key not in other.items:
+                return False
+            if value != other.items[key]:
+                return False
+        return True
+
     def add_item(self, item: DatasetItem, sensor_name: str):
         self.items[sensor_name] = item
 
@@ -50,7 +58,7 @@ class Frame:
     @classmethod
     def from_json(cls, payload: dict):
         items = {
-            sensor: DatasetItem.from_json(item, is_scene=True)
+            sensor: DatasetItem.from_json(item)
             for sensor, item in payload.items()
         }
         return cls(**items)
@@ -66,13 +74,24 @@ class Frame:
 class Scene(ABC):
     reference_id: str
     frames: List[Frame] = field(default_factory=list)
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
         self.sensors = set(
             flatten([frame.get_sensors() for frame in self.frames])
         )
         self.frames_dict = dict(enumerate(self.frames))
+        if self.metadata is None:
+            self.metadata = {}
+
+    def __eq__(self, other):
+        return all(
+            [
+                self.reference_id == other.reference_id,
+                self.frames == other.frames,
+                self.metadata == other.metadata,
+            ]
+        )
 
     @property
     def length(self) -> int:
@@ -168,7 +187,7 @@ class Scene(ABC):
         return cls(
             reference_id=payload[REFERENCE_ID_KEY],
             frames=frames,
-            metadata=payload.get(METADATA_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
         )
 
     def to_payload(self) -> dict:
