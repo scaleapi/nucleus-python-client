@@ -1,3 +1,4 @@
+import copy
 import pytest
 from nucleus.constants import (
     ANNOTATIONS_KEY,
@@ -263,6 +264,9 @@ def test_scene_upload_sync(dataset):
     first_scene = dataset.get_scene(scenes[0].reference_id)
 
     assert first_scene == scenes[0]
+    first_scene_modified = copy.deepcopy(first_scene)
+    first_scene_modified.reference_id = "WRONG!"
+    assert first_scene_modified != scenes[0]
 
     assert response["dataset_id"] == dataset.id
     assert response["new_scenes"] == len(scenes)
