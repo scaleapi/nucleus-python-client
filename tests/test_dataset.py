@@ -293,7 +293,7 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
             "PayloadUrl": "",
             "final_error": (
                 "One or more of the images you attempted to upload did not process"
-                " correctly. Please see the status for an overview and the errors for "
+                " correctly. Please see the status for an overview and the errors (job.errors()) for "
                 "more detailed messages."
             ),
             "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
