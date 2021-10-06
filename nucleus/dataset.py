@@ -3,7 +3,13 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 import requests
 
 from nucleus.job import AsyncJob
-from nucleus.prediction import from_json
+from nucleus.prediction import (
+    BoxPrediction,
+    CuboidPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+    from_json,
+)
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
@@ -527,6 +533,7 @@ class Dataset:
         )
 
     def export_predictions(self, model):
+        """Exports all predications from a model run"""
         json_response = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/model/{model.id}/export",
@@ -563,8 +570,32 @@ class Dataset:
         )
 
     def upload_predictions(
-        self, model, predictions, update=False, asynchronous=False
+        self,
+        model,
+        predictions: List[
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
+        ],
+        update=False,
+        asynchronous=False,
     ):
+        """
+        Uploads model outputs as predictions for a model_run. Returns info about the upload.
+        :param predictions: List of prediction objects to ingest
+        :param update: Whether to update (if true) or ignore (if false) on conflicting reference_id/annotation_id
+        :param asynchronous: If true, return launch and then return a reference to an asynchronous job object. This is recommended for large ingests.
+        :return:
+        If synchronoius
+        {
+            "model_run_id": str,
+            "predictions_processed": int,
+            "predictions_ignored": int,
+        }
+        """
         if asynchronous:
             check_all_mask_paths_remote(predictions)
 
@@ -586,6 +617,13 @@ class Dataset:
             )
 
     def predictions_iloc(self, model, index):
+        """
+        Returns predictions For Dataset Item by index.
+        :param model: model object to get predictions from.
+        :param index: absolute number of Dataset Item for a dataset corresponding to the model run.
+        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        }
+        """
         return format_prediction_response(
             self._client.make_request(
                 payload=None,
@@ -595,6 +633,12 @@ class Dataset:
         )
 
     def predictions_refloc(self, model, reference_id):
+        """
+        Returns predictions for dataset Item by its reference_id.
+        :param model: model object to get predictions from.
+        :param reference_id: reference_id of a dataset item.
+        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        """
         return format_prediction_response(
             self._client.make_request(
                 payload=None,
@@ -604,6 +648,13 @@ class Dataset:
         )
 
     def prediction_loc(self, model, reference_id, annotation_id):
+        """
+        Returns info for single Prediction by its reference id and annotation id. Not supported for segmentation predictions yet.
+        :param reference_id: the user specified id for the image
+        :param annotation_id: the user specified id for the prediction, or if one was not provided, the Scale internally generated id for the prediction
+        :return:
+         BoxPrediction | PolygonPrediction | CuboidPrediction
+        """
         return from_json(
             self._client.make_request(
                 payload=None,
