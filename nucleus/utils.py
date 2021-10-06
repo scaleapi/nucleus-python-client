@@ -4,7 +4,7 @@ from collections import defaultdict
 import io
 import uuid
 import json
-from typing import IO, Dict, List, Sequence, Union
+from typing import IO, Dict, List, Sequence, Type, Union
 
 import requests
 from requests.models import HTTPError
@@ -30,8 +30,54 @@ from .constants import (
     SEGMENTATION_TYPE,
 )
 from .dataset_item import DatasetItem
-from .prediction import BoxPrediction, CuboidPrediction, PolygonPrediction
+from .prediction import (
+    BoxPrediction,
+    CuboidPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
 from .scene import LidarScene
+
+
+def format_prediction_response(
+    response: dict,
+) -> Union[
+    dict,
+    List[
+        Union[
+            BoxPrediction,
+            PolygonPrediction,
+            CuboidPrediction,
+            SegmentationPrediction,
+        ]
+    ],
+]:
+    annotation_payload = response.get(ANNOTATIONS_KEY, None)
+    if not annotation_payload:
+        # An error occurred
+        return response
+    annotation_response = {}
+    type_key_to_class: Dict[
+        str,
+        Union[
+            Type[BoxPrediction],
+            Type[PolygonPrediction],
+            Type[CuboidPrediction],
+            Type[SegmentationPrediction],
+        ],
+    ] = {
+        BOX_TYPE: BoxPrediction,
+        POLYGON_TYPE: PolygonPrediction,
+        CUBOID_TYPE: CuboidPrediction,
+        SEGMENTATION_TYPE: SegmentationPrediction,
+    }
+    for type_key in annotation_payload:
+        type_class = type_key_to_class[type_key]
+        annotation_response[type_key] = [
+            type_class.from_json(annotation)
+            for annotation in annotation_payload[type_key]
+        ]
+    return annotation_response
 
 
 def _get_all_field_values(metadata_list: List[dict], key: str):

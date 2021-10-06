@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Type, Union
 from .dataset import Dataset
 from .prediction import (
     BoxPrediction,
@@ -8,9 +8,14 @@ from .prediction import (
 )
 from .model_run import ModelRun
 from .constants import (
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
+    CUBOID_TYPE,
     NAME_KEY,
+    POLYGON_TYPE,
     REFERENCE_ID_KEY,
     METADATA_KEY,
+    SEGMENTATION_TYPE,
 )
 
 
