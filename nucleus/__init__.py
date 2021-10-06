@@ -734,9 +734,6 @@ class NucleusClient:
 
     def predict(
         self,
-        model_run_id: Optional[str],
-        model_id: Optional[str],
-        dataset_id: Optional[str],
         annotations: List[
             Union[
                 BoxPrediction,
@@ -745,7 +742,10 @@ class NucleusClient:
                 SegmentationPrediction,
             ]
         ],
-        update: bool,
+        model_run_id: Optional[str] = None,
+        model_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        update: bool = False,
         batch_size: int = 5000,
     ):
         """
@@ -822,8 +822,8 @@ class NucleusClient:
 
         agg_response = {
             MODEL_RUN_ID_KEY: model_run_id,
-            PREDICTIONS_PROCESSED_KEY: predictions_ignored,
-            PREDICTIONS_IGNORED_KEY: predictions_processed,
+            PREDICTIONS_PROCESSED_KEY: predictions_processed,
+            PREDICTIONS_IGNORED_KEY: predictions_ignored,
             ERRORS_KEY: errors,
         }
         return agg_response

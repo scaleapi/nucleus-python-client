@@ -127,7 +127,7 @@ class ModelRun:
         else:
             return self._client.predict(
                 model_run_id=self.model_run_id,
-                annotation=annotations,
+                annotations=annotations,
                 update=update,
             )
 
