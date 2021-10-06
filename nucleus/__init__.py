@@ -792,11 +792,9 @@ class NucleusClient:
             for i in range(0, len(other_predictions), batch_size)
         ]
 
-        agg_response = {
-            MODEL_RUN_ID_KEY: model_run_id,
-            PREDICTIONS_PROCESSED_KEY: 0,
-            PREDICTIONS_IGNORED_KEY: 0,
-        }
+        errors = []
+        predictions_processed = 0
+        predictions_ignored = 0
 
         tqdm_batches = self.tqdm_bar(batches)
 
@@ -807,29 +805,27 @@ class NucleusClient:
             )
             response = self.make_request(batch_payload, endpoint)
             if STATUS_CODE_KEY in response:
-                agg_response[ERRORS_KEY] = response
+                errors.append(response)
             else:
-                agg_response[PREDICTIONS_PROCESSED_KEY] += response[
-                    PREDICTIONS_PROCESSED_KEY
-                ]
-                agg_response[PREDICTIONS_IGNORED_KEY] += response[
-                    PREDICTIONS_IGNORED_KEY
-                ]
+                predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
+                predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
 
         for s_batch in s_batches:
             payload = construct_segmentation_payload(s_batch, update)
             response = self.make_request(payload, endpoint)
             # pbar.update(1)
             if STATUS_CODE_KEY in response:
-                agg_response[ERRORS_KEY] = response
+                errors.append(response)
             else:
-                agg_response[PREDICTIONS_PROCESSED_KEY] += response[
-                    PREDICTIONS_PROCESSED_KEY
-                ]
-                agg_response[PREDICTIONS_IGNORED_KEY] += response[
-                    PREDICTIONS_IGNORED_KEY
-                ]
+                predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
+                predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
 
+        agg_response = {
+            MODEL_RUN_ID_KEY: model_run_id,
+            PREDICTIONS_PROCESSED_KEY: predictions_ignored,
+            PREDICTIONS_IGNORED_KEY: predictions_processed,
+            ERRORS_KEY: errors,
+        }
         return agg_response
 
     def commit_model_run(
