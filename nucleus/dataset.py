@@ -562,7 +562,7 @@ class Dataset:
             "class_agnostic": boolean,
             "allowed_label_matches": List[AllowedMatch],
         }"""
-        if options == None:
+        if options is None:
             options = {}
         return self._client.make_request(
             payload=options,
