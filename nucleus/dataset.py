@@ -533,7 +533,7 @@ class Dataset:
         )
 
     def export_predictions(self, model):
-        """Exports all predications from a model run"""
+        """Exports all predications from a model on this dataset"""
         json_response = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/model/{model.id}/export",
@@ -543,19 +543,22 @@ class Dataset:
 
     def calculate_evaluation_metrics(self, model, options=None):
         """
-        class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
-                          Default value: True
 
-        allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
-                                 for ground truth and model predictions.
-                                 If specified, 'class_agnostic' flag is assumed to be False
+        :param model: the model to calculate eval metrics for
+        :param options: Dict with keys:
+            class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
+                            Default value: True
 
-        Type 'AllowedMatch':
-        {
-            ground_truth_label: string,       # A label for ground truth annotation.
-            model_prediction_label: string,   # A label for model prediction that can be matched with
-                                              # corresponding ground truth label.
-        }
+            allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
+                                    for ground truth and model predictions.
+                                    If specified, 'class_agnostic' flag is assumed to be False
+
+            Type 'AllowedMatch':
+            {
+                ground_truth_label: string,       # A label for ground truth annotation.
+                model_prediction_label: string,   # A label for model prediction that can be matched with
+                                                # corresponding ground truth label.
+            }
 
         payload:
         {

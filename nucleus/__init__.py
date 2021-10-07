@@ -820,13 +820,12 @@ class NucleusClient:
                 predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
                 predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
 
-        agg_response = {
+        return {
             MODEL_RUN_ID_KEY: model_run_id,
             PREDICTIONS_PROCESSED_KEY: predictions_processed,
             PREDICTIONS_IGNORED_KEY: predictions_ignored,
             ERRORS_KEY: errors,
         }
-        return agg_response
 
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
