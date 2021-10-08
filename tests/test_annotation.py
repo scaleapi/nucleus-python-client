@@ -6,11 +6,13 @@ from .helpers import (
     TEST_BOX_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_CATEGORY_ANNOTATIONS,
+    TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     reference_id_from_url,
     assert_box_annotation_matches_dict,
     assert_polygon_annotation_matches_dict,
     assert_category_annotation_matches_dict,
+    assert_multicategory_annotation_matches_dict,
     assert_segmentation_annotation_matches_dict,
 )
 
@@ -18,6 +20,7 @@ from nucleus import (
     BoxAnnotation,
     PolygonAnnotation,
     CategoryAnnotation,
+    MultiCategoryAnnotation,
     SegmentationAnnotation,
     DatasetItem,
     Segment,
@@ -64,6 +67,14 @@ def dataset(CLIENT):
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
+    response = ds.add_taxonomy(
+        "[Pytest] MultiCategory Taxonomy 1",
+        "multicategory",
+        [
+            f"[Pytest] MultiCategory Label ${i}"
+            for i in range((len(TEST_IMG_URLS) + 1))
+        ],
+    )
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
@@ -73,6 +84,7 @@ def dataset(CLIENT):
 def test_box_gt_upload(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
+    print(response)
 
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 1
@@ -124,6 +136,28 @@ def test_category_gt_upload(dataset):
     response_annotation = response[0]
     assert_category_annotation_matches_dict(
         response_annotation, TEST_CATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_multicategory_gt_upload(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+    print("HERE")
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+    print("RESPONSE: ", response)
+    # TODO: Weirdness here also in the response from refloc?
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, TEST_MULTICATEGORY_ANNOTATIONS[0]
     )
 
 
@@ -206,6 +240,7 @@ def test_mixed_annotation_upload(dataset):
     response_annotations = dataset.refloc(bbox_annotations[0].reference_id)[
         "annotations"
     ]
+    print(response_annotations)
     assert len(response_annotations) == 2
     assert len(response_annotations["box"]) == 1
     assert "segmentation" in response_annotations
@@ -392,34 +427,120 @@ def test_category_gt_upload_ignore(dataset):
         response_annotation, TEST_CATEGORY_ANNOTATIONS[0]
     )
 
-    @pytest.mark.integration
-    def test_box_gt_deletion(dataset):
-        annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
 
-        print(annotation)
+def test_multicategory_gt_upload_update(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
 
-        response = dataset.annotate(annotations=[annotation])
+    assert response["annotations_processed"] == 1
 
-        assert response["annotations_processed"] == 1
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_MULTICATEGORY_ANNOTATIONS[1])
+    annotation_update_params["reference_id"] = TEST_MULTICATEGORY_ANNOTATIONS[
+        0
+    ]["reference_id"]
 
-        job = dataset.delete_annotations()
-        job.sleep_until_complete()
-        job_status = job.status()
-        assert job_status["status"] == "Completed"
-        assert job_status["job_id"] == job.id
+    annotation_update = MultiCategoryAnnotation.from_json(
+        annotation_update_params
+    )
+    response = dataset.annotate(annotations=[annotation_update], update=True)
 
-    @pytest.mark.integration
-    def test_category_gt_deletion(dataset):
-        annotation = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
 
-        print(annotation)
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, annotation_update_params
+    )
 
-        response = dataset.annotate(annotations=[annotation])
 
-        assert response["annotations_processed"] == 1
+def test_multicategory_gt_upload_ignore(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
 
-        job = dataset.delete_annotations()
-        job.sleep_until_complete()
-        job_status = job.status()
-        assert job_status["status"] == "Completed"
-        assert job_status["job_id"] == job.id
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_MULTICATEGORY_ANNOTATIONS[1])
+    annotation_update_params["reference_id"] = TEST_MULTICATEGORY_ANNOTATIONS[
+        0
+    ]["reference_id"]
+
+    annotation_update = MultiCategoryAnnotation.from_json(
+        annotation_update_params
+    )
+    # Default behavior is ignore.
+    response = dataset.annotate(annotations=[annotation_update])
+
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 1
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+
+@pytest.mark.integration
+def test_box_gt_deletion(dataset):
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+
+    print(annotation)
+
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    job = dataset.delete_annotations()
+    job.sleep_until_complete()
+    job_status = job.status()
+    assert job_status["status"] == "Completed"
+    assert job_status["job_id"] == job.job_id
+
+
+@pytest.mark.integration
+def test_category_gt_deletion(dataset):
+    annotation = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+
+    print(annotation)
+
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    job = dataset.delete_annotations()
+    job.sleep_until_complete()
+    job_status = job.status()
+    assert job_status["status"] == "Completed"
+    assert job_status["job_id"] == job.job_id
+
+
+@pytest.mark.integration
+def test_multicategory_gt_deletion(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+    print(annotation)
+
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    job = dataset.delete_annotations()
+    job.sleep_until_complete()
+    job_status = job.status()
+    assert job_status["status"] == "Completed"
+    assert job_status["job_id"] == job.job_id

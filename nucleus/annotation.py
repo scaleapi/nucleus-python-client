@@ -9,12 +9,14 @@ from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
+    MULTICATEGORY_TYPE,
     CUBOID_TYPE,
     DIMENSIONS_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
     INDEX_KEY,
     LABEL_KEY,
+    LABELS_KEY,
     MASK_TYPE,
     MASK_URL_KEY,
     METADATA_KEY,
@@ -45,6 +47,8 @@ class Annotation:
             return CuboidAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == CATEGORY_TYPE:
             return CategoryAnnotation.from_json(payload)
+        elif payload.get(TYPE_KEY, None) == MULTICATEGORY_TYPE:
+            return MultiCategoryAnnotation.from_json(payload)
         else:
             return SegmentationAnnotation.from_json(payload)
 
@@ -125,6 +129,7 @@ class AnnotationTypes(Enum):
     POLYGON = POLYGON_TYPE
     CUBOID = CUBOID_TYPE
     CATEGORY = CATEGORY_TYPE
+    MULTICATEGORY = MULTICATEGORY_TYPE
 
 
 @dataclass  # pylint: disable=R0902
@@ -320,6 +325,36 @@ class CategoryAnnotation(Annotation):
             LABEL_KEY: self.label,
             TAXONOMY_NAME_KEY: self.taxonomy_name,
             TYPE_KEY: CATEGORY_TYPE,
+            GEOMETRY_KEY: {},
+            REFERENCE_ID_KEY: self.reference_id,
+            METADATA_KEY: self.metadata,
+        }
+
+
+@dataclass
+class MultiCategoryAnnotation(Annotation):
+    labels: List[str]
+    taxonomy_name: str
+    reference_id: str
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self.metadata = self.metadata if self.metadata else {}
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            labels=payload[LABELS_KEY],
+            taxonomy_name=payload[TAXONOMY_NAME_KEY],
+            reference_id=payload[REFERENCE_ID_KEY],
+            metadata=payload.get(METADATA_KEY, {}),
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            LABELS_KEY: self.labels,
+            TAXONOMY_NAME_KEY: self.taxonomy_name,
+            TYPE_KEY: MULTICATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
