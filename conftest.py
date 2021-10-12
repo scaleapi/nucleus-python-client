@@ -30,3 +30,13 @@ def dataset(CLIENT):
     yield ds
 
     CLIENT.delete_dataset(ds.id)
+
+
+if __name__ == "__main__":
+    client = nucleus.NucleusClient(API_KEY)
+    # ds = client.create_dataset("Test Dataset With Autotags")
+    # ds.append(TEST_DATASET_ITEMS)
+    ds = client.get_dataset("ds_c5jwptkgfsqg0cs503z0")
+    job = ds.create_image_index()
+    job.sleep_until_complete()
+    print(ds.id)
