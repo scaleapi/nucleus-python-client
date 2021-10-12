@@ -19,9 +19,11 @@ from nucleus.constants import (
     DATASET_ID_KEY,
 )
 from .helpers import (
+    TEST_BOX_PREDICTIONS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
     TEST_PREDS,
+    assert_box_prediction_matches_dict,
 )
 
 
@@ -77,3 +79,37 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     assert model not in ms
     assert ms == models_before
+
+
+# Until we fully remove the other endpoints (and then migrate those tests) just quickly test the basics of the new ones since they are basically just simple wrappers around the old ones.
+def test_new_model_endpoints(CLIENT, dataset: Dataset):
+    model_reference = "model_" + str(time.time())
+    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
+    predictions = [BoxPrediction(**TEST_BOX_PREDICTIONS[0])]
+
+    dataset.upload_predictions(model, predictions=predictions)
+
+    dataset.calculate_evaluation_metrics(model)
+
+    predictions_export = dataset.export_predictions(model)
+
+    assert_box_prediction_matches_dict(
+        predictions_export["box"][0], TEST_BOX_PREDICTIONS[0]
+    )
+
+    predictions_iloc = dataset.predictions_iloc(model, 0)
+    assert_box_prediction_matches_dict(
+        predictions_iloc["box"][0], TEST_BOX_PREDICTIONS[0]
+    )
+
+    predictions_refloc = dataset.predictions_refloc(
+        model, predictions[0].reference_id
+    )
+
+    assert_box_prediction_matches_dict(
+        predictions_refloc["box"][0], TEST_BOX_PREDICTIONS[0]
+    )
+    prediction_loc = dataset.prediction_loc(
+        model, predictions[0].reference_id, predictions[0].annotation_id
+    )
+    assert_box_prediction_matches_dict(prediction_loc, TEST_BOX_PREDICTIONS[0])

@@ -1,17 +1,18 @@
-from typing import Dict, List, Optional, Type, Union
+from typing import List, Optional, Union
+
 import requests
+
 from nucleus.annotation import check_all_mask_paths_remote
 from nucleus.job import AsyncJob
-from nucleus.utils import serialize_and_write_to_presigned_url
+from nucleus.utils import (
+    format_prediction_response,
+    serialize_and_write_to_presigned_url,
+)
 
 from .constants import (
     ANNOTATIONS_KEY,
-    BOX_TYPE,
-    CUBOID_TYPE,
     DEFAULT_ANNOTATION_UPDATE_MODE,
-    POLYGON_TYPE,
     REQUEST_ID_KEY,
-    SEGMENTATION_TYPE,
     UPDATE_KEY,
 )
 from .prediction import (
@@ -124,7 +125,11 @@ class ModelRun:
             )
             return AsyncJob.from_json(response, self._client)
         else:
-            return self._client.predict(self.model_run_id, annotations, update)
+            return self._client.predict(
+                model_run_id=self.model_run_id,
+                annotations=annotations,
+                update=update,
+            )
 
     def iloc(self, i: int):
         """
@@ -134,7 +139,7 @@ class ModelRun:
         }
         """
         response = self._client.predictions_iloc(self.model_run_id, i)
-        return self._format_prediction_response(response)
+        return format_prediction_response(response)
 
     def refloc(self, reference_id: str):
         """
@@ -145,7 +150,7 @@ class ModelRun:
         response = self._client.predictions_ref_id(
             self.model_run_id, reference_id
         )
-        return self._format_prediction_response(response)
+        return format_prediction_response(response)
 
     def loc(self, dataset_item_id: str):
         """
@@ -159,7 +164,7 @@ class ModelRun:
         response = self._client.predictions_loc(
             self.model_run_id, dataset_item_id
         )
-        return self._format_prediction_response(response)
+        return format_prediction_response(response)
 
     def prediction_loc(self, reference_id: str, annotation_id: str):
         """
@@ -184,46 +189,4 @@ class ModelRun:
             route=f"modelRun/{self.model_run_id}/ungrouped",
             requests_command=requests.get,
         )
-        return self._format_prediction_response(
-            {ANNOTATIONS_KEY: json_response}
-        )
-
-    def _format_prediction_response(
-        self, response: dict
-    ) -> Union[
-        dict,
-        List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
-            ]
-        ],
-    ]:
-        annotation_payload = response.get(ANNOTATIONS_KEY, None)
-        if not annotation_payload:
-            # An error occurred
-            return response
-        annotation_response = {}
-        type_key_to_class: Dict[
-            str,
-            Union[
-                Type[BoxPrediction],
-                Type[PolygonPrediction],
-                Type[CuboidPrediction],
-                Type[SegmentationPrediction],
-            ],
-        ] = {
-            BOX_TYPE: BoxPrediction,
-            POLYGON_TYPE: PolygonPrediction,
-            CUBOID_TYPE: CuboidPrediction,
-            SEGMENTATION_TYPE: SegmentationPrediction,
-        }
-        for type_key in annotation_payload:
-            type_class = type_key_to_class[type_key]
-            annotation_response[type_key] = [
-                type_class.from_json(annotation)
-                for annotation in annotation_payload[type_key]
-            ]
-        return annotation_response
+        return format_prediction_response({ANNOTATIONS_KEY: json_response})

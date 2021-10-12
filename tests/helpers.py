@@ -13,7 +13,7 @@ TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
-DATASET_WITH_AUTOTAG = "ds_c4dgj702e2vjft7m9xa0"
+DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 
@@ -78,11 +78,16 @@ TEST_LIDAR_SCENES = {
     "update": False,
 }
 
+
+def reference_id_from_url(url):
+    return Path(url).name
+
+
 TEST_DATASET_ITEMS = [
-    DatasetItem(TEST_IMG_URLS[0], "1"),
-    DatasetItem(TEST_IMG_URLS[1], "2"),
-    DatasetItem(TEST_IMG_URLS[2], "3"),
-    DatasetItem(TEST_IMG_URLS[3], "4"),
+    DatasetItem(TEST_IMG_URLS[0], reference_id_from_url(TEST_IMG_URLS[0])),
+    DatasetItem(TEST_IMG_URLS[1], reference_id_from_url(TEST_IMG_URLS[1])),
+    DatasetItem(TEST_IMG_URLS[2], reference_id_from_url(TEST_IMG_URLS[2])),
+    DatasetItem(TEST_IMG_URLS[3], reference_id_from_url(TEST_IMG_URLS[3])),
 ]
 
 TEST_LIDAR_ITEMS = [
@@ -100,10 +105,6 @@ TEST_PREDS = [
     BoxPrediction("[Pytest Box Prediction 3]", 0, 0, 100, 100, "3"),
     BoxPrediction("[Pytest Box Prediction 4]", 0, 0, 100, 100, "4"),
 ]
-
-
-def reference_id_from_url(url):
-    return Path(url).name
 
 
 TEST_BOX_ANNOTATIONS = [

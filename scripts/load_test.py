@@ -39,12 +39,12 @@ flags.DEFINE_string(
 )
 flags.DEFINE_integer(
     "num_dataset_items",
-    10000000,
+    100,
     "Number of dataset items to create if creating a dataset",
     lower_bound=0,
 )
 flags.DEFINE_bool(
-    "cleanup_dataset", False, "Whether to delete the dataset after the test."
+    "cleanup_dataset", True, "Whether to delete the dataset after the test."
 )
 
 # Annotation upload flags
