@@ -322,7 +322,7 @@ def test_scene_upload_async(dataset):
         "job_id": job.job_id,
         "status": "Completed",
         "message": {
-            "SceneUploadResponse": {
+            "scene_upload_progress": {
                 "errors": [],
                 "dataset_id": dataset.id,
                 "new_scenes": len(scenes),
