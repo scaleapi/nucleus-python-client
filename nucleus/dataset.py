@@ -3,18 +3,25 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 import requests
 
 from nucleus.job import AsyncJob
+from nucleus.prediction import (
+    BoxPrediction,
+    CuboidPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+    from_json,
+)
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
     format_dataset_item_response,
+    format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
 
-from .annotation import (
-    Annotation,
-    check_all_mask_paths_remote,
-)
+from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
+    ANNOTATIONS_KEY,
+    AUTOTAG_SCORE_THRESHOLD,
     DATASET_LENGTH_KEY,
     DATASET_MODEL_RUNS_KEY,
     DATASET_NAME_KEY,
@@ -24,7 +31,6 @@ from .constants import (
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
-    AUTOTAG_SCORE_THRESHOLD,
     UPDATE_KEY,
 )
 from .dataset_item import (
@@ -32,12 +38,12 @@ from .dataset_item import (
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
-from .scene import LidarScene, Scene, check_all_scene_paths_remote
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
+from .scene import LidarScene, Scene, check_all_scene_paths_remote
 
 WARN_FOR_LARGE_UPLOAD = 50000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
@@ -522,6 +528,140 @@ class Dataset:
             self._client.make_request(
                 payload=None,
                 route=f"dataset/{self.id}/scene/{reference_id}",
+                requests_command=requests.get,
+            )
+        )
+
+    def export_predictions(self, model):
+        """Exports all predictions from a model on this dataset"""
+        json_response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/model/{model.id}/export",
+            requests_command=requests.get,
+        )
+        return format_prediction_response({ANNOTATIONS_KEY: json_response})
+
+    def calculate_evaluation_metrics(self, model, options=None):
+        """
+
+        :param model: the model to calculate eval metrics for
+        :param options: Dict with keys:
+            class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
+                            Default value: True
+
+            allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
+                                    for ground truth and model predictions.
+                                    If specified, 'class_agnostic' flag is assumed to be False
+
+            Type 'AllowedMatch':
+            {
+                ground_truth_label: string,       # A label for ground truth annotation.
+                model_prediction_label: string,   # A label for model prediction that can be matched with
+                                                # corresponding ground truth label.
+            }
+
+        payload:
+        {
+            "class_agnostic": boolean,
+            "allowed_label_matches": List[AllowedMatch],
+        }"""
+        if options is None:
+            options = {}
+        return self._client.make_request(
+            payload=options,
+            route=f"dataset/{self.id}/model/{model.id}/calculateEvaluationMetrics",
+        )
+
+    def upload_predictions(
+        self,
+        model,
+        predictions: List[
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
+        ],
+        update=False,
+        asynchronous=False,
+    ):
+        """
+        Uploads model outputs as predictions for a model_run. Returns info about the upload.
+        :param predictions: List of prediction objects to ingest
+        :param update: Whether to update (if true) or ignore (if false) on conflicting reference_id/annotation_id
+        :param asynchronous: If true, return launch and then return a reference to an asynchronous job object. This is recommended for large ingests.
+        :return:
+        If synchronoius
+        {
+            "model_run_id": str,
+            "predictions_processed": int,
+            "predictions_ignored": int,
+        }
+        """
+        if asynchronous:
+            check_all_mask_paths_remote(predictions)
+
+            request_id = serialize_and_write_to_presigned_url(
+                predictions, self.id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
+            )
+            return AsyncJob.from_json(response, self._client)
+        else:
+            return self._client.predict(
+                model_run_id=None,
+                dataset_id=self.id,
+                model_id=model.id,
+                annotations=predictions,
+                update=update,
+            )
+
+    def predictions_iloc(self, model, index):
+        """
+        Returns predictions For Dataset Item by index.
+        :param model: model object to get predictions from.
+        :param index: absolute number of Dataset Item for a dataset corresponding to the model run.
+        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        }
+        """
+        return format_prediction_response(
+            self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/model/{model.id}/iloc/{index}",
+                requests_command=requests.get,
+            )
+        )
+
+    def predictions_refloc(self, model, reference_id):
+        """
+        Returns predictions for dataset Item by its reference_id.
+        :param model: model object to get predictions from.
+        :param reference_id: reference_id of a dataset item.
+        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        """
+        return format_prediction_response(
+            self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/model/{model.id}/referenceId/{reference_id}",
+                requests_command=requests.get,
+            )
+        )
+
+    def prediction_loc(self, model, reference_id, annotation_id):
+        """
+        Returns info for single Prediction by its reference id and annotation id. Not supported for segmentation predictions yet.
+        :param reference_id: the user specified id for the image
+        :param annotation_id: the user specified id for the prediction, or if one was not provided, the Scale internally generated id for the prediction
+        :return:
+         BoxPrediction | PolygonPrediction | CuboidPrediction
+        """
+        return from_json(
+            self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/model/{model.id}/loc/{reference_id}/{annotation_id}",
                 requests_command=requests.get,
             )
         )

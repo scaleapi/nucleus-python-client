@@ -734,7 +734,6 @@ class NucleusClient:
 
     def predict(
         self,
-        model_run_id: str,
         annotations: List[
             Union[
                 BoxPrediction,
@@ -743,7 +742,10 @@ class NucleusClient:
                 SegmentationPrediction,
             ]
         ],
-        update: bool,
+        model_run_id: Optional[str] = None,
+        model_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        update: bool = False,
         batch_size: int = 5000,
     ):
         """
@@ -758,6 +760,16 @@ class NucleusClient:
             "predictions_ignored": int,
         }
         """
+        if model_run_id is not None:
+            assert model_id is None and dataset_id is None
+            endpoint = f"modelRun/{model_run_id}/predict"
+        else:
+            assert (
+                model_id is not None and dataset_id is not None
+            ), "Model ID and dataset ID are required if not using model run id."
+            endpoint = (
+                f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
+            )
         segmentations = [
             ann
             for ann in annotations
@@ -780,11 +792,9 @@ class NucleusClient:
             for i in range(0, len(other_predictions), batch_size)
         ]
 
-        agg_response = {
-            MODEL_RUN_ID_KEY: model_run_id,
-            PREDICTIONS_PROCESSED_KEY: 0,
-            PREDICTIONS_IGNORED_KEY: 0,
-        }
+        errors = []
+        predictions_processed = 0
+        predictions_ignored = 0
 
         tqdm_batches = self.tqdm_bar(batches)
 
@@ -793,36 +803,29 @@ class NucleusClient:
                 batch,
                 update,
             )
-            response = self.make_request(
-                batch_payload, f"modelRun/{model_run_id}/predict"
-            )
+            response = self.make_request(batch_payload, endpoint)
             if STATUS_CODE_KEY in response:
-                agg_response[ERRORS_KEY] = response
+                errors.append(response)
             else:
-                agg_response[PREDICTIONS_PROCESSED_KEY] += response[
-                    PREDICTIONS_PROCESSED_KEY
-                ]
-                agg_response[PREDICTIONS_IGNORED_KEY] += response[
-                    PREDICTIONS_IGNORED_KEY
-                ]
+                predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
+                predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
 
         for s_batch in s_batches:
             payload = construct_segmentation_payload(s_batch, update)
-            response = self.make_request(
-                payload, f"modelRun/{model_run_id}/predict_segmentation"
-            )
+            response = self.make_request(payload, endpoint)
             # pbar.update(1)
             if STATUS_CODE_KEY in response:
-                agg_response[ERRORS_KEY] = response
+                errors.append(response)
             else:
-                agg_response[PREDICTIONS_PROCESSED_KEY] += response[
-                    PREDICTIONS_PROCESSED_KEY
-                ]
-                agg_response[PREDICTIONS_IGNORED_KEY] += response[
-                    PREDICTIONS_IGNORED_KEY
-                ]
+                predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
+                predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
 
-        return agg_response
+        return {
+            MODEL_RUN_ID_KEY: model_run_id,
+            PREDICTIONS_PROCESSED_KEY: predictions_processed,
+            PREDICTIONS_IGNORED_KEY: predictions_ignored,
+            ERRORS_KEY: errors,
+        }
 
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
