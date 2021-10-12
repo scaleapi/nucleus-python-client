@@ -12,6 +12,9 @@ jobs:
     parallelism: 6
     steps:
       - checkout # checkout source code to working directory
+      - restore_cache:
+          keys:
+            - deps-{{ checksum "poetry.lock" }}
       - run:
           name: Install Environment Dependencies
           command: | # install dependencies
@@ -19,6 +22,10 @@ jobs:
             pip install --upgrade pip 
             pip install poetry
             poetry install
+      - save_cache:
+          key: deps-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry/virtualenvs
 
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
@@ -32,7 +39,7 @@ jobs:
           name: Pylint Lint Check # Uses .pylintrc for configuration
           command: |
             poetry run pylint nucleus
-      - run :
+      - run:
           name: MyPy typing check
           command: |
             poetry run mypy --ignore-missing-imports nucleus
