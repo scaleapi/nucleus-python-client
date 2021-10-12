@@ -533,7 +533,7 @@ class Dataset:
         )
 
     def export_predictions(self, model):
-        """Exports all predications from a model on this dataset"""
+        """Exports all predictions from a model on this dataset"""
         json_response = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/model/{model.id}/export",
