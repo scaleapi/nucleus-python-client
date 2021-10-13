@@ -26,6 +26,7 @@ from .annotation import (
     Point3D,
     PolygonAnnotation,
     CategoryAnnotation,
+    MultiCategoryAnnotation,
     Segment,
     SegmentationAnnotation,
 )
@@ -583,6 +584,7 @@ class NucleusClient:
                 PolygonAnnotation,
                 CuboidAnnotation,
                 CategoryAnnotation,
+                MultiCategoryAnnotation,
                 SegmentationAnnotation,
             ]
         ],

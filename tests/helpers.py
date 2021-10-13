@@ -168,6 +168,18 @@ TEST_CATEGORY_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_MULTICATEGORY_ANNOTATIONS = [
+    {
+        "labels": [
+            f"[Pytest] MultiCategory Label ${i}",
+            f"[Pytest] MultiCategory Label ${i+1}",
+        ],
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "taxonomy_name": "[Pytest] MultiCategory Taxonomy 1",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
 
 TEST_SEGMENTATION_ANNOTATIONS = [
@@ -279,6 +291,15 @@ def assert_category_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert annotation_instance.label == annotation_dict["label"]
+    assert (
+        annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
+    )
+
+
+def assert_multicategory_annotation_matches_dict(
+    annotation_instance, annotation_dict
+):
+    assert set(annotation_instance.labels) == set(annotation_dict["labels"])
     assert (
         annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
     )

@@ -6,6 +6,7 @@ from .annotation import (
     CuboidAnnotation,
     PolygonAnnotation,
     CategoryAnnotation,
+    MultiCategoryAnnotation,
     SegmentationAnnotation,
 )
 from .prediction import (
@@ -62,6 +63,7 @@ def construct_annotation_payload(
             PolygonAnnotation,
             CuboidAnnotation,
             CategoryAnnotation,
+            MultiCategoryAnnotation,
             SegmentationAnnotation,
         ]
     ],
