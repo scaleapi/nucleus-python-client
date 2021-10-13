@@ -84,7 +84,6 @@ def dataset(CLIENT):
 def test_box_gt_upload(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
-    print(response)
 
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 1
@@ -148,12 +147,11 @@ def test_multicategory_gt_upload(dataset):
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
-    print("HERE")
+
     response = dataset.refloc(annotation.reference_id)["annotations"][
         "multicategory"
     ]
-    print("RESPONSE: ", response)
-    # TODO: Weirdness here also in the response from refloc?
+
     assert len(response) == 1
     response_annotation = response[0]
     assert_multicategory_annotation_matches_dict(
@@ -240,7 +238,7 @@ def test_mixed_annotation_upload(dataset):
     response_annotations = dataset.refloc(bbox_annotations[0].reference_id)[
         "annotations"
     ]
-    print(response_annotations)
+
     assert len(response_annotations) == 2
     assert len(response_annotations["box"]) == 1
     assert "segmentation" in response_annotations
