@@ -34,6 +34,7 @@ from .constants import (
 from .dataset_item import DatasetItem
 from .prediction import (
     BoxPrediction,
+    CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
@@ -50,6 +51,7 @@ def format_prediction_response(
             BoxPrediction,
             PolygonPrediction,
             CuboidPrediction,
+            CategoryPrediction,
             SegmentationPrediction,
         ]
     ],
@@ -65,12 +67,14 @@ def format_prediction_response(
             Type[BoxPrediction],
             Type[PolygonPrediction],
             Type[CuboidPrediction],
+            Type[CategoryPrediction],
             Type[SegmentationPrediction],
         ],
     ] = {
         BOX_TYPE: BoxPrediction,
         POLYGON_TYPE: PolygonPrediction,
         CUBOID_TYPE: CuboidPrediction,
+        CATEGORY_TYPE: CategoryPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
     for type_key in annotation_payload:
