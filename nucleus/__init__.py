@@ -323,7 +323,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         dataset_items: List[DatasetItem],
-        batch_size: int = 100,
+        batch_size: int = 30,
         update: bool = False,
     ):
         """
