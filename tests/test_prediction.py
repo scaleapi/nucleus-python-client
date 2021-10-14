@@ -92,7 +92,7 @@ def model_run(CLIENT):
 def test_box_pred_upload(model_run):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
-    print(response)
+
     assert response["model_run_id"] == model_run.model_run_id
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
@@ -396,7 +396,6 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
         asynchronous=True,
     )
     job.sleep_until_complete()
-    print(job.status())
 
     assert job.status() == {
         "job_id": job.job_id,
