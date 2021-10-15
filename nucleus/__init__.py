@@ -1209,8 +1209,13 @@ class NucleusClient:
         model_run_id: id of the model run for generating embeddings on. Mutually exclusive with gt_only
         gt_only: Whether we are generating embeddings on the ground truth objects in a dataset. Mutually exclusive with model_run_id
         """
+        payload: Dict[str, Union[str, bool]] = {}
+        if model_run_id:
+            payload["model_run_id"] = model_run_id
+        elif gt_only:
+            payload["ingest_gt_only"] = True
         return self.make_request(
-            {model_run_id: model_run_id or None, gt_only: gt_only or None},
+            payload,
             f"indexing/{dataset_id}/internal/object",
             requests_command=requests.post,
         )
