@@ -1180,7 +1180,7 @@ class NucleusClient:
     def create_image_index(self, dataset_id: str):
         """
         Starts generating embeddings for images that don't have embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint is limited to generating embeddings for 5 million
+        be used for autotag and similarity search. This endpoint is limited to generating embeddings for 2 million
         images at a time. This endpoint is also currently only enabled for enterprise customers.
         Please reach out to nucleus@scale.com if you wish to learn more.
 
