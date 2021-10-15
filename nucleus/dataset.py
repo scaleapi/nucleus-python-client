@@ -453,6 +453,14 @@ class Dataset:
         response = self._client.create_image_index(self.id)
         return AsyncJob.from_json(response, self._client)
 
+    def create_object_index(
+        self, model_run_id: str = None, gt_only: bool = None
+    ):
+        response = self._client.create_object_index(
+            self.id, model_run_id, gt_only
+        )
+        return AsyncJob.from_json(response, self._client)
+
     def add_taxonomy(
         self,
         taxonomy_name: str,

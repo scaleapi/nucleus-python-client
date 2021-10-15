@@ -1180,7 +1180,8 @@ class NucleusClient:
     def create_image_index(self, dataset_id: str):
         """
         Starts generating embeddings for images that don't have embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint is currently only enabled for enterprise customers.
+        be used for autotag and similarity search. This endpoint is limited to generating embeddings for 5 million
+        images at a time. This endpoint is also currently only enabled for enterprise customers.
         Please reach out to nucleus@scale.com if you wish to learn more.
 
         :param
@@ -1189,6 +1190,28 @@ class NucleusClient:
         return self.make_request(
             {},
             f"indexing/{dataset_id}/internal/image",
+            requests_command=requests.post,
+        )
+
+    def create_object_index(
+        self, dataset_id: str, model_run_id: str, gt_only: bool
+    ):
+        """
+        Starts generating embeddings for objects that don't have embeddings in a given dataset. These embeddings will
+        be used for autotag and similarity search. This endpoint only supports indexing objects sourced from the predictions
+        of a single model run or the ground truth annotations of a dataset.
+
+        This endpoint is limited to generating embeddings for 3 million objects at a time. This endpoint is also currently
+        only enabled for enterprise customers. Please reach out to nucleus@scale.com if you wish to learn more.
+
+        :param
+        dataset_id: id of dataset for generating embeddings on.
+        model_run_id: id of the model run for generating embeddings on. Mutually exclusive with gt_only
+        gt_only: Whether we are generating embeddings on the ground truth objects in a dataset. Mutually exclusive with model_run_id
+        """
+        return self.make_request(
+            {model_run_id: model_run_id or None, gt_only: gt_only or None},
+            f"indexing/{dataset_id}/internal/object",
             requests_command=requests.post,
         )
 
