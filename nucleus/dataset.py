@@ -261,6 +261,9 @@ class Dataset:
             'ignored_items': int,
         }
         """
+        assert (
+            batch_size is None or batch_size < 30
+        ), "Please specify a batch size smaller than 30 to avoid timeouts."
         dataset_items = [
             item for item in items if isinstance(item, DatasetItem)
         ]
@@ -270,6 +273,9 @@ class Dataset:
                 "You must append either DatasetItems or Scenes to the dataset."
             )
         if scenes:
+            assert (
+                asynchronous
+            ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
             return self.append_scenes(scenes, update, asynchronous)
 
         check_for_duplicate_reference_ids(dataset_items)
