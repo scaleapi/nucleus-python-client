@@ -252,6 +252,7 @@ def test_scene_add_frame():
     }
 
 
+@pytest.skip("Deactivated sync upload for scenes")
 def test_scene_upload_sync(dataset):
     payload = TEST_LIDAR_SCENES
     scenes = [
