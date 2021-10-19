@@ -273,6 +273,7 @@ def test_scene_upload_sync(dataset):
     assert response["new_scenes"] == len(scenes)
 
 
+@pytest.mark.skip("Deactivated sync upload for scenes")
 @pytest.mark.integration
 def test_scene_and_cuboid_upload_sync(dataset):
     payload = TEST_LIDAR_SCENES
