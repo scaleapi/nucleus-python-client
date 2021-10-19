@@ -14,6 +14,7 @@ from .prediction import (
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
+    CategoryPrediction,
 )
 from .constants import (
     ANNOTATION_UPDATE_KEY,
@@ -91,7 +92,12 @@ def construct_segmentation_payload(
 
 def construct_box_predictions_payload(
     box_predictions: List[
-        Union[BoxPrediction, PolygonPrediction, CuboidPrediction]
+        Union[
+            BoxPrediction,
+            PolygonPrediction,
+            CuboidPrediction,
+            CategoryPrediction,
+        ]
     ],
     update: bool,
 ) -> dict:

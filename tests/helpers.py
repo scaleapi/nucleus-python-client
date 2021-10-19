@@ -206,6 +206,11 @@ TEST_POLYGON_MODEL_PDF = {
     for polygon_annotation in TEST_POLYGON_ANNOTATIONS
 }
 
+TEST_CATEGORY_MODEL_PDF = {
+    category_annotation["label"]: 1 / len(TEST_CATEGORY_ANNOTATIONS)
+    for category_annotation in TEST_CATEGORY_ANNOTATIONS
+}
+
 TEST_BOX_PREDICTIONS = [
     {
         **TEST_BOX_ANNOTATIONS[i],
@@ -232,6 +237,20 @@ TEST_POLYGON_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
+]
+
+TEST_CATEGORY_PREDICTIONS = [
+    {
+        **TEST_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_CATEGORY_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_CATEGORY_ANNOTATIONS))
 ]
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
@@ -336,6 +355,15 @@ def assert_polygon_prediction_matches_dict(
     prediction_instance, prediction_dict
 ):
     assert_polygon_annotation_matches_dict(
+        prediction_instance, prediction_dict
+    )
+    assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def assert_category_prediction_matches_dict(
+    prediction_instance, prediction_dict
+):
+    assert_category_annotation_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]

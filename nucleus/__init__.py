@@ -87,6 +87,7 @@ from .prediction import (
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
+    CategoryPrediction,
 )
 from .scene import Frame, LidarScene
 from .slice import Slice
@@ -742,6 +743,7 @@ class NucleusClient:
                 PolygonPrediction,
                 CuboidPrediction,
                 SegmentationPrediction,
+                CategoryPrediction,
             ]
         ],
         model_run_id: Optional[str] = None,
@@ -752,7 +754,7 @@ class NucleusClient:
     ):
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param annotations: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        :param annotations: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction, CategoryPrediction]],
         :param update: bool
         :return:
         {
@@ -914,7 +916,7 @@ class NucleusClient:
         :param reference_id: reference_id of a dataset item.
         :return:
         {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction, CategoryPrediction]],
         }
         """
         return self.make_request(
@@ -939,7 +941,7 @@ class NucleusClient:
         :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
         :return:
         {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction, CategoryPrediction]],
         }
         """
         return self.make_request(

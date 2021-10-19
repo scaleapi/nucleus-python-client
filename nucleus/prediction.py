@@ -1,6 +1,7 @@
 from typing import Dict, Optional, List
 from .annotation import (
     BoxAnnotation,
+    CategoryAnnotation,
     Point,
     PolygonAnnotation,
     Segment,
@@ -13,10 +14,12 @@ from .constants import (
     BOX_TYPE,
     CUBOID_TYPE,
     POLYGON_TYPE,
+    CATEGORY_TYPE,
     REFERENCE_ID_KEY,
     METADATA_KEY,
     GEOMETRY_KEY,
     LABEL_KEY,
+    TAXONOMY_NAME_KEY,
     TYPE_KEY,
     X_KEY,
     Y_KEY,
@@ -40,6 +43,8 @@ def from_json(payload: dict):
         return PolygonPrediction.from_json(payload)
     elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
         return CuboidPrediction.from_json(payload)
+    elif payload.get(TYPE_KEY, None) == CATEGORY_TYPE:
+        return CategoryPrediction.from_json(payload)
     else:
         return SegmentationPrediction.from_json(payload)
 
@@ -204,6 +209,46 @@ class CuboidPrediction(CuboidAnnotation):
             reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, None),
+        )
+
+
+class CategoryPrediction(CategoryAnnotation):
+    def __init__(
+        self,
+        label: str,
+        taxonomy_name: str,
+        reference_id: str,
+        confidence: Optional[float] = None,
+        metadata: Optional[Dict] = None,
+        class_pdf: Optional[Dict] = None,
+    ):
+        super().__init__(
+            label=label,
+            taxonomy_name=taxonomy_name,
+            reference_id=reference_id,
+            metadata=metadata,
+        )
+        self.confidence = confidence
+        self.class_pdf = class_pdf
+
+    def to_payload(self) -> dict:
+        payload = super().to_payload()
+        if self.confidence is not None:
+            payload[CONFIDENCE_KEY] = self.confidence
+        if self.class_pdf is not None:
+            payload[CLASS_PDF_KEY] = self.class_pdf
+
+        return payload
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
+            confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
         )
