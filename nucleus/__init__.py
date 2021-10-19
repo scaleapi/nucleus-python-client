@@ -324,7 +324,7 @@ class NucleusClient:
         self,
         dataset_id: str,
         dataset_items: List[DatasetItem],
-        batch_size: int = 30,
+        batch_size: int = 20,
         update: bool = False,
     ):
         """
@@ -495,6 +495,9 @@ class NucleusClient:
         files,
         route: str,
         session: aiohttp.ClientSession,
+        retry_attempt=0,
+        max_retries=3,
+        sleep_intervals=(1, 3, 9),
     ):
         """
         Makes an async post request with files to a Nucleus endpoint.
@@ -519,6 +522,7 @@ class NucleusClient:
             )
 
         for sleep_time in RetryStrategy.sleep_times + [-1]:
+
             async with session.post(
                 endpoint,
                 data=form,
@@ -542,15 +546,27 @@ class NucleusClient:
                     continue
 
                 if not response.ok:
-                    self.handle_bad_response(
-                        endpoint,
-                        session.post,
-                        aiohttp_response=(
-                            response.status,
-                            response.reason,
-                            data,
-                        ),
-                    )
+                    if retry_attempt < max_retries:
+                        time.sleep(sleep_intervals[retry_attempt])
+                        retry_attempt += 1
+                        return self._make_files_request(
+                            files,
+                            route,
+                            session,
+                            retry_attempt,
+                            max_retries,
+                            sleep_intervals,
+                        )
+                    else:
+                        self.handle_bad_response(
+                            endpoint,
+                            session.post,
+                            aiohttp_response=(
+                                response.status,
+                                response.reason,
+                                data,
+                            ),
+                        )
 
                 return data
 
