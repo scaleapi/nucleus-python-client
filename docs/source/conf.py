@@ -23,7 +23,7 @@ copyright = "2021, Scale"
 author = "Scale"
 
 # The full version, including alpha/beta/rc tags
-from nucleus import __version__
+from nucleus import __version__  # noqa: E402
 
 release = "v" + str(__version__)
 
