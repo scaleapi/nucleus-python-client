@@ -114,7 +114,7 @@ class DatasetItemType(Enum):
 
 @dataclass  # pylint: disable=R0902
 class DatasetItem:  # pylint: disable=R0902
-    """A dataset item is either a single image or pointcloud plus its associated metadata.
+    """A dataset item is an image or pointcloud that has associated metadata.
 
     Note: for 3D data, please include a :class:`.CameraParams` object under a key named
     "camera_params" within the metadata dictionary. This will allow for projecting
