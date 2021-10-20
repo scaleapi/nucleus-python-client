@@ -1,5 +1,2 @@
-aiohttp
-furo
-nest_asyncio
 sphinx
-tqdm
+furo
