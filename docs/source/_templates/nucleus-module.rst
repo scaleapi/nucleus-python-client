@@ -1,13 +1,16 @@
-{{ objname | escape | underline}}
+{{ objname | escape | underline }}
 
-.. automodule:: {{ objname }}
+.. automodule:: {{ fullname }}
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :inherited-members:
   
    {% block attributes %}
    {% if attributes %}
    .. rubric:: Module Attributes
 
-   .. autosummary::
-      :toctree:
+   .. autoattribute::
    {% for item in attributes %}
       {{ item }}
    {%- endfor %}
@@ -18,8 +21,7 @@
    {% if functions %}
    .. rubric:: {{ _('Functions') }}
 
-   .. autosummary::
-      :toctree:
+   .. autofunction::
    {% for item in functions %}
       {{ item }}
    {%- endfor %}
@@ -30,9 +32,7 @@
    {% if classes %}
    .. rubric:: {{ _('Classes') }}
 
-   .. autosummary::
-      :toctree:
-      :template: class.rst
+   .. autoclass::
    {% for item in classes %}
       {{ item }}
    {%- endfor %}
@@ -43,8 +43,7 @@
    {% if exceptions %}
    .. rubric:: {{ _('Exceptions') }}
 
-   .. autosummary::
-      :toctree:
+   .. autoexception::
    {% for item in exceptions %}
       {{ item }}
    {%- endfor %}
@@ -54,10 +53,9 @@
 {% block modules %}
 {% if modules %}
 .. rubric:: Modules
-
+   
 .. autosummary::
    :toctree:
-   :template: module.rst
    :recursive:
 {% for item in modules %}
    {{ item }}
