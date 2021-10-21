@@ -1,3 +1,12 @@
+"""
+Instead of thinking of your Datasets as collections of data, it is useful to think
+about them as a collection of Slices. For isntance, your dataset may contain
+different weather scenarios, traffic conditions, or highway types.
+
+Perhaps your Models perform poorly on foggy weather scenarios; it is then useful
+to slice your dataset into a "foggy" slice, and fine-tune model performance on
+this slice until it reaches the performance you desire.
+"""
 from typing import Dict, Iterable, List, Set, Tuple, Union
 
 import requests
