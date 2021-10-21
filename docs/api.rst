@@ -2,7 +2,7 @@ API
 ===
 
 .. autosummary::
-   :toctree: _autosummary
+   :toctree: api
    :template: nucleus-module.rst
    :recursive:
 
