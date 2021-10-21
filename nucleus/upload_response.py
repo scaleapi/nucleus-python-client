@@ -18,7 +18,15 @@ def json_list_to_dataset_item(item_list):
 class UploadResponse:
     """
     Response for long upload job
-    # TODO refactor
+
+    Attributes:
+        dataset_id: The scale-generated id for the dataset that was uploaded to
+        new_items: How many items are new in the upload
+        updated_items: How many items were updated
+        ignored_items: How many items were ignored
+        upload_errors: A list of errors encountered during upload
+        error_codes: A set of all the error codes encountered during upload
+        error_payload: The detailed error payload returned from the endpoint.
     """
 
     def __init__(self, json: dict):
