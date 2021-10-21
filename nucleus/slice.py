@@ -51,27 +51,27 @@ class Slice:
         Retrieves info and items of the Slice.
 
         Returns:
-            A dict mapping keys to the corresponding info retrieved.
+            A dict mapping keys to the corresponding info retrieved::
 
-            {
-              "name": "Day Images",
-              "dataset_id": "ds_bw6de8s84pe0vbn6p5zg"
-              "dataset_items":
-              [
                 {
-                  "id": "di_bx79jc134x5w2janra10",
-                  "metadata": {},
-                  "ref_id": "image_ref_300000",
-                  "original_image_url": "s3://bucket_name_and_location"
-                },
-                {
-                  "id": "di_5x79jc134x5w2jantr30",
-                  "metadata": {},
-                  "ref_id": "image_ref_300001",
-                  "original_image_url": "s3://bucket_name_and_location"
-                },
-              ],
-            }
+                  "name": "Day Images",
+                  "dataset_id": "ds_bw6de8s84pe0vbn6p5zg"
+                  "dataset_items":
+                  [
+                    {
+                      "id": "di_bx79jc134x5w2janra10",
+                      "metadata": {},
+                      "ref_id": "image_ref_300000",
+                      "original_image_url": "s3://bucket_name_and_location"
+                    },
+                    {
+                      "id": "di_5x79jc134x5w2jantr30",
+                      "metadata": {},
+                      "ref_id": "image_ref_300001",
+                      "original_image_url": "s3://bucket_name_and_location"
+                    },
+                  ],
+                }
         """
         info = self._client.slice_info(self.slice_id)
         self._dataset_id = info["dataset_id"]
