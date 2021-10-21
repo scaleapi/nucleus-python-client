@@ -1,6 +1,6 @@
 """
 Instead of thinking of your Datasets as collections of data, it is useful to think
-about them as a collection of Slices. For isntance, your dataset may contain
+about them as a collection of Slices. For instance, your dataset may contain
 different weather scenarios, traffic conditions, or highway types.
 
 Perhaps your Models perform poorly on foggy weather scenarios; it is then useful
@@ -22,7 +22,7 @@ from nucleus.constants import (
 
 class Slice:
     """
-    Slice respesents a subset of your Dataset.
+    A Slice respesents a subset of your Dataset.
     """
 
     def __init__(self, slice_id: str, client):
@@ -41,21 +41,37 @@ class Slice:
 
     @property
     def dataset_id(self):
-        """The id of the dataset this slice belongs to."""
+        """The ID of the Dataset to which this Slice belongs."""
         if self._dataset_id is None:
             self.info()
         return self._dataset_id
 
     def info(self) -> dict:
         """
-        This endpoint provides information about specified slice.
+        Retrieves info and items of the Slice.
 
-        :return:
-        {
-            "name": str,
-            "dataset_id": str,
-            "dataset_items",
-        }
+        Returns:
+            A dict mapping keys to the corresponding info retrieved.
+
+            {
+              "name": "Day Images",
+              "dataset_id": "ds_bw6de8s84pe0vbn6p5zg"
+              "dataset_items":
+              [
+                {
+                  "id": "di_bx79jc134x5w2janra10",
+                  "metadata": {},
+                  "ref_id": "image_ref_300000",
+                  "original_image_url": "s3://bucket_name_and_location"
+                },
+                {
+                  "id": "di_5x79jc134x5w2jantr30",
+                  "metadata": {},
+                  "ref_id": "image_ref_300001",
+                  "original_image_url": "s3://bucket_name_and_location"
+                },
+              ],
+            }
         """
         info = self._client.slice_info(self.slice_id)
         self._dataset_id = info["dataset_id"]
@@ -66,9 +82,9 @@ class Slice:
         reference_ids: List[str] = None,
     ) -> dict:
         """
-        Appends to a slice from items already present in a dataset.
-        The caller must exclusively use either datasetItemIds or reference_ids
-        as a means of identifying items in the dataset.
+        Appends existing DatasetItems from a Dataset to a Slice.
+        You'll need to reference the items in your dataset by using the reference
+        IDs that you set at upload time.
 
         :param
         reference_ids: List[str],
