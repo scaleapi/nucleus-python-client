@@ -13,7 +13,7 @@ Doing the three steps above allows you to visualize model performance within Nuc
 
 Note that you can always add more predictions to a dataset, but then you will need to re-run the calculation of metrics in order to have them be correct.
 
-..code-block:: python
+.. code-block:: python
 import nucleus
 client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 prediction_1 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="1", confidence=0.9, class_pdf={'label': 0.9, 'other_label': 0.1})
