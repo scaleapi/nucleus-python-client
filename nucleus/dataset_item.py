@@ -31,6 +31,17 @@ from .constants import (
 
 @dataclass
 class Quaternion:
+    """Quaternion objects are used to represent rotation.
+    We use the Hamilton quaternion convention, where i^2 = j^2 = k^2 = ijk = -1, i.e. the right-handed convention.
+    The quaternion represented by the tuple (x, y, z, w) is equal to w + x*i + y*j + z*k
+
+    Attributes:
+        x: x value
+        y: y value
+        x: z value
+        w: w value
+    """
+
     x: float
     y: float
     z: float
@@ -53,6 +64,20 @@ class Quaternion:
 
 @dataclass
 class CameraParams:
+    """CameraParams objects represent the camera position/heading used to record the image.
+
+    Attributes:
+        position: Vector3 World-normalized position of the camera
+        heading: Vector <x, y, z, w> indicating the quaternion of the camera direction;
+            note that the z-axis of the camera frame represents the camera's optical axis.
+            See `Heading Examples<https://docs.scale.com/reference/data-types-and-the-frame-objects#heading-examples>`_
+            for examples.
+        fx: focal length in x direction (in pixels)
+        fy: focal length in y direction (in pixels)
+        cx: principal point x value
+        cy: principal point y value
+    """
+
     position: Point3D
     heading: Quaternion
     fx: float
@@ -89,14 +114,68 @@ class DatasetItemType(Enum):
 
 @dataclass  # pylint: disable=R0902
 class DatasetItem:  # pylint: disable=R0902
+    """A dataset item is an image or pointcloud that has associated metadata.
+
+    Note: for 3D data, please include a :class:`.CameraParams` object under a key named
+    "camera_params" within the metadata dictionary. This will allow for projecting
+    3D annotations to any image within a scene.
+
+
+    Attributes:
+        image_location: Required if pointcloud_location not present: The location
+            containing the image for the given row of data. This can be a local path, or a remote URL.
+            Remote formats supported include any URL (http:// or https://) or URIs for AWS S3, Azure, or GCS,
+            (i.e. s3://, gcs://)
+        reference_id: (required) A user-specified identifier to reference the item. The
+          default value is present in order to not have to change argument order, but
+          must be replaced.
+        metadata: Extra information about the particular dataset item. ints, floats,
+          string values will be made searchable in the query bar by the key in this dict
+          For example, {"animal": "dog"} will become searchable via
+          metadata.animal = "dog"
+
+          Categorical data can be passed as a string and will be treated categorically
+          by Nucleus if there are less than 250 unique values in the dataset. This means
+          histograms of values in the "Insights" section and autocomplete
+          within the query bar.
+
+          Numerical metadata will generate histograms in the "Insights" section, allow
+          for sorting the results of any query, and can be used with the modulo operator
+          For example: metadata.frame_number % 5 = 0
+
+          All other types of metadata will be visible from the dataset item detail view.
+
+          It is important that string and numerical metadata fields are consistent - if
+          a metadata field has a string value, then all metadata fields with the same
+          key should also have string values, and vice versa for numerical metadata.
+          If conflicting types are found, Nucleus will return an error during upload!
+
+          The recommended way of adding or updating existing metadata is to re-run the
+          ingestion (dataset.append) with update=True, which will replace any existing
+          metadata with whatever your new ingestion run uses. This will delete any
+          metadata keys that are not present in the new ingestion run. We have a cache
+          based on image_location that will skip the need for a re-upload of the images,
+          so your second ingestion will be faster than your first.
+          TODOC(Shorten this once we have a guide migrated for metadata, or maybe link
+          from other places to here.)
+        pointcloud_location: Required if image_location not present: The remote URL
+          containing the pointcloud JSON. Remote formats supported include any URL
+          (http:// or https://) or URIs for AWS S3, Azure, or GCS, (i.e. s3://, gcs://)
+        upload_to_scale: Set this to false in order to use `privacy mode <https://dashboard.scale.com/nucleus/docs/api#privacy-mode>`_. TODOC (update this once guide is migrated).
+          Setting this to false means the actual data within the item
+          (i.e. the image or pointcloud) will not be uploaded to scale meaning that
+          you can send in links that are only accessible to certain users, and not to
+          Scale.
+    """
+
     image_location: Optional[str] = None
-    reference_id: Optional[str] = None
+    reference_id: str = "DUMMY_VALUE"  # Done in order to preserve argument ordering and not break old clients.
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     upload_to_scale: Optional[bool] = True
 
     def __post_init__(self):
-        assert self.reference_id is not None, "reference_id is required."
+        assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
         assert bool(self.image_location) != bool(
             self.pointcloud_location
         ), "Must specify exactly one of the image_location, pointcloud_location parameters"
