@@ -13,10 +13,14 @@ Doing the three steps above allows you to visualize model performance within Nuc
 
 Note that you can always add more predictions to a dataset, but then you will need to re-run the calculation of metrics in order to have them be correct.
 
-JUST CHECKING IF THIS RENDERS2???
+JUST CHECKING IF THIS RENDERS3???
 
-.. code-block:: python
-    import nucleus
+text text ::
+
+    code code
+    code code
+
+more text
 
 """
 from typing import List, Optional, Dict, Union
