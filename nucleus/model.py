@@ -13,25 +13,11 @@ Doing the three steps above allows you to visualize model performance within Nuc
 
 Note that you can always add more predictions to a dataset, but then you will need to re-run the calculation of metrics in order to have them be correct.
 
-JUST CHECKING IF THIS RENDERS???
+JUST CHECKING IF THIS RENDERS2???
 
-::
-import nucleus
-client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-prediction_1 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="1", confidence=0.9, class_pdf={'label': 0.9, 'other_label': 0.1})
-prediction_2 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="2", confidence=0.2, class_pdf={'label': 0.2, 'other_label': 0.8})
-model = client.add_model(name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"})
-# For small ingestions, we recommend synchronous ingestion
-response = dataset.upload_predictions(model, [prediction_1, prediction_2])
-# For large ingestions, we recommend asynchronous ingestion
-job = dataset.upload_predictions([prediction_1, prediction_2], asynchronous=True)
-# Check current status
-job.status()
-# Sleep until ingestion is done
-job.sleep_until_complete()
-# Check errors
-job.errors()
-::
+.. code-block:: python
+    import nucleus
+
 """
 from typing import List, Optional, Dict, Union
 from .dataset import Dataset
