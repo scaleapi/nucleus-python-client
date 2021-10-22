@@ -1,3 +1,9 @@
+"""This module can be used to compute active learning metrics on your predictions.
+
+For more details on usage see the example colab in scripts/autocurate_bdd.ipynb
+"""
+
+
 import datetime
 import requests
 from nucleus.constants import (
@@ -9,6 +15,7 @@ from nucleus.job import AsyncJob
 
 
 def entropy(name, model_run, client):
+    """Computes the mean entropy across all predictions for each image."""
     model_run_ids = [model_run.model_run_id]
     dataset_id = model_run.dataset_id
     response = client.make_request(

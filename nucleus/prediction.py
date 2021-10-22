@@ -1,3 +1,7 @@
+"""All of the prediction types supported. In general, prediction types are the same
+as annotation types, but come with additional, optional data that can be attached
+such as confidence or probability distributions.
+"""
 from typing import Dict, Optional, List
 from .annotation import (
     BoxAnnotation,
@@ -66,6 +70,16 @@ class SegmentationPrediction(SegmentationAnnotation):
 
 
 class BoxPrediction(BoxAnnotation):
+    """A prediction of a bounding box
+
+    Attributes:
+        confidence: 0-1 indicating the confidence of the prediciton
+        class_pdf: An optional complete class probability distribution on this
+            annotation. Each value should be between 0 and 1 (inclusive), and sum up to
+            1 as a complete distribution. This can be useful for computing entropy to
+            surface places where the model is most uncertain.
+    """
+
     def __init__(
         self,
         label: str,
@@ -119,6 +133,16 @@ class BoxPrediction(BoxAnnotation):
 
 
 class PolygonPrediction(PolygonAnnotation):
+    """A prediction of a polygon
+
+    Attributes:
+        confidence: 0-1 indicating the confidence of the prediciton
+        class_pdf: An optional complete class probability distribution on this
+            annotation. Each value should be between 0 and 1 (inclusive), and sum up to
+            1 as a complete distribution. This can be useful for computing entropy to
+            surface places where the model is most uncertain.
+    """
+
     def __init__(
         self,
         label: str,
@@ -165,6 +189,16 @@ class PolygonPrediction(PolygonAnnotation):
 
 
 class CuboidPrediction(CuboidAnnotation):
+    """A prediction of 3D cuboid.
+
+    Attributes:
+        confidence: 0-1 indicating the confidence of the prediciton
+        class_pdf: An optional complete class probability distribution on this
+            annotation. Each value should be between 0 and 1 (inclusive), and sum up to
+            1 as a complete distribution. This can be useful for computing entropy to
+            surface places where the model is most uncertain.
+    """
+
     def __init__(
         self,
         label: str,
@@ -215,6 +249,8 @@ class CuboidPrediction(CuboidAnnotation):
 
 
 class CategoryPrediction(CategoryAnnotation):
+    """This class is not yet supported: Categorization support coming soon!"""
+
     def __init__(
         self,
         label: str,
