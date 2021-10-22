@@ -162,13 +162,13 @@ class Slice:
 
         For self-serve projects, user can choose to submit the slice as a calibration batch, which is recommended for brand new labeling projects.  For more information about calibration batches, please reference `Overview of Self Serve Workflow <https://docs.scale.com/reference/batch-overview>`_. Note: A batch can be either a calibration batch or a self label batch, but not both.
 
-        Note: Nucleus only supports bounding box, polygon, and line annotations. If the project parameters specify any other geometries (ellipses or points), those objects will be annotated, but they will not be reflected in Nucleus. 
+        Note: Nucleus only supports bounding box, polygon, and line annotations. If the project parameters specify any other geometries (ellipses or points), those objects will be annotated, but they will not be reflected in Nucleus.
 
         Args:
             project_id: A unique id of the target annotation project.
             calibration_batch: (Relevant to Scale Rapid projects only) An optional boolean signaling whether to send as a "calibration batch" for taskers to preliminarily evaluate your project instructions and parameters.
             self_label_batch: (Relevant to Scale Rapid projects only) An optional boolean signaling whether to send as a "self-label batch," in which your team can label internally through Scale Rapid.
-            """
+        """
         response = self._client.make_request(
             {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
         )
