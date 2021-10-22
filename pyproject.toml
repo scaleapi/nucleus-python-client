@@ -51,6 +51,8 @@ coverage = "^5.5"
 pre-commit = "^2.12.1"
 jupyterlab = "^3.1.10"
 absl-py = "^0.13.0"
+Sphinx = "^4.2.0"
+sphinx-autobuild = "^2021.3.14"
 furo = "^2021.10.9"
 
 [tool.pytest.ini_options]

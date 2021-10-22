@@ -21,9 +21,7 @@ from nucleus.constants import (
 
 
 class Slice:
-    """
-    A Slice respesents a subset of your Dataset.
-    """
+    """A Slice respesents a subset of your Dataset."""
 
     def __init__(self, slice_id: str, client):
         self.slice_id = slice_id
@@ -47,30 +45,28 @@ class Slice:
         return self._dataset_id
 
     def info(self) -> dict:
-        """
-        Retrieves info and items of the Slice.
+        """Retrieves info and items of the Slice.
 
         Returns:
-            A dict mapping keys to the corresponding info retrieved::
+            A dict mapping keys to the corresponding info retrieved. ::
 
                 {
-                  "name": "Day Images",
-                  "dataset_id": "ds_bw6de8s84pe0vbn6p5zg"
-                  "dataset_items":
-                  [
-                    {
-                      "id": "di_bx79jc134x5w2janra10",
-                      "metadata": {},
-                      "ref_id": "image_ref_300000",
-                      "original_image_url": "s3://bucket_name_and_location"
-                    },
-                    {
-                      "id": "di_5x79jc134x5w2jantr30",
-                      "metadata": {},
-                      "ref_id": "image_ref_300001",
-                      "original_image_url": "s3://bucket_name_and_location"
-                    },
-                  ],
+                    "name": "foggy",
+                    "dataset_id": "ds_bw6de8s84pe0vbn6p5zg"
+                    "dataset_items": [
+                        {
+                            "id": "di_bx79jc134x5w2janra10",
+                            "metadata": {},
+                            "ref_id": "image_ref_300000",
+                            "original_image_url": "s3://bucket-and-key"
+                        },
+                        {
+                            "id": "di_5x79jc134x5w2jantr30",
+                            "metadata": {},
+                            "ref_id": "image_ref_300001",
+                            "original_image_url": "s3://bucket-and-key"
+                        },
+                    ],
                 }
         """
         info = self._client.slice_info(self.slice_id)
@@ -86,13 +82,15 @@ class Slice:
         You'll need to reference the items in your dataset by using the reference
         IDs that you set at upload time.
 
-        :param
-        reference_ids: List[str],
+        Args:
+            reference_ids:
+                A list of user-specified IDs for DatasetItems you wish to append.
 
-        :return:
-        {
-            "slice_id": str,
-        }
+        Return:
+            A dict of the slice_id and the newly appended DatasetItem IDs. ::
+
+                {"slice_id": "slc_bx86ea222a6g057x4380",
+                  "new_items": ["di_bx79jc1z4x5wvjenra10", "di_bx79ha5z4x5wvjenr9y0"]}
         """
         response = self._client.append_to_slice(
             slice_id=self.slice_id,
@@ -103,15 +101,22 @@ class Slice:
     def items_and_annotation_generator(
         self,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Returns an iterable of all DatasetItems and Annotations in this slice.
+        """Provides a generator of all DatasetItems and Annotations in the slice.
 
         Returns:
-            An iterable, where each item is a dict with two keys representing a row
-            in the dataset.
-            * One value in the dict is the DatasetItem, containing a reference to the
-                item that was annotated, for example an image_url.
-            * The other value is a dictionary containing all the annotations for this
-                dataset item, sorted by annotation type.
+            A generator where each element is a dict containing the DatasetItem
+            and all annotations, grouped by type. ::
+
+                Iterable([
+                    {"item": DatasetItem(image_location="s3://bucket-and-key",
+                                         reference_id="image_ref_300000",
+                                         metadata={},
+                                         pointcloud_location=None,
+                                         upload_to_scale=True),
+                      "annotations": {"box": [BoxAnnotation ... ],
+                                      "segmentation": [SegmentationAnnotation ... ]},
+                    ...
+                ])
         """
         info = self.info()
         for item_metadata in info["dataset_items"]:
@@ -125,15 +130,22 @@ class Slice:
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Returns a list of all DatasetItems and Annotations in this slice.
+        """Provides a list of all DatasetItems and Annotations in the slice.
 
         Returns:
-            A list, where each item is a dict with two keys representing a row
-            in the dataset.
-            * One value in the dict is the DatasetItem, containing a reference to the
-                item that was annotated.
-            * The other value is a dictionary containing all the annotations for this
-                dataset item, sorted by annotation type.
+            A list where each element is a dict containing the DatasetItem
+            and all annotations, grouped by type. ::
+
+                [
+                    {"item": DatasetItem(image_location="s3://bucket-and-key",
+                                         reference_id="image_ref_300000",
+                                         metadata={},
+                                         pointcloud_location=None,
+                                         upload_to_scale=True),
+                      "annotations": {"box": [BoxAnnotation ... ],
+                                      "segmentation": [SegmentationAnnotation ... ]},
+                    ...
+                ]
         """
         api_payload = self._client.make_request(
             payload=None,
@@ -143,6 +155,15 @@ class Slice:
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
     def send_to_labeling(self, project_id: str):
+        """
+        This endpoint submits the items from a slice as tasks to a pre-existing Scale Annotation project uniquely identified by projectId. Only projects of type General Image Annotation are currently supported. Additionally, in order for task submission to succeed, the project must have task instructions and geometries configured as project-level parameters.  In order to create a project or set project parameters, you must use the Scale Annotation API, which is documented here: `Scale Annotation API Documentation <https://docs.scale.com/reference/project-overview>`_. When the newly created annotation tasks are annotated, the annotations will be automatically reflected in the Nucleus platform.
+
+        For self-serve projects, user can choose to submit the slice as a calibration batch, which is recommended for brand new labeling projects.  For more information about calibration batches, please reference `Overview of Self Serve Workflow <https://docs.scale.com/reference/batch-overview>`_.
+
+        .. A batch can be either a calibration batch or a self label batch, but not both.
+
+        Note: Nucleus only supports bounding box, polygon, and line annotations. If the project parameters specify any other geometries (ellipses or points), those objects will be annotated, but they will not be reflected in Nucleus. 
+        """
         response = self._client.make_request(
             {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
         )
@@ -151,13 +172,16 @@ class Slice:
     def export_embeddings(
         self,
     ) -> List[Dict[str, Union[str, List[float]]]]:
-        """Returns a pd.Dataframe-ready format of dataset embeddings.
+        """Provides a pd.DataFrame-like list of dataset embeddings.
 
         Returns:
-            A list, where each item is a dict with two keys representing a row
-            in the dataset.
-            * One value in the dict is the reference id
-            * The other value is a list of the embedding values
+            A list where each element is a columnar mapping ::
+
+                [
+                    {"embedding_vector": [-0.0022, 0.0457, ... ],
+                     "reference_id": "image_ref_300000"},
+                    ...
+                ]
         """
         api_payload = self._client.make_request(
             payload=None,
