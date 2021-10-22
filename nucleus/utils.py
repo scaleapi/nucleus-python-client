@@ -56,6 +56,14 @@ def format_prediction_response(
         ]
     ],
 ]:
+    """Helper function to convert JSON response from endpoints to python objects
+
+    Args:
+        response: JSON dictionary response from REST endpoint.
+    Returns:
+        annotation_response: Dictionary containing a list of annotations for each type,
+            keyed by the type name.
+    """
     annotation_payload = response.get(ANNOTATIONS_KEY, None)
     if not annotation_payload:
         # An error occurred
@@ -86,43 +94,15 @@ def format_prediction_response(
     return annotation_response
 
 
-def _get_all_field_values(metadata_list: List[dict], key: str):
-    return {metadata[key] for metadata in metadata_list if key in metadata}
-
-
-def suggest_metadata_schema(
-    data: Union[
-        List[DatasetItem],
-        List[BoxPrediction],
-        List[PolygonPrediction],
-        List[CuboidPrediction],
-    ]
-):
-    metadata_list: List[dict] = [
-        d.metadata for d in data if d.metadata is not None
-    ]
-    schema = {}
-    all_keys = {k for metadata in metadata_list for k in metadata.keys()}
-
-    all_key_values: Dict[str, set] = {
-        k: _get_all_field_values(metadata_list, k) for k in all_keys
-    }
-
-    for key, values in all_key_values.items():
-        entry: dict = {}
-        if all(isinstance(x, (float, int)) for x in values):
-            entry["type"] = "number"
-        elif len(values) <= 50:
-            entry["type"] = "category"
-            entry["choices"] = list(values)
-        else:
-            entry["type"] = "text"
-        schema[key] = entry
-    return schema
-
-
 def format_dataset_item_response(response: dict) -> dict:
-    """Format the raw client response into api objects."""
+    """Format the raw client response into api objects.
+
+    Args:
+      response: JSON dictionary response from REST endpoint
+    Returns:
+      item_dict: A dictionary with two entries, one for the dataset item, and annother
+        for all of the associated annotations.
+    """
     if ANNOTATIONS_KEY not in response:
         raise ValueError(
             f"Server response was missing the annotation key: {response}"
@@ -148,6 +128,15 @@ def format_dataset_item_response(response: dict) -> dict:
 
 
 def convert_export_payload(api_payload):
+    """Helper function to convert raw JSON to API objects
+
+    Args:
+        api_payload: JSON dictionary response from REST endpoint
+    Returns:
+        return_payload: A list of dictionaries for each dataset item. Each dictionary
+            is in the same format as format_dataset_item_response: one key for the
+            dataset item, another for the annotations.
+    """
     return_payload = []
     for row in api_payload:
         return_payload_row = {}
@@ -225,6 +214,7 @@ def serialize_and_write_to_presigned_url(
     dataset_id: str,
     client,
 ):
+    """This helper function can be used to serialize a list of API objects to NDJSON."""
     request_id = uuid.uuid4().hex
     response = client.make_request(
         payload={},
