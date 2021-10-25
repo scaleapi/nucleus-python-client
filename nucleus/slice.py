@@ -46,7 +46,13 @@ class Slice:
         return self._dataset_id
 
     def info(self) -> dict:
-        """Retrieves info and items of the Slice.
+        """Retrieves info and items of the Slice. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            slice = client.get_slice("slc_bx86ea222a6g057x4380")
+
+            slice.info()
 
         Returns:
             A dict mapping keys to the corresponding info retrieved. ::
@@ -81,7 +87,14 @@ class Slice:
         """Appends existing DatasetItems from a Dataset to a Slice.
 
         The endpoint expects a list of DatasetItem reference IDs which are set
-        at upload time.
+        at upload time. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            slice = client.get_slice("slc_bx86ea222a6g057x4380")
+
+            # You can append to a slice from existing reference_ids
+            slice.append(reference_ids=["image_300000", "image_300001"])
 
         Args:
             reference_ids:
@@ -102,7 +115,13 @@ class Slice:
     def items_and_annotation_generator(
         self,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Provides a generator of all DatasetItems and Annotations in the slice.
+        """Provides a generator of all DatasetItems and Annotations in the slice. ::
+
+                import nucleus
+                client = NucleusClient("YOUR_SCALE_API_KEY")
+                slice = client.get_slice("slc_bx86ea222a6g057x4380")
+
+                slice.items_and_annotations_generator()
 
         Returns:
             A generator where each element is a dict containing the DatasetItem
@@ -131,7 +150,13 @@ class Slice:
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Provides a list of all DatasetItems and Annotations in the Slice.
+        """Provides a list of all DatasetItems and Annotations in the Slice. ::
+
+                import nucleus
+                client = NucleusClient("YOUR_SCALE_API_KEY")
+                slice = client.get_slice("slc_bx86ea222a6g057x4380")
+
+                slice.items_and_annotations
 
         Returns:
             A list where each element is a dict containing the DatasetItem
@@ -162,7 +187,15 @@ class Slice:
 
         For self-serve projects, user can choose to submit the slice as a calibration batch, which is recommended for brand new labeling projects.  For more information about calibration batches, please reference `Overview of Self Serve Workflow <https://docs.scale.com/reference/batch-overview>`_. Note: A batch can be either a calibration batch or a self label batch, but not both.
 
-        Note: Nucleus only supports bounding box, polygon, and line annotations. If the project parameters specify any other geometries (ellipses or points), those objects will be annotated, but they will not be reflected in Nucleus.
+        Note: Nucleus only supports bounding box, polygon, and line annotations. If the project parameters specify any other geometries (ellipses or points), those objects will be annotated, but they will not be reflected in Nucleus. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            slice = client.get_slice("slc_bx86ea222a6g057x4380")
+
+            project_id = "2408bfb36443d50025f41bbd"
+            job = slice.send_to_labeling(project_id)
+            job.sleep_until_complete() # block until async job complete
 
         Args:
             project_id: A unique id of the target annotation project.
@@ -177,7 +210,13 @@ class Slice:
     def export_embeddings(
         self,
     ) -> List[Dict[str, Union[str, List[float]]]]:
-        """Provides a pd.DataFrame-like list of dataset embeddings.
+        """Provides a pd.DataFrame-like list of dataset embeddings. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            slice = client.get_slice("slc_bx86ea222a6g057x4380")
+
+            slice.export_embeddings()
 
         Returns:
             A list where each element is a columnar mapping ::
