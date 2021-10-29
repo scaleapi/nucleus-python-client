@@ -7,6 +7,7 @@ from .helpers import TEST_DATASET_NAME
 from nucleus.unit_test import ThresholdComparison
 
 EVAL_FUNCTION_NAME = "IOU"
+EVAL_FUNCTION_THRESHOLD = 0.5
 
 
 @pytest.fixture()
@@ -29,7 +30,7 @@ def test_unit_test_creation(CLIENT, dataset):
     response = CLIENT.create_unit_test(
         name=test_name,
         eval_function_name=EVAL_FUNCTION_NAME,
-        threshold=0.5,
+        threshold=EVAL_FUNCTION_THRESHOLD,
         threshold_comparison=ThresholdComparison.GREATER_THAN,
         dataset_id=dataset.id,
         reference_ids=[items[0].reference_id],
