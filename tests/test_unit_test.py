@@ -2,7 +2,7 @@ import pytest
 import uuid
 
 from .test_dataset import make_dataset_items
-from .helpers import TEST_DATASET_NAME
+from .helpers import TEST_DATASET_NAME, N_UUID_CHARACTERS
 
 from nucleus.unit_test import ThresholdComparison
 
@@ -25,7 +25,7 @@ def test_unit_test_creation(CLIENT, dataset):
     items = make_dataset_items()
     dataset.append(items)
     test_name = (
-        "unit_test_" + str(uuid.uuid4())[-10:]
+        "unit_test_" + str(uuid.uuid4())[-N_UUID_CHARACTERS:]
     )  # use uuid to make unique
     response = CLIENT.create_unit_test(
         name=test_name,
