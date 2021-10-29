@@ -9,13 +9,14 @@ from nucleus.constants import (
     ITEM_KEY,
 )
 from .helpers import (
+    DATASET_WITH_AUTOTAG,
+    N_UUID_CHARACTERS,
+    NUCLEUS_PYTEST_USER_ID,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
     TEST_SLICE_NAME,
     TEST_BOX_ANNOTATIONS,
     TEST_PROJECT_ID,
-    DATASET_WITH_AUTOTAG,
-    NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
 )
 from nucleus.job import AsyncJob
@@ -172,7 +173,7 @@ def test_slice_send_to_labeling(dataset):
 
     # Slice creation
     slc = dataset.create_slice(
-        name=(TEST_SLICE_NAME + str(uuid.uuid4())[-10:]),
+        name=(TEST_SLICE_NAME + str(uuid.uuid4())[-N_UUID_CHARACTERS:]),
         reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
     )
 

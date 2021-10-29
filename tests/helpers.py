@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from nucleus import DatasetItem, BoxPrediction
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
-
+N_UUID_CHARACTERS = 10
 TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"

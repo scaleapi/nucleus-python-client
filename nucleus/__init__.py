@@ -42,6 +42,7 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    EVAL_FUNCTION_NAME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
@@ -61,6 +62,8 @@ from .constants import (
     REFERENCE_IDS_KEY,
     SLICE_ID_KEY,
     STATUS_CODE_KEY,
+    THRESHOLD_COMPARISON_KEY,
+    THRESHOLD_KEY,
     UPDATE_KEY,
 )
 from .dataset import Dataset
@@ -92,6 +95,7 @@ from .prediction import (
 from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
+from .unit_test import ThresholdComparison
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -1235,6 +1239,44 @@ class NucleusClient:
         return self.make_request(
             payload,
             f"indexing/{dataset_id}/internal/object",
+            requests_command=requests.post,
+        )
+
+    def create_unit_test(
+        self,
+        name: str,
+        eval_function_name: str,
+        threshold: float,
+        threshold_comparison: ThresholdComparison,
+        reference_ids: List[str],
+        dataset_id: str,
+    ):
+        """
+        Create a modelCI unit test.  Takes a test name, evaluation threshold + comparator, dataset_id and list of reference_ids as input.
+
+        :param
+        name: unique name of test
+        :param
+        threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
+        :param
+        threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies
+        that a test only passes if score > 0.5.
+        :param
+        dataset_id: id of dataset for generating embeddings on.
+        :param
+        reference_ids: list of reference_ids that uniquely identify dataset_items to be included in test slice.
+
+        """
+        return self.make_request(
+            {
+                NAME_KEY: name,
+                EVAL_FUNCTION_NAME_KEY: eval_function_name,
+                THRESHOLD_KEY: threshold,
+                THRESHOLD_COMPARISON_KEY: threshold_comparison,
+                REFERENCE_IDS_KEY: reference_ids,
+                DATASET_ID_KEY: dataset_id,
+            },
+            "modelci/unit_test",
             requests_command=requests.post,
         )
 
