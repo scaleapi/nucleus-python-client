@@ -1,9 +1,30 @@
-{{ objname | escape | underline}}
+{{ name | escape | underline}}
 
 .. currentmodule:: {{ module }}
 
-.. autoclass:: {{ objname }}
+.. autoclass:: {{ name }}
    :members:
-   :undoc-members:
-   :show-inheritance:
-   :inherited-members:
+   {% block methods %}
+   .. automethod:: __init__
+
+   {% if methods %}
+   .. rubric:: {{ _('Methods') }}
+
+   .. autosummary::
+      :toctree:
+   {% for item in methods %}
+      ~{{ fullname }}.{{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}
+
+   {% block attributes %}
+   {% if attributes %}
+   .. rubric:: {{ _('Attributes') }}
+
+   .. autosummary::
+   {% for item in attributes %}
+      {{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}

@@ -61,3 +61,4 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 autosummary_generate = True
+autosummary_imported_members = True
