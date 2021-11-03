@@ -4,9 +4,8 @@
 
 .. autoclass:: {{ name }}
    :members:
-   {% block methods %}
-   .. automethod:: __init__
 
+   {% block methods %}
    {% if methods %}
    .. rubric:: {{ _('Methods') }}
 

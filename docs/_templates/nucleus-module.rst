@@ -1,8 +1,6 @@
 {{ objname | escape | underline }}
 
 .. automodule:: {{ fullname }}
-   :imported-members:
-
    {% if classes %}
    .. rubric:: {{ _('Classes') }}
 
