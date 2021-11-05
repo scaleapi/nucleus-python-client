@@ -77,22 +77,28 @@ class Dataset:
 
     @property
     def name(self) -> str:
+        """User-defined name of the Dataset."""
         return self.info().get(DATASET_NAME_KEY, "")
 
     @property
     def model_runs(self) -> List[str]:
+        """List of all model runs associated with the Dataset."""
+        # TODO: model_runs -> models
         return self.info().get(DATASET_MODEL_RUNS_KEY, [])
 
     @property
     def slices(self) -> List[str]:
+        """List of all Slice IDs created from the Dataset."""
         return self.info().get(DATASET_SLICES_KEY, [])
 
     @property
     def size(self) -> int:
+        """Number of items in the Dataset."""
         return self.info().get(DATASET_LENGTH_KEY, 0)
 
     @property
     def items(self) -> List[DatasetItem]:
+        """List of all DatasetItem objects in the Dataset."""
         return self._client.get_dataset_items(self.id)
 
     @sanitize_string_args
