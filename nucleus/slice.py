@@ -1,13 +1,3 @@
-"""Slices are subsets of your Dataset that unlock curation and exploration workflows.
-
-Instead of thinking of your Datasets as collections of data, it is useful to think
-about them as a collection of Slices. For instance, your dataset may contain
-different weather scenarios, traffic conditions, or highway types.
-
-Perhaps your Models perform poorly on foggy weather scenarios; it is then useful
-to slice your dataset into a "foggy" slice, and fine-tune model performance on
-this slice until it reaches the performance you desire.
-"""
 from typing import Dict, Iterable, List, Set, Tuple, Union
 
 import requests
@@ -22,7 +12,17 @@ from nucleus.constants import (
 
 
 class Slice:
-    """A Slice represents a subset of DatasetItems in your Dataset."""
+    """A Slice represents a subset of DatasetItems in your Dataset.
+
+    Slices are subsets of your Dataset that unlock curation and exploration workflows.
+    Instead of thinking of your Datasets as collections of data, it is useful to think
+    about them as a collection of Slices. For instance, your dataset may contain
+    different weather scenarios, traffic conditions, or highway types.
+
+    Perhaps your Models perform poorly on foggy weather scenarios; it is then useful
+    to slice your dataset into a "foggy" slice, and fine-tune model performance on
+    this slice until it reaches the performance you desire.
+    """
 
     def __init__(self, slice_id: str, client):
         self.slice_id = slice_id
@@ -100,7 +100,7 @@ class Slice:
             reference_ids:
                 A list of user-specified IDs for DatasetItems you wish to append.
 
-        Return:
+        Returns:
             A dict of the slice_id and the newly appended DatasetItem IDs. ::
 
                 {"slice_id": "slc_bx86ea222a6g057x4380",
