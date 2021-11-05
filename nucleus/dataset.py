@@ -50,10 +50,12 @@ WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
 class Dataset:
-    """
-    Nucleus Dataset. You can append images with metadata to your dataset,
-    annotate it with ground truth and upload model predictions to evaluate and
-    compare model performance on you data.
+    """.. _Dataset:
+    Datasets are collections of your data and can be associated with models.
+
+    You can append :ref:`DatasetItems<DatasetItem>` or :ref:`Scenes<LidarScene>`
+    with metadata to your dataset, annotate it with ground truth, and upload
+    model predictions to evaluate and compare model performance on you data.
     """
 
     def __init__(
