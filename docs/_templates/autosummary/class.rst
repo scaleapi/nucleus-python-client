@@ -5,6 +5,18 @@
 .. autoclass:: {{ name }}
    :members:
 
+   {% block attributes %}
+   {% if attributes %}
+   .. rubric:: {{ _('Attributes') }}
+
+   .. autosummary::
+      :toctree:
+   {% for item in attributes %}
+      ~{{ fullname }}.{{ item }}
+   {%- endfor %}
+   {% endif %}
+   {% endblock %}
+
    {% block methods %}
    {% if methods %}
    .. rubric:: {{ _('Methods') }}
