@@ -2,7 +2,7 @@ import pytest
 import uuid
 
 from .test_dataset import make_dataset_items
-from .helpers import TEST_DATASET_NAME, N_UUID_CHARACTERS
+from .helpers import TEST_DATASET_NAME, N_UUID_CHARACTERS, TEST_SLICE_NAME
 
 from nucleus.unit_test import ThresholdComparison
 
@@ -27,12 +27,22 @@ def test_unit_test_creation(CLIENT, dataset):
     test_name = (
         "unit_test_" + str(uuid.uuid4())[-N_UUID_CHARACTERS:]
     )  # use uuid to make unique
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=[items[0].reference_id],
+    )
+
     response = CLIENT.create_unit_test(
         name=test_name,
+        slice_id=slc.slice_id,
+    )
+    assert response["unit_test_id"]
+
+    response = CLIENT.create_unit_test_metric(
+        unit_test_name=test_name,
         eval_function_name=EVAL_FUNCTION_NAME,
         threshold=EVAL_FUNCTION_THRESHOLD,
         threshold_comparison=ThresholdComparison.GREATER_THAN,
-        dataset_id=dataset.id,
-        reference_ids=[items[0].reference_id],
     )
     assert response["unit_test_id"]
+    assert response["eval_function_id"]

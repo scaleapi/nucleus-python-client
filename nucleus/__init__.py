@@ -64,6 +64,7 @@ from .constants import (
     STATUS_CODE_KEY,
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
+    UNIT_TEST_NAME_KEY,
     UPDATE_KEY,
 )
 from .dataset import Dataset
@@ -1242,41 +1243,52 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
-    def create_unit_test(
+    def create_unit_test(self, name: str, slice_id: str):
+        """
+        Create a modelCI unit test.  Takes a test name and slice ID.
+
+        :param
+        name: unique name of test
+        :param
+        slice_id: id of slice of items to evaluate test on.
+        """
+        return self.make_request(
+            {
+                NAME_KEY: name,
+                SLICE_ID_KEY: slice_id,
+            },
+            "modelci/unit_test",
+            requests_command=requests.post,
+        )
+
+    def create_unit_test_metric(
         self,
-        name: str,
+        unit_test_name: str,
         eval_function_name: str,
         threshold: float,
         threshold_comparison: ThresholdComparison,
-        reference_ids: List[str],
-        dataset_id: str,
     ):
         """
         Create a modelCI unit test.  Takes a test name, evaluation threshold + comparator, dataset_id and list of reference_ids as input.
 
         :param
-        name: unique name of test
+        unit_test_name: name of unit test
+        :param
+        eval_function_name: name of evaluation function
         :param
         threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
         :param
         threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies
         that a test only passes if score > 0.5.
-        :param
-        dataset_id: id of dataset for generating embeddings on.
-        :param
-        reference_ids: list of reference_ids that uniquely identify dataset_items to be included in test slice.
-
         """
         return self.make_request(
             {
-                NAME_KEY: name,
+                UNIT_TEST_NAME_KEY: unit_test_name,
                 EVAL_FUNCTION_NAME_KEY: eval_function_name,
                 THRESHOLD_KEY: threshold,
                 THRESHOLD_COMPARISON_KEY: threshold_comparison,
-                REFERENCE_IDS_KEY: reference_ids,
-                DATASET_ID_KEY: dataset_id,
             },
-            "modelci/unit_test",
+            "modelci/unit_test_metric",
             requests_command=requests.post,
         )
 
