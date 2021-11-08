@@ -158,7 +158,7 @@ class DatasetItem:  # pylint: disable=R0902
           based on image_location that will skip the need for a re-upload of the images,
           so your second ingestion will be faster than your first.
 
-          .. todo::
+          .. todo ::
               Shorten this once we have a guide migrated for metadata, or maybe link
               from other places to here.
 
@@ -166,7 +166,7 @@ class DatasetItem:  # pylint: disable=R0902
           containing the pointcloud JSON. Remote formats supported include any URL
           (http:// or https://) or URIs for AWS S3, Azure, or GCS, (i.e. s3://, gcs://)
         upload_to_scale: Set this to false in order to use `privacy mode <https://dashboard.scale.com/nucleus/docs/api#privacy-mode>`_.
-        .. todo::
+        .. todo ::
             update this once guide is migrated
           Setting this to false means the actual data within the item
           (i.e. the image or pointcloud) will not be uploaded to scale meaning that

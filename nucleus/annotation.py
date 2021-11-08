@@ -25,7 +25,7 @@ existing segmentation with the new mask specified in the request body.
 
 For ingesting large datasets, see the Guide for Large Ingestions.
 
-.. todo::
+.. todo ::
     add link here
 """
 
@@ -123,7 +123,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our metadata guide.
-            .. todo::
+            .. todo ::
                 Insert link to metadata guide
     """
 
@@ -204,7 +204,7 @@ class PolygonAnnotation(Annotation):
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our metadata guide.
-            .. todo::
+            .. todo ::
                 Insert link to metadata guide
     """
 
@@ -294,7 +294,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our metadata guide.
-            .. todo::
+            .. todo ::
                 Insert link to metadata guide
     """
 
@@ -359,7 +359,7 @@ class Segment:
         metadata: Arbitrary key/value dictionary of info to attach to this segment.
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our metadata guide.
-            .. todo::
+            .. todo ::
                 Insert link to metadata guide
     """
 
