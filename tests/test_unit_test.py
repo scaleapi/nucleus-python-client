@@ -33,7 +33,8 @@ def test_unit_test_creation(CLIENT, dataset):
     )
 
     response = CLIENT.create_unit_test(
-        name=test_name, slice_id=slc.slice_id,
+        name=test_name,
+        slice_id=slc.slice_id,
     )
     assert response["unit_test_id"]
 
