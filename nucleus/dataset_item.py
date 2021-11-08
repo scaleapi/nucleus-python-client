@@ -166,8 +166,10 @@ class DatasetItem:  # pylint: disable=R0902
           containing the pointcloud JSON. Remote formats supported include any URL
           (http:// or https://) or URIs for AWS S3, Azure, or GCS, (i.e. s3://, gcs://)
         upload_to_scale: Set this to false in order to use `privacy mode <https://dashboard.scale.com/nucleus/docs/api#privacy-mode>`_.
-        .. todo ::
-            update this once guide is migrated
+
+            .. todo ::
+                update this once guide is migrated
+
           Setting this to false means the actual data within the item
           (i.e. the image or pointcloud) will not be uploaded to scale meaning that
           you can send in links that are only accessible to certain users, and not to
