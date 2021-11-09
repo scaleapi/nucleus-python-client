@@ -14,13 +14,13 @@ class ThresholdComparison(str, Enum):
 
 
 @dataclass
-class UnitTestInfo():
+class UnitTestInfo:
     name: str
     slice_id: str
 
 
 @dataclass
-class UnitTestMetric():
+class UnitTestMetric:
     unit_test_id: str
     eval_function_id: str
     threshold: float
