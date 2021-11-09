@@ -16,6 +16,9 @@ TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
+EVAL_FUNCTION_NAME = "IOU"
+EVAL_FUNCTION_THRESHOLD = 0.5
+
 
 TEST_IMG_URLS = [
     "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg",
