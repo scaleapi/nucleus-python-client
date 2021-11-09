@@ -1,8 +1,11 @@
 from enum import Enum
 from dataclasses import dataclass
+from typing import List
 
-from nucleus import NucleusClient
 from nucleus.constants import NAME_KEY, SLICE_ID_KEY
+from nucleus.modelci import ModelCIClient
+
+from .unit_test_evaluation import UnitTestEvaluation
 
 
 @dataclass
@@ -32,21 +35,21 @@ class UnitTest:
     Model CI Unit Test.
     """
 
-    def __init__(self, unit_test_id: str, client: NucleusClient):
+    def __init__(self, unit_test_id: str, client: ModelCIClient):
         self.id = unit_test_id
         self._client = client
         info = self._client.get_unit_test_info(self.id)
         self.name = info[NAME_KEY]
         self.slice_id = info[SLICE_ID_KEY]
 
-    def get_eval_history(self):
+    def get_eval_history(self) -> List[UnitTestEvaluation]:
         """
         Get evaluation history for unit test.
         :return: List[UnitTestEvaluation]
         """
         return self._client.get_unit_test_eval_history(self.id)
 
-    def get_metrics(self):
+    def get_metrics(self) -> List[UnitTestMetric]:
         """
         Get metrics for the unit test.
         :return: List[UnitTestMetric]
@@ -58,7 +61,7 @@ class UnitTest:
         eval_function_name: str,
         threshold: float,
         threshold_comparison: ThresholdComparison,
-    ):
+    ) -> UnitTestMetric:
         """
         Create a modelCI unit test metric.  Takes an evaluation function name,
         evaluation threshold, and comparator as input.
