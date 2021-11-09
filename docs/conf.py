@@ -35,9 +35,9 @@ release = "v" + str(__version__)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
+    "autoapi.extension",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -61,6 +61,50 @@ html_theme = "furo"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-autodoc_typehints = 'description'
-autosummary_generate = True
-autosummary_imported_members = True
+# autodoc_typehints = "description"
+# autodoc_member_order = "groupwise"
+# autosummary_generate = True
+# autosummary_imported_members = True
+
+
+def autoapi_prepare_jinja_env(jinja_env):
+    # HACK: have to define dummy "underline" filter that autoapi references
+    jinja_env.filters["underline"] = lambda value: value.lower()
+
+
+autoapi_type = "python"
+autoapi_dirs = ["../nucleus"]
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "inherited-members",
+    "show-inheritance",
+    "show-module-summary",
+    "imported-members",
+]
+autoapi_template_dir = "_templates"
+autoapi_root = "api"
+
+SKIP_KEYWORDS = [
+    "ModelRun",
+    "Category",
+]
+
+
+def handle_skip(app, what, name, obj, skip, options):
+    # skip by keyword
+    if what in ("module", "class") and any(
+        word in name for word in SKIP_KEYWORDS
+    ):
+        return True
+
+    # skip where objname is all caps (globals)
+    objname = name.split(".")[-1]
+    if objname == objname.upper():
+        return True
+
+    return skip
+
+
+def setup(sphinx):
+    sphinx.connect("autoapi-skip-member", handle_skip)
