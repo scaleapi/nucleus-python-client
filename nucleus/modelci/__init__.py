@@ -101,25 +101,26 @@ class ModelCIClient(NucleusClient):
             "modelci/unit_test_metric",
             requests_command=requests.post,
         )
-        return {
-            "unit_test_id": response[UNIT_TEST_ID_KEY],
-            "eval_function_id": response[EVAL_FUNCTION_ID_KEY],
-            "threshold": threshold,
-            "threshold_comparison": threshold_comparison,
-        }
+        return UnitTestMetric(
+            unit_test_id=response[UNIT_TEST_ID_KEY],
+            eval_function_id=response[EVAL_FUNCTION_ID_KEY],
+            threshold=threshold,
+            threshold_comparison=threshold_comparison,
+        )
 
     def get_unit_test_info(self, unit_test_id: str) -> UnitTestInfo:
         """
         Get unit test info. Takes in unit test ID.
         :param
         unit_test_id: ID of unit test
-        :return: a UnitTestInfo typed dict.
+        :return: a UnitTestInfo object
         """
-        return self.make_request(
+        response = self.make_request(
             {},
             f"modelci/unit_test/{unit_test_id}/info",
             requests_command=requests.get,
         )
+        return UnitTestInfo(**response)
 
     def get_unit_test_eval_history(
         self, unit_test_id: str
@@ -140,7 +141,7 @@ class ModelCIClient(NucleusClient):
             for eval in response["evaluations"]
         ]
 
-    def get_unit_test_metrics(self, unit_test_id: str):
+    def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
         """
         Get metrics for the unit test.
         :return: List[UnitTestMetric]
@@ -150,7 +151,7 @@ class ModelCIClient(NucleusClient):
             f"modelci/unit_test/{unit_test_id}/metrics",
             requests_command=requests.get,
         )
-        return response["metrics"]
+        return [UnitTestMetric(**metric) for metric in response["metrics"]]
 
     def get_unit_test_eval_info(
         self, evaluation_id: str

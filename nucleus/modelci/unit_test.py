@@ -1,6 +1,5 @@
 from enum import Enum
 from dataclasses import dataclass
-from typing_extensions import TypedDict
 
 from nucleus import NucleusClient
 from nucleus.constants import NAME_KEY, SLICE_ID_KEY
@@ -14,12 +13,14 @@ class ThresholdComparison(str, Enum):
     LESS_THAN_EQUAL_TO = ("less_than_equal_to",)
 
 
-class UnitTestInfo(TypedDict):
+@dataclass
+class UnitTestInfo():
     name: str
     slice_id: str
 
 
-class UnitTestMetric(TypedDict):
+@dataclass
+class UnitTestMetric():
     unit_test_id: str
     eval_function_id: str
     threshold: float
