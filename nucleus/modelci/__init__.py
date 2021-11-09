@@ -6,10 +6,6 @@ from typing import List
 import requests
 
 from nucleus import NucleusClient
-from nucleus.utils import (
-    format_unit_test_eval_response,
-    format_unit_test_item_eval_response,
-)
 from nucleus.job import AsyncJob
 from nucleus.constants import (
     ID_KEY,
@@ -33,9 +29,9 @@ from .unit_test import (
 )
 from .unit_test_evaluation import (
     UnitTestEvaluation,
-    UnitTestEvaluationInfo,
-    UnitTestItemEvaluationInfo,
+    UnitTestItemEvaluation,
 )
+from .utils import format_unit_test_eval_response
 
 
 class ModelCIClient(NucleusClient):
@@ -108,8 +104,8 @@ class ModelCIClient(NucleusClient):
         return {
             "unit_test_id": response[UNIT_TEST_ID_KEY],
             "eval_function_id": response[EVAL_FUNCTION_ID_KEY],
-            "threhsold": threshold,
-            "threhsold_comparison": threshold_comparison,
+            "threshold": threshold,
+            "threshold_comparison": threshold_comparison,
         }
 
     def get_unit_test_info(self, unit_test_id: str) -> UnitTestInfo:
@@ -132,7 +128,7 @@ class ModelCIClient(NucleusClient):
         Get evaluation history for unit test. Takes in unit test ID.
         :param
         unit_test_id: ID of unit test
-        :return: List[UnitTestEvaluations]
+        :return: List[UnitTestEvaluation]
         """
         response = self.make_request(
             {},
@@ -158,12 +154,12 @@ class ModelCIClient(NucleusClient):
 
     def get_unit_test_eval_info(
         self, evaluation_id: str
-    ) -> UnitTestEvaluationInfo:
+    ) -> UnitTestEvaluation:
         """
         Get info for a given unit test evaluation ID.
         :param
         evaluation_id: ID of unit test evaluation
-        :return: List[UnitTestEvaluationInfo]
+        :return: List[UnitTestEvaluation]
         """
         response = self.make_request(
             {},
@@ -171,25 +167,6 @@ class ModelCIClient(NucleusClient):
             requests_command=requests.get,
         )
         return format_unit_test_eval_response(response)
-
-    def get_unit_test_item_eval_results(
-        self, evaluation_id: str, unit_test_id: str
-    ) -> List[UnitTestItemEvaluationInfo]:
-        """
-        Get item evaluation results for a given unit test evaluation ID.
-        :param
-        evaluation_id: ID of unit test evaluation
-        :return: List[UnitTestItemEvaluationInfo]
-        """
-        response = self.make_request(
-            {},
-            f"modelci/eval/{evaluation_id}/item_results",
-            requests_command=requests.get,
-        )
-        return [
-            format_unit_test_item_eval_response(res)
-            for res in response["unit_test_item_evaluations"]
-        ]
 
     def evaluate_model_on_unit_tests(
         self, model_id: str, unit_test_names: List[str]

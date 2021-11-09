@@ -3,17 +3,6 @@ from dataclasses import dataclass
 from typing import List
 from typing_extensions import TypedDict
 
-from nucleus import NucleusClient
-from nucleus.constants import MODEL_ID_KEY
-
-from .constants import (
-    UNIT_TEST_EVAL_STATUS_KEY,
-    UNIT_TEST_ID_KEY,
-    EVAL_FUNCTION_ID_KEY,
-    UNIT_TEST_PASS_KEY,
-    UNIT_TEST_RESULT_KEY,
-)
-
 
 @dataclass
 class UnitTestEvaluationStatus(str, Enum):
@@ -23,7 +12,7 @@ class UnitTestEvaluationStatus(str, Enum):
     ERRORED = ("errored",)
 
 
-class UnitTestEvaluationInfo(TypedDict):
+class UnitTestEvaluation(TypedDict):
     unit_test_id: str
     eval_function_id: str
     model_id: str
@@ -32,8 +21,7 @@ class UnitTestEvaluationInfo(TypedDict):
     passed: bool
 
 
-class UnitTestItemEvaluationInfo(TypedDict):
-    evaluation_id: str
+class UnitTestItemEvaluation(TypedDict):
     evaluation_id: str
     unit_test_id: str
     eval_function_id: str
@@ -42,27 +30,12 @@ class UnitTestItemEvaluationInfo(TypedDict):
     passed: bool
 
 
-class UnitTestEvaluation:
-    """
-    Model CI Unit Test Evaluation.
-    """
-
-    def __init__(self, evaluation_id: str, client: NucleusClient):
-        self.id = evaluation_id
-        self._client = client
-        info = self._client.get_unit_test_eval_info(self.id)
-        self.unit_test_id = info[UNIT_TEST_ID_KEY]
-        self.eval_function_id = info[EVAL_FUNCTION_ID_KEY]
-        self.model_id = info[MODEL_ID_KEY]
-        self.status = info[UNIT_TEST_EVAL_STATUS_KEY]
-        self.result = info[UNIT_TEST_RESULT_KEY]
-        self.passed = info[UNIT_TEST_PASS_KEY]
-
-    def get_item_evaluations(self) -> List[UnitTestItemEvaluationInfo]:
-        """
-        Get item evaluation results for this unit test evaluation.
-        :return: List[UnitTestItemEvaluationInfo]
-        """
-        return self._client.get_unit_test_item_eval_results(
-            self.id, self.unit_test_id
-        )
+class UnitTestEvaluation(TypedDict):
+    id: str
+    unit_test_id: str
+    eval_function_id: str
+    model_id: str
+    status: str
+    result: float
+    passed: bool
+    item_evals: List[UnitTestItemEvaluation]

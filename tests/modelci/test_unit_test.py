@@ -62,7 +62,7 @@ def test_client_unit_test_metric_creation(MODELCI_CLIENT, dataset):
     assert unit_test_metric["unit_test_id"]
     assert unit_test_metric["eval_function_id"]
     assert unit_test_metric["threshold"]
-    assert unit_test_metric["threhsold_comparison"]
+    assert unit_test_metric["threshold_comparison"]
 
     metrics = unit_test.get_metrics()
     assert isinstance(metrics, list)
@@ -96,7 +96,7 @@ def test_unit_test_metric_creation_from_class(MODELCI_CLIENT, dataset):
     assert unit_test_metric["unit_test_id"]
     assert unit_test_metric["eval_function_id"]
     assert unit_test_metric["threshold"]
-    assert unit_test_metric["threhsold_comparison"]
+    assert unit_test_metric["threshold_comparison"]
 
     metrics = unit_test.get_metrics()
     assert isinstance(metrics, list)
