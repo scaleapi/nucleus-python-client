@@ -1,7 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass
 from typing import List
-from typing_extensions import TypedDict
 
 
 @dataclass
@@ -12,7 +11,8 @@ class UnitTestEvaluationStatus(str, Enum):
     ERRORED = ("errored",)
 
 
-class UnitTestEvaluation(TypedDict):
+@dataclass
+class UnitTestEvaluation:
     unit_test_id: str
     eval_function_id: str
     model_id: str
@@ -21,7 +21,8 @@ class UnitTestEvaluation(TypedDict):
     passed: bool
 
 
-class UnitTestItemEvaluation(TypedDict):
+@dataclass
+class UnitTestItemEvaluation:
     evaluation_id: str
     unit_test_id: str
     eval_function_id: str
@@ -30,7 +31,8 @@ class UnitTestItemEvaluation(TypedDict):
     passed: bool
 
 
-class UnitTestEvaluation(TypedDict):
+@dataclass
+class UnitTestEvaluation:
     id: str
     unit_test_id: str
     eval_function_id: str
