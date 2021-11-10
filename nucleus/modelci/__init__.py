@@ -1,6 +1,4 @@
-"""
-Model CI Python Library.
-"""
+"""Model CI Python Library."""
 from typing import List
 
 import requests
@@ -35,9 +33,7 @@ from .utils import format_unit_test_eval_response
 
 
 class ModelCIClient(NucleusClient):
-    """
-    Model CI client.
-    """
+    """Model CI Python Client."""
 
     def __init__(
         self,
@@ -48,14 +44,21 @@ class ModelCIClient(NucleusClient):
         super().__init__(api_key, use_notebook, endpoint)
 
     def create_unit_test(self, name: str, slice_id: str) -> UnitTest:
-        """
-        Create a modelCI unit test.  Takes a test name and slice ID.
+        """Creates a new Unit Test. ::
 
-        :param
-        name: unique name of test
-        :param
-        slice_id: id of slice of items to evaluate test on.
-        :return: a UnitTest object
+            import nucleus.modelci as nm
+            from nucleus.modelci.unit_test import ThresholdComparison
+            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.create_unit_test(
+                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+        Args:
+            name: unique name of test
+            slice_id: id of slice of items to evaluate test on.
+
+        Returns:
+            Created UnitTest object.
         """
         response = self.make_request(
             {
@@ -74,22 +77,30 @@ class ModelCIClient(NucleusClient):
         threshold: float,
         threshold_comparison: ThresholdComparison,
     ) -> UnitTestMetric:
-        """
-        Create a modelCI unit test metric.  Takes a unit test name, evaluation
-        function name, evaluation threshold, and comparator as input.
+        """Creates and adds a new metric for the provided Unit Test. ::
 
-        :param
-        unit_test_name: name of unit test
-        :param
-        eval_function_name: name of evaluation function
-        :param
-        threshold: numerical threshold that together with threshold comparison,
-        defines success criteria for test evaluation.
-        :param
-        threshold_comparison: comparator for evaluation. i.e. threshold=0.5
-        and threshold_comparator > implies that a test only passes if
-        score > 0.5.
-        :return: a UnitTestMetric typed dict.
+            import nucleus.modelci as nm
+            from nucleus.modelci.unit_test import ThresholdComparison
+            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.create_unit_test(
+                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+            client.create_unit_test_metric(
+                unit_test_name="sample_unit_test",
+                eval_function_name="IOU",
+                threshold=0.5,
+                threshold_comparison=ThresholdComparison.GREATER_THAN
+            )
+
+        Args:
+            unit_test_name: name of unit test
+            eval_function_name: name of evaluation function
+            threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
+            threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
+
+        Returns:
+            The created UnitTestMetric object.
         """
         response = self.make_request(
             {
@@ -109,11 +120,13 @@ class ModelCIClient(NucleusClient):
         )
 
     def get_unit_test_info(self, unit_test_id: str) -> UnitTestInfo:
-        """
-        Get unit test info. Takes in unit test ID.
-        :param
-        unit_test_id: ID of unit test
-        :return: a UnitTestInfo object
+        """Retrieves info of the Unit Test.
+
+        Args:
+            unit_test_id: ID of Unit Test
+
+        Returns:
+            A UnitTestInfo object
         """
         response = self.make_request(
             {},
@@ -122,14 +135,77 @@ class ModelCIClient(NucleusClient):
         )
         return UnitTestInfo(**response)
 
+    def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
+        """Retrieves all metrics of the Unit Test. ::
+
+            import nucleus.modelci as nm
+            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.create_unit_test(
+                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+            client.get_unit_test_metrics(unit_test.id)
+
+        Args:
+            unit_test_id: ID of Unit Test
+
+        Returns:
+            A list of UnitTestMetric objects
+        """
+        response = self.make_request(
+            {},
+            f"modelci/unit_test/{unit_test_id}/metrics",
+            requests_command=requests.get,
+        )
+        return [UnitTestMetric(**metric) for metric in response["metrics"]]
+
+    def evaluate_model_on_unit_tests(
+        self, model_id: str, unit_test_names: List[str]
+    ) -> AsyncJob:
+        """Evaluates the given model on the specified Unit Tests. ::
+
+            import nucleus.modelci as nm
+            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+            unit_test = client.create_unit_test(
+                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+            client.evaluate_model_on_unit_tests(
+                model_id=model.id,
+                unit_test_names=["sample_unit_test"],
+            )
+
+        Args:
+            model_id: ID of model to evaluate
+            unit_test_names: list of unit tests to evaluate
+
+        Returns:
+            AsyncJob object of evaluation job
+        """
+        response = self.make_request(
+            {"test_names": unit_test_names},
+            f"modelci/{model_id}/evaluate",
+            requests_command=requests.post,
+        )
+        return AsyncJob.from_json(response, self._client)
+
     def get_unit_test_eval_history(
         self, unit_test_id: str
     ) -> List[UnitTestEvaluation]:
-        """
-        Get evaluation history for unit test. Takes in unit test ID.
-        :param
-        unit_test_id: ID of unit test
-        :return: List[UnitTestEvaluation]
+        """Retrieves evaluation history of the Unit Test. ::
+
+            import nucleus.modelci as nm
+            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = nm.unit_test.UnitTest("YOUR_UNIT_TEST_ID")
+
+            client.get_unit_test_eval_history(unit_test.id)
+
+        Args:
+            unit_test_id: ID of Unit Test
+
+        Returns:
+            A list of UnitTestEvaluation objects
         """
         response = self.make_request(
             {},
@@ -141,26 +217,16 @@ class ModelCIClient(NucleusClient):
             for eval in response["evaluations"]
         ]
 
-    def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
-        """
-        Get metrics for the unit test.
-        :return: List[UnitTestMetric]
-        """
-        response = self.make_request(
-            {},
-            f"modelci/unit_test/{unit_test_id}/metrics",
-            requests_command=requests.get,
-        )
-        return [UnitTestMetric(**metric) for metric in response["metrics"]]
-
     def get_unit_test_eval_info(
         self, evaluation_id: str
     ) -> UnitTestEvaluation:
-        """
-        Get info for a given unit test evaluation ID.
-        :param
-        evaluation_id: ID of unit test evaluation
-        :return: List[UnitTestEvaluation]
+        """Retrieves info of the Unit Test Evaluation.
+
+        Args:
+            evaluation_id: ID of Unit Test
+
+        Returns:
+            A list of UnitTestEvaluation objects
         """
         response = self.make_request(
             {},
@@ -168,22 +234,3 @@ class ModelCIClient(NucleusClient):
             requests_command=requests.get,
         )
         return format_unit_test_eval_response(response)
-
-    def evaluate_model_on_unit_tests(
-        self, model_id: str, unit_test_names: List[str]
-    ) -> AsyncJob:
-        """
-        Evaluates the given model on the provided unit tests.
-        :param
-        model_id: ID of model to evaluate
-        :param
-        unit_test_names: names of unit tests to evaluate
-        :return: AsyncJob object
-        """
-
-        response = self.make_request(
-            {"test_names": unit_test_names},
-            f"modelci/{model_id}/evaluate",
-            requests_command=requests.post,
-        )
-        return AsyncJob.from_json(response, self._client)
