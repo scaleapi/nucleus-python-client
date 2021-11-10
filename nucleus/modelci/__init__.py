@@ -49,6 +49,7 @@ class ModelCIClient(NucleusClient):
             import nucleus.modelci as nm
             from nucleus.modelci.unit_test import ThresholdComparison
             client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+
             unit_test = client.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
@@ -135,14 +136,34 @@ class ModelCIClient(NucleusClient):
         )
         return UnitTestInfo(**response)
 
+    def list_unit_tests(self) -> List[UnitTest]:
+        """Lists all Unit Tests of the current user. ::
+
+            import nucleus.modelci as nm
+            from nucleus.modelci.unit_test import ThresholdComparison
+            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.create_unit_test(
+                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+            client.list_unit_tests()
+
+        Returns:
+            A list of UnitTest objects.
+        """
+        response = self.make_request(
+            {},
+            "modelci/unit_test/list",
+            requests_command=requests.get,
+        )
+        return [UnitTest(test_id) for test_id in response["unit_test_ids"]]
+
     def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
         """Retrieves all metrics of the Unit Test. ::
 
             import nucleus.modelci as nm
             client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
-            )
+            unit_test = client.list_unit_tests()[0]
 
             client.get_unit_test_metrics(unit_test.id)
 
@@ -197,7 +218,7 @@ class ModelCIClient(NucleusClient):
 
             import nucleus.modelci as nm
             client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = nm.unit_test.UnitTest("YOUR_UNIT_TEST_ID")
+            unit_test = client.list_unit_tests()[0]
 
             client.get_unit_test_eval_history(unit_test.id)
 

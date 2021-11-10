@@ -1,8 +1,10 @@
 from pathlib import Path
 import time
 from urllib.parse import urlparse
+import uuid
 
 from nucleus import DatasetItem, BoxPrediction
+from nucleus.modelci.unit_test import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 N_UUID_CHARACTERS = 10
@@ -18,6 +20,7 @@ NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 EVAL_FUNCTION_NAME = "IOU"
 EVAL_FUNCTION_THRESHOLD = 0.5
+EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN
 
 
 TEST_IMG_URLS = [
@@ -370,3 +373,7 @@ def assert_category_prediction_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def get_uuid():
+    return str(uuid.uuid4())[-N_UUID_CHARACTERS:]

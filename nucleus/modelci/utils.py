@@ -1,3 +1,5 @@
+from typing import Optional
+
 from .unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
@@ -5,11 +7,11 @@ from .unit_test_evaluation import (
 )
 
 
-def try_convert_float(float_str: str) -> float:
+def try_convert_float(float_str: str) -> Optional[float]:
     try:
         return float(float_str)
     except:
-        return float("nan")
+        return None
 
 
 def format_unit_test_item_eval_response(

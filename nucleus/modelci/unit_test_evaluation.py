@@ -1,7 +1,7 @@
 """Data types for Unit Test Evaluation results."""
 from enum import Enum
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -22,7 +22,7 @@ class UnitTestItemEvaluation:
     unit_test_id: str
     eval_function_id: str
     dataset_item_id: str
-    result: float
+    result: Optional[float]
     passed: bool
 
 
@@ -35,6 +35,6 @@ class UnitTestEvaluation:
     eval_function_id: str
     model_id: str
     status: str
-    result: float
+    result: Optional[float]
     passed: bool
     item_evals: List[UnitTestItemEvaluation]

@@ -15,10 +15,10 @@ from .unit_test_evaluation import UnitTestEvaluation
 class ThresholdComparison(str, Enum):
     """Comparator between the result and the threshold."""
 
-    GREATER_THAN = ("greater_than",)
-    GREATER_THAN_EQUAL_TO = ("greater_than_equal_to",)
-    LESS_THAN = ("less_than",)
-    LESS_THAN_EQUAL_TO = ("less_than_equal_to",)
+    GREATER_THAN = "greater_than"
+    GREATER_THAN_EQUAL_TO = "greater_than_equal_to"
+    LESS_THAN = "less_than"
+    LESS_THAN_EQUAL_TO = "less_than_equal_to"
 
 
 @dataclass
@@ -92,9 +92,7 @@ class UnitTest:
 
             import nucleus.modelci as nm
             client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
-            )
+            unit_test = client.list_unit_tests()[0]
 
             unit_test.get_metrics()
 
@@ -108,9 +106,7 @@ class UnitTest:
 
             import nucleus.modelci as nm
             client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
-            )
+            unit_test = client.list_unit_tests()[0]
 
             unit_test.get_eval_history()
 
