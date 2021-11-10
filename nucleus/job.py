@@ -16,6 +16,7 @@ JOB_POLLING_INTERVAL = 5
 @dataclass
 class AsyncJob:
     """Object used to check the status or errors of a long running asynchronous operation."""
+
     job_id: str
     job_last_known_status: str
     job_type: str
@@ -56,7 +57,7 @@ class AsyncJob:
         Returns:
             A list of strings containing the 10,000 most recently generated errors.
             ::
-                
+
                 [
                     '{"annotation":{"label":"car","type":"box","geometry":{"x":50,"y":60,"width":70,"height":80},"referenceId":"bad_ref_id","annotationId":"attempted_annot_upload","metadata":{}},"error":"Item with id bad_ref_id doesn't exist."}'
                 ]
