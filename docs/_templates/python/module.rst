@@ -2,8 +2,8 @@
 :orphan:
 
 {% endif %}
-:py:mod:`{{ obj.name }}`
-=========={{ "=" * obj.name|length }}
+API Reference
+=============
 
 .. py:module:: {{ obj.name }}
 

@@ -87,4 +87,5 @@ autoapi_root = "api"
 autoapi_python_class_content = "both"
 autoapi_member_order = "groupwise"
 autodoc_typehints = "description"
+autoapi_add_toctree_entry = False
 napoleon_include_init_with_doc = True

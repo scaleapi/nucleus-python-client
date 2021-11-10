@@ -27,7 +27,7 @@ Contents
    :maxdepth: 4
 
    usage
-   api
+   api/nucleus/index
 
 Indices and tables
 ==================
