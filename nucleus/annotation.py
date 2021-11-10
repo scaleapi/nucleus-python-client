@@ -23,7 +23,10 @@ detected for a given image, by default it will be ignored. You can change this b
 by specifying the optional 'update' flag. Setting update = true will replace the
 existing segmentation with the new mask specified in the request body.
 
-For ingesting large datasets, see the Guide for Large Ingestions (TODOC: add link here)
+For ingesting large datasets, see the Guide for Large Ingestions.
+
+.. todo ::
+    add link here
 """
 
 
@@ -119,7 +122,10 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         label: The label for this annotation (e.g. car, pedestrian, bicycle)
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see TODOC: (Insert link to metadata guide).
+            features within Nucleus. For more details see our metadata guide.
+
+            .. todo ::
+                Insert link to metadata guide
     """
 
     label: str
@@ -198,7 +204,10 @@ class PolygonAnnotation(Annotation):
             ignored by default, and updated if update=True for dataset.annotate.
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see TODOC: (Insert link to metadata guide).
+            features within Nucleus. For more details see our metadata guide.
+
+            .. todo ::
+                Insert link to metadata guide
     """
 
     label: str
@@ -286,7 +295,10 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             ignored by default, and updated if update=True for dataset.annotate.
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see TODOC: (Insert link to metadata guide).
+            features within Nucleus. For more details see our metadata guide.
+
+            .. todo ::
+                Insert link to metadata guide
     """
 
     label: str
@@ -349,7 +361,10 @@ class Segment:
         index: The integer pixel value in the mask this mapping refers to.
         metadata: Arbitrary key/value dictionary of info to attach to this segment.
             Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see TODOC: (Insert link to metadata guide).
+            features within Nucleus. For more details see our metadata guide.
+
+            .. todo ::
+                Insert link to metadata guide
     """
 
     label: str

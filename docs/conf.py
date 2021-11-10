@@ -35,8 +35,9 @@ release = "v" + str(__version__)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
+    "autoapi.extension",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,4 +61,20 @@ html_theme = "furo"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-autosummary_generate = True
+
+# -- autogen configuration ---------------------------------------------------
+autoapi_type = "python"
+autoapi_dirs = ["../nucleus"]
+autoapi_options = [
+    "members",
+    "undoc-members",  # TODO: no-undoc-members once all docstrings are populated
+    "inherited-members",
+    "show-module-summary",
+    "imported-members",
+]
+autoapi_template_dir = "_templates"
+autoapi_root = "api"
+autoapi_python_class_content = "both"
+autoapi_member_order = "groupwise"
+autodoc_typehints = "description"
+napoleon_include_init_with_doc = True

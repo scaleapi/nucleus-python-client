@@ -1,13 +1,3 @@
-"""Slices are subsets of your Dataset that unlock curation and exploration workflows.
-
-Instead of thinking of your Datasets as collections of data, it is useful to think
-about them as a collection of Slices. For instance, your dataset may contain
-different weather scenarios, traffic conditions, or highway types.
-
-Perhaps your Models perform poorly on foggy weather scenarios; it is then useful
-to slice your dataset into a "foggy" slice, and fine-tune model performance on
-this slice until it reaches the performance you desire.
-"""
 from typing import Dict, Iterable, List, Set, Tuple, Union
 
 import requests
@@ -22,7 +12,18 @@ from nucleus.constants import (
 
 
 class Slice:
-    """A Slice represents a subset of DatasetItems in your Dataset."""
+    """A Slice represents a subset of DatasetItems in your Dataset.
+
+    Slices are subsets of your Dataset that unlock curation and exploration
+    workflows.  Instead of thinking of your Datasets as collections of data, it
+    is useful to think about them as a collection of Slices. For instance, your
+    dataset may contain different weather scenarios, traffic conditions, or
+    highway types.
+
+    Perhaps your Models perform poorly on foggy weather scenarios; it is then
+    useful to slice your dataset into a "foggy" slice, and fine-tune model
+    performance on this slice until it reaches the performance you desire.
+    """
 
     def __init__(self, slice_id: str, client):
         self.slice_id = slice_id
@@ -46,7 +47,8 @@ class Slice:
         return self._dataset_id
 
     def info(self) -> dict:
-        """Retrieves info and items of the Slice. ::
+        """Retrieves info and items of the Slice.
+        ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -55,7 +57,8 @@ class Slice:
             slice.info()
 
         Returns:
-            A dict mapping keys to the corresponding info retrieved. ::
+            A dict mapping keys to the corresponding info retrieved.
+            ::
 
                 {
                     "name": "foggy",
@@ -87,7 +90,8 @@ class Slice:
         """Appends existing DatasetItems from a Dataset to a Slice.
 
         The endpoint expects a list of DatasetItem reference IDs which are set
-        at upload time. ::
+        at upload time.
+        ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -100,7 +104,7 @@ class Slice:
             reference_ids:
                 A list of user-specified IDs for DatasetItems you wish to append.
 
-        Return:
+        Returns:
             A dict of the slice_id and the newly appended DatasetItem IDs. ::
 
                 {"slice_id": "slc_bx86ea222a6g057x4380",
@@ -115,7 +119,8 @@ class Slice:
     def items_and_annotation_generator(
         self,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Provides a generator of all DatasetItems and Annotations in the slice. ::
+        """Provides a generator of all DatasetItems and Annotations in the slice.
+        ::
 
                 import nucleus
                 client = NucleusClient("YOUR_SCALE_API_KEY")
@@ -125,7 +130,8 @@ class Slice:
 
         Returns:
             A generator where each element is a dict containing the DatasetItem
-            and all of its associated Annotations, grouped by type. ::
+            and all of its associated Annotations, grouped by type.
+            ::
 
                 Iterable([
                     {"item": DatasetItem(image_location="s3://bucket-and-key",
@@ -150,7 +156,8 @@ class Slice:
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Provides a list of all DatasetItems and Annotations in the Slice. ::
+        """Provides a list of all DatasetItems and Annotations in the Slice.
+        ::
 
                 import nucleus
                 client = NucleusClient("YOUR_SCALE_API_KEY")
@@ -160,7 +167,8 @@ class Slice:
 
         Returns:
             A list where each element is a dict containing the DatasetItem
-            and all of its associated Annotations, grouped by type (e.g. box). ::
+            and all of its associated Annotations, grouped by type (e.g. box).
+            ::
 
                 [
                     {"item": DatasetItem(image_location="s3://bucket-and-key",
@@ -183,11 +191,29 @@ class Slice:
     def send_to_labeling(self, project_id: str):
         """Send items in the Slice as tasks to a Scale labeling project.
 
-        This endpoint submits the items of the Slice as tasks to a pre-existing Scale Annotation project uniquely identified by projectId. Only projects of type General Image Annotation are currently supported. Additionally, in order for task submission to succeed, the project must have task instructions and geometries configured as project-level parameters.  In order to create a project or set project parameters, you must use the Scale Annotation API, which is documented here: `Scale Annotation API Documentation <https://docs.scale.com/reference/project-overview>`_. When the newly created annotation tasks are annotated, the annotations will be automatically reflected in the Nucleus platform.
+        This endpoint submits the items of the Slice as tasks to a pre-existing
+        Scale Annotation project uniquely identified by projectId. Only projects
+        of type General Image Annotation are currently supported. Additionally,
+        in order for task submission to succeed, the project must have task
+        instructions and geometries configured as project-level parameters.  In
+        order to create a project or set project parameters, you must use the
+        Scale Annotation API, which is documented here: `Scale Annotation API
+        Documentation <https://docs.scale.com/reference/project-overview>`_.
+        When the newly created annotation tasks are annotated, the annotations
+        will be automatically reflected in the Nucleus platform.
 
-        For self-serve projects, user can choose to submit the slice as a calibration batch, which is recommended for brand new labeling projects.  For more information about calibration batches, please reference `Overview of Self Serve Workflow <https://docs.scale.com/reference/batch-overview>`_. Note: A batch can be either a calibration batch or a self label batch, but not both.
+        For self-serve projects, user can choose to submit the slice as a
+        calibration batch, which is recommended for brand new labeling projects.
+        For more information about calibration batches, please reference
+        `Overview of Self Serve Workflow
+        <https://docs.scale.com/reference/batch-overview>`_. Note: A batch can
+        be either a calibration batch or a self label batch, but not both.
 
-        Note: Nucleus only supports bounding box, polygon, and line annotations. If the project parameters specify any other geometries (ellipses or points), those objects will be annotated, but they will not be reflected in Nucleus. ::
+        Note: Nucleus only supports bounding box, polygon, and line annotations.
+        If the project parameters specify any other geometries (ellipses or
+        points), those objects will be annotated, but they will not be reflected
+        in Nucleus.
+        ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -198,9 +224,15 @@ class Slice:
             job.sleep_until_complete() # block until async job complete
 
         Args:
-            project_id: A unique id of the target annotation project.
-            calibration_batch: (Relevant to Scale Rapid projects only) An optional boolean signaling whether to send as a "calibration batch" for taskers to preliminarily evaluate your project instructions and parameters.
-            self_label_batch: (Relevant to Scale Rapid projects only) An optional boolean signaling whether to send as a "self-label batch," in which your team can label internally through Scale Rapid.
+            project_id (str): A unique id of the target annotation project.
+            calibration_batch (bool, optional): Relevant to Scale Rapid projects
+                only.  An optional boolean signaling whether to send as a
+                "calibration batch" for taskers to preliminarily evaluate your
+                project instructions and parameters.
+            self_label_batch (bool, optional): Relevant to Scale Rapid projects
+                only.  An optional boolean signaling whether to send as a
+                "self-label batch," in which your team can label internally
+                through Scale Rapid.
         """
         response = self._client.make_request(
             {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
@@ -210,7 +242,8 @@ class Slice:
     def export_embeddings(
         self,
     ) -> List[Dict[str, Union[str, List[float]]]]:
-        """Provides a pd.DataFrame-like list of dataset embeddings. ::
+        """Provides a pd.DataFrame-like list of dataset embeddings.
+        ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -219,7 +252,8 @@ class Slice:
             slice.export_embeddings()
 
         Returns:
-            A list where each element is a columnar mapping ::
+            A list where each element is a columnar mapping
+            ::
 
                 [
                     {"embedding_vector": [-0.0022, 0.0457, ... ],
