@@ -3,6 +3,40 @@ Nucleus Python Library.
 
 For full documentation see: https://dashboard.scale.com/nucleus/docs/api?language=python
 """
+
+__all__ = [
+    "AsyncJob",
+    "BoxAnnotation",
+    "BoxPrediction",
+    "CameraParams",
+    # "CategoryAnnotation", # coming soon!
+    # "CategoryPrediction", # coming soon!
+    "CuboidAnnotation",
+    "CuboidPrediction",
+    "Dataset",
+    "DatasetItem",
+    "DatasetItemRetrievalError",
+    "Frame",
+    "Frame",
+    "LidarScene",
+    "LidarScene",
+    "Model",
+    "ModelCreationError",
+    # "MultiCategoryAnnotation", # coming soon!
+    "NotFoundError",
+    "NucleusAPIError",
+    "Point",
+    "Point3D",
+    "PolygonPrediction",
+    "PolygonPrediction",
+    "Quaternion",
+    "Segment",
+    "SegmentationAnnotation",
+    "SegmentationPrediction",
+    "Slice",
+    "UploadResponse",
+]
+
 import asyncio
 import json
 import logging
