@@ -47,6 +47,7 @@ from typing import Any, Dict, List, Optional, Union
 import aiohttp
 import nest_asyncio
 import pkg_resources
+import pydantic
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
@@ -97,6 +98,7 @@ from .constants import (
     STATUS_CODE_KEY,
     UPDATE_KEY,
 )
+from .data_transfer_object.dataset_details import DatasetDetails
 from .dataset import Dataset
 from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .errors import (
@@ -196,12 +198,14 @@ class NucleusClient:
             for model in model_objects["models"]
         ]
 
-    def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
+    def list_datasets(self) -> List[DatasetDetails]:
         """
         Lists available datasets in your repo.
         :return: { datasets_ids }
         """
-        return self.make_request({}, "dataset/details", requests.get)
+        response = self.make_request({}, "dataset/details", requests.get)
+        dataset_details = pydantic.parse_obj_as(List[DatasetDetails], response)
+        return dataset_details
 
     def list_jobs(
         self, show_completed=None, date_limit=None
