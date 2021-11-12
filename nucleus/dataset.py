@@ -80,25 +80,33 @@ class Dataset:
     @property
     def name(self) -> str:
         """User-defined name of the Dataset."""
-        return self._client.make_request({}, f"dataset/{self.id}/name", requests.get)["name"]
+        return self._client.make_request(
+            {}, f"dataset/{self.id}/name", requests.get
+        )["name"]
 
     @property
     def model_runs(self) -> List[str]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
-        response = self._client.make_request({}, f"dataset/{self.id}/model_runs", requests.get)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/model_runs", requests.get
+        )
         return response
 
     @property
     def slices(self) -> List[str]:
         """List of all Slice IDs created from the Dataset."""
-        response = self._client.make_request({}, f"dataset/{self.id}/slices", requests.get)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/slices", requests.get
+        )
         return response
 
     @property
     def size(self) -> int:
         """Number of items in the Dataset."""
-        response = self._client.make_request({}, f"dataset/{self.id}/size", requests.get)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/size", requests.get
+        )
         dataset_size = DatasetSize.parse_obj(response)
         return dataset_size.count
 
@@ -225,13 +233,17 @@ class Dataset:
         check_all_mask_paths_remote(annotations)
 
         if asynchronous:
-            request_id = serialize_and_write_to_presigned_url(annotations, self.id, self._client)
+            request_id = serialize_and_write_to_presigned_url(
+                annotations, self.id, self._client
+            )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/annotate?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        return self._client.annotate_dataset(self.id, annotations, update=update, batch_size=batch_size)
+        return self._client.annotate_dataset(
+            self.id, annotations, update=update, batch_size=batch_size
+        )
 
     def ingest_tasks(self, task_ids: dict):
         """
@@ -267,13 +279,21 @@ class Dataset:
             'ignored_items': int,
         }
         """
-        assert batch_size is None or batch_size < 30, "Please specify a batch size smaller than 30 to avoid timeouts."
-        dataset_items = [item for item in items if isinstance(item, DatasetItem)]
+        assert (
+            batch_size is None or batch_size < 30
+        ), "Please specify a batch size smaller than 30 to avoid timeouts."
+        dataset_items = [
+            item for item in items if isinstance(item, DatasetItem)
+        ]
         scenes = [item for item in items if isinstance(item, LidarScene)]
         if dataset_items and scenes:
-            raise Exception("You must append either DatasetItems or Scenes to the dataset.")
+            raise Exception(
+                "You must append either DatasetItems or Scenes to the dataset."
+            )
         if scenes:
-            assert asynchronous, "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
+            assert (
+                asynchronous
+            ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
             return self.append_scenes(scenes, update, asynchronous)
 
         check_for_duplicate_reference_ids(dataset_items)
@@ -288,7 +308,9 @@ class Dataset:
 
         if asynchronous:
             check_all_paths_remote(dataset_items)
-            request_id = serialize_and_write_to_presigned_url(dataset_items, self.id, self._client)
+            request_id = serialize_and_write_to_presigned_url(
+                dataset_items, self.id, self._client
+            )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/append?async=1",
@@ -338,7 +360,9 @@ class Dataset:
 
         if asynchronous:
             check_all_scene_paths_remote(scenes)
-            request_id = serialize_and_write_to_presigned_url(scenes, self.id, self._client)
+            request_id = serialize_and_write_to_presigned_url(
+                scenes, self.id, self._client
+            )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"{self.id}/upload_scenes?async=1",
@@ -421,10 +445,14 @@ class Dataset:
 
         :return: new Slice object
         """
-        return self._client.create_slice(self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids})
+        return self._client.create_slice(
+            self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
+        )
 
     def delete_item(self, reference_id: str):
-        return self._client.delete_dataset_item(self.id, reference_id=reference_id)
+        return self._client.delete_dataset_item(
+            self.id, reference_id=reference_id
+        )
 
     def list_autotags(self):
         return self._client.list_autotags(self.id)
@@ -449,8 +477,12 @@ class Dataset:
         response = self._client.create_image_index(self.id)
         return AsyncJob.from_json(response, self._client)
 
-    def create_object_index(self, model_run_id: str = None, gt_only: bool = None):
-        response = self._client.create_object_index(self.id, model_run_id, gt_only)
+    def create_object_index(
+        self, model_run_id: str = None, gt_only: bool = None
+    ):
+        response = self._client.create_object_index(
+            self.id, model_run_id, gt_only
+        )
         return AsyncJob.from_json(response, self._client)
 
     def add_taxonomy(
@@ -510,8 +542,12 @@ class Dataset:
         )
         return api_payload
 
-    def delete_annotations(self, reference_ids: list = None, keep_history=False):
-        response = self._client.delete_annotations(self.id, reference_ids, keep_history)
+    def delete_annotations(
+        self, reference_ids: list = None, keep_history=False
+    ):
+        response = self._client.delete_annotations(
+            self.id, reference_ids, keep_history
+        )
         return AsyncJob.from_json(response, self._client)
 
     def get_scene(self, reference_id) -> Scene:
@@ -598,7 +634,9 @@ class Dataset:
         if asynchronous:
             check_all_mask_paths_remote(predictions)
 
-            request_id = serialize_and_write_to_presigned_url(predictions, self.id, self._client)
+            request_id = serialize_and_write_to_presigned_url(
+                predictions, self.id, self._client
+            )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
