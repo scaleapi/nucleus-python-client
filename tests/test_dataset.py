@@ -219,6 +219,27 @@ def test_dataset_append(dataset):
     response = dataset.append(make_dataset_items())
     check_is_expected_response(response)
 
+def test_dataset_name_access(CLIENT, dataset):
+    assert dataset.name == TEST_DATASET_NAME
+
+def test_dataset_size_access(CLIENT, dataset):
+    assert dataset.size == 0
+    items = make_dataset_items()
+    dataset.append(items)
+    assert dataset.size == len(items)
+
+def test_dataset_model_runs_access(CLIENT, dataset):
+    # TODO: Change to Models
+    assert len(dataset.model_runs) == 0
+
+def test_dataset_slices(CLIENT, dataset):
+    assert len(dataset.slices) == 0
+    items = make_dataset_items()
+    dataset.append(items)
+    dataset.create_slice("test_slice", [item.reference_id for item in items])
+    slices = dataset.slices
+    assert len(slices) == 1
+    # TODO(gunnar): Test slice items -> Split up info!
 
 def test_dataset_append_local(CLIENT, dataset):
     ds_items_local_error = [
@@ -582,3 +603,4 @@ def test_export_embeddings(CLIENT):
         embeddings = Dataset(DATASET_WITH_AUTOTAG, CLIENT).export_embeddings()
         assert "embedding_vector" in embeddings[0]
         assert "reference_id" in embeddings[0]
+

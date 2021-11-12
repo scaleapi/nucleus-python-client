@@ -19,7 +19,7 @@ API_KEY = os.environ["NUCLEUS_PYTEST_API_KEY"]
 
 @pytest.fixture(scope="session")
 def CLIENT():
-    client = nucleus.NucleusClient(API_KEY)
+    client = nucleus.NucleusClient(API_KEY, endpoint=os.environ.get("NUCLEUS_OVERRIDE_ENDPOINT", None))
     return client
 
 
