@@ -201,7 +201,7 @@ class NucleusClient:
         Lists available datasets in your repo.
         :return: { datasets_ids }
         """
-        return self.make_request({}, "dataset/", requests.get)
+        return self.make_request({}, "dataset/details", requests.get)
 
     def list_jobs(
         self, show_completed=None, date_limit=None

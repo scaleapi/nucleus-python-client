@@ -78,7 +78,9 @@ class Dataset:
     @property
     def name(self) -> str:
         """User-defined name of the Dataset."""
-        return self.info().get(DATASET_NAME_KEY, "")
+        return self._client.make_request(
+            {}, f"dataset/{self.id}/name", requests.get
+        )
 
     @property
     def model_runs(self) -> List[str]:
