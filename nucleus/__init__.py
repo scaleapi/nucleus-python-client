@@ -42,7 +42,8 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional, Union
+from functools import wraps
+from typing import Any, Dict, List, Optional, Union, Callable
 
 import aiohttp
 import nest_asyncio
@@ -143,6 +144,33 @@ logging.getLogger(requests.packages.urllib3.__package__).setLevel(
 )
 
 
+def deprecated(msg: str):
+    """Logs a deprecation warning to logger.warn.
+
+    Args:
+        msg: State reason of deprecation and point towards preferred practices
+
+    Returns:
+        Deprecation wrapped function
+    """
+
+    def decorator(func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # NOTE: __qualname looks a lot better for method calls
+            name = (
+                func.__qualname__
+                if hasattr(func, "__qualname__")
+                else func.__name__
+            )
+            logger.warn(f"Calling {name} is deprecated: {msg}")
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 class RetryStrategy:
     statuses = {503, 504}
     sleep_times = [1, 3, 9]
@@ -180,6 +208,14 @@ class NucleusClient:
                 return True
         return False
 
+    @property
+    def datasets(self) -> List[Dataset]:
+        response = self.make_request({}, "dataset/details", requests.get)
+        dataset_details = pydantic.parse_obj_as(List[DatasetDetails], response)
+        return [
+            Dataset(d.id, client=self, name=d.name) for d in dataset_details
+        ]
+
     def list_models(self) -> List[Model]:
         """
         Lists available models in your repo.
@@ -198,14 +234,13 @@ class NucleusClient:
             for model in model_objects["models"]
         ]
 
-    def list_datasets(self) -> List[DatasetDetails]:
+    @deprecated(msg="Use the NucleusClient.datasets property in the future.")
+    def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
         Lists available datasets in your repo.
         :return: { datasets_ids }
         """
-        response = self.make_request({}, "dataset/details", requests.get)
-        dataset_details = pydantic.parse_obj_as(List[DatasetDetails], response)
-        return dataset_details
+        return self.make_request({}, "dataset/", requests.get)
 
     def list_jobs(
         self, show_completed=None, date_limit=None

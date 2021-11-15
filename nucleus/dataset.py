@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
@@ -64,12 +65,24 @@ class Dataset:
         self,
         dataset_id: str,
         client: "NucleusClient",  # type:ignore # noqa: F821
+        name: Optional[str],
     ):
+        """
+
+        Args:
+            dataset_id: Reference id of dataset
+            client: NucleusClient instance
+            name: Optionally set name on creation such that the property access doesn't need to hit the server
+        """
         self.id = dataset_id
         self._client = client
+        self._name = name
 
     def __repr__(self):
-        return f"Dataset(dataset_id='{self.id}', client={self._client})"
+        if os.environ.get("NUCLEUS_DEBUG", None):
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', client={self._client})"
+        else:
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}')"
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -80,9 +93,11 @@ class Dataset:
     @property
     def name(self) -> str:
         """User-defined name of the Dataset."""
-        return self._client.make_request(
-            {}, f"dataset/{self.id}/name", requests.get
-        )["name"]
+        if self._name is None:
+            self._name = self._client.make_request(
+                {}, f"dataset/{self.id}/name", requests.get
+            )["name"]
+        return self._name
 
     @property
     def model_runs(self) -> List[str]:
