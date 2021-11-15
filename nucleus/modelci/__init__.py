@@ -44,7 +44,7 @@ class ModelCI:
         import nucleus
         client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-        eval_functions = client.list_eval_functions()
+        eval_functions = client.modelci.list_eval_functions()
         """
         response = self._connection.make_request(
             {},
