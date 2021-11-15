@@ -19,6 +19,7 @@ from .constants import (
     UNIT_TEST_ID_KEY,
     UNIT_TEST_NAME_KEY,
 )
+from .eval_function import EvalFunction
 from .unit_test import (
     ThresholdComparison,
     UnitTest,
