@@ -43,13 +43,13 @@ class UnitTest:
     def __init__(
         self,
         unit_test_id: str,
-        client: "ModelCIClient",  # type:ignore # noqa: F821
+        client: "ModelCI",  # type:ignore # noqa: F821
     ):
         # Hack: lazy import to avoid circular dependencies.
-        from nucleus.modelci import ModelCIClient
+        from nucleus.modelci import ModelCI
 
         self.id = unit_test_id
-        self._client: ModelCIClient = client
+        self._client: ModelCI = client
         info = self._client.get_unit_test_info(self.id)
         self.name = info.name
         self.slice_id = info.slice_id

@@ -42,7 +42,6 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
-    ID_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
@@ -64,6 +63,7 @@ from .constants import (
     STATUS_CODE_KEY,
     UPDATE_KEY,
 )
+from .connection import Connection, RetryStrategy
 from .dataset import Dataset
 from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .errors import (
@@ -93,6 +93,7 @@ from .prediction import (
 from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
+from .modelci import ModelCI
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -106,11 +107,6 @@ logging.basicConfig()
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(
     logging.ERROR
 )
-
-
-class RetryStrategy:
-    statuses = {503, 504}
-    sleep_times = [1, 3, 9]
 
 
 class NucleusClient:
@@ -135,6 +131,9 @@ class NucleusClient:
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
+        self._connection = Connection(self.api_key, self.endpoint)
+
+        self.modelci = ModelCI(self.api_key, self.endpoint)
 
     def __repr__(self):
         return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"
@@ -1251,29 +1250,7 @@ class NucleusClient:
         :param requests_command: requests.post, requests.get, requests.delete
         :return: response JSON
         """
-        endpoint = f"{self.endpoint}/{route}"
-
-        logger.info("Posting to %s", endpoint)
-
-        for retry_wait_time in RetryStrategy.sleep_times:
-            response = requests_command(
-                endpoint,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                auth=(self.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            )
-            logger.info(
-                "API request has response code %s", response.status_code
-            )
-            if response.status_code not in RetryStrategy.statuses:
-                break
-            time.sleep(retry_wait_time)
-
-        if not response.ok:
-            self.handle_bad_response(endpoint, requests_command, response)
-
-        return response.json()
+        return self._connection.make_request(payload, route, requests_command)
 
     def handle_bad_response(
         self,
@@ -1282,6 +1259,6 @@ class NucleusClient:
         requests_response=None,
         aiohttp_response=None,
     ):
-        raise NucleusAPIError(
+        self._connection.handle_bad_response(
             endpoint, requests_command, requests_response, aiohttp_response
         )

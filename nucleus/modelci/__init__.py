@@ -3,17 +3,17 @@ from typing import List
 
 import requests
 
-from nucleus import NucleusClient
 from nucleus.job import AsyncJob
 from nucleus.constants import (
-    ID_KEY,
     NAME_KEY,
     SLICE_ID_KEY,
 )
+from nucleus.connection import Connection
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
     EVAL_FUNCTION_NAME_KEY,
+    ID_KEY,
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
     UNIT_TEST_ID_KEY,
@@ -32,25 +32,35 @@ from .unit_test_evaluation import (
 from .utils import format_unit_test_eval_response
 
 
-class ModelCIClient(NucleusClient):
-    """Model CI Python Client."""
+class ModelCI:
+    """Model CI Python Client extension."""
 
-    def __init__(
-        self,
-        api_key: str,
-        use_notebook: bool = False,
-        endpoint: str = None,
-    ):
-        super().__init__(api_key, use_notebook, endpoint)
+    def __init__(self, api_key: str, endpoint: str):
+        self._connection = Connection(api_key, endpoint)
+
+    def list_eval_functions(self):
+        """List all available evaluation functions. ::
+
+        import nucleus
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+
+        eval_functions = client.list_eval_functions()
+        """
+        response = self._connection.make_request(
+            {},
+            "modelci/eval_fn/list",
+            requests_command=requests.get,
+        )
+        return EvalFunction(**response["eval_functions"])
 
     def create_unit_test(self, name: str, slice_id: str) -> UnitTest:
         """Creates a new Unit Test. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             from nucleus.modelci.unit_test import ThresholdComparison
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            unit_test = client.create_unit_test(
+            unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
@@ -61,7 +71,7 @@ class ModelCIClient(NucleusClient):
         Returns:
             Created UnitTest object.
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {
                 NAME_KEY: name,
                 SLICE_ID_KEY: slice_id,
@@ -80,14 +90,14 @@ class ModelCIClient(NucleusClient):
     ) -> UnitTestMetric:
         """Creates and adds a new metric for the provided Unit Test. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             from nucleus.modelci.unit_test import ThresholdComparison
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.create_unit_test(
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.create_unit_test_metric(
+            client.modelci.create_unit_test_metric(
                 unit_test_name="sample_unit_test",
                 eval_function_name="IOU",
                 threshold=0.5,
@@ -103,7 +113,10 @@ class ModelCIClient(NucleusClient):
         Returns:
             The created UnitTestMetric object.
         """
-        response = self.make_request(
+        import pdb
+
+        pdb.set_trace()
+        response = self._connection.make_request(
             {
                 UNIT_TEST_NAME_KEY: unit_test_name,
                 EVAL_FUNCTION_NAME_KEY: eval_function_name,
@@ -129,7 +142,7 @@ class ModelCIClient(NucleusClient):
         Returns:
             A UnitTestInfo object
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {},
             f"modelci/unit_test/{unit_test_id}/info",
             requests_command=requests.get,
@@ -139,33 +152,35 @@ class ModelCIClient(NucleusClient):
     def list_unit_tests(self) -> List[UnitTest]:
         """Lists all Unit Tests of the current user. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             from nucleus.modelci.unit_test import ThresholdComparison
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.create_unit_test(
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.list_unit_tests()
+            client.modelci.list_unit_tests()
 
         Returns:
             A list of UnitTest objects.
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {},
             "modelci/unit_test/list",
             requests_command=requests.get,
         )
-        return [UnitTest(test_id) for test_id in response["unit_test_ids"]]
+        return [
+            UnitTest(test_id, self) for test_id in response["unit_test_ids"]
+        ]
 
     def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
         """Retrieves all metrics of the Unit Test. ::
 
             import nucleus.modelci as nm
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.list_unit_tests()[0]
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.list_unit_tests()[0]
 
-            client.get_unit_test_metrics(unit_test.id)
+            client.modelci.get_unit_test_metrics(unit_test.id)
 
         Args:
             unit_test_id: ID of Unit Test
@@ -173,7 +188,7 @@ class ModelCIClient(NucleusClient):
         Returns:
             A list of UnitTestMetric objects
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {},
             f"modelci/unit_test/{unit_test_id}/metrics",
             requests_command=requests.get,
@@ -186,13 +201,13 @@ class ModelCIClient(NucleusClient):
         """Evaluates the given model on the specified Unit Tests. ::
 
             import nucleus.modelci as nm
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
-            unit_test = client.create_unit_test(
+            unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.evaluate_model_on_unit_tests(
+            client.modelci.evaluate_model_on_unit_tests(
                 model_id=model.id,
                 unit_test_names=["sample_unit_test"],
             )
@@ -204,7 +219,7 @@ class ModelCIClient(NucleusClient):
         Returns:
             AsyncJob object of evaluation job
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {"test_names": unit_test_names},
             f"modelci/{model_id}/evaluate",
             requests_command=requests.post,
@@ -216,11 +231,11 @@ class ModelCIClient(NucleusClient):
     ) -> List[UnitTestEvaluation]:
         """Retrieves evaluation history of the Unit Test. ::
 
-            import nucleus.modelci as nm
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.list_unit_tests()[0]
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.list_unit_tests()[0]
 
-            client.get_unit_test_eval_history(unit_test.id)
+            client.modelci.get_unit_test_eval_history(unit_test.id)
 
         Args:
             unit_test_id: ID of Unit Test
@@ -228,7 +243,7 @@ class ModelCIClient(NucleusClient):
         Returns:
             A list of UnitTestEvaluation objects
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {},
             f"modelci/unit_test/{unit_test_id}/eval_history",
             requests_command=requests.get,
@@ -249,7 +264,7 @@ class ModelCIClient(NucleusClient):
         Returns:
             A list of UnitTestEvaluation objects
         """
-        response = self.make_request(
+        response = self._connection.make_request(
             {},
             f"modelci/eval/{evaluation_id}/info",
             requests_command=requests.get,

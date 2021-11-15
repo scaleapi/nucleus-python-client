@@ -1,5 +1,6 @@
 EVAL_FUNCTION_ID_KEY = "eval_function_id"
 EVAL_FUNCTION_NAME_KEY = "eval_function_name"
+ID_KEY = "id"
 THRESHOLD_COMPARISON_KEY = "threshold_comparison"
 THRESHOLD_KEY = "threshold"
 UNIT_TEST_ID_KEY = "unit_test_id"
