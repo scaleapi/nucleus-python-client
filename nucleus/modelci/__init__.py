@@ -12,7 +12,6 @@ from nucleus.connection import Connection
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
-    EVAL_FUNCTION_NAME_KEY,
     ID_KEY,
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
@@ -49,7 +48,7 @@ class ModelCI:
         """
         response = self._connection.make_request(
             {},
-            "modelci/eval_fn/list",
+            "modelci/eval_fn",
             requests_command=requests.get,
         )
         return EvalFunction(**response["eval_functions"])
@@ -85,7 +84,7 @@ class ModelCI:
     def create_unit_test_metric(
         self,
         unit_test_name: str,
-        eval_function_name: str,
+        eval_function_id: str,
         threshold: float,
         threshold_comparison: ThresholdComparison,
     ) -> UnitTestMetric:
@@ -100,14 +99,14 @@ class ModelCI:
 
             client.modelci.create_unit_test_metric(
                 unit_test_name="sample_unit_test",
-                eval_function_name="IOU",
+                eval_function_id="YOUR_EVAL_FUNCTION_ID",
                 threshold=0.5,
                 threshold_comparison=ThresholdComparison.GREATER_THAN
             )
 
         Args:
             unit_test_name: name of unit test
-            eval_function_name: name of evaluation function
+            eval_function_id: name of evaluation function
             threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
             threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
 
@@ -120,7 +119,7 @@ class ModelCI:
         response = self._connection.make_request(
             {
                 UNIT_TEST_NAME_KEY: unit_test_name,
-                EVAL_FUNCTION_NAME_KEY: eval_function_name,
+                EVAL_FUNCTION_ID_KEY: eval_function_id,
                 THRESHOLD_KEY: threshold,
                 THRESHOLD_COMPARISON_KEY: threshold_comparison,
             },
@@ -167,7 +166,7 @@ class ModelCI:
         """
         response = self._connection.make_request(
             {},
-            "modelci/unit_test/list",
+            "modelci/unit_test",
             requests_command=requests.get,
         )
         return [
