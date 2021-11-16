@@ -37,16 +37,11 @@ __all__ = [
     "UploadResponse",
 ]
 
-import asyncio
-import json
-import logging
 import os
 import time
 from functools import wraps
 from typing import Any, Dict, List, Optional, Union, Callable
 
-import aiohttp
-import nest_asyncio
 import pkg_resources
 import pydantic
 import requests
@@ -54,6 +49,8 @@ import tqdm
 import tqdm.notebook as tqdm_notebook
 
 from nucleus.url_utils import sanitize_string_args
+from .logger import logger
+from .retry_strategy import RetryStrategy
 
 from .annotation import (
     BoxAnnotation,
@@ -110,6 +107,7 @@ from .errors import (
     NucleusAPIError,
 )
 from .job import AsyncJob
+from .logger import logger
 from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (
@@ -126,9 +124,11 @@ from .prediction import (
     SegmentationPrediction,
     CategoryPrediction,
 )
+from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
+from .logger import logger
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -136,12 +136,6 @@ from .upload_response import UploadResponse
 
 
 __version__ = pkg_resources.get_distribution("scale-nucleus").version
-
-logger = logging.getLogger(__name__)
-logging.basicConfig()
-logging.getLogger(requests.packages.urllib3.__package__).setLevel(
-    logging.ERROR
-)
 
 
 def deprecated(msg: str):
@@ -169,11 +163,6 @@ def deprecated(msg: str):
         return wrapper
 
     return decorator
-
-
-class RetryStrategy:
-    statuses = {503, 504}
-    sleep_times = [1, 3, 9]
 
 
 class NucleusClient:
@@ -216,11 +205,8 @@ class NucleusClient:
             Dataset(d.id, client=self, name=d.name) for d in dataset_details
         ]
 
-    def list_models(self) -> List[Model]:
-        """
-        Lists available models in your repo.
-        :return: model_ids
-        """
+    @property
+    def models(self) -> List[Model]:
         model_objects = self.make_request({}, "models/", requests.get)
 
         return [
@@ -234,6 +220,21 @@ class NucleusClient:
             for model in model_objects["models"]
         ]
 
+    @property
+    def jobs(
+        self,
+    ) -> List[AsyncJob]:
+        return self.list_jobs()
+
+    @deprecated(msg="Use the NucleusClient.models property in the future.")
+    def list_models(self) -> List[Model]:
+        """
+        Lists available models in your repo.
+        :return: model_ids
+        """
+        return self.models
+
+
     @deprecated(msg="Use the NucleusClient.datasets property in the future.")
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
@@ -242,6 +243,8 @@ class NucleusClient:
         """
         return self.make_request({}, "dataset/", requests.get)
 
+    # TODO: Do we need these 'show_completed' and date_limit flags? Is self.jobs not enough?
+    @deprecated(msg="Use the NucleusClient.jobs property in the future.")
     def list_jobs(
         self, show_completed=None, date_limit=None
     ) -> List[AsyncJob]:
@@ -249,6 +252,7 @@ class NucleusClient:
         Lists jobs for user.
         :return: jobs
         """
+        # TODO: What type is date_limit? Use pydantic ...
         payload = {show_completed: show_completed, date_limit: date_limit}
         job_objects = self.make_request(payload, "jobs/", requests.get)
         return [
@@ -262,28 +266,14 @@ class NucleusClient:
             for job in job_objects
         ]
 
+    @deprecated(msg="Prefer using Dataset.get_dataset_items.")
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
         """
         Gets all the dataset items inside your repo as a json blob.
         :return [ DatasetItem ]
         """
-        response = self.make_request(
-            {}, f"dataset/{dataset_id}/datasetItems", requests.get
-        )
-        dataset_items = response.get("dataset_items", None)
-        error = response.get("error", None)
-        constructed_dataset_items = []
-        if dataset_items:
-            for item in dataset_items:
-                image_url = item.get("original_image_url")
-                metadata = item.get("metadata", None)
-                ref_id = item.get("ref_id", None)
-                dataset_item = DatasetItem(image_url, ref_id, metadata)
-                constructed_dataset_items.append(dataset_item)
-        elif error:
-            raise DatasetItemRetrievalError(message=error)
-
-        return constructed_dataset_items
+        dataset = self.get_dataset(dataset_id)
+        return dataset.get_dataset_items()
 
     def get_dataset(self, dataset_id: str) -> Dataset:
         """
@@ -368,6 +358,7 @@ class NucleusClient:
         )
         return Dataset(response[DATASET_ID_KEY], self)
 
+    # TODO(gunnar): Move to dataset?
     def delete_dataset(self, dataset_id: str) -> dict:
         """
         Deletes a private dataset based on datasetId.
@@ -378,7 +369,7 @@ class NucleusClient:
         """
         return self.make_request({}, f"dataset/{dataset_id}", requests.delete)
 
-    @sanitize_string_args
+    @deprecated("Use Dataset.delete_item instead.")
     def delete_dataset_item(self, dataset_id: str, reference_id) -> dict:
         """
         Deletes a private dataset based on datasetId.
@@ -387,12 +378,10 @@ class NucleusClient:
         :param payload: { "name": str }
         :return: { "dataset_id": str, "name": str }
         """
-        return self.make_request(
-            {},
-            f"dataset/{dataset_id}/refloc/{reference_id}",
-            requests.delete,
-        )
+        dataset = self.get_dataset(dataset_id)
+        return dataset.delete_item(reference_id)
 
+    @deprecated("Use Dataset.populate instead.")
     def populate_dataset(
         self,
         dataset_id: str,
@@ -400,270 +389,8 @@ class NucleusClient:
         batch_size: int = 20,
         update: bool = False,
     ):
-        """
-        Appends images to a dataset with given dataset_id.
-        Overwrites images on collision if updated.
-        :param dataset_id: id of a dataset
-        :param payload: { "items": List[DatasetItem], "update": bool }
-        :param local: flag if images are stored locally
-        :param batch_size: size of the batch for long payload
-        :return:
-        {
-            "dataset_id: str,
-            "new_items": int,
-            "updated_items": int,
-            "ignored_items": int,
-            "upload_errors": int
-        }
-        """
-        local_items = []
-        remote_items = []
-
-        # Check local files exist before sending requests
-        for item in dataset_items:
-            if item.local:
-                if not item.local_file_exists():
-                    raise NotFoundError()
-                local_items.append(item)
-            else:
-                remote_items.append(item)
-
-        local_batches = [
-            local_items[i : i + batch_size]
-            for i in range(0, len(local_items), batch_size)
-        ]
-
-        remote_batches = [
-            remote_items[i : i + batch_size]
-            for i in range(0, len(remote_items), batch_size)
-        ]
-
-        agg_response = UploadResponse(json={DATASET_ID_KEY: dataset_id})
-
-        async_responses: List[Any] = []
-
-        if local_batches:
-            tqdm_local_batches = self.tqdm_bar(
-                local_batches, desc="Local file batches"
-            )
-
-            for batch in tqdm_local_batches:
-                payload = construct_append_payload(batch, update)
-                responses = self._process_append_requests_local(
-                    dataset_id, payload, update
-                )
-                async_responses.extend(responses)
-
-        if remote_batches:
-            tqdm_remote_batches = self.tqdm_bar(
-                remote_batches, desc="Remote file batches"
-            )
-            for batch in tqdm_remote_batches:
-                payload = construct_append_payload(batch, update)
-                responses = self._process_append_requests(
-                    dataset_id=dataset_id,
-                    payload=payload,
-                    update=update,
-                    batch_size=batch_size,
-                )
-                async_responses.extend(responses)
-
-        for response in async_responses:
-            agg_response.update_response(response)
-
-        return agg_response
-
-    def _process_append_requests_local(
-        self,
-        dataset_id: str,
-        payload: dict,
-        update: bool,  # TODO: understand how to pass this in.
-        local_batch_size: int = 10,
-    ):
-        def get_files(batch):
-            for item in batch:
-                item[UPDATE_KEY] = update
-            request_payload = [
-                (
-                    ITEMS_KEY,
-                    (
-                        None,
-                        json.dumps(batch, allow_nan=False),
-                        "application/json",
-                    ),
-                )
-            ]
-            for item in batch:
-                image = open(  # pylint: disable=R1732
-                    item.get(IMAGE_URL_KEY), "rb"  # pylint: disable=R1732
-                )  # pylint: disable=R1732
-                img_name = os.path.basename(image.name)
-                img_type = (
-                    f"image/{os.path.splitext(image.name)[1].strip('.')}"
-                )
-                request_payload.append(
-                    (IMAGE_KEY, (img_name, image, img_type))
-                )
-            return request_payload
-
-        items = payload[ITEMS_KEY]
-        responses: List[Any] = []
-        files_per_request = []
-        payload_items = []
-        for i in range(0, len(items), local_batch_size):
-            batch = items[i : i + local_batch_size]
-            files_per_request.append(get_files(batch))
-            payload_items.append(batch)
-
-        future = self.make_many_files_requests_asynchronously(
-            files_per_request,
-            f"dataset/{dataset_id}/append",
-        )
-
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:  # no event loop running:
-            loop = asyncio.new_event_loop()
-            responses = loop.run_until_complete(future)
-        else:
-            nest_asyncio.apply(loop)
-            return loop.run_until_complete(future)
-
-        def close_files(request_items):
-            for item in request_items:
-                # file buffer in location [1][1]
-                if item[0] == IMAGE_KEY:
-                    item[1][1].close()
-
-        # don't forget to close all open files
-        for p in files_per_request:
-            close_files(p)
-
-        return responses
-
-    async def make_many_files_requests_asynchronously(
-        self, files_per_request, route
-    ):
-        """
-        Makes an async post request with files to a Nucleus endpoint.
-
-        :param files_per_request: A list of lists of tuples (name, (filename, file_pointer, content_type))
-           name will become the name by which the multer can build an array.
-        :param route: route for the request
-        :return: awaitable list(response)
-        """
-        async with aiohttp.ClientSession() as session:
-            tasks = [
-                asyncio.ensure_future(
-                    self._make_files_request(
-                        files=files, route=route, session=session
-                    )
-                )
-                for files in files_per_request
-            ]
-            return await asyncio.gather(*tasks)
-
-    async def _make_files_request(
-        self,
-        files,
-        route: str,
-        session: aiohttp.ClientSession,
-        retry_attempt=0,
-        max_retries=3,
-        sleep_intervals=(1, 3, 9),
-    ):
-        """
-        Makes an async post request with files to a Nucleus endpoint.
-
-        :param files: A list of tuples (name, (filename, file_pointer, file_type))
-        :param route: route for the request
-        :param session: Session to use for post.
-        :return: response
-        """
-        endpoint = f"{self.endpoint}/{route}"
-
-        logger.info("Posting to %s", endpoint)
-
-        form = aiohttp.FormData()
-
-        for file in files:
-            form.add_field(
-                name=file[0],
-                filename=file[1][0],
-                value=file[1][1],
-                content_type=file[1][2],
-            )
-
-        for sleep_time in RetryStrategy.sleep_times + [-1]:
-
-            async with session.post(
-                endpoint,
-                data=form,
-                auth=aiohttp.BasicAuth(self.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            ) as response:
-                logger.info(
-                    "API request has response code %s", response.status
-                )
-
-                try:
-                    data = await response.json()
-                except aiohttp.client_exceptions.ContentTypeError:
-                    # In case of 404, the server returns text
-                    data = await response.text()
-                if (
-                    response.status in RetryStrategy.statuses
-                    and sleep_time != -1
-                ):
-                    time.sleep(sleep_time)
-                    continue
-
-                if not response.ok:
-                    if retry_attempt < max_retries:
-                        time.sleep(sleep_intervals[retry_attempt])
-                        retry_attempt += 1
-                        return self._make_files_request(
-                            files,
-                            route,
-                            session,
-                            retry_attempt,
-                            max_retries,
-                            sleep_intervals,
-                        )
-                    else:
-                        self.handle_bad_response(
-                            endpoint,
-                            session.post,
-                            aiohttp_response=(
-                                response.status,
-                                response.reason,
-                                data,
-                            ),
-                        )
-
-                return data
-
-    def _process_append_requests(
-        self,
-        dataset_id: str,
-        payload: dict,
-        update: bool,
-        batch_size: int = 20,
-    ):
-        items = payload[ITEMS_KEY]
-        payloads = [
-            # batch_size images per request
-            {ITEMS_KEY: items[i : i + batch_size], UPDATE_KEY: update}
-            for i in range(0, len(items), batch_size)
-        ]
-
-        return [
-            self.make_request(
-                payload,
-                f"dataset/{dataset_id}/append",
-            )
-            for payload in payloads
-        ]
+        dataset = self.get_dataset(dataset_id)
+        return dataset.populate(dataset_items, batch_size, update)
 
     def annotate_dataset(
         self,
@@ -755,6 +482,8 @@ class NucleusClient:
 
         return agg_response
 
+    # TODO(gunnar): Remove completely?
+    @deprecated(msg="Use dataset.ingest_tasks instead")
     def ingest_tasks(self, dataset_id: str, payload: dict):
         """
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
@@ -764,9 +493,16 @@ class NucleusClient:
         :param dataset_id: id of the dataset
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
-        return self.make_request(payload, f"dataset/{dataset_id}/ingest_tasks")
+        dataset = self.get_dataset(dataset_id)
+        return dataset.ingest_tasks(payload["tasks"])
 
+    @deprecated(msg="Use client.create_model instead.")
     def add_model(
+        self, name: str, reference_id: str, metadata: Optional[Dict] = None
+    ) -> Model:
+        return self.create_model(name, reference_id, metadata)
+
+    def create_model(
         self, name: str, reference_id: str, metadata: Optional[Dict] = None
     ) -> Model:
         """
@@ -777,7 +513,7 @@ class NucleusClient:
         :param name: A human-readable name of the model project.
         :param reference_id: An user-specified identifier to reference this given model.
         :param metadata: An optional arbitrary metadata blob for the model.
-        :return: { "model_id": str }
+        :return: Newly created Model
         """
         response = self.make_request(
             construct_model_creation_payload(name, reference_id, metadata),
@@ -951,6 +687,7 @@ class NucleusClient:
             payload = {}
         return self.make_request(payload, f"modelRun/{model_run_id}/commit")
 
+    @deprecated(msg="Prefer calling Dataset.info() directly.")
     def dataset_info(self, dataset_id: str):
         """
         Returns information about existing dataset
@@ -963,9 +700,8 @@ class NucleusClient:
                 'slice_ids': List[str]
             }
         """
-        return self.make_request(
-            {}, f"dataset/{dataset_id}/info", requests.get
-        )
+        dataset = self.get_dataset(dataset_id)
+        return dataset.info()
 
     def model_run_info(self, model_run_id: str):
         """
@@ -1137,6 +873,7 @@ class NucleusClient:
         )
         return response
 
+    @deprecated("Use Dataset.delete_annotations instead.")
     def delete_annotations(
         self, dataset_id: str, reference_ids: list = None, keep_history=False
     ) -> dict:
@@ -1149,15 +886,9 @@ class NucleusClient:
         :return:
         {}
         """
-        payload = {KEEP_HISTORY_KEY: keep_history}
-        if reference_ids:
-            payload[REFERENCE_IDS_KEY] = reference_ids
-        response = self.make_request(
-            payload,
-            f"annotation/{dataset_id}",
-            requests_command=requests.delete,
-        )
-        return response
+        dataset = self.get_dataset(dataset_id)
+        return dataset.delete_annotations(reference_ids, keep_history)
+
 
     def append_to_slice(
         self,

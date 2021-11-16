@@ -18,21 +18,20 @@ from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
+from .dataset_populator import DatasetPopulator
+from .upload_response import UploadResponse
+from .errors import DatasetItemRetrievalError
 
 from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
-    DATASET_LENGTH_KEY,
-    DATASET_MODEL_RUNS_KEY,
-    DATASET_NAME_KEY,
-    DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
-    UPDATE_KEY,
+    UPDATE_KEY, KEEP_HISTORY_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -65,7 +64,7 @@ class Dataset:
         self,
         dataset_id: str,
         client: "NucleusClient",  # type:ignore # noqa: F821
-        name: Optional[str],
+        name: Optional[str] = None,
     ):
         """
 
@@ -89,6 +88,30 @@ class Dataset:
             if self._client == other._client:
                 return True
         return False
+
+    def get_dataset_items(self) -> List[DatasetItem]:
+        """Gets all Dataset Items associated with this dataset
+
+        Returns:
+            List of DatasetItem
+        """
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/datasetItems", requests.get
+        )
+        dataset_items = response.get("dataset_items", None)
+        error = response.get("error", None)
+        constructed_dataset_items = []
+        if dataset_items:
+            for item in dataset_items:
+                image_url = item.get("original_image_url")
+                metadata = item.get("metadata", None)
+                ref_id = item.get("ref_id", None)
+                dataset_item = DatasetItem(image_url, ref_id, metadata)
+                constructed_dataset_items.append(dataset_item)
+        elif error:
+            raise DatasetItemRetrievalError(message=error)
+
+        return constructed_dataset_items
 
     @property
     def name(self) -> str:
@@ -128,7 +151,7 @@ class Dataset:
     @property
     def items(self) -> List[DatasetItem]:
         """List of all DatasetItem objects in the Dataset."""
-        return self._client.get_dataset_items(self.id)
+        return self.get_dataset_items()
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
@@ -260,7 +283,7 @@ class Dataset:
             self.id, annotations, update=update, batch_size=batch_size
         )
 
-    def ingest_tasks(self, task_ids: dict):
+    def ingest_tasks(self, task_ids: List[str]):
         """
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
         annotated by Scale into your Nucleus Dataset.
@@ -269,7 +292,10 @@ class Dataset:
         :param task_ids: list of task ids
         :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
         """
-        return self._client.ingest_tasks(self.id, {"tasks": task_ids})
+        # TODO(gunnar): Validate right behaviour. Pydantic?
+        return self._client.make_request(
+            {"tasks": task_ids}, f"dataset/{self.id}/ingest_tasks"
+        )
 
     def append(
         self,
@@ -277,7 +303,7 @@ class Dataset:
         update: Optional[bool] = False,
         batch_size: Optional[int] = 20,
         asynchronous=False,
-    ) -> Union[dict, AsyncJob]:
+    ) -> UploadResponse:
         """
         Appends images with metadata (dataset items) or scenes to the dataset. Overwrites images on collision if forced.
 
@@ -332,8 +358,7 @@ class Dataset:
             )
             return AsyncJob.from_json(response, self._client)
 
-        return self._client.populate_dataset(
-            self.id,
+        return self.populate(
             dataset_items,
             update=update,
             batch_size=batch_size,
@@ -464,9 +489,12 @@ class Dataset:
             self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
         )
 
+    @sanitize_string_args
     def delete_item(self, reference_id: str):
-        return self._client.delete_dataset_item(
-            self.id, reference_id=reference_id
+        return self.make_request(
+            {},
+            f"dataset/{self.id}/refloc/{reference_id}",
+            requests.delete,
         )
 
     def list_autotags(self):
@@ -559,9 +587,14 @@ class Dataset:
 
     def delete_annotations(
         self, reference_ids: list = None, keep_history=False
-    ):
-        response = self._client.delete_annotations(
-            self.id, reference_ids, keep_history
+    ) -> AsyncJob:
+        payload = {KEEP_HISTORY_KEY: keep_history}
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+        response = self._client.make_request(
+            payload,
+            f"annotation/{self.id}",
+            requests_command=requests.delete,
         )
         return AsyncJob.from_json(response, self._client)
 
@@ -712,3 +745,21 @@ class Dataset:
                 requests_command=requests.get,
             )
         )
+
+    def populate(
+        self,
+        dataset_items: List[DatasetItem],
+        batch_size: int = 20,
+        update: bool = False,
+    ) -> UploadResponse:
+        """
+        Appends images to a dataset with given dataset_id.
+        Overwrites images on collision if updated.
+        :param payload: { "items": List[DatasetItem], "update": bool }
+        :param local: flag if images are stored locally
+        :param batch_size: size of the batch for long payload
+        :return:
+        UploadResponse
+        """
+        populator = DatasetPopulator(self.id, self._client)
+        return populator.populate(dataset_items, batch_size, update)
