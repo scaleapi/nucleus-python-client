@@ -99,7 +99,7 @@ class ModelCI:
 
             client.modelci.create_unit_test_metric(
                 unit_test_name="sample_unit_test",
-                eval_function_id="YOUR_EVAL_FUNCTION_ID",
+                eval_function_id="ef_c61595wh49km7ppkk14g",
                 threshold=0.5,
                 threshold_comparison=ThresholdComparison.GREATER_THAN
             )
@@ -113,9 +113,6 @@ class ModelCI:
         Returns:
             The created UnitTestMetric object.
         """
-        import pdb
-
-        pdb.set_trace()
         response = self._connection.make_request(
             {
                 UNIT_TEST_NAME_KEY: unit_test_name,

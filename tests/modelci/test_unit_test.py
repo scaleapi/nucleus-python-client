@@ -1,7 +1,7 @@
 from ..test_dataset import make_dataset_items
 from ..helpers import (
+    TEST_EVAL_FUNCTION_ID,
     TEST_SLICE_NAME,
-    EVAL_FUNCTION_NAME,
     EVAL_FUNCTION_THRESHOLD,
     EVAL_FUNCTION_COMPARISON,
     get_uuid,
@@ -50,7 +50,7 @@ def test_client_unit_test_metric_creation(CLIENT, dataset):
 
     unit_test_metric = CLIENT.modelci.create_unit_test_metric(
         unit_test_name=test_name,
-        eval_function_name=EVAL_FUNCTION_NAME,
+        eval_function_id=TEST_EVAL_FUNCTION_ID,
         threshold=EVAL_FUNCTION_THRESHOLD,
         threshold_comparison=EVAL_FUNCTION_COMPARISON,
     )
@@ -82,7 +82,7 @@ def test_unit_test_metric_creation_from_class(CLIENT, dataset):
     )
 
     unit_test_metric = unit_test.add_metric(
-        eval_function_name=EVAL_FUNCTION_NAME,
+        eval_function_id=TEST_EVAL_FUNCTION_ID,
         threshold=EVAL_FUNCTION_THRESHOLD,
         threshold_comparison=EVAL_FUNCTION_COMPARISON,
     )

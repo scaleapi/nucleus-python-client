@@ -56,7 +56,7 @@ class UnitTest:
 
     def add_metric(
         self,
-        eval_function_name: str,
+        eval_function_id: str,
         threshold: float,
         threshold_comparison: ThresholdComparison,
     ) -> UnitTestMetric:
@@ -70,13 +70,13 @@ class UnitTest:
             )
 
             unit_test.add_metric(
-                eval_function_name="IOU",
+                eval_function_id="ef_c61595wh49km7ppkk14g",
                 threshold=0.5,
                 threshold_comparison=ThresholdComparison.GREATER_THAN
             )
 
         Args:
-            eval_function_name: name of evaluation function
+            eval_function_id: ID of evaluation function
             threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
             threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
 
@@ -84,7 +84,7 @@ class UnitTest:
             The created UnitTestMetric object.
         """
         return self._client.create_unit_test_metric(
-            self.name, eval_function_name, threshold, threshold_comparison
+            self.name, eval_function_id, threshold, threshold_comparison
         )
 
     def get_metrics(self) -> List[UnitTestMetric]:
