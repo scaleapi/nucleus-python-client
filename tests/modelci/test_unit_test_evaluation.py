@@ -1,10 +1,10 @@
 import pytest
 import uuid
 
-from ..test_dataset import make_dataset_items
-from ..helpers import (
+from tests.test_dataset import make_dataset_items
+from tests.helpers import (
     TEST_SLICE_NAME,
-    EVAL_FUNCTION_NAME,
+    TEST_EVAL_FUNCTION_ID,
     EVAL_FUNCTION_THRESHOLD,
     get_uuid,
 )
@@ -17,23 +17,9 @@ from nucleus.modelci.unit_test_evaluation import (
 
 # TODO: Move unit test to fixture once deletion is implemented
 @pytest.mark.integration
-def test_unit_test_evaluation(CLIENT, dataset, model):
-    # create some dataset_items for the unit test to reference
-    items = make_dataset_items()
-    dataset.append(items)
-    test_name = "unit_test_" + get_uuid()  # use uuid to make unique
-    slc = dataset.create_slice(
-        name=TEST_SLICE_NAME,
-        reference_ids=[items[0].reference_id],
-    )
-
-    unit_test = CLIENT.modelci.create_unit_test(
-        name=test_name,
-        slice_id=slc.slice_id,
-    )
-
+def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     unit_test_metric = unit_test.add_metric(
-        eval_function_name=EVAL_FUNCTION_NAME,
+        eval_function_id=TEST_EVAL_FUNCTION_ID,
         threshold=EVAL_FUNCTION_THRESHOLD,
         threshold_comparison=ThresholdComparison.GREATER_THAN,
     )

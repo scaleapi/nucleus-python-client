@@ -190,7 +190,30 @@ class ModelCI:
             f"modelci/unit_test/{unit_test_id}/metrics",
             requests_command=requests.get,
         )
-        return [UnitTestMetric(**metric) for metric in response["metrics"]]
+        return [UnitTestMetric(**metric) for metric in response["unit_test_metrics"]]
+
+    def delete_unit_test(self, unit_test_id: str) -> bool:
+        """Creates a new Unit Test. ::
+
+            import nucleus
+            from nucleus.modelci.unit_test import ThresholdComparison
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.list_unit_tests()[0]
+
+            success = client.modelci.create_unit_test(unit_test.id)
+
+        Args:
+            unit_test_id: unique ID of unit test
+
+        Returns:
+            Whether deletion was successful.
+        """
+        response = self._connection.make_request(
+            {},
+            f"modelci/unit_test/{unit_test_id}",
+            requests_command=requests.delete,
+        )
+        return response["success"]
 
     def evaluate_model_on_unit_tests(
         self, model_id: str, unit_test_names: List[str]
