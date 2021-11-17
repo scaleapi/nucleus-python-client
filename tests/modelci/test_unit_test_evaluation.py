@@ -3,21 +3,29 @@ import uuid
 
 from tests.test_dataset import make_dataset_items
 from tests.helpers import (
+    TEST_BOX_ANNOTATIONS,
+    TEST_BOX_PREDICTIONS,
     TEST_SLICE_NAME,
     TEST_EVAL_FUNCTION_ID,
     EVAL_FUNCTION_THRESHOLD,
     get_uuid,
 )
 
+from nucleus import BoxAnnotation, BoxPrediction
 from nucleus.job import AsyncJob
+from nucleus.modelci.unit_test import ThresholdComparison
 from nucleus.modelci.unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
 )
 
-# TODO: Move unit test to fixture once deletion is implemented
 @pytest.mark.integration
 def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    dataset.annotate(annotations=[annotation])
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
+    dataset.upload_predictions(model, [prediction])
+
     unit_test_metric = unit_test.add_metric(
         eval_function_id=TEST_EVAL_FUNCTION_ID,
         threshold=EVAL_FUNCTION_THRESHOLD,
@@ -25,7 +33,7 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     )
 
     job: AsyncJob = CLIENT.modelci.evaluate_model_on_unit_tests(
-        model.id, [test_name]
+        model.id, [unit_test.name]
     )
     job.sleep_until_complete()
 

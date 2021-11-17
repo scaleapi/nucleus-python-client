@@ -247,7 +247,7 @@ class ModelCI:
             f"modelci/{model_id}/evaluate",
             requests_command=requests.post,
         )
-        return AsyncJob.from_json(response, self._client)
+        return AsyncJob.from_json(response, self._connection)
 
     def get_unit_test_eval_history(
         self, unit_test_id: str
