@@ -1,15 +1,13 @@
+import time
+
 import logging
 import requests
-import time
 
 from .constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from .errors import NucleusAPIError
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
-logging.getLogger(requests.packages.urllib3.__package__).setLevel(
-    logging.ERROR
-)
 
 
 # TODO: use retry library instead of custom code. Tenacity is one option.

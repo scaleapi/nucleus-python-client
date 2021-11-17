@@ -272,7 +272,7 @@ class ModelCI:
             requests_command=requests.get,
         )
         return [
-            UnitTestEvaluation(eval[ID_KEY])
+            UnitTestEvaluation(**eval[ID_KEY])
             for eval in response["evaluations"]
         ]
 
