@@ -27,7 +27,7 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     dataset.upload_predictions(model, [prediction])
 
-    unit_test_metric = unit_test.add_metric(
+    unit_test.add_metric(
         eval_function_id=TEST_EVAL_FUNCTION_ID,
         threshold=EVAL_FUNCTION_THRESHOLD,
         threshold_comparison=ThresholdComparison.GREATER_THAN,

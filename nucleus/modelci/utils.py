@@ -10,7 +10,7 @@ from .unit_test_evaluation import (
 def try_convert_float(float_str: str) -> Optional[float]:
     try:
         return float(float_str)
-    except:
+    except ValueError:
         return None
 
 

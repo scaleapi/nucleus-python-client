@@ -1,5 +1,6 @@
-import requests
 import logging
+import requests
+import time
 
 from .constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from .errors import NucleusAPIError
