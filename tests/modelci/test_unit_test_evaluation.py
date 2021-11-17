@@ -19,6 +19,7 @@ from nucleus.modelci.unit_test_evaluation import (
     UnitTestItemEvaluation,
 )
 
+
 @pytest.mark.integration
 def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
