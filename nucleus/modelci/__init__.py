@@ -190,7 +190,10 @@ class ModelCI:
             f"modelci/unit_test/{unit_test_id}/metrics",
             requests_command=requests.get,
         )
-        return [UnitTestMetric(**metric) for metric in response["unit_test_metrics"]]
+        return [
+            UnitTestMetric(**metric)
+            for metric in response["unit_test_metrics"]
+        ]
 
     def delete_unit_test(self, unit_test_id: str) -> bool:
         """Creates a new Unit Test. ::
