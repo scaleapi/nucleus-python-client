@@ -62,10 +62,10 @@ class UnitTest:
     ) -> UnitTestMetric:
         """Creates and adds a new metric to the Unit Test. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             from nucleus.modelci.unit_test import ThresholdComparison
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.create_unit_test(
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
@@ -90,9 +90,9 @@ class UnitTest:
     def get_metrics(self) -> List[UnitTestMetric]:
         """Retrieves all metrics of the Unit Test. ::
 
-            import nucleus.modelci as nm
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.list_unit_tests()[0]
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.list_unit_tests()[0]
 
             unit_test.get_metrics()
 
@@ -104,9 +104,9 @@ class UnitTest:
     def get_eval_history(self) -> List[UnitTestEvaluation]:
         """Retrieves evaluation history for Unit Test. ::
 
-            import nucleus.modelci as nm
-            client = nm.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.list_unit_tests()[0]
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            unit_test = client.modelci.list_unit_tests()[0]
 
             unit_test.get_eval_history()
 
