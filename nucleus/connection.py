@@ -23,6 +23,16 @@ class Connection:
         self.api_key = api_key
         self.endpoint = endpoint
 
+    def __repr__(self):
+        return (
+            f"Connection(api_key='{self.api_key}', endpoint='{self.endpoint}')"
+        )
+
+    def __eq__(self, other):
+        return (
+            self.api_key == other.api_key and self.endpoint == other.endpoint
+        )
+
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:

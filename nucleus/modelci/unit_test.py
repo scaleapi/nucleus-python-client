@@ -54,6 +54,12 @@ class UnitTest:
         self.name = info.name
         self.slice_id = info.slice_id
 
+    def __repr__(self):
+        return f"UnitTest(unit_test_id='{self.id}', client={self._client}"
+
+    def __eq__(self, other):
+        return self.id == other.id and self._client == other._client
+
     def add_metric(
         self,
         eval_function_id: str,

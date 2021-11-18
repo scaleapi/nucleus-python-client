@@ -31,12 +31,21 @@ from .unit_test_evaluation import (
 )
 from .utils import format_unit_test_eval_response
 
+SUCCESS_KEY = "success"
+EVALUATIONS_KEY = "evaluations"
+
 
 class ModelCI:
     """Model CI Python Client extension."""
 
     def __init__(self, api_key: str, endpoint: str):
         self._connection = Connection(api_key, endpoint)
+
+    def __repr__(self):
+        return f"ModelCI(connection='{self._connection}')"
+
+    def __eq__(self, other):
+        return self._connection == other._connection
 
     def list_eval_functions(self):
         """List all available evaluation functions. ::
@@ -57,7 +66,6 @@ class ModelCI:
         """Creates a new Unit Test. ::
 
             import nucleus
-            from nucleus.modelci.unit_test import ThresholdComparison
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
             unit_test = client.modelci.create_unit_test(
@@ -216,7 +224,7 @@ class ModelCI:
             f"modelci/unit_test/{unit_test_id}",
             requests_command=requests.delete,
         )
-        return response["success"]
+        return response[SUCCESS_KEY]
 
     def evaluate_model_on_unit_tests(
         self, model_id: str, unit_test_names: List[str]
@@ -273,7 +281,7 @@ class ModelCI:
         )
         return [
             UnitTestEvaluation(**eval[ID_KEY])
-            for eval in response["evaluations"]
+            for eval in response[EVALUATIONS_KEY]
         ]
 
     def get_unit_test_eval_info(
