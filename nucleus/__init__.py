@@ -42,7 +42,6 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
-    EVAL_FUNCTION_NAME_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
@@ -62,11 +61,9 @@ from .constants import (
     REFERENCE_IDS_KEY,
     SLICE_ID_KEY,
     STATUS_CODE_KEY,
-    THRESHOLD_COMPARISON_KEY,
-    THRESHOLD_KEY,
-    UNIT_TEST_NAME_KEY,
     UPDATE_KEY,
 )
+from .connection import Connection, RetryStrategy
 from .dataset import Dataset
 from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .errors import (
@@ -96,7 +93,7 @@ from .prediction import (
 from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
-from .unit_test import ThresholdComparison
+from .modelci import ModelCI
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -110,11 +107,6 @@ logging.basicConfig()
 logging.getLogger(requests.packages.urllib3.__package__).setLevel(
     logging.ERROR
 )
-
-
-class RetryStrategy:
-    statuses = {503, 504}
-    sleep_times = [1, 3, 9]
 
 
 class NucleusClient:
@@ -139,6 +131,9 @@ class NucleusClient:
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
+        self._connection = Connection(self.api_key, self.endpoint)
+
+        self.modelci = ModelCI(self.api_key, self.endpoint)
 
     def __repr__(self):
         return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"
@@ -1243,55 +1238,6 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
-    def create_unit_test(self, name: str, slice_id: str):
-        """
-        Create a modelCI unit test.  Takes a test name and slice ID.
-
-        :param
-        name: unique name of test
-        :param
-        slice_id: id of slice of items to evaluate test on.
-        """
-        return self.make_request(
-            {
-                NAME_KEY: name,
-                SLICE_ID_KEY: slice_id,
-            },
-            "modelci/unit_test",
-            requests_command=requests.post,
-        )
-
-    def create_unit_test_metric(
-        self,
-        unit_test_name: str,
-        eval_function_name: str,
-        threshold: float,
-        threshold_comparison: ThresholdComparison,
-    ):
-        """
-        Create a modelCI unit test.  Takes a test name, evaluation threshold + comparator, dataset_id and list of reference_ids as input.
-
-        :param
-        unit_test_name: name of unit test
-        :param
-        eval_function_name: name of evaluation function
-        :param
-        threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
-        :param
-        threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies
-        that a test only passes if score > 0.5.
-        """
-        return self.make_request(
-            {
-                UNIT_TEST_NAME_KEY: unit_test_name,
-                EVAL_FUNCTION_NAME_KEY: eval_function_name,
-                THRESHOLD_KEY: threshold,
-                THRESHOLD_COMPARISON_KEY: threshold_comparison,
-            },
-            "modelci/unit_test_metric",
-            requests_command=requests.post,
-        )
-
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
@@ -1304,29 +1250,7 @@ class NucleusClient:
         :param requests_command: requests.post, requests.get, requests.delete
         :return: response JSON
         """
-        endpoint = f"{self.endpoint}/{route}"
-
-        logger.info("Posting to %s", endpoint)
-
-        for retry_wait_time in RetryStrategy.sleep_times:
-            response = requests_command(
-                endpoint,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                auth=(self.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            )
-            logger.info(
-                "API request has response code %s", response.status_code
-            )
-            if response.status_code not in RetryStrategy.statuses:
-                break
-            time.sleep(retry_wait_time)
-
-        if not response.ok:
-            self.handle_bad_response(endpoint, requests_command, response)
-
-        return response.json()
+        return self._connection.make_request(payload, route, requests_command)
 
     def handle_bad_response(
         self,
@@ -1335,6 +1259,6 @@ class NucleusClient:
         requests_response=None,
         aiohttp_response=None,
     ):
-        raise NucleusAPIError(
+        self._connection.handle_bad_response(
             endpoint, requests_command, requests_response, aiohttp_response
         )

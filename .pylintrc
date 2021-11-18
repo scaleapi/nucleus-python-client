@@ -9,6 +9,7 @@ disable=
     unused-argument,
     no-self-use,
     import-outside-toplevel,
+    cyclic-import,
     W0511,
     R0914,
     R0913,
