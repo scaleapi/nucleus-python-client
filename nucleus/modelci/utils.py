@@ -21,7 +21,7 @@ def format_unit_test_item_eval_response(
         evaluation_id=response["evaluation_id"],
         unit_test_id=response["unit_test_id"],
         eval_function_id=response["eval_function_id"],
-        dataset_item_id=response["model_id"],
+        dataset_item_id=response["dataset_item_id"],
         result=try_convert_float(response["result"]),
         passed=bool(response["pass"]),
     )

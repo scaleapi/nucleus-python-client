@@ -33,6 +33,7 @@ from .utils import format_unit_test_eval_response
 
 SUCCESS_KEY = "success"
 EVALUATIONS_KEY = "evaluations"
+EVAL_FUNCTIONS_KEY = "eval_functions"
 
 
 class ModelCI:
@@ -47,7 +48,7 @@ class ModelCI:
     def __eq__(self, other):
         return self._connection == other._connection
 
-    def list_eval_functions(self):
+    def list_eval_functions(self) -> List[EvalFunction]:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -60,7 +61,10 @@ class ModelCI:
             "modelci/eval_fn",
             requests_command=requests.get,
         )
-        return EvalFunction(**response["eval_functions"])
+        return [
+            EvalFunction(**eval_function)
+            for eval_function in response[EVAL_FUNCTIONS_KEY]
+        ]
 
     def create_unit_test(self, name: str, slice_id: str) -> UnitTest:
         """Creates a new Unit Test. ::
@@ -280,7 +284,7 @@ class ModelCI:
             requests_command=requests.get,
         )
         return [
-            UnitTestEvaluation(**eval[ID_KEY])
+            self.get_unit_test_eval_info(eval[ID_KEY])
             for eval in response[EVALUATIONS_KEY]
         ]
 
