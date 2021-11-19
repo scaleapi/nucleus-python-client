@@ -33,6 +33,7 @@ from .utils import format_unit_test_eval_response
 
 SUCCESS_KEY = "success"
 EVALUATIONS_KEY = "evaluations"
+EVAL_FUNCTIONS_KEY = "eval_functions"
 
 
 class ModelCI:
@@ -47,7 +48,7 @@ class ModelCI:
     def __eq__(self, other):
         return self._connection == other._connection
 
-    def list_eval_functions(self):
+    def list_eval_functions(self) -> List[EvalFunction]:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -60,7 +61,10 @@ class ModelCI:
             "modelci/eval_fn",
             requests_command=requests.get,
         )
-        return EvalFunction(**response["eval_functions"])
+        return [
+            EvalFunction(**eval_function)
+            for eval_function in response[EVAL_FUNCTIONS_KEY]
+        ]
 
     def create_unit_test(self, name: str, slice_id: str) -> UnitTest:
         """Creates a new Unit Test. ::
@@ -158,7 +162,6 @@ class ModelCI:
         """Lists all Unit Tests of the current user. ::
 
             import nucleus
-            from nucleus.modelci.unit_test import ThresholdComparison
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
@@ -181,7 +184,7 @@ class ModelCI:
     def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
         """Retrieves all metrics of the Unit Test. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
@@ -207,7 +210,6 @@ class ModelCI:
         """Creates a new Unit Test. ::
 
             import nucleus
-            from nucleus.modelci.unit_test import ThresholdComparison
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
@@ -231,7 +233,7 @@ class ModelCI:
     ) -> AsyncJob:
         """Evaluates the given model on the specified Unit Tests. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
             unit_test = client.modelci.create_unit_test(
@@ -280,7 +282,7 @@ class ModelCI:
             requests_command=requests.get,
         )
         return [
-            UnitTestEvaluation(**eval[ID_KEY])
+            self.get_unit_test_eval_info(eval[ID_KEY])
             for eval in response[EVALUATIONS_KEY]
         ]
 

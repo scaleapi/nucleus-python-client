@@ -59,6 +59,8 @@ Note that you can always add more predictions to a dataset, but then you will ne
     dataset.calculate_evaluation_metrics(model)
 """
 from typing import List, Optional, Dict, Union
+
+from nucleus.job import AsyncJob
 from .dataset import Dataset
 from .prediction import (
     BoxPrediction,
@@ -164,3 +166,25 @@ class Model:
         model_run.predict(predictions, asynchronous=asynchronous)
 
         return model_run
+
+    def evaluate(self, unit_test_names: List[str]) -> AsyncJob:
+        """Evaluates this on the specified Unit Tests. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+            unit_test = client.modelci.create_unit_test(
+                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+            model.evaluate(["sample_unit_test"])
+
+        Args:
+            unit_test_names: list of unit tests to evaluate
+
+        Returns:
+            AsyncJob object of evaluation job
+        """
+        return self._client.modelci.evaluate_model_on_unit_tests(
+            self.id, unit_test_names
+        )

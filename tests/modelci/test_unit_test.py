@@ -64,5 +64,4 @@ def test_list_unit_test(CLIENT, dataset):
 
     unit_tests = CLIENT.modelci.list_unit_tests()
     assert all(isinstance(unit_test, UnitTest) for unit_test in unit_tests)
-    assert len(unit_tests) == 1
-    assert unit_test.__dict__ == unit_tests[0].__dict__
+    assert unit_test in unit_tests
