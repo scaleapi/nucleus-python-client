@@ -177,10 +177,7 @@ class Model:
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.modelci.evaluate_model_on_unit_tests(
-                model_id=model.id,
-                unit_test_names=["sample_unit_test"],
-            )
+            model.evaluate(["sample_unit_test"])
 
         Args:
             model_id: ID of model to evaluate
