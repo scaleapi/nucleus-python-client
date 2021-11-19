@@ -34,7 +34,7 @@ class UnitTestMetric:
     unit_test_id: str
     eval_function_id: str
     threshold: float
-    threshold_comparison: str
+    threshold_comparison: ThresholdComparison
 
 
 class UnitTest:
