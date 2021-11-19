@@ -180,7 +180,6 @@ class Model:
             model.evaluate(["sample_unit_test"])
 
         Args:
-            model_id: ID of model to evaluate
             unit_test_names: list of unit tests to evaluate
 
         Returns:
