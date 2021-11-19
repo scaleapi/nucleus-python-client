@@ -170,7 +170,7 @@ class Model:
     def evaluate(self, unit_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
             unit_test = client.modelci.create_unit_test(

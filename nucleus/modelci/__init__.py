@@ -162,7 +162,6 @@ class ModelCI:
         """Lists all Unit Tests of the current user. ::
 
             import nucleus
-            from nucleus.modelci.unit_test import ThresholdComparison
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
@@ -185,7 +184,7 @@ class ModelCI:
     def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
         """Retrieves all metrics of the Unit Test. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
@@ -211,7 +210,6 @@ class ModelCI:
         """Creates a new Unit Test. ::
 
             import nucleus
-            from nucleus.modelci.unit_test import ThresholdComparison
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
@@ -235,7 +233,7 @@ class ModelCI:
     ) -> AsyncJob:
         """Evaluates the given model on the specified Unit Tests. ::
 
-            import nucleus.modelci as nm
+            import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
             unit_test = client.modelci.create_unit_test(
