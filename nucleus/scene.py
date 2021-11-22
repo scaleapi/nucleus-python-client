@@ -208,9 +208,7 @@ class Scene(ABC):
 
 @dataclass
 class LidarScene(Scene):
-    """.. _LidarScene:
-    LidarScene.
-    """
+    """LidarScene."""
 
     def __repr__(self) -> str:
         return f"LidarScene(reference_id='{self.reference_id}', frames={self.get_frames()}, metadata={self.metadata})"

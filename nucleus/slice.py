@@ -242,24 +242,15 @@ class Slice:
     def export_embeddings(
         self,
     ) -> List[Dict[str, Union[str, List[float]]]]:
-        """Provides a pd.DataFrame-like list of dataset embeddings.
-        ::
-
-            import nucleus
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            slice = client.get_slice("slc_bx86ea222a6g057x4380")
-
-            slice.export_embeddings()
+        """Fetches a pd.DataFrame-ready list of slice embeddings.
 
         Returns:
-            A list where each element is a columnar mapping
-            ::
+            A list where each element is a columnar mapping::
 
-                [
-                    {"embedding_vector": [-0.0022, 0.0457, ... ],
-                     "reference_id": "image_ref_300000"},
-                    ...
-                ]
+                List[{
+                    "reference_id": str,
+                    "embedding_vector": List[float]
+                }]
         """
         api_payload = self._client.make_request(
             payload=None,

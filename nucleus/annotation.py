@@ -1,35 +1,3 @@
-"""
-Adding ground truth to your dataset in Nucleus allows you to visualize annotations,
-query dataset items based on the annotations they contain, and evaluate ModelRuns by
-comparing predictions to ground truth.
-
-Nucleus supports 2D bounding box, polygon, cuboid, and segmentation annotations.
-Cuboid annotations can only be uploaded to a pointcloud DatasetItem.
-
-When uploading an annotation, you need to specify which item you are annotating via
-the reference_id you provided when uploading the image or pointcloud.
-
-Ground truth uploads can be made idempotent by specifying an optional annotation_id for
-each annotation. This id should be unique within the dataset_item so that
-(reference_id, annotation_id) is unique within the dataset.
-
-When uploading a mask annotation, Nucleus expects the mask file to be in PNG format
-with each pixel being a 0-255 uint8. Currently, Nucleus only supports uploading masks
-from URL.
-
-Nucleus automatically enforces the constraint that each DatasetItem can have at most one
-ground truth segmentation mask. As a consequence, if during upload a duplicate mask is
-detected for a given image, by default it will be ignored. You can change this behavior
-by specifying the optional 'update' flag. Setting update = true will replace the
-existing segmentation with the new mask specified in the request body.
-
-For ingesting large datasets, see the Guide for Large Ingestions.
-
-.. todo ::
-    add link here
-"""
-
-
 import json
 from dataclasses import dataclass
 from enum import Enum
@@ -67,17 +35,13 @@ from .constants import (
 
 
 class Annotation:
-    """Simply a base class, not to be used directly
-
-    Attributes:
-        reference_id: The reference ID of the dataset item you wish to associate this
-            annotation with
-    """
+    """Internal base class, not to be used directly."""
 
     reference_id: str
 
     @classmethod
     def from_json(cls, payload: dict):
+        """Construct annotation object from JSON-like dict."""
         if payload.get(TYPE_KEY, None) == BOX_TYPE:
             return BoxAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
@@ -92,12 +56,14 @@ class Annotation:
             return SegmentationAnnotation.from_json(payload)
 
     def to_payload(self):
+        """Serialize annotation object to JSON-like dict."""
         raise NotImplementedError(
-            "For serialization, use a specific subclass (i.e. SegmentationAnnotation), "
+            "For serialization, use a specific subclass (e.g. SegmentationAnnotation), "
             "not the base annotation class."
         )
 
     def to_json(self) -> str:
+        """Serialize annotation Python to JSON object (as a string)."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
 
@@ -105,14 +71,14 @@ class Annotation:
 class BoxAnnotation(Annotation):  # pylint: disable=R0902
     """A bounding box annotation.
 
-    Attributes:
+    Parameters:
         x: The distance, in pixels, between the left border of the bounding box and the
             left border of the image.
         y: The distance, in pixels, between the top border of the bounding box and the
             top border of the image.
         width: The width in pixels of the annotation.
         height: The height in pixels of the annotation.
-        reference_id: The reference ID of the image you wish to apply this annotation to.
+        reference_id: The reference ID of the image to which to apply this annotation.
         annotation_id: The annotation ID that uniquely identifies this annotation within
             its target dataset item. Upon ingest, a matching annotation id will be
             ignored by default, and updated if update=True for dataset.annotate.
@@ -128,14 +94,14 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
                 Insert link to metadata guide
     """
 
-    label: str
-    x: Union[float, int]
-    y: Union[float, int]
-    width: Union[float, int]
-    height: Union[float, int]
-    reference_id: str
-    annotation_id: Optional[str] = None
-    metadata: Optional[Dict] = None
+    label: str  #: comment
+    x: Union[float, int]  #: comment
+    y: Union[float, int]  #: comment
+    width: Union[float, int]  #: comment
+    height: Union[float, int]  #: comment
+    reference_id: str  #: comment
+    annotation_id: Optional[str] = None  #: comment
+    metadata: Optional[Dict] = None  #: comment
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -174,11 +140,11 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
 
 @dataclass
 class Point:
-    """A 2D point.
+    """A point in 2D space.
 
-    Attributes:
-        x: X coordinate.
-        y: Y coordinate.
+    Parameters:
+        x: The x coordinate of the point.
+        y: The y coordinate of the point.
     """
 
     x: float
@@ -196,7 +162,7 @@ class Point:
 class PolygonAnnotation(Annotation):
     """A polygon annotation consisting of an ordered list of 2D points.
 
-    Attributes:
+    Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle).
         vertices: The list of points making up the polygon.
         annotation_id: The annotation ID that uniquely identifies this annotation within
@@ -206,7 +172,7 @@ class PolygonAnnotation(Annotation):
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our metadata guide.
 
-            .. todo ::
+            .. todo::
                 Insert link to metadata guide
     """
 
@@ -263,7 +229,7 @@ class PolygonAnnotation(Annotation):
 class Point3D:
     """A point in 3D space.
 
-    Attributes:
+    Parameters:
         x: The x coordinate of the point.
         y: The y coordinate of the point.
         z: The z coordinate of the point.
@@ -285,20 +251,22 @@ class Point3D:
 class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     """A 3D Cuboid annotation.
 
-    Attributes:
+    Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle)
         position: The point at the center of the cuboid
         dimensions: The length (x), width (y), and height (z) of the cuboid
         yaw: The rotation, in radians, about the Z axis of the cuboid
-        annotation_id: The annotation ID that uniquely identifies this annotation within
-            its target dataset item. Upon ingest, a matching annotation id will be
-            ignored by default, and updated if update=True for dataset.annotate.
-        metadata: Arbitrary key/value dictionary of info to attach to this annotation.
-            Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see our metadata guide.
+        annotation_id: The annotation ID that uniquely identifies this
+          annotation within its target dataset item. Upon ingest, a matching
+          annotation id will be ignored by default, and updated if update=True
+          for dataset.annotate.
+        metadata: Arbitrary key/value dictionary of info to attach to this
+          annotation.  Strings, floats and ints are supported best by querying
+          and insights features within Nucleus. For more details see our metadata
+          guide.
 
-            .. todo ::
-                Insert link to metadata guide
+          .. todo ::
+              Insert link to metadata guide
     """
 
     label: str
@@ -352,19 +320,20 @@ class Segment:
     class index and the string label.
 
     For instance segmentation, you can use this class to store the label of a single
-    instance, whose extent in the image is represented by the value of 'index'.
+    instance, whose extent in the image is represented by the value of ``index``.
 
-    In either case, additional metadata can be attached to the segment.
+    In both cases, additional metadata can be attached to the segment.
 
-    Attributes:
-        label: The label name of the class for the class or instance represented by index in the associated mask.
+    Parameters:
+        label: The label name of the class for the class or instance
+          represented by index in the associated mask.
         index: The integer pixel value in the mask this mapping refers to.
         metadata: Arbitrary key/value dictionary of info to attach to this segment.
-            Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see our metadata guide.
+          Strings, floats and ints are supported best by querying and insights
+          features within Nucleus. For more details see our metadata guide.
 
-            .. todo ::
-                Insert link to metadata guide
+          .. todo ::
+              Insert link to metadata guide
     """
 
     label: str
@@ -393,30 +362,34 @@ class Segment:
 class SegmentationAnnotation(Annotation):
     """A segmentation mask on 2D image.
 
-    Attributes:
+    Parameters:
         mask_url: A URL pointing to the segmentation prediction mask which is
-            accessible to Scale. The mask is an HxW int8 array saved in PNG format,
-            with each pixel value ranging from [0, N), where N is the number of possible
-            classes (for semantic segmentation) or instances (for instance
-            segmentation). The height and width of the mask must be the same as the
-            original image. One example for semantic segmentation: the mask is 0 for
-            pixels where there is background, 1 where there is a car, and 2 where there
-            is a pedestrian. Another example for instance segmentation: the mask is 0
-            for one car, 1 for another car, 2 for a motorcycle and 3 for another
-            motorcycle. The class name for each value in the mask is stored in the list
-            of Segment objects passed for "annotations"
-        annotations: The list of mappings between the integer values contained in
-            mask_url and string class labels. In the semantic segmentation example above
-            these would map that 0 to background, 1 to car and 2 to pedestrian. In the
-            instance segmentation example above, 0 and 1 would both be mapped to car,
-            2 and 3 would both be mapped to motorcycle
-        annotation_id: For segmentation annotations, this value is ignored because
-          there can only be one segmentation annotation per dataset item. Therefore
-          regardless of annotation ID, if there is an existing segmentation on a
-          dataset item, it will be ignored unless update=True is passed to
-          dataset.annotate, in which case it will be updated. Storing a custom ID here
-          may be useful in order to tie this annotation to an external database, and
-          its value will be returned for any export.
+          accessible to Scale. The mask is an HxW int8 array saved in PNG format,
+          with each pixel value ranging from [0, N), where N is the number of
+          possible classes (for semantic segmentation) or instances (for instance
+          segmentation).
+
+          The height and width of the mask must be the same as the
+          original image. One example for semantic segmentation: the mask is 0
+          for pixels where there is background, 1 where there is a car, and 2
+          where there is a pedestrian.
+
+          Another example for instance segmentation: the mask is 0 for one car,
+          1 for another car, 2 for a motorcycle and 3 for another motorcycle.
+          The class name for each value in the mask is stored in the list of
+          Segment objects passed for "annotations"
+        annotations: The list of mappings between the integer values contained
+          in mask_url and string class labels. In the semantic segmentation
+          example above these would map that 0 to background, 1 to car and 2 to
+          pedestrian. In the instance segmentation example above, 0 and 1 would
+          both be mapped to car, 2 and 3 would both be mapped to motorcycle
+        annotation_id: For segmentation annotations, this value is ignored
+          because there can only be one segmentation annotation per dataset item.
+          Therefore regardless of annotation ID, if there is an existing
+          segmentation on a dataset item, it will be ignored unless update=True
+          is passed to dataset.annotate, in which case it will be updated.
+          Storing a custom ID here may be useful in order to tie this annotation
+          to an external database, and its value will be returned for any export.
     """
 
     mask_url: str
@@ -550,5 +523,6 @@ def check_all_mask_paths_remote(
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
-                    f"Found an annotation with a local path, which is not currently supported. Use a remote path instead. {annotation}"
+                    f"Found an annotation with a local path, which is not currently"
+                    "supported. Use a remote path instead. {annotation}"
                 )
