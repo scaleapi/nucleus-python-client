@@ -9,8 +9,8 @@ __all__ = [
     "BoxAnnotation",
     "BoxPrediction",
     "CameraParams",
-    # "CategoryAnnotation", # coming soon!
-    # "CategoryPrediction", # coming soon!
+    "CategoryAnnotation",
+    "CategoryPrediction",
     "CuboidAnnotation",
     "CuboidPrediction",
     "Dataset",
