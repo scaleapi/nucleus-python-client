@@ -288,8 +288,12 @@ class NucleusClient:
         )
 
     def create_dataset_from_project(
-        self, project_id: str, last_n_tasks: int = None, name: str = None
-    ) -> Dataset:
+        self,
+        project_id: str,
+        name: str = None,
+        last_n_tasks: int = None,
+        exclude_pending: bool = None,
+    ) -> Tuple[Dataset, AsyncJob]:
         """
         Creates a new dataset based on payload params:
         name -- A human-readable name of the dataset.
@@ -302,8 +306,16 @@ class NucleusClient:
             payload["last_n_tasks"] = str(last_n_tasks)
         if name:
             payload["name"] = name
+        if exclude_pending:
+            payload["exclude_pending"] = exclude_pending
         response = self.make_request(payload, "dataset/create_from_project")
-        return Dataset(response[DATASET_ID_KEY], self)
+        return Dataset(response[DATASET_ID_KEY], self), AsyncJob(
+            job_id=response[JOB_ID_KEY],
+            job_last_known_status=response[JOB_LAST_KNOWN_STATUS_KEY],
+            job_type=response[JOB_TYPE_KEY],
+            job_creation_time=response[JOB_CREATION_TIME_KEY],
+            client=self,
+        )
 
     def create_dataset(
         self,
