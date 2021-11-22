@@ -465,7 +465,19 @@ class AnnotationTypes(Enum):
 
 @dataclass
 class CategoryAnnotation(Annotation):
-    """This class is not yet supported: Categorization support coming soon!"""
+    """A category annotation.
+
+    Parameters:
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
+        taxonomy_name (str): The name of the taxonomy this annotation conforms to.
+        reference_id (str): The reference ID of the image you wish to apply this annotation to.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
+            Strings, floats and ints are supported best by querying and insights
+            features within Nucleus. For more details see our metadata guide.
+
+            .. todo::
+                Insert link to metadata guide
+    """
 
     label: str
     taxonomy_name: str
@@ -497,7 +509,7 @@ class CategoryAnnotation(Annotation):
 
 @dataclass
 class MultiCategoryAnnotation(Annotation):
-    """This class is not yet supported: Categorization support coming soon!"""
+    """This class is not yet supported: MultiCategory annotation support coming soon!"""
 
     labels: List[str]
     taxonomy_name: str

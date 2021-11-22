@@ -481,12 +481,25 @@ class Dataset:
         taxonomy_type: str,
         labels: List[str],
     ):
-        """
-        Creates a new taxonomy.
-        Returns a response with dataset_id, taxonomy_name and type for the new taxonomy.
-        :param taxonomy_name: name of the taxonomy
-        :param type: type of the taxonomy
-        :param labels: list of possible labels for the taxonomy
+        """Creates a new taxonomy.
+        ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("ds_bw6de8s84pe0vbn6p5zg")
+
+            dataset.add_taxonomy(taxonomy_name="clothing_type", type="category", labels=["shirt", "trousers", "dress"])
+
+        Args:
+            taxonomy_name:
+                The name of the taxonomy. Taxonomy names must be unique within a dataset.
+            taxonomy_type:
+                The type of this taxonomy as a string literal. Currently, the only supported taxonomy type is "category".
+            labels:
+                The list of possible labels for the taxonomy.
+
+        Returns:
+            Returns a response with dataset_id, taxonomy_name and type for the new taxonomy.
         """
         return self._client.make_request(
             construct_taxonomy_payload(taxonomy_name, taxonomy_type, labels),

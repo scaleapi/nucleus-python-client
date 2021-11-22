@@ -249,7 +249,24 @@ class CuboidPrediction(CuboidAnnotation):
 
 
 class CategoryPrediction(CategoryAnnotation):
-    """This class is not yet supported: Categorization support coming soon!"""
+    """A prediction of a category.
+
+    Parameters:
+        label: The label for this annotation (e.g. car, pedestrian, bicycle).
+        taxonomy_name: The name of the taxonomy this annotation conforms to.
+        reference_id: The reference ID of the image you wish to apply this annotation to.
+        confidence: 0-1 indicating the confidence of the prediction.
+        class_pdf: An optional complete class probability distribution on this
+            prediction. Each value should be between 0 and 1 (inclusive), and sum up to
+            1 as a complete distribution. This can be useful for computing entropy to
+            surface places where the model is most uncertain.
+        metadata: Arbitrary key/value dictionary of info to attach to this annotation.
+            Strings, floats and ints are supported best by querying and insights
+            features within Nucleus. For more details see our metadata guide.
+
+            .. todo::
+                Insert link to metadata guide
+    """
 
     def __init__(
         self,
