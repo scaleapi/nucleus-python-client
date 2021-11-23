@@ -462,8 +462,7 @@ class NucleusClient:
 
         return agg_response
 
-    # TODO(gunnar): Remove completely?
-    @deprecated(msg="Use dataset.ingest_tasks instead")
+    @deprecated(msg="Use Dataset.ingest_tasks instead")
     def ingest_tasks(self, dataset_id: str, payload: dict):
         """
         If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
