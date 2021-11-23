@@ -172,7 +172,7 @@ class NucleusClient:
 
     @property
     def datasets(self) -> List[Dataset]:
-        """ List all Datasets
+        """List all Datasets
 
         Returns:
             List of all datasets accessible to user
@@ -202,7 +202,7 @@ class NucleusClient:
     def jobs(
         self,
     ) -> List[AsyncJob]:
-        """ Lists all jobs, see NucleusClinet.list_jobs(...) for advanced options
+        """Lists all jobs, see NucleusClinet.list_jobs(...) for advanced options
 
         Returns:
             List of all AsyncJobs

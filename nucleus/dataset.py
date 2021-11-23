@@ -31,7 +31,8 @@ from .constants import (
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
-    UPDATE_KEY, KEEP_HISTORY_KEY,
+    UPDATE_KEY,
+    KEEP_HISTORY_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
