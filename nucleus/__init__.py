@@ -853,7 +853,7 @@ class NucleusClient:
     @deprecated("Use Dataset.delete_annotations instead.")
     def delete_annotations(
         self, dataset_id: str, reference_ids: list = None, keep_history=False
-    ) -> dict:
+    ) -> AsyncJob:
         """
         This endpoint deletes annotations.
 

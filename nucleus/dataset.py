@@ -292,10 +292,10 @@ class Dataset:
     def append(
         self,
         items: Union[Sequence[DatasetItem], Sequence[LidarScene]],
-        update: Optional[bool] = False,
-        batch_size: Optional[int] = 20,
-        asynchronous=False,
-    ) -> UploadResponse:
+        update: bool = False,
+        batch_size: int = 20,
+        asynchronous: bool = False,
+    ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """
         Appends images with metadata (dataset items) or scenes to the dataset. Overwrites images on collision if forced.
 
@@ -303,14 +303,16 @@ class Dataset:
         :param items: items to upload
         :param update: if True overwrites images and metadata on collision
         :param batch_size: batch parameter for long uploads
-        :param aynchronous: if True, return a job object representing asynchronous ingestion job.
+        :param asynchronous: if True, return a job object representing asynchronous ingestion job.
         :return:
+        If appending scenes:
         {
             'dataset_id': str,
             'new_items': int,
             'updated_items': int,
             'ignored_items': int,
         }
+        else UploadResponse
         """
         assert (
             batch_size is None or batch_size < 30
