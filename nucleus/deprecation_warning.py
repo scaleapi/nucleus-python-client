@@ -1,11 +1,10 @@
+import warnings
 from functools import wraps
 from typing import Callable
 
-from nucleus import logger
-
 
 def deprecated(msg: str):
-    """Logs a deprecation warning to logger.warn.
+    """Adds a deprecation warning via the `warnings` lib which can be caught by linters.
 
     Args:
         msg: State reason of deprecation and point towards preferred practices
@@ -23,7 +22,9 @@ def deprecated(msg: str):
                 if hasattr(func, "__qualname__")
                 else func.__name__
             )
-            logger.warn(f"Calling {name} is deprecated: {msg}")
+            full_message = f"Calling {name} is deprecated: {msg}"
+            # NOTE: stacklevel=2 makes sure that the level is applied to the decorated function
+            warnings.warn(full_message, DeprecationWarning, stacklevel=2)
             return func(*args, **kwargs)
 
         return wrapper

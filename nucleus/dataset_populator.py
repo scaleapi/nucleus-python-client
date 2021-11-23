@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 import time
-from typing import List, Any
+from typing import List, Any, TYPE_CHECKING
 
 import aiohttp
 import nest_asyncio
@@ -22,9 +22,12 @@ from .upload_response import UploadResponse
 from .errors import NotFoundError
 from .logger import logger
 
+if TYPE_CHECKING:
+    from . import NucleusClient
+
 
 class DatasetItemUploader:
-    def __init__(self, dataset_id: str, client: "NucleusClient"):
+    def __init__(self, dataset_id: str, client: "NucleusClient"):  # noqa: F821
         self.dataset_id = dataset_id
         self._client = client
 

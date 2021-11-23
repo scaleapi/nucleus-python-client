@@ -483,7 +483,7 @@ class Dataset:
 
     @sanitize_string_args
     def delete_item(self, reference_id: str):
-        return self.make_request(
+        return self._client.make_request(
             {},
             f"dataset/{self.id}/refloc/{reference_id}",
             requests.delete,

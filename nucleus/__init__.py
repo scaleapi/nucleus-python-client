@@ -48,10 +48,6 @@ import tqdm
 import tqdm.notebook as tqdm_notebook
 
 from nucleus.url_utils import sanitize_string_args
-from .deprecation_warning import deprecated
-from .logger import logger
-from .retry_strategy import RetryStrategy
-
 from .annotation import (
     BoxAnnotation,
     CuboidAnnotation,
@@ -99,6 +95,7 @@ from .constants import (
 from .data_transfer_object.dataset_details import DatasetDetails
 from .dataset import Dataset
 from .dataset_item import CameraParams, DatasetItem, Quaternion
+from .deprecation_warning import deprecated
 from .errors import (
     DatasetItemRetrievalError,
     ModelCreationError,
@@ -128,7 +125,6 @@ from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
-from .logger import logger
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -370,7 +366,9 @@ class NucleusClient:
         update: bool = False,
     ):
         dataset = self.get_dataset(dataset_id)
-        return dataset._upload_items(dataset_items, batch_size, update)
+        return dataset.append(
+            dataset_items, batch_size=batch_size, update=update
+        )
 
     def annotate_dataset(
         self,
