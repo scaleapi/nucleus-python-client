@@ -18,7 +18,7 @@ from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
-from .dataset_populator import DatasetPopulator
+from .dataset_populator import DatasetItemUploader
 from .upload_response import UploadResponse
 from .errors import DatasetItemRetrievalError
 
@@ -89,30 +89,6 @@ class Dataset:
                 return True
         return False
 
-    def get_dataset_items(self) -> List[DatasetItem]:
-        """Gets all Dataset Items associated with this dataset
-
-        Returns:
-            List of DatasetItem
-        """
-        response = self._client.make_request(
-            {}, f"dataset/{self.id}/datasetItems", requests.get
-        )
-        dataset_items = response.get("dataset_items", None)
-        error = response.get("error", None)
-        constructed_dataset_items = []
-        if dataset_items:
-            for item in dataset_items:
-                image_url = item.get("original_image_url")
-                metadata = item.get("metadata", None)
-                ref_id = item.get("ref_id", None)
-                dataset_item = DatasetItem(image_url, ref_id, metadata)
-                constructed_dataset_items.append(dataset_item)
-        elif error:
-            raise DatasetItemRetrievalError(message=error)
-
-        return constructed_dataset_items
-
     @property
     def name(self) -> str:
         """User-defined name of the Dataset."""
@@ -151,7 +127,22 @@ class Dataset:
     @property
     def items(self) -> List[DatasetItem]:
         """List of all DatasetItem objects in the Dataset."""
-        return self.get_dataset_items()
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/datasetItems", requests.get
+        )
+        dataset_items = response.get("dataset_items", None)
+        error = response.get("error", None)
+        constructed_dataset_items = []
+        if dataset_items:
+            for item in dataset_items:
+                image_url = item.get("original_image_url")
+                metadata = item.get("metadata", None)
+                ref_id = item.get("ref_id", None)
+                dataset_item = DatasetItem(image_url, ref_id, metadata)
+                constructed_dataset_items.append(dataset_item)
+        elif error:
+            raise DatasetItemRetrievalError(message=error)
+        return constructed_dataset_items
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
@@ -358,7 +349,7 @@ class Dataset:
             )
             return AsyncJob.from_json(response, self._client)
 
-        return self.populate(
+        return self._upload_items(
             dataset_items,
             update=update,
             batch_size=batch_size,
@@ -746,7 +737,7 @@ class Dataset:
             )
         )
 
-    def populate(
+    def _upload_items(
         self,
         dataset_items: List[DatasetItem],
         batch_size: int = 20,
@@ -755,11 +746,13 @@ class Dataset:
         """
         Appends images to a dataset with given dataset_id.
         Overwrites images on collision if updated.
-        :param payload: { "items": List[DatasetItem], "update": bool }
-        :param local: flag if images are stored locally
-        :param batch_size: size of the batch for long payload
-        :return:
-        UploadResponse
+
+        Args:
+            dataset_items: Items to Upload
+            batch_size: size of the batch for long payload
+            update: Update records on conflict otherwise overwrite
+        Returns:
+            UploadResponse
         """
-        populator = DatasetPopulator(self.id, self._client)
-        return populator.populate(dataset_items, batch_size, update)
+        populator = DatasetItemUploader(self.id, self._client)
+        return populator.upload(dataset_items, batch_size, update)

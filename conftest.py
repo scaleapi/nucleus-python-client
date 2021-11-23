@@ -1,12 +1,8 @@
-import logging
 import os
 
-import requests
 import pytest
 
 import nucleus
-from nucleus.constants import SUCCESS_STATUS_CODES
-
 from tests.helpers import TEST_DATASET_NAME, TEST_DATASET_ITEMS
 
 assert "NUCLEUS_PYTEST_API_KEY" in os.environ, (
@@ -19,7 +15,7 @@ API_KEY = os.environ["NUCLEUS_PYTEST_API_KEY"]
 
 @pytest.fixture(scope="session")
 def CLIENT():
-    client = nucleus.NucleusClient(API_KEY, endpoint=os.environ.get("NUCLEUS_OVERRIDE_ENDPOINT", None))
+    client = nucleus.NucleusClient(API_KEY)
     return client
 
 

@@ -39,8 +39,7 @@ __all__ = [
 
 import os
 import time
-from functools import wraps
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Dict, List, Optional, Union
 
 import pkg_resources
 import pydantic
@@ -49,6 +48,7 @@ import tqdm
 import tqdm.notebook as tqdm_notebook
 
 from nucleus.url_utils import sanitize_string_args
+from .deprecation_warning import deprecated
 from .logger import logger
 from .retry_strategy import RetryStrategy
 
@@ -138,33 +138,6 @@ from .logger import logger
 __version__ = pkg_resources.get_distribution("scale-nucleus").version
 
 
-def deprecated(msg: str):
-    """Logs a deprecation warning to logger.warn.
-
-    Args:
-        msg: State reason of deprecation and point towards preferred practices
-
-    Returns:
-        Deprecation wrapped function
-    """
-
-    def decorator(func: Callable):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # NOTE: __qualname looks a lot better for method calls
-            name = (
-                func.__qualname__
-                if hasattr(func, "__qualname__")
-                else func.__name__
-            )
-            logger.warn(f"Calling {name} is deprecated: {msg}")
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
 class NucleusClient:
     """
     Nucleus client.
@@ -199,6 +172,11 @@ class NucleusClient:
 
     @property
     def datasets(self) -> List[Dataset]:
+        """ List all Datasets
+
+        Returns:
+            List of all datasets accessible to user
+        """
         response = self.make_request({}, "dataset/details", requests.get)
         dataset_details = pydantic.parse_obj_as(List[DatasetDetails], response)
         return [
@@ -224,6 +202,11 @@ class NucleusClient:
     def jobs(
         self,
     ) -> List[AsyncJob]:
+        """ Lists all jobs, see NucleusClinet.list_jobs(...) for advanced options
+
+        Returns:
+            List of all AsyncJobs
+        """
         return self.list_jobs()
 
     @deprecated(msg="Use the NucleusClient.models property in the future.")
@@ -234,7 +217,6 @@ class NucleusClient:
         """
         return self.models
 
-
     @deprecated(msg="Use the NucleusClient.datasets property in the future.")
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
         """
@@ -243,8 +225,6 @@ class NucleusClient:
         """
         return self.make_request({}, "dataset/", requests.get)
 
-    # TODO: Do we need these 'show_completed' and date_limit flags? Is self.jobs not enough?
-    @deprecated(msg="Use the NucleusClient.jobs property in the future.")
     def list_jobs(
         self, show_completed=None, date_limit=None
     ) -> List[AsyncJob]:
@@ -266,14 +246,14 @@ class NucleusClient:
             for job in job_objects
         ]
 
-    @deprecated(msg="Prefer using Dataset.get_dataset_items.")
+    @deprecated(msg="Prefer using Dataset.items")
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
         """
         Gets all the dataset items inside your repo as a json blob.
         :return [ DatasetItem ]
         """
         dataset = self.get_dataset(dataset_id)
-        return dataset.get_dataset_items()
+        return dataset.items
 
     def get_dataset(self, dataset_id: str) -> Dataset:
         """
@@ -381,7 +361,7 @@ class NucleusClient:
         dataset = self.get_dataset(dataset_id)
         return dataset.delete_item(reference_id)
 
-    @deprecated("Use Dataset.populate instead.")
+    @deprecated("Use Dataset.append instead.")
     def populate_dataset(
         self,
         dataset_id: str,
@@ -390,7 +370,7 @@ class NucleusClient:
         update: bool = False,
     ):
         dataset = self.get_dataset(dataset_id)
-        return dataset.populate(dataset_items, batch_size, update)
+        return dataset._upload_items(dataset_items, batch_size, update)
 
     def annotate_dataset(
         self,
@@ -888,7 +868,6 @@ class NucleusClient:
         """
         dataset = self.get_dataset(dataset_id)
         return dataset.delete_annotations(reference_ids, keep_history)
-
 
     def append_to_slice(
         self,

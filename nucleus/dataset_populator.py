@@ -23,17 +23,27 @@ from .errors import NotFoundError
 from .logger import logger
 
 
-class DatasetPopulator:
+class DatasetItemUploader:
     def __init__(self, dataset_id: str, client: "NucleusClient"):
         self.dataset_id = dataset_id
         self._client = client
 
-    def populate(
+    def upload(
         self,
         dataset_items: List[DatasetItem],
         batch_size: int = 20,
         update: bool = False,
     ) -> UploadResponse:
+        """
+
+        Args:
+            dataset_items: Items to Upload
+            batch_size: How many items to pool together for a single request
+            update: Update records instead of overwriting
+
+        Returns:
+
+        """
         local_items = []
         remote_items = []
 
