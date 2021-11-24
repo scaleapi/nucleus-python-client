@@ -77,7 +77,7 @@ autoapi_type = "python"
 autoapi_dirs = ["../nucleus"]
 autoapi_options = [
     "members",
-    "undoc-members",  # TODO: no-undoc-members once all docstrings are populated
+    "no-undoc-members",
     "inherited-members",
     "show-module-summary",
     "imported-members",

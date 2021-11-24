@@ -42,6 +42,7 @@ from .constants import (
 
 
 def from_json(payload: dict):
+    """Instantiates prediction object from schematized JSON-like dict payload."""
     if payload.get(TYPE_KEY, None) == BOX_TYPE:
         return BoxPrediction.from_json(payload)
     elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:

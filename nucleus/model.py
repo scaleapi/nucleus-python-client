@@ -15,7 +15,6 @@ from .constants import (
 )
 
 
-@dataclass
 class Model:
     """A model that can be used to upload predictions to a dataset.
 
@@ -90,11 +89,12 @@ class Model:
     endpoint, using :meth:`NucleusClient.add_model`.
     """
 
-    model_id: str
-    name: str
-    reference_id: str
-    metadata: Optional[Dict]
-    client: "NucleusClient"
+    def __init__(self, model_id, name, reference_id, metadata, client):
+        self.id = model_id
+        self.name = name
+        self.reference_id = reference_id
+        self.metadata = metadata
+        self._client = client
 
     def __repr__(self):
         return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, client={self._client})"
@@ -112,6 +112,7 @@ class Model:
 
     @classmethod
     def from_json(cls, payload: dict, client):
+        """Instantiates model object from schematized JSON-like dict payload."""
         return cls(
             model_id=payload["id"],
             name=payload["name"],

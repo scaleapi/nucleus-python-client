@@ -45,7 +45,7 @@ class Annotation:
 
     @classmethod
     def from_json(cls, payload: dict):
-        """Construct annotation object from JSON-like dict."""
+        """Instantiates annotation object from schematized JSON-like dict payload."""
         if payload.get(TYPE_KEY, None) == BOX_TYPE:
             return BoxAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
@@ -59,15 +59,15 @@ class Annotation:
         else:
             return SegmentationAnnotation.from_json(payload)
 
-    def to_payload(self):
-        """Serialize annotation object to JSON-like dict."""
+    def to_payload(self) -> dict:
+        """Serializes annotation object to schematized JSON-like dict."""
         raise NotImplementedError(
             "For serialization, use a specific subclass (e.g. SegmentationAnnotation), "
             "not the base annotation class."
         )
 
     def to_json(self) -> str:
-        """Serialize annotation Python to JSON object (as a string)."""
+        """Serializes annotation object to schematized JSON-like string."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
 
@@ -537,6 +537,6 @@ def check_all_mask_paths_remote(
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
-                    f"Found an annotation with a local path, which is not currently"
-                    "supported. Use a remote path instead. {annotation}"
+                    "Found an annotation with a local path, which is not currently"
+                    f"supported. Use a remote path instead. {annotation}"
                 )

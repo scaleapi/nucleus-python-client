@@ -92,6 +92,7 @@ class AsyncJob:
 
     @classmethod
     def from_json(cls, payload: dict, client):
+        # TODO: make private
         return cls(
             job_id=payload[JOB_ID_KEY],
             job_last_known_status=payload[JOB_LAST_KNOWN_STATUS_KEY],

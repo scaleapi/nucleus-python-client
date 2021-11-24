@@ -94,14 +94,7 @@ class Frame:
 
     @classmethod
     def from_json(cls, payload: dict):
-        """Instantiates Frame from dict payload.
-
-        Parameters:
-            payload: Schematized JSON-like dict.
-
-        Returns:
-            :class:`Frame`: Newly instantiated Frame object.
-        """
+        """Instantiates frame object from schematized JSON-like dict payload."""
         items = {
             sensor: DatasetItem.from_json(item)
             for sensor, item in payload.items()
@@ -109,11 +102,7 @@ class Frame:
         return cls(**items)
 
     def to_payload(self) -> dict:
-        """Exports dict payload corresponding to the frame.
-
-        Returns:
-            Schematized JSON-like dict.
-        """
+        """Serializes frame object to schematized JSON-like dict."""
         return {
             sensor: dataset_item.to_payload(is_scene=True)
             for sensor, dataset_item in self.items.items()
@@ -305,15 +294,8 @@ class Scene(ABC):
         ), "frames must be 0-indexed and continuous (no missing frames)"
 
     @classmethod
-    def from_json(cls, payload: dict) -> Scene:
-        """Instantiates Scene from dict payload.
-
-        Parameters:
-            payload: Schematized JSON-like dict.
-
-        Returns:
-            :class:`Scene <LidarScene>`: Newly instantiated Scene object.
-        """
+    def from_json(cls, payload: dict):
+        """Instantiates scene object from schematized JSON-like dict payload."""
         frames_payload = payload.get(FRAMES_KEY, [])
         frames = [Frame.from_json(frame) for frame in frames_payload]
         return cls(
@@ -323,11 +305,7 @@ class Scene(ABC):
         )
 
     def to_payload(self) -> dict:
-        """Exports dict payload corresponding to the scene.
-
-        Returns:
-            Schematized JSON-like dict.
-        """
+        """Serializes scene object to schematized JSON-like dict."""
         self.validate_frames_dict()
         ordered_frames = self.get_frames()
         frames_payload = [frame.to_payload() for frame in ordered_frames]
@@ -340,11 +318,7 @@ class Scene(ABC):
         return payload
 
     def to_json(self) -> str:
-        """Exports string payload corresponding to the scene.
-
-        Returns:
-            Schematized JSON-like string.
-        """
+        """Serializes scene object to schematized JSON-like string."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
 
