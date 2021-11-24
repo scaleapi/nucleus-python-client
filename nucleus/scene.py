@@ -258,11 +258,11 @@ class Scene(ABC):
         return items_from_sensor
 
     def get_items(self) -> List[DatasetItem]:
-        """Fetches all items in the frame.
+        """Fetches all items in the scene.
 
         Returns:
             List[:class:`DatasetItem`]: Unordered list of all DatasetItem
-            objects in the frame.
+            objects in the scene.
         """
         return flatten([frame.get_items() for frame in self.get_frames()])
 
