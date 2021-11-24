@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import List, Optional, Dict, Union
 from .dataset import Dataset
 from .prediction import (
@@ -136,17 +135,16 @@ class Model:
         metadata: Optional[Dict] = None,
         asynchronous: bool = False,
     ) -> ModelRun:
-        """"""  # TODO: remove once model run is deprecated
-        """This method, as well as model runs in general are now deprecated.
+        # This method, as well as model runs in general are now deprecated.
 
-        Instead models will automatically generate a model run when applied to a dataset
-        using dataset.upload_predictions(model, predictions). Therefore there is no
-        longer any need to create a model run, since you can upload predictions
-        without needing to explicitly create a model run.
+        # Instead models will automatically generate a model run when applied to
+        # a dataset using dataset.upload_predictions(model, predictions). Therefore
+        # there is no longer any need to create a model run, since you can upload
+        # predictions without needing to explicitly create a model run.
 
-        When uploading to a dataset twice using the same model, the same model run
-        will be reused by Nucleus.
-        """
+        # When uploading to a dataset twice using the same model, the same model
+        # run will be reused by Nucleus.
+
         payload: dict = {
             NAME_KEY: name,
             REFERENCE_ID_KEY: self.reference_id,

@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-from dataclasses import dataclass
 import requests
 
 from nucleus.job import AsyncJob
@@ -46,6 +45,10 @@ from .payload_constructor import (
 )
 from .scene import LidarScene, Scene, check_all_scene_paths_remote
 
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
+
+
 WARN_FOR_LARGE_UPLOAD = 50000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
@@ -61,8 +64,8 @@ class Dataset:
     endpoint, using :meth:`NucleusClient.create_dataset` or similar.
     """
 
-    def __init__(self, id, client):
-        self.id = id
+    def __init__(self, dataset_id, client):
+        self.id = dataset_id
         self._client = client
 
     def __repr__(self):
