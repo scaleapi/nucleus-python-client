@@ -1,8 +1,4 @@
-"""
-Nucleus Python Library.
-
-For full documentation see: https://dashboard.scale.com/nucleus/docs/api?language=python
-"""
+"""Nucleus Python SDK. """
 
 __all__ = [
     "AsyncJob",
