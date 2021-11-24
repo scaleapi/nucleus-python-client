@@ -58,10 +58,23 @@ class Dataset:
 
     You can append :class:`DatasetItems<DatasetItem>` or :class:`Scenes<LidarScene>`
     with metadata to your dataset, annotate it with ground truth, and upload
-    model predictions to evaluate and compare model performance on you data.
+    model predictions to evaluate and compare model performance on your data.
 
     Datasets cannot be instantiated directly and instead must be created via API
-    endpoint, using :meth:`NucleusClient.create_dataset` or similar.
+    endpoint, using :meth:`NucleusClient.create_dataset`.
+
+    ::
+        
+        import nucleus
+
+        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+
+        # Create new dataset
+        dataset = client.create_dataset(YOUR_DATASET_NAME)
+
+        # Or, retrieve existing dataset by ID
+        # This ID can be fetched using client.list_datasets() or from a dashboard URL
+        existing_dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
     """
 
     def __init__(self, dataset_id, client):
@@ -964,6 +977,36 @@ class Dataset:
         to associate multiple predictions with one ground truth label, or multiple
         ground truth labels with one prediction. To recompute metrics based on
         different matching, you can re-commit the run with new request parameters.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset(dataset_id="ds_bw6de8s84pe0vbn6p5zg")
+
+            model = client.get_model(
+                model_id="prj_bxmkbanwnsh00cs96eq0",
+                dataset_id="ds_bw6de8s84pe0vbn6p5zg"
+            )
+
+            # Compute all evaluation metrics including IOU-based matching:
+            dataset.calculate_evaluation_metrics(model)
+
+            # Match car and bus bounding boxes (for IOU computation)
+            # Otherwise enforce that class labels must match
+            dataset.calculate_evaluation_metrics(model, options={
+              'allowed_label_matches': [
+                {
+                  'ground_truth_label': 'car',
+                  'model_prediction_label': 'bus'
+                },
+                {
+                  'ground_truth_label': 'bus',
+                  'model_prediction_label': 'car'
+                }
+              ]
+            })
 
         Parameters:
             model (:class:`Model`): The model object for which to calculate metrics.
