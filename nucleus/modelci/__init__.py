@@ -9,6 +9,7 @@ from nucleus.constants import (
     SLICE_ID_KEY,
 )
 from nucleus.connection import Connection
+from tests.modelci.data_transfer_objects.eval_functions import GetEvalFunctions
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -18,7 +19,7 @@ from .constants import (
     UNIT_TEST_ID_KEY,
     UNIT_TEST_NAME_KEY,
 )
-from .eval_function import EvalFunction
+from .eval_function import EvalFunctionResponse
 from .unit_test import (
     ThresholdComparison,
     UnitTest,
@@ -48,7 +49,25 @@ class ModelCI:
     def __eq__(self, other):
         return self._connection == other._connection
 
-    def list_eval_functions(self) -> List[EvalFunction]:
+    @property
+    def eval_functions(self) -> List[EvalFunctionResponse]:
+        """List all available evaluation functions. ::
+
+        import nucleus
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+
+        eval_functions = client.modelci.eval_functions
+
+        """
+        response = self._connection.make_request(
+            {},
+            "modelci/eval_fn",
+            requests_command=requests.get,
+        )
+        payload = GetEvalFunctions.parse_obj(response)
+        return payload.eval_functions
+
+    def list_eval_functions(self) -> List[EvalFunctionResponse]:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -62,7 +81,7 @@ class ModelCI:
             requests_command=requests.get,
         )
         return [
-            EvalFunction(**eval_function)
+            EvalFunctionResponse(**eval_function)
             for eval_function in response[EVAL_FUNCTIONS_KEY]
         ]
 
@@ -119,8 +138,10 @@ class ModelCI:
         Args:
             unit_test_name: name of unit test
             eval_function_id: name of evaluation function
-            threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
-            threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
+            threshold: numerical threshold that together with threshold comparison, defines success criteria for test
+                evaluation.
+            threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that
+                a test only passes if score > 0.5.
 
         Returns:
             The created UnitTestMetric object.

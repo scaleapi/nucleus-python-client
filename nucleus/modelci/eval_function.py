@@ -1,10 +1,9 @@
 """Data types for Evaluation Functions."""
-from dataclasses import dataclass
+from pydantic import BaseModel
 
 
-@dataclass
-class EvalFunction:
-    """Encapsulates an evaluation function for Model CI."""
+class EvalFunctionResponse(BaseModel):
+    """Encapsulates information about an evaluation function for Model CI."""
 
     id: str
     name: str

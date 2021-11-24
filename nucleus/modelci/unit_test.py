@@ -6,7 +6,7 @@ and have confidence that they’re always shipping the best model.
 """
 from enum import Enum
 from dataclasses import dataclass
-from typing import List
+from typing import List, TYPE_CHECKING
 
 from .unit_test_evaluation import UnitTestEvaluation
 
@@ -37,6 +37,10 @@ class UnitTestMetric:
     threshold_comparison: ThresholdComparison
 
 
+if TYPE_CHECKING:
+    from nucleus.modelci import ModelCI
+
+
 class UnitTest:
     """A Unit Test combines a slice and at least one evaluation metric."""
 
@@ -45,9 +49,6 @@ class UnitTest:
         unit_test_id: str,
         client: "ModelCI",  # type:ignore # noqa: F821
     ):
-        # Hack: lazy import to avoid circular dependencies.
-        from nucleus.modelci import ModelCI
-
         self.id = unit_test_id
         self._client: ModelCI = client
         info = self._client.get_unit_test_info(self.id)
