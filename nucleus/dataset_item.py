@@ -32,14 +32,16 @@ from .constants import (
 @dataclass
 class Quaternion:
     """Quaternion objects are used to represent rotation.
-    We use the Hamilton quaternion convention, where i^2 = j^2 = k^2 = ijk = -1, i.e. the right-handed convention.
-    The quaternion represented by the tuple (x, y, z, w) is equal to w + x*i + y*j + z*k
 
-    Args:
-        x: x value
-        y: y value
-        x: z value
-        w: w value
+    We use the Hamilton quaternion convention, where i^2 = j^2 = k^2 = ijk =
+    -1, i.e. the right-handed convention.  The quaternion represented by the
+    tuple (x, y, z, w) is equal to w + x*i + y*j + z*k
+
+    Parameters:
+        x (float): The x value.
+        y (float): The y value.
+        x (float): The z value.
+        w (float): The w value.
     """
 
     x: float
@@ -64,18 +66,18 @@ class Quaternion:
 
 @dataclass
 class CameraParams:
-    """CameraParams objects represent the camera position/heading used to record the image.
+    """Camera position/heading used to record the image.
 
     Args:
-        position: Vector3 World-normalized position of the camera
-        heading: Vector <x, y, z, w> indicating the quaternion of the camera direction;
-            note that the z-axis of the camera frame represents the camera's optical axis.
-            See `Heading Examples<https://docs.scale.com/reference/data-types-and-the-frame-objects#heading-examples>`_
-            for examples.
-        fx: focal length in x direction (in pixels)
-        fy: focal length in y direction (in pixels)
-        cx: principal point x value
-        cy: principal point y value
+        position (:class:`Point3D`): World-normalized position of the camera
+        heading (:class:`Quaternion`): Vector4 indicating the quaternion of the
+          camera direction; note that the z-axis of the camera frame
+          represents the camera's optical axis.  See `Heading Examples
+          <https://docs.scale.com/reference/data-types-and-the-frame-objects#heading-examples>`_.
+        fx (float): Focal length in x direction (in pixels).
+        fy (float): Focal length in y direction (in pixels).
+        cx (float): Principal point x value.
+        cy (float): Principal point y value.
     """
 
     position: Point3D
@@ -165,6 +167,13 @@ class DatasetItem:  # pylint: disable=R0902
           We have a cache based on image_location that will skip the need for a
           re-upload of the images, so your second ingestion will be faster than
           your first.
+
+          For 3D (sensor fusion) data, it is highly recommended to include
+          camera intrinsics the metadata of your camera image items. Nucleus
+          requires these intrinsics to create visualizations such as cuboid
+          projections. Refer to our `guide to uploading 3D data
+          <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more
+          info.
 
           .. todo ::
               Shorten this once we have a guide migrated for metadata, or maybe link

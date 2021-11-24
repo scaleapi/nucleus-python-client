@@ -35,7 +35,6 @@ __all__ = [
     "SegmentationAnnotation",
     "SegmentationPrediction",
     "Slice",
-    "UploadResponse",
 ]
 
 import asyncio
@@ -237,7 +236,7 @@ class NucleusClient:
         ]
 
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
-        # TODO: make private in favor of Dataset.items
+        # TODO: deprecate in favor of Dataset.items
         response = self.make_request(
             {}, f"dataset/{dataset_id}/datasetItems", requests.get
         )
@@ -381,7 +380,7 @@ class NucleusClient:
 
     @sanitize_string_args
     def delete_dataset_item(self, dataset_id: str, reference_id) -> dict:
-        # TODO: make private in favor of Dataset.delete_item invocation
+        # TODO: deprecate in favor of Dataset.delete_item invocation
         return self.make_request(
             {},
             f"dataset/{dataset_id}/refloc/{reference_id}",
@@ -395,7 +394,7 @@ class NucleusClient:
         batch_size: int = 20,
         update: bool = False,
     ):
-        # TODO: make private in favor of Dataset.append invocation
+        # TODO: deprecate in favor of Dataset.append invocation
         local_items = []
         remote_items = []
 
@@ -665,7 +664,7 @@ class NucleusClient:
         update: bool,
         batch_size: int = 5000,
     ) -> Dict[str, Union[str, int]]:
-        # TODO: make private in favor of Dataset.annotate invocation
+        # TODO: deprecate in favor of Dataset.annotate invocation
 
         # Split payload into segmentations and Box/Polygon
         segmentations = [
@@ -735,7 +734,7 @@ class NucleusClient:
         return agg_response
 
     def ingest_tasks(self, dataset_id: str, payload: dict):
-        # TODO: make private in favor of Dataset.ingest_tasks invocation
+        # TODO: deprecate in favor of Dataset.ingest_tasks invocation
         return self.make_request(payload, f"dataset/{dataset_id}/ingest_tasks")
 
     def add_model(
@@ -745,9 +744,13 @@ class NucleusClient:
         """Adds a :class:`Model` to Nucleus.
 
         Parameters:
-            name: A human-readable name of the model project.
-            reference_id: An user-specified identifier to reference this model.
-            metadata: An optional arbitrary metadata blob for the model.
+            name: A human-readable name for the model.
+            reference_id: Unique, user-controlled ID for the model. This can be
+              used, for example, to link to an external storage of models which
+              may have its own id scheme.
+            metadata: An arbitrary dictionary of additional data about this model
+              that can be stored and retrieved. For example, you can store information
+              about the hyperparameters used in training this model.
 
         Returns:
             :class:`Model`: The newly created model as an object.
@@ -791,7 +794,7 @@ class NucleusClient:
         update: bool = False,
         batch_size: int = 5000,
     ):
-        # TODO: make private in favor of Dataset.upload_predictions invocation
+        # TODO: deprecate in favor of Dataset.upload_predictions invocation
         if model_run_id is not None:
             assert model_id is None and dataset_id is None
             endpoint = f"modelRun/{model_run_id}/predict"
@@ -869,7 +872,7 @@ class NucleusClient:
         return self.make_request(payload, f"modelRun/{model_run_id}/commit")
 
     def dataset_info(self, dataset_id: str):
-        # TODO: make private in favor of Dataset.info invocation
+        # TODO: deprecate in favor of Dataset.info invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/info", requests.get
         )
@@ -882,7 +885,7 @@ class NucleusClient:
 
     @sanitize_string_args
     def dataitem_ref_id(self, dataset_id: str, reference_id: str):
-        # TODO: make private in favor of Dataset.refloc invocation
+        # TODO: deprecate in favor of Dataset.refloc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
         )
@@ -895,7 +898,7 @@ class NucleusClient:
         )
 
     def dataitem_iloc(self, dataset_id: str, i: int):
-        # TODO: make private in favor of Dataset.iloc invocation
+        # TODO: deprecate in favor of Dataset.iloc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
         )
@@ -907,7 +910,7 @@ class NucleusClient:
         )
 
     def dataitem_loc(self, dataset_id: str, dataset_item_id: str):
-        # TODO: make private in favor of Dataset.loc invocation
+        # TODO: deprecate in favor of Dataset.loc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/loc/{dataset_item_id}", requests.get
         )
@@ -919,14 +922,14 @@ class NucleusClient:
         )
 
     def create_slice(self, dataset_id: str, payload: dict) -> Slice:
-        # TODO: make private in favor of Dataset.create_slice
+        # TODO: deprecate in favor of Dataset.create_slice
         response = self.make_request(
             payload, f"dataset/{dataset_id}/create_slice"
         )
         return Slice(response[SLICE_ID_KEY], self)
 
     def get_slice(self, slice_id: str) -> Slice:
-        # TODO: migrate to Dataset method and make private
+        # TODO: migrate to Dataset method and deprecate
         """Returns a slice object by Nucleus-generated ID.
 
         Parameters:
@@ -939,7 +942,7 @@ class NucleusClient:
         return Slice(slice_id, self)
 
     def slice_info(self, slice_id: str) -> dict:
-        # TODO: migrate to Slice method and make private
+        # TODO: migrate to Slice method and deprecate
         response = self.make_request(
             {},
             f"slice/{slice_id}",
@@ -948,7 +951,7 @@ class NucleusClient:
         return response
 
     def delete_slice(self, slice_id: str) -> dict:
-        # TODO: migrate to Dataset method and make private
+        # TODO: migrate to Dataset method and deprecate
         """Deletes slice from Nucleus.
 
         Parameters:
@@ -968,7 +971,7 @@ class NucleusClient:
     def delete_annotations(
         self, dataset_id: str, reference_ids: list = None, keep_history=False
     ) -> dict:
-        # TODO: make private in favor of Dataset.delete_annotations invocation
+        # TODO: deprecate in favor of Dataset.delete_annotations invocation
         payload = {KEEP_HISTORY_KEY: keep_history}
         if reference_ids:
             payload[REFERENCE_IDS_KEY] = reference_ids
@@ -984,7 +987,7 @@ class NucleusClient:
         slice_id: str,
         reference_ids: List[str],
     ) -> dict:
-        # TODO: migrate to Slice method and make private
+        # TODO: migrate to Slice method and deprecate
         """Appends dataset items to an existing slice.
 
         Parameters:
@@ -1003,7 +1006,7 @@ class NucleusClient:
         return response
 
     def list_autotags(self, dataset_id: str) -> List[dict]:
-        # TODO: make private in favor of Dataset.list_autotags invocation
+        # TODO: deprecate in favor of Dataset.list_autotags invocation
         response = self.make_request(
             {},
             f"{dataset_id}/list_autotags",
@@ -1012,7 +1015,7 @@ class NucleusClient:
         return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
 
     def delete_autotag(self, autotag_id: str) -> dict:
-        # TODO: migrate to Dataset method (use autotag name, not id) and make private
+        # TODO: migrate to Dataset method (use autotag name, not id) and deprecate
         """Deletes an autotag by ID.
 
         Parameters:
@@ -1044,15 +1047,7 @@ class NucleusClient:
     def create_custom_index(
         self, dataset_id: str, embeddings_urls: list, embedding_dim: int
     ):
-        """
-        Creates a custom index for a given dataset, which will then be used
-        for autotag and similarity search.
-
-        :param
-        dataset_id: id of dataset that the custom index is being added to.
-        embeddings_urls: list of urls, each of which being a json mapping reference_id -> embedding vector
-        embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
-        """
+        # TODO: deprecate in favor of Dataset.create_custom_index invocation
         return self.make_request(
             {
                 EMBEDDINGS_URL_KEY: embeddings_urls,
@@ -1063,6 +1058,7 @@ class NucleusClient:
         )
 
     def delete_custom_index(self, dataset_id: str):
+        # TODO: deprecate in favor of Dataset.delete_custom_index invocation
         return self.make_request(
             {},
             f"indexing/{dataset_id}",
@@ -1070,15 +1066,7 @@ class NucleusClient:
         )
 
     def set_continuous_indexing(self, dataset_id: str, enable: bool = True):
-        """
-        Sets continuous indexing for a given dataset, which will automatically generate embeddings whenever
-        new images are uploaded. This endpoint is currently only enabled for enterprise customers.
-        Please reach out to nucleus@scale.com if you wish to learn more.
-
-        :param
-        dataset_id: id of dataset that continuous indexing is being toggled for
-        enable: boolean, sets whether we are enabling or disabling continuous indexing. The default behavior is to enable.
-        """
+        # TODO: deprecate in favor of Dataset.set_continuous_indexing invocation
         return self.make_request(
             {INDEX_CONTINUOUS_ENABLE_KEY: enable},
             f"indexing/{dataset_id}/setContinuous",
@@ -1086,15 +1074,7 @@ class NucleusClient:
         )
 
     def create_image_index(self, dataset_id: str):
-        """
-        Starts generating embeddings for images that don't have embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint is limited to generating embeddings for 2 million
-        images at a time. This endpoint is also currently only enabled for enterprise customers.
-        Please reach out to nucleus@scale.com if you wish to learn more.
-
-        :param
-        dataset_id: id of dataset for generating embeddings on.
-        """
+        # TODO: deprecate in favor of Dataset.set_continuous_indexing invocation
         return self.make_request(
             {},
             f"indexing/{dataset_id}/internal/image",
@@ -1104,19 +1084,7 @@ class NucleusClient:
     def create_object_index(
         self, dataset_id: str, model_run_id: str, gt_only: bool
     ):
-        """
-        Starts generating embeddings for objects that don't have embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint only supports indexing objects sourced from the predictions
-        of a single model run or the ground truth annotations of a dataset.
-
-        This endpoint is limited to generating embeddings for 3 million objects at a time. This endpoint is also currently
-        only enabled for enterprise customers. Please reach out to nucleus@scale.com if you wish to learn more.
-
-        :param
-        dataset_id: id of dataset for generating embeddings on.
-        model_run_id: id of the model run for generating embeddings on. Mutually exclusive with gt_only
-        gt_only: Whether we are generating embeddings on the ground truth objects in a dataset. Mutually exclusive with model_run_id
-        """
+        # TODO: deprecate in favor of Dataset.create_object_index invocation
         payload: Dict[str, Union[str, bool]] = {}
         if model_run_id:
             payload["model_run_id"] = model_run_id
@@ -1131,14 +1099,17 @@ class NucleusClient:
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
-        """
-        Makes a request to Nucleus endpoint and logs a warning if not
-        successful.
+        """Makes a request to a Nucleus API endpoint.
 
-        :param payload: given payload
-        :param route: route for the request
-        :param requests_command: requests.post, requests.get, requests.delete
-        :return: response JSON
+        Logs a warning if not successful.
+
+        Parameters:
+            payload: Given request payload.
+            route: Route for the request.
+            Requests command: ``requests.post``, ``requests.get``, or ``requests.delete``.
+
+        Returns:
+            Response payload as JSON-like dict.
         """
         endpoint = f"{self.endpoint}/{route}"
 

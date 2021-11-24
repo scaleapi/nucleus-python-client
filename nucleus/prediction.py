@@ -1,4 +1,5 @@
-"""All of the prediction types supported. In general, prediction types are the same
+"""
+All of the prediction types supported. In general, prediction types are the same
 as annotation types, but come with additional, optional data that can be attached
 such as confidence or probability distributions.
 """
@@ -54,8 +55,38 @@ def from_json(payload: dict):
 
 
 class SegmentationPrediction(SegmentationAnnotation):
-    # No need to define init or to_payload methods because
-    # we default to functions defined in the parent class
+    """Predicted segmentation mask on a 2D image.
+
+    Parameters:
+        mask_url (str): A URL pointing to the segmentation prediction mask which is
+          accessible to Scale. The mask is an HxW int8 array saved in PNG format,
+          with each pixel value ranging from [0, N), where N is the number of
+          possible classes (for semantic segmentation) or instances (for instance
+          segmentation).
+
+          The height and width of the mask must be the same as the
+          original image. One example for semantic segmentation: the mask is 0
+          for pixels where there is background, 1 where there is a car, and 2
+          where there is a pedestrian.
+
+          Another example for instance segmentation: the mask is 0 for one car,
+          1 for another car, 2 for a motorcycle and 3 for another motorcycle.
+          The class name for each value in the mask is stored in the list of
+          Segment objects passed for "annotations"
+        annotations (List[:class:`Segment`]): The list of mappings between the integer values contained
+          in mask_url and string class labels. In the semantic segmentation
+          example above these would map that 0 to background, 1 to car and 2 to
+          pedestrian. In the instance segmentation example above, 0 and 1 would
+          both be mapped to car, 2 and 3 would both be mapped to motorcycle
+        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        annotation_id (Optional[str]): For segmentation predictions, this value is ignored
+          because there can only be one segmentation prediction per dataset item.
+          Therefore regardless of annotation ID, if there is an existing
+          segmentation on a dataset item, it will be ignored unless update=True
+          is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
+          Storing a custom ID here may be useful in order to tie this annotation
+          to an external database, and its value will be returned for any export.
+    """
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
@@ -70,10 +101,33 @@ class SegmentationPrediction(SegmentationAnnotation):
 
 
 class BoxPrediction(BoxAnnotation):
-    """A prediction of a bounding box
+    """Prediction of a bounding box.
 
-    Attributes:
-        confidence: 0-1 indicating the confidence of the prediciton
+    Parameters:
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
+        x (Union[float, int]): The distance, in pixels, between the left border
+            of the bounding box and the left border of the image.
+        y (Union[float, int]): The distance, in pixels, between the top border
+            of the bounding box and the top border of the image.
+        width (Union[float, int]): The width in pixels of the annotation.
+        height (Union[float, int]): The height in pixels of the annotation.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        confidence: 0-1 indicating the confidence of the prediction.
+        annotation_id (Optional[str]): The annotation ID that uniquely
+            identifies this annotation within its target dataset item. Upon ingest,
+            a matching annotation id will be ignored by default, and updated if
+            update=True for dataset.annotate.  If no annotation ID is passed, one
+            will be automatically generated using the label, x, y, width, and
+            height, so that you can make inserts idempotently and identical boxes
+            will be ignored.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our metadata guide.
+
+            .. todo ::
+                Insert link to metadata guide
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
@@ -133,10 +187,25 @@ class BoxPrediction(BoxAnnotation):
 
 
 class PolygonPrediction(PolygonAnnotation):
-    """A prediction of a polygon
+    """Prediction of a polygon.
 
-    Attributes:
-        confidence: 0-1 indicating the confidence of the prediciton
+    Parameters:
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
+        vertices List[:class:`Point`]: The list of points making up the polygon.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        confidence: 0-1 indicating the confidence of the prediction.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies
+            this annotation within its target dataset item. Upon ingest, a matching
+            annotation id will be ignored by default, and updated if update=True
+            for dataset.annotate.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our metadata guide.
+
+            .. todo::
+                Insert link to metadata guide
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
@@ -191,8 +260,24 @@ class PolygonPrediction(PolygonAnnotation):
 class CuboidPrediction(CuboidAnnotation):
     """A prediction of 3D cuboid.
 
-    Attributes:
-        confidence: 0-1 indicating the confidence of the prediciton
+    Parameters:
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
+        position (:class:`Point3D`): The point at the center of the cuboid
+        dimensions (:class:`Point3D`): The length (x), width (y), and height (z) of the cuboid
+        yaw (float): The rotation, in radians, about the Z axis of the cuboid
+        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        confidence: 0-1 indicating the confidence of the prediction.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies this
+          annotation within its target dataset item. Upon ingest, a matching
+          annotation id will be ignored by default, and updated if update=True
+          for dataset.annotate.
+        metadata (Optional[str]): Arbitrary key/value dictionary of info to attach to this
+          annotation.  Strings, floats and ints are supported best by querying
+          and insights features within Nucleus. For more details see our metadata
+          guide.
+
+          .. todo ::
+              Insert link to metadata guide
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
@@ -254,6 +339,7 @@ class CategoryPrediction(CategoryAnnotation):
     Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle).
         taxonomy_name: The name of the taxonomy this annotation conforms to.
+          See :meth:`Dataset.add_taxonomy`.
         reference_id: The reference ID of the image you wish to apply this annotation to.
         confidence: 0-1 indicating the confidence of the prediction.
         class_pdf: An optional complete class probability distribution on this

@@ -35,7 +35,11 @@ from .constants import (
 
 
 class Annotation:
-    """Internal base class, not to be used directly."""
+    """Internal base class, not to be used directly.
+
+    .. todo ::
+        Inherit common constructor parameters from here
+    """
 
     reference_id: str
 
@@ -72,36 +76,39 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     """A bounding box annotation.
 
     Parameters:
-        x: The distance, in pixels, between the left border of the bounding box and the
-            left border of the image.
-        y: The distance, in pixels, between the top border of the bounding box and the
-            top border of the image.
-        width: The width in pixels of the annotation.
-        height: The height in pixels of the annotation.
-        reference_id: The reference ID of the image to which to apply this annotation.
-        annotation_id: The annotation ID that uniquely identifies this annotation within
-            its target dataset item. Upon ingest, a matching annotation id will be
-            ignored by default, and updated if update=True for dataset.annotate.
-            If no annotation ID is passed, one will be automatically generated using the
-            label, x, y, width, and height, so that you can make inserts idempotently
-            and identical boxes will be ignored.
-        label: The label for this annotation (e.g. car, pedestrian, bicycle)
-        metadata: Arbitrary key/value dictionary of info to attach to this annotation.
-            Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see our metadata guide.
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
+        x (Union[float, int]): The distance, in pixels, between the left border
+            of the bounding box and the left border of the image.
+        y (Union[float, int]): The distance, in pixels, between the top border
+            of the bounding box and the top border of the image.
+        width (Union[float, int]): The width in pixels of the annotation.
+        height (Union[float, int]): The height in pixels of the annotation.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        annotation_id (Optional[str]): The annotation ID that uniquely
+            identifies this annotation within its target dataset item. Upon ingest,
+            a matching annotation id will be ignored by default, and updated if
+            update=True for dataset.annotate.  If no annotation ID is passed, one
+            will be automatically generated using the label, x, y, width, and
+            height, so that you can make inserts idempotently and identical boxes
+            will be ignored.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our metadata guide.
 
             .. todo ::
                 Insert link to metadata guide
     """
 
-    label: str  #: comment
-    x: Union[float, int]  #: comment
-    y: Union[float, int]  #: comment
-    width: Union[float, int]  #: comment
-    height: Union[float, int]  #: comment
-    reference_id: str  #: comment
-    annotation_id: Optional[str] = None  #: comment
-    metadata: Optional[Dict] = None  #: comment
+    label: str
+    x: Union[float, int]
+    y: Union[float, int]
+    width: Union[float, int]
+    height: Union[float, int]
+    reference_id: str
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -143,8 +150,8 @@ class Point:
     """A point in 2D space.
 
     Parameters:
-        x: The x coordinate of the point.
-        y: The y coordinate of the point.
+        x (float): The x coordinate of the point.
+        y (float): The y coordinate of the point.
     """
 
     x: float
@@ -163,14 +170,18 @@ class PolygonAnnotation(Annotation):
     """A polygon annotation consisting of an ordered list of 2D points.
 
     Parameters:
-        label: The label for this annotation (e.g. car, pedestrian, bicycle).
-        vertices: The list of points making up the polygon.
-        annotation_id: The annotation ID that uniquely identifies this annotation within
-            its target dataset item. Upon ingest, a matching annotation id will be
-            ignored by default, and updated if update=True for dataset.annotate.
-        metadata: Arbitrary key/value dictionary of info to attach to this annotation.
-            Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see our metadata guide.
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
+        vertices List[:class:`Point`]: The list of points making up the polygon.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies
+            this annotation within its target dataset item. Upon ingest, a matching
+            annotation id will be ignored by default, and updated if update=True
+            for dataset.annotate.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our metadata guide.
 
             .. todo::
                 Insert link to metadata guide
@@ -230,9 +241,9 @@ class Point3D:
     """A point in 3D space.
 
     Parameters:
-        x: The x coordinate of the point.
-        y: The y coordinate of the point.
-        z: The z coordinate of the point.
+        x (float): The x coordinate of the point.
+        y (float): The y coordinate of the point.
+        z (float): The z coordinate of the point.
     """
 
     x: float
@@ -252,15 +263,16 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     """A 3D Cuboid annotation.
 
     Parameters:
-        label: The label for this annotation (e.g. car, pedestrian, bicycle)
-        position: The point at the center of the cuboid
-        dimensions: The length (x), width (y), and height (z) of the cuboid
-        yaw: The rotation, in radians, about the Z axis of the cuboid
-        annotation_id: The annotation ID that uniquely identifies this
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
+        position (:class:`Point3D`): The point at the center of the cuboid
+        dimensions (:class:`Point3D`): The length (x), width (y), and height (z) of the cuboid
+        yaw (float): The rotation, in radians, about the Z axis of the cuboid
+        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies this
           annotation within its target dataset item. Upon ingest, a matching
           annotation id will be ignored by default, and updated if update=True
           for dataset.annotate.
-        metadata: Arbitrary key/value dictionary of info to attach to this
+        metadata (Optional[str]): Arbitrary key/value dictionary of info to attach to this
           annotation.  Strings, floats and ints are supported best by querying
           and insights features within Nucleus. For more details see our metadata
           guide.
@@ -325,10 +337,10 @@ class Segment:
     In both cases, additional metadata can be attached to the segment.
 
     Parameters:
-        label: The label name of the class for the class or instance
+        label (str): The label name of the class for the class or instance
           represented by index in the associated mask.
-        index: The integer pixel value in the mask this mapping refers to.
-        metadata: Arbitrary key/value dictionary of info to attach to this segment.
+        index (int): The integer pixel value in the mask this mapping refers to.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this segment.
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our metadata guide.
 
@@ -360,10 +372,10 @@ class Segment:
 
 @dataclass
 class SegmentationAnnotation(Annotation):
-    """A segmentation mask on 2D image.
+    """A segmentation mask on a 2D image.
 
     Parameters:
-        mask_url: A URL pointing to the segmentation prediction mask which is
+        mask_url (str): A URL pointing to the segmentation prediction mask which is
           accessible to Scale. The mask is an HxW int8 array saved in PNG format,
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
@@ -378,16 +390,17 @@ class SegmentationAnnotation(Annotation):
           1 for another car, 2 for a motorcycle and 3 for another motorcycle.
           The class name for each value in the mask is stored in the list of
           Segment objects passed for "annotations"
-        annotations: The list of mappings between the integer values contained
+        annotations (List[:class:`Segment`]): The list of mappings between the integer values contained
           in mask_url and string class labels. In the semantic segmentation
           example above these would map that 0 to background, 1 to car and 2 to
           pedestrian. In the instance segmentation example above, 0 and 1 would
           both be mapped to car, 2 and 3 would both be mapped to motorcycle
-        annotation_id: For segmentation annotations, this value is ignored
+        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        annotation_id (Optional[str]): For segmentation annotations, this value is ignored
           because there can only be one segmentation annotation per dataset item.
           Therefore regardless of annotation ID, if there is an existing
           segmentation on a dataset item, it will be ignored unless update=True
-          is passed to dataset.annotate, in which case it will be updated.
+          is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
     """
@@ -443,13 +456,14 @@ class CategoryAnnotation(Annotation):
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
         taxonomy_name (str): The name of the taxonomy this annotation conforms to.
-        reference_id (str): The reference ID of the image you wish to apply this annotation to.
+          See :meth:`Dataset.add_taxonomy`.
+        reference_id (str): User-defined ID of the image to which to apply this annotation.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
-            Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see our metadata guide.
+          Strings, floats and ints are supported best by querying and insights
+          features within Nucleus. For more details see our metadata guide.
 
-            .. todo::
-                Insert link to metadata guide
+          .. todo ::
+              Insert link to metadata guide
     """
 
     label: str

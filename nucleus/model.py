@@ -1,63 +1,4 @@
-"""
-By uploading model predictions to Nucleus, you can compare your predictions to ground truth annotations and discover problems with your Models or Dataset.
-
-You can also upload predictions for unannotated images, letting you query them based on model predictions. This can help you prioritize which unlabeled data to label next.
-
-Within Nucleus, Models work in the following way:
-
-1. You first create a Model. You can do this just once and reuse the model on multiple datasets.
-2. You then upload predictions to a dataset.
-3. Trigger calculation of model metrics in order to view model debugging insights.
-
-Doing the three steps above allows you to visualize model performance within Nucleus, or compare multiple models that have been run on the same Dataset.
-
-
-Note that you can always add more predictions to a dataset, but then you will need to re-run the calculation of metrics in order to have them be correct.
-
-::
-
-    import nucleus
-
-    client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-    dataset = client.get_dataset("YOUR_DATASET_ID")
-    prediction_1 = nucleus.BoxPrediction(
-        label="label",
-        x=0,
-        y=0,
-        width=10,
-        height=10,
-        reference_id="1",
-        confidence=0.9,
-        class_pdf={"label": 0.9, "other_label": 0.1},
-    )
-    prediction_2 = nucleus.BoxPrediction(
-        label="label",
-        x=0,
-        y=0,
-        width=10,
-        height=10,
-        reference_id="2",
-        confidence=0.2,
-        class_pdf={"label": 0.2, "other_label": 0.8},
-    )
-    model = client.add_model(
-        name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"}
-    )
-    # For small ingestions, we recommend synchronous ingestion
-    response = dataset.upload_predictions(model, [prediction_1, prediction_2])
-    # For large ingestions, we recommend asynchronous ingestion
-    job = dataset.upload_predictions(
-        [prediction_1, prediction_2], asynchronous=True
-    )
-    # Check current status
-    job.status()
-    # Sleep until ingestion is done
-    job.sleep_until_complete()
-    # Check errors
-    job.errors()
-
-    dataset.calculate_evaluation_metrics(model)
-"""
+from dataclasses import dataclass
 from typing import List, Optional, Dict, Union
 from .dataset import Dataset
 from .prediction import (
@@ -74,33 +15,86 @@ from .constants import (
 )
 
 
+@dataclass
 class Model:
     """A model that can be used to upload predictions to a dataset.
 
-    Attributes:
-        model_id: The scale-generated unique id for this model
-        name: A human-readable name for the model
-        reference_id: This is a unique, user-controlled ID for the model. This can be
-            used, for example, to link to an external storage of models which may
-            have its own id scheme.
-        metadata: An arbitrary dictionary of additional data about this model that
-            can be stored and retrieved. For example, you can store information
-            about the hyperparameters used in training this model.
+    By uploading model predictions to Nucleus, you can compare your predictions
+    to ground truth annotations and discover problems with your Models or
+    Dataset.
+
+    You can also upload predictions for unannotated images, letting you query
+    them based on model predictions. This can help you prioritize which
+    unlabeled data to label next.
+
+    Within Nucleus, Models work in the following way:
+
+    1. You first create a Model. You can do this just once and reuse the model
+       on multiple datasets.
+    2. You then upload predictions to a dataset.
+    3. Trigger calculation of model metrics in order to view model debugging
+       insights.
+
+    The above steps above will allow you to visualize model performance within
+    Nucleus, or compare multiple models that have been run on the same Dataset.
+
+    Note that you can always add more predictions to a dataset, but then you
+    will need to re-run the calculation of metrics in order to have them be
+    correct.
+
+    ::
+
+        import nucleus
+
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+        dataset = client.get_dataset("YOUR_DATASET_ID")
+        prediction_1 = nucleus.BoxPrediction(
+            label="label",
+            x=0,
+            y=0,
+            width=10,
+            height=10,
+            reference_id="1",
+            confidence=0.9,
+            class_pdf={"label": 0.9, "other_label": 0.1},
+        )
+        prediction_2 = nucleus.BoxPrediction(
+            label="label",
+            x=0,
+            y=0,
+            width=10,
+            height=10,
+            reference_id="2",
+            confidence=0.2,
+            class_pdf={"label": 0.2, "other_label": 0.8},
+        )
+        model = client.add_model(
+            name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"}
+        )
+        # For small ingestions, we recommend synchronous ingestion
+        response = dataset.upload_predictions(model, [prediction_1, prediction_2])
+        # For large ingestions, we recommend asynchronous ingestion
+        job = dataset.upload_predictions(
+            [prediction_1, prediction_2], asynchronous=True
+        )
+        # Check current status
+        job.status()
+        # Sleep until ingestion is done
+        job.sleep_until_complete()
+        # Check errors
+        job.errors()
+
+        dataset.calculate_evaluation_metrics(model)
+
+    Models cannot be instantiated directly and instead must be created via API
+    endpoint, using :meth:`NucleusClient.add_model`.
     """
 
-    def __init__(
-        self,
-        model_id: str,
-        name: str,
-        reference_id: str,
-        metadata: Optional[Dict],
-        client,
-    ):
-        self.id = model_id
-        self.name = name
-        self.reference_id = reference_id
-        self.metadata = metadata
-        self._client = client
+    model_id: str
+    name: str
+    reference_id: str
+    metadata: Optional[Dict]
+    client: "NucleusClient"
 
     def __repr__(self):
         return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, client={self._client})"
@@ -141,7 +135,8 @@ class Model:
         metadata: Optional[Dict] = None,
         asynchronous: bool = False,
     ) -> ModelRun:
-        """Note: this method, as well as model runs in general are now deprecated.
+        "" # TODO: remove once model run is deprecated
+        """This method, as well as model runs in general are now deprecated.
 
         Instead models will automatically generate a model run when applied to a dataset
         using dataset.upload_predictions(model, predictions). Therefore there is no
