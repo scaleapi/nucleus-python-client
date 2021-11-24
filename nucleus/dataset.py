@@ -50,7 +50,6 @@ WARN_FOR_LARGE_UPLOAD = 50000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
-@dataclass
 class Dataset:
     """Datasets are collections of your data that can be associated with models.
 
@@ -62,8 +61,9 @@ class Dataset:
     endpoint, using :meth:`NucleusClient.create_dataset` or similar.
     """
 
-    id: str
-    _client: "NucleusClient"
+    def __init__(self, id, client):
+        self.id = id
+        self._client = client
 
     def __repr__(self):
         return f"Dataset(dataset_id='{self.id}', client={self._client})"
