@@ -659,7 +659,7 @@ class NucleusClient:
         ],
         update: bool,
         batch_size: int = 5000,
-    ) -> Dict[str, Union[str, int]]:
+    ) -> Dict[str, object]:
         # TODO: deprecate in favor of Dataset.annotate invocation
 
         # Split payload into segmentations and Box/Polygon
