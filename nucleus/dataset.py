@@ -64,7 +64,7 @@ class Dataset:
     endpoint, using :meth:`NucleusClient.create_dataset`.
 
     ::
-        
+
         import nucleus
 
         client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
