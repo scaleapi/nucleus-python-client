@@ -135,7 +135,7 @@ class Model:
         metadata: Optional[Dict] = None,
         asynchronous: bool = False,
     ) -> ModelRun:
-        "" # TODO: remove once model run is deprecated
+        """"""  # TODO: remove once model run is deprecated
         """This method, as well as model runs in general are now deprecated.
 
         Instead models will automatically generate a model run when applied to a dataset

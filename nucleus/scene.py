@@ -29,6 +29,7 @@ class Frame:
     Refer to our `guide to uploading 3D data
     <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!
     """
+
     def __init__(self, **kwargs):
         self.items = {}
         for key, value in kwargs.items():
@@ -160,7 +161,9 @@ class Scene(ABC):
                 frame, Frame
             ), "Each frame in a scene must be a Frame object"
 
-    def add_item(self, index: int, sensor_name: str, item: DatasetItem) -> None:
+    def add_item(
+        self, index: int, sensor_name: str, item: DatasetItem
+    ) -> None:
         """Adds DatasetItem to the specified frame as sensor data.
 
         Parameters:
@@ -175,7 +178,9 @@ class Scene(ABC):
         else:
             self.frames_dict[index].items[sensor_name] = item
 
-    def add_frame(self, frame: Frame, index: int, update: bool = False) -> None:
+    def add_frame(
+        self, frame: Frame, index: int, update: bool = False
+    ) -> None:
         """Adds frame to scene at the specified index.
 
         Parameters:
@@ -263,7 +268,7 @@ class Scene(ABC):
                 items_from_sensor.append(None)
         return items_from_sensor
 
-    def get_items(self) -> List[DatasetItem]
+    def get_items(self) -> List[DatasetItem]:
         """Fetches all items in the frame.
 
         Returns:
@@ -277,7 +282,7 @@ class Scene(ABC):
 
         Returns:
             Payload containing::
-                
+
                 {
                     "reference_id": str,
                     "length": int,
@@ -387,7 +392,7 @@ class LidarScene(Scene):
           the scene. A scene can be created before frames or items have been
           added to it, but must be non-empty when uploading to a :class:`Dataset`.
         metadata (Optional[Dict]): Optional metadata to include with the scene.
-    
+
     Refer to our `guide to uploading 3D data
     <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!
     """

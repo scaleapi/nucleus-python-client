@@ -349,7 +349,7 @@ class NucleusClient:
                         },
                         ...
                     }
-                
+
         Returns:
             :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
@@ -366,7 +366,7 @@ class NucleusClient:
     def delete_dataset(self, dataset_id: str) -> dict:
         """
         Deletes a dataset by ID.
-        
+
         All items, annotations, and predictions associated with the dataset will
         be deleted as well.
 
@@ -935,7 +935,7 @@ class NucleusClient:
         Parameters:
             slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
               be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
-            
+
         Returns:
             :class:`Slice`: The Nucleus slice as an object.
         """

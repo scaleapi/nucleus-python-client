@@ -255,7 +255,7 @@ class Dataset:
 
         Returns:
             If synchronous, payload describing the upload result::
-                
+
                 {
                     "dataset_id": str,
                     "annotations_processed": int
@@ -286,7 +286,7 @@ class Dataset:
 
         Returns:
             Payload describing the asynchronous upload result::
-            
+
                 {
                     "ingested_tasks": int,
                     "ignored_tasks": int,
@@ -617,7 +617,7 @@ class Dataset:
         reference_ids: List[str],
     ):
         """Creates a :class:`Slice` of dataset items within a dataset.
-        
+
         Parameters:
             name: A human-readable name for the slice.
             reference_ids: List of reference IDs of dataset items to add to the slice::
@@ -650,7 +650,7 @@ class Dataset:
 
         Returns:
             List of autotag payloads::
-                
+
                 List[{
                     "id": str,
                     "name": str,
@@ -660,7 +660,9 @@ class Dataset:
         """
         return self._client.list_autotags(self.id)
 
-    def create_custom_index(self, embeddings_urls: List[str], embedding_dim: int):
+    def create_custom_index(
+        self, embeddings_urls: List[str], embedding_dim: int
+    ):
         """Processes user-provided embeddings for the dataset to use with autotag.
 
         ::
@@ -726,7 +728,7 @@ class Dataset:
 
         Returns:
             Response payload::
-                
+
                 {
                     "dataset_id": str,
                     "message": str
@@ -774,7 +776,7 @@ class Dataset:
         Parameters:
             model_run_id: The ID of the model whose predictions should be indexed.
               Default is None, but must be supplied in the absence of ``gt_only``.
-                
+
               .. todo ::
                   Deprecate model run
 
@@ -833,7 +835,7 @@ class Dataset:
 
         Returns:
             A list of dicts, each with two keys representing a row in the dataset::
-                
+
                 List[{
                     "item": DatasetItem,
                     "annotations": {
@@ -972,7 +974,7 @@ class Dataset:
                   Pairs of ground truth and prediction classes that should
                   be considered matchable when computing metrics. If supplied,
                   ``class_agnostic`` must be False.
-              
+
                 ::
 
                     {
@@ -1000,7 +1002,8 @@ class Dataset:
                 CuboidPrediction,
                 SegmentationPrediction,
             ]
-        ], update: bool = False,
+        ],
+        update: bool = False,
         asynchronous: bool = False,
     ):
         """Uploads predictions and associates them with an existing :class:`Model`.

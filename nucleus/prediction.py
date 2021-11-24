@@ -87,6 +87,7 @@ class SegmentationPrediction(SegmentationAnnotation):
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
     """
+
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
