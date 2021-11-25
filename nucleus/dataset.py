@@ -1045,6 +1045,7 @@ class Dataset:
                 PolygonPrediction,
                 CuboidPrediction,
                 SegmentationPrediction,
+                CategoryPrediction,
             ]
         ],
         update: bool = False,
@@ -1059,12 +1060,9 @@ class Dataset:
                 :class:`BoxPrediction`, \
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
-                :class:`SegmentationPrediction` \
+                :class:`SegmentationPrediction`, \
+                :class:`CategoryPrediction` \
             ]]): List of prediction objects to upload.
-
-                .. todo ::
-                    Add CategoryPrediction to above typehints once supported
-
             update: Whether or not to update metadata or ignore on reference ID
               collision. Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
