@@ -101,12 +101,12 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         reference_id (str): User-defined ID of the image to which to apply this
             annotation.
         annotation_id (Optional[str]): The annotation ID that uniquely
-            identifies this annotation within its target dataset item. Upon ingest,
-            a matching annotation id will be ignored by default, and updated if
-            update=True for dataset.annotate.  If no annotation ID is passed, one
-            will be automatically generated using the label, x, y, width, and
-            height, so that you can make inserts idempotently and identical boxes
-            will be ignored.
+            identifies this annotation within its target dataset item. Upon
+            ingest, a matching annotation id will be ignored by default, and
+            overwritten if update=True for dataset.annotate.  If no annotation
+            ID is passed, one will be automatically generated using the label,
+            x, y, width, and height, so that you can make inserts idempotently
+            as identical boxes will be ignored.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see

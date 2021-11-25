@@ -262,7 +262,7 @@ class Dataset:
 
         Parameters:
             annotations (Sequence[:class:`Annotation`]): List of annotation objects to upload.
-            update: Whether to ignore or update metadata for conflicting annotations.
+            update: Whether to ignore or overwrite metadata for conflicting annotations.
             batch_size: Number of annotations processed in each concurrent batch.
               Default is 5000.
             asynchronous: Whether or not to process the upload asynchronously (and
@@ -364,7 +364,7 @@ class Dataset:
 
         ::
 
-            # update metadata by reuploading the item
+            # overwrite metadata by reuploading the item
             remote_item.metadata["weather"] = "Sunny"
 
             async_job_2 = dataset.append(
@@ -380,7 +380,7 @@ class Dataset:
                 Sequence[:class:`LidarScene`] \
               ]): List of items or scenes to upload.
             batch_size: Size of the batch for larger uploads. Default is 20.
-            update: Whether or not to update metadata on reference ID collision.
+            update: Whether or not to overwrite metadata on reference ID collision.
               Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
               return an :class:`AsyncJob` object). This is highly encouraged for
@@ -678,7 +678,7 @@ class Dataset:
     def create_custom_index(
         self, embeddings_urls: List[str], embedding_dim: int
     ):
-        """Processes user-provided embeddings for the dataset to use with autotag.
+        """Processes user-provided embeddings for the dataset to use with autotag and simsearch.
 
         ::
 
@@ -752,7 +752,7 @@ class Dataset:
         return self._client.set_continuous_indexing(self.id, enable)
 
     def create_image_index(self):
-        """Creates or updates image index by generating embeddings for lacking images.
+        """Creates or updates image index by generating embeddings for images that do not already have embeddings.
 
         The embeddings are used for autotag and similarity search.
 
@@ -768,7 +768,7 @@ class Dataset:
     def create_object_index(
         self, model_run_id: str = None, gt_only: bool = None
     ):
-        """Creates or updates object index by generating embeddings for lacking objects.
+        """Creates or updates object index by generating embeddings for objects that do not already have embeddings.
 
         These embeddings are used for autotag and similarity search. This endpoint
         only supports indexing objects sourced from the predictions of a specific
@@ -1064,7 +1064,7 @@ class Dataset:
                 :class:`SegmentationPrediction`, \
                 :class:`CategoryPrediction` \
             ]]): List of prediction objects to upload.
-            update: Whether or not to update metadata or ignore on reference ID
+            update: Whether or not to overwrite metadata or ignore on reference ID
               collision. Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
               return an :class:`AsyncJob` object). Default is False.
