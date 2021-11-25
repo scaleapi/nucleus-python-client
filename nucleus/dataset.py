@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union, TYPE_CHECKING
 
 import requests
 
@@ -21,10 +21,20 @@ from nucleus.utils import (
 )
 
 from .dataset_item_uploader import DatasetItemUploader
+from .deprecation_warning import deprecated
 from .upload_response import UploadResponse
 from .errors import DatasetItemRetrievalError
 
-from .annotation import Annotation, check_all_mask_paths_remote
+from .annotation import (
+    Annotation,
+    check_all_mask_paths_remote,
+    BoxAnnotation,
+    PolygonAnnotation,
+    CuboidAnnotation,
+    CategoryAnnotation,
+    MultiCategoryAnnotation,
+    SegmentationAnnotation,
+)
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
@@ -57,6 +67,9 @@ from .scene import LidarScene, Scene, check_all_scene_paths_remote
 WARN_FOR_LARGE_UPLOAD = 50000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
+if TYPE_CHECKING:
+    from . import NucleusClient
+
 
 class Dataset:
     """Datasets are collections of your data that can be associated with models.
@@ -85,7 +98,7 @@ class Dataset:
     def __init__(
         self,
         dataset_id: str,
-        client: "NucleusClient",  # type:ignore # noqa: F821
+        client: "NucleusClient",  # noqa: F821
         name: Optional[str] = None,
     ):
         """
@@ -121,7 +134,7 @@ class Dataset:
         return self._name
 
     @property
-    def model_runs(self) -> List[str]:
+    def model_runs(self) -> Dict[Any, Any]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
         response = self._client.make_request(
@@ -130,7 +143,7 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> List[str]:
+    def slices(self) -> Dict[Any, Any]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
@@ -248,6 +261,9 @@ class Dataset:
         dataset_info = DatasetInfo.parse_obj(response)
         return dataset_info
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead"
+    )
     def create_model_run(
         self,
         name: str,
@@ -268,8 +284,17 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: Sequence[Annotation],
-        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
+        annotations: Sequence[
+            Union[
+                BoxAnnotation,
+                PolygonAnnotation,
+                CuboidAnnotation,
+                CategoryAnnotation,
+                MultiCategoryAnnotation,
+                SegmentationAnnotation,
+            ]
+        ],
+        update: bool = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
         asynchronous: bool = False,
     ) -> Union[Dict[str, Any], AsyncJob]:
@@ -495,6 +520,7 @@ class Dataset:
             batch_size=batch_size,
         )
 
+    @deprecated("Prefer using Dataset.append instead.")
     def append_scenes(
         self,
         scenes: List[LidarScene],
@@ -891,7 +917,7 @@ class Dataset:
             route=f"dataset/{self.id}/embeddings",
             requests_command=requests.get,
         )
-        return api_payload
+        return api_payload  # type: ignore
 
     def delete_annotations(
         self, reference_ids: list = None, keep_history=False

@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `NucleusClient.predictions_ref_id(..)`
   - `NucleusClient.predictions_iloc(..)`
   - `NucleusClient.predictions_loc(..)`
+  - `Dataset.create_model_run(..)`
+  - `Dataset.model_runs(..)`
 - `NucleusClient.list_datasets` is deprecated in favor of `NucleusClient.datasets`. The latter allows for direct usage of `Dataset` objects.
 - `NucleusClient.list_models` is deprecated in favor of `NucleusClient.models`.
 - `NucleusClient.get_dataset_items` is deprecated in favor of `Dataset.items` to make the object model more consistent.
@@ -42,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NucleusClient.set_continuous_indexing` is deprecated in favor of `Dataset.set_continuous_indexing` to make the object model more consistent.
 - `NucleusClient.create_image_index` is deprecated in favor of `Dataset.create_image_index` to make the object model more consistent.
 - `NucleusClient.create_object_index` is deprecated in favor of `Dataset.create_object_index` to make the object model more consistent.
+- `Dataset.append_scenes` is deprecated in favor of `Dataset.append` for a simpler interface.
 
 ## [0.0.1 - 0.2.1](https://github.com/scaleapi/nucleus-python-client/releases)
 

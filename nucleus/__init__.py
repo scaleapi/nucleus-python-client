@@ -35,7 +35,7 @@ __all__ = [
 
 import os
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Sequence
 
 import pkg_resources
 import pydantic
@@ -418,7 +418,7 @@ class NucleusClient:
     def annotate_dataset(
         self,
         dataset_id: str,
-        annotations: List[
+        annotations: Sequence[
             Union[
                 BoxAnnotation,
                 PolygonAnnotation,
@@ -900,8 +900,12 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
+    # TODO: Fix return type, can be a list as well. Brings on a lot of mypy errors ...
     def make_request(
-        self, payload: dict, route: str, requests_command=requests.post
+        self,
+        payload: Optional[dict],
+        route: str,
+        requests_command=requests.post,
     ) -> dict:
         """Makes a request to a Nucleus API endpoint.
 
