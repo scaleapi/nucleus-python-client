@@ -325,8 +325,8 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            dataset = client.get_dataset("ds_bw6de8s84pe0vbn6p5zg")
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
 
             local_item = nucleus.DatasetItem(
               image_location="./1.jpg",
@@ -635,8 +635,8 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            dataset = client.get_dataset("ds_bw6de8s84pe0vbn6p5zg")
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
 
             embeddings = {
                 "reference_id_0": [0.1, 0.2, 0.3],
@@ -768,8 +768,8 @@ class Dataset:
         ::
 
             import nucleus
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            dataset = client.get_dataset("ds_bw6de8s84pe0vbn6p5zg")
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
 
             response = dataset.add_taxonomy(
                 taxonomy_name="clothing_type",
@@ -932,12 +932,12 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            dataset = client.get_dataset(dataset_id="ds_bw6de8s84pe0vbn6p5zg")
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset(dataset_id="ds_bwkezj6g5c4g05gqp1eg")
 
             model = client.get_model(
-                model_id="prj_bxmkbanwnsh00cs96eq0",
-                dataset_id="ds_bw6de8s84pe0vbn6p5zg"
+                model_id="prj_bybpa3gjmjc30es761y0",
+                dataset_id="ds_bwkezj6g5c4g05gqp1eg"
             )
 
             # Compute all evaluation metrics including IOU-based matching:

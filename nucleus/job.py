@@ -21,7 +21,7 @@ class AsyncJob:
 
         import nucleus
 
-        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
         dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
 
         # When kicking off an asynchronous job, store the return value as a variable

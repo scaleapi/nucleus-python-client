@@ -44,8 +44,8 @@ class Model:
 
         import nucleus
 
-        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-        dataset = client.get_dataset("YOUR_DATASET_ID")
+        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+        dataset = client.get_dataset(YOUR_DATASET_ID)
 
         prediction_1 = nucleus.BoxPrediction(
             label="label",
