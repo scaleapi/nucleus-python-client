@@ -231,37 +231,33 @@ class Dataset:
     ) -> Union[Dict[str, Any], AsyncJob]:
         """Uploads ground truth annotations to the dataset.
 
-        Adding ground truth to your dataset in Nucleus allows you to visualize annotations,
-        query dataset items based on the annotations they contain, and evaluate ModelRuns by
-        comparing predictions to ground truth.
+        Adding ground truth to your dataset in Nucleus allows you to visualize
+        annotations, query dataset items based on the annotations they contain,
+        and evaluate models by comparing their predictions to ground truth.
 
         Nucleus supports :class:`Box<BoxAnnotation>`, :class:`Polygon<PolygonAnnotation>`,
         :class:`Cuboid<CuboidAnnotation>`, :class:`Segmentation<SegmentationAnnotation>`,
         and :class:`Category<CategoryAnnotation>` annotations. Cuboid annotations
         can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
 
-        When uploading an annotation, you need to specify which item you are annotating via
-        the reference_id you provided when uploading the image or pointcloud.
+        When uploading an annotation, you need to specify which item you are
+        annotating via the reference_id you provided when uploading the image
+        or pointcloud.
 
-        Ground truth uploads can be made idempotent by specifying an optional annotation_id for
-        each annotation. This id should be unique within the dataset_item so that
-        (reference_id, annotation_id) is unique within the dataset.
+        Ground truth uploads can be made idempotent by specifying an optional
+        annotation_id for each annotation. This id should be unique within the
+        dataset_item so that (reference_id, annotation_id) is unique within the
+        dataset.
 
-        When uploading a mask annotation, Nucleus expects the mask file to be in PNG format
-        with each pixel being a 0-255 uint8. Currently, Nucleus only supports uploading masks
-        from URL.
+        See :class:`SegmentationAnnotation` for specific requirements to upload
+        segmentation annotations.
 
-        Nucleus automatically enforces the constraint that each DatasetItem can have at most one
-        ground truth segmentation mask. As a consequence, if during upload a duplicate mask is
-        detected for a given image, by default it will be ignored. You can change this behavior
-        by specifying the optional 'update' flag. Setting update = true will replace the
-        existing segmentation with the new mask specified in the request body.
-
-        For ingesting large datasets, see the `Guide for Large Ingestions
+        For ingesting large annotation payloads, see the `Guide for Large Ingestions
         <https://nucleus.scale.com/docs/large-ingestion>`_.
 
         Parameters:
-            annotations (Sequence[:class:`Annotation`]): List of annotation objects to upload.
+            annotations (Sequence[:class:`Annotation`]): List of annotation
+              objects to upload.
             update: Whether to ignore or overwrite metadata for conflicting annotations.
             batch_size: Number of annotations processed in each concurrent batch.
               Default is 5000.
@@ -295,6 +291,12 @@ class Dataset:
 
     def ingest_tasks(self, task_ids: List[str]) -> dict:
         """Ingest specific tasks from an existing Scale or Rapid project into the dataset.
+
+        Note: if you would like to create a new Dataset from an exisiting Scale
+        labeling project, use :meth:`NucleusClient.create_dataset_from_project`.
+
+        For more info, see our `Ingest From Labeling Guide
+        <https://nucleus.scale.com/docs/ingest-from-labeling>`_.
 
         Parameters:
             task_ids: List of task IDs to ingest.
@@ -488,34 +490,17 @@ class Dataset:
             i: Absolute numerical index of the dataset item within the dataset.
 
         Returns:
-            Payload describing the dataset item and associated members::
+            Payload describing the dataset item and associated annotations::
 
                 {
-                    "item": {
-                        "metadata": Optional[dict],
-                        "original_image_url": str,
-                        "reference_id": str,
-                        "dataset_item_id": str
-                    },
-                    "annotations": List[{
-                        "<annotation_type>": {
-                            "id": str,
-                            "dataset_item_id": str,
-                            "label": str,
-                            "geometry": Optional[dict],
-                            "mask_url": Optional[str],
-                            "annotations": Optional[{
-                                "index": int,
-                                "label": str
-                            }],
-                            "annotation_id": Optional[str],
-                            "metadata": Optional[dict],
-                            "type": "<annotation_type>",
-                            "taxonomy_name": Optional[str],
-                            "reference_id": str
-                        }]
-                    },
-                    "task_ids": List[str]
+                    "item": DatasetItem
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
                 }
         """
         response = self._client.dataitem_iloc(self.id, i)
@@ -528,34 +513,17 @@ class Dataset:
             reference_id: User-defined reference ID of the dataset item.
 
         Returns:
-            Payload describing the dataset item and associated members::
+            Payload containing the dataset item and associated annotations::
 
                 {
-                    "item": {
-                        "metadata": Optional[dict],
-                        "original_image_url": str,
-                        "reference_id": str,
-                        "dataset_item_id": str
-                    },
-                    "annotations": List[{
-                        "<annotation_type>": {
-                            "id": str,
-                            "dataset_item_id": str,
-                            "label": str,
-                            "geometry": Optional[dict],
-                            "mask_url": Optional[str],
-                            "annotations": Optional[{
-                                "index": int,
-                                "label": str
-                            }],
-                            "annotation_id": Optional[str],
-                            "metadata": Optional[dict],
-                            "type": "<annotation_type>",
-                            "taxonomy_name": Optional[str],
-                            "reference_id": str
-                        }]
-                    },
-                    "task_ids": List[str]
+                    "item": DatasetItem
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
                 }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
@@ -569,34 +537,17 @@ class Dataset:
               This can be retrieved via :meth:`Dataset.items` or a Nucleus dashboard URL.
 
         Returns:
-            Payload describing the dataset item and associated members::
+            Payload containing the dataset item and associated annotations::
 
                 {
-                    "item": {
-                        "metadata": Optional[dict],
-                        "original_image_url": str,
-                        "reference_id": str,
-                        "dataset_item_id": str
-                    },
-                    "annotations": List[{
-                        "<annotation_type>": {
-                            "id": str,
-                            "dataset_item_id": str,
-                            "label": str,
-                            "geometry": Optional[dict],
-                            "mask_url": Optional[str],
-                            "annotations": Optional[{
-                                "index": int,
-                                "label": str
-                            }],
-                            "annotation_id": Optional[str],
-                            "metadata": Optional[dict],
-                            "type": "<annotation_type>",
-                            "taxonomy_name": Optional[str],
-                            "reference_id": str
-                        }]
-                    },
-                    "task_ids": List[str]
+                    "item": DatasetItem
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
                 }
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)
@@ -858,7 +809,7 @@ class Dataset:
                         "cuboid": Optional[List[CuboidAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
-                        "categorization": Optional[List[CategoryAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
                     }
                 }]
         """
@@ -967,8 +918,8 @@ class Dataset:
         During IoU calculation, bounding box Predictions are compared to
         GroundTruth using a greedy matching algorithm that matches prediction and
         ground truth boxes that have the highest ious first. By default the
-        matching algorithm is class-sensitive: it will treat a match as a true
-        postive only if the labels are the same.
+        matching algorithm is class-agnostic: it will greedily create matches
+        regardless of the class labels.
 
         The algorithm can be tuned to classify true positives between certain
         classes, but not others. This is useful if the labels in your ground truth
@@ -1053,6 +1004,31 @@ class Dataset:
         asynchronous: bool = False,
     ):
         """Uploads predictions and associates them with an existing :class:`Model`.
+
+        Adding predictions to your dataset in Nucleus allows you to visualize
+        discrepancies against ground truth, query dataset items based on the
+        predictions they contain, and evaluate your models by comparing their
+        predictions to ground truth.
+
+        Nucleus supports :class:`Box<BoxPrediction>`, :class:`Polygon<PolygonPrediction>`,
+        :class:`Cuboid<CuboidPrediction>`, :class:`Segmentation<SegmentationPrediction>`,
+        and :class:`Category<CategoryPrediction>` predictions. Cuboid predictions
+        can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
+
+        When uploading an prediction, you need to specify which item you are
+        annotating via the reference_id you provided when uploading the image
+        or pointcloud.
+
+        Ground truth uploads can be made idempotent by specifying an optional
+        annotation_id for each prediction. This id should be unique within the
+        dataset_item so that (reference_id, annotation_id) is unique within the
+        dataset.
+
+        See :class:`SegmentationPrediction` for specific requirements to upload
+        segmentation predictions.
+
+        For ingesting large prediction payloads, see the `Guide for Large Ingestions
+        <https://nucleus.scale.com/docs/large-ingestion>`_.
 
         Parameters:
             model (:class:`Model`): Nucleus-generated model ID (starts with ``prj_``). This can

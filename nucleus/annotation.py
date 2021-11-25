@@ -404,6 +404,16 @@ class Segment:
 class SegmentationAnnotation(Annotation):
     """A segmentation mask on a 2D image.
 
+    When uploading a mask annotation, Nucleus expects the mask file to be in
+    PNG format with each pixel being a 0-255 uint8. Currently, Nucleus only
+    supports uploading masks from URL.
+
+    Nucleus automatically enforces the constraint that each DatasetItem can
+    have at most one ground truth segmentation mask. As a consequence, if
+    during upload a duplicate mask is detected for a given image, by default it
+    will be ignored. You can change this behavior by setting ``update = True``,
+    which will replace the existing segmentation mask with the new mask.
+
     ::
 
         from nucleus import SegmentationAnnotation
