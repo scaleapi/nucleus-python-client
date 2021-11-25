@@ -54,6 +54,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+html_title = "Nucleus API Reference"
 html_theme = "furo"
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -77,7 +78,7 @@ autoapi_type = "python"
 autoapi_dirs = ["../nucleus"]
 autoapi_options = [
     "members",
-    "undoc-members",  # TODO: no-undoc-members once all docstrings are populated
+    "no-undoc-members",
     "inherited-members",
     "show-module-summary",
     "imported-members",
@@ -87,4 +88,5 @@ autoapi_root = "api"
 autoapi_python_class_content = "both"
 autoapi_member_order = "groupwise"
 autodoc_typehints = "description"
+autoapi_add_toctree_entry = False
 napoleon_include_init_with_doc = True

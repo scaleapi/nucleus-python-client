@@ -15,7 +15,25 @@ JOB_POLLING_INTERVAL = 5
 
 @dataclass
 class AsyncJob:
-    """Object used to check the status or errors of a long running asynchronous operation."""
+    """Object used to check the status or errors of a long running asynchronous operation.
+
+    ::
+
+        import nucleus
+
+        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+        dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+
+        # When kicking off an asynchronous job, store the return value as a variable
+        job = dataset.append(items=YOUR_DATASET_ITEMS, asynchronous=True)
+
+        # Poll for status or errors
+        print(job.status())
+        print(job.errors())
+
+        # Block until job finishes
+        job.sleep_until_complete()
+    """
 
     job_id: str
     job_last_known_status: str
@@ -59,7 +77,7 @@ class AsyncJob:
             ::
 
                 [
-                    '{"annotation":{"label":"car","type":"box","geometry":{"x":50,"y":60,"width":70,"height":80},"referenceId":"bad_ref_id","annotationId":"attempted_annot_upload","metadata":{}},"error":"Item with id bad_ref_id doesn't exist."}'
+                    '{"annotation":{"label":"car","type":"box","geometry":{"x":50,"y":60,"width":70,"height":80},"referenceId":"bad_ref_id","annotationId":"attempted_annot_upload","metadata":{}},"error":"Item with id bad_ref_id doesn\'t exist."}'
                 ]
         """
         return self.client.make_request(
@@ -71,9 +89,9 @@ class AsyncJob:
     def sleep_until_complete(self, verbose_std_out=True):
         """Blocks until the job completes or errors.
 
-        Args:
-            verbose_std_out (bool, optional): Whether or not to verbosely log while \
-            sleeping. Defaults to True.
+        Parameters:
+            verbose_std_out (Optional[bool]): Whether or not to verbosely log while
+              sleeping. Defaults to True.
         """
         while 1:
             status = self.status()
@@ -92,6 +110,7 @@ class AsyncJob:
 
     @classmethod
     def from_json(cls, payload: dict, client):
+        # TODO: make private
         return cls(
             job_id=payload[JOB_ID_KEY],
             job_last_known_status=payload[JOB_LAST_KNOWN_STATUS_KEY],
