@@ -115,7 +115,7 @@ class Model:
 
     @classmethod
     def from_json(cls, payload: dict, client):
-        """Instantiates model object from schematized JSON-like dict payload."""
+        """Instantiates model object from schematized JSON dict payload."""
         return cls(
             model_id=payload["id"],
             name=payload["name"],

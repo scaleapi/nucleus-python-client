@@ -94,7 +94,7 @@ class Frame:
 
     @classmethod
     def from_json(cls, payload: dict):
-        """Instantiates frame object from schematized JSON-like dict payload."""
+        """Instantiates frame object from schematized JSON dict payload."""
         items = {
             sensor: DatasetItem.from_json(item)
             for sensor, item in payload.items()
@@ -102,7 +102,7 @@ class Frame:
         return cls(**items)
 
     def to_payload(self) -> dict:
-        """Serializes frame object to schematized JSON-like dict."""
+        """Serializes frame object to schematized JSON dict."""
         return {
             sensor: dataset_item.to_payload(is_scene=True)
             for sensor, dataset_item in self.items.items()
@@ -295,7 +295,7 @@ class Scene(ABC):
 
     @classmethod
     def from_json(cls, payload: dict):
-        """Instantiates scene object from schematized JSON-like dict payload."""
+        """Instantiates scene object from schematized JSON dict payload."""
         frames_payload = payload.get(FRAMES_KEY, [])
         frames = [Frame.from_json(frame) for frame in frames_payload]
         return cls(
@@ -305,7 +305,7 @@ class Scene(ABC):
         )
 
     def to_payload(self) -> dict:
-        """Serializes scene object to schematized JSON-like dict."""
+        """Serializes scene object to schematized JSON dict."""
         self.validate_frames_dict()
         ordered_frames = self.get_frames()
         frames_payload = [frame.to_payload() for frame in ordered_frames]
@@ -318,7 +318,7 @@ class Scene(ABC):
         return payload
 
     def to_json(self) -> str:
-        """Serializes scene object to schematized JSON-like string."""
+        """Serializes scene object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
 

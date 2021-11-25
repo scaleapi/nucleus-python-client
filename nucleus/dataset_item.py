@@ -51,13 +51,13 @@ class Quaternion:
 
     @classmethod
     def from_json(cls, payload: Dict[str, float]):
-        """Instantiates quaternion object from schematized JSON-like dict payload."""
+        """Instantiates quaternion object from schematized JSON dict payload."""
         return cls(
             payload[X_KEY], payload[Y_KEY], payload[Z_KEY], payload[W_KEY]
         )
 
     def to_payload(self) -> dict:
-        """Serializes quaternion object to schematized JSON-like dict."""
+        """Serializes quaternion object to schematized JSON dict."""
         return {
             X_KEY: self.x,
             Y_KEY: self.y,
@@ -91,7 +91,7 @@ class CameraParams:
 
     @classmethod
     def from_json(cls, payload: Dict[str, Any]):
-        """Instantiates camera params object from schematized JSON-like dict payload."""
+        """Instantiates camera params object from schematized JSON dict payload."""
         return cls(
             Point3D.from_json(payload[POSITION_KEY]),
             Quaternion.from_json(payload[HEADING_KEY]),
@@ -102,7 +102,7 @@ class CameraParams:
         )
 
     def to_payload(self) -> dict:
-        """Serializes camera params object to schematized JSON-like dict."""
+        """Serializes camera params object to schematized JSON dict."""
         return {
             POSITION_KEY: self.position.to_payload(),
             HEADING_KEY: self.heading.to_payload(),
@@ -227,7 +227,7 @@ class DatasetItem:  # pylint: disable=R0902
 
     @classmethod
     def from_json(cls, payload: dict):
-        """Instantiates dataset item object from schematized JSON-like dict payload."""
+        """Instantiates dataset item object from schematized JSON dict payload."""
         image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
             ORIGINAL_IMAGE_URL_KEY, None
         )
@@ -244,7 +244,7 @@ class DatasetItem:  # pylint: disable=R0902
         return os.path.isfile(self.image_location)
 
     def to_payload(self, is_scene=False) -> dict:
-        """Serializes dataset item object to schematized JSON-like dict."""
+        """Serializes dataset item object to schematized JSON dict."""
         payload: Dict[str, Any] = {
             METADATA_KEY: self.metadata or {},
         }
@@ -269,7 +269,7 @@ class DatasetItem:  # pylint: disable=R0902
         return payload
 
     def to_json(self) -> str:
-        """Serializes dataset item object to schematized JSON-like string."""
+        """Serializes dataset item object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
 

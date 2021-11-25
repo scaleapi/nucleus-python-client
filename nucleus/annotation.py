@@ -45,7 +45,7 @@ class Annotation:
 
     @classmethod
     def from_json(cls, payload: dict):
-        """Instantiates annotation object from schematized JSON-like dict payload."""
+        """Instantiates annotation object from schematized JSON dict payload."""
         if payload.get(TYPE_KEY, None) == BOX_TYPE:
             return BoxAnnotation.from_json(payload)
         elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
@@ -60,14 +60,14 @@ class Annotation:
             return SegmentationAnnotation.from_json(payload)
 
     def to_payload(self) -> dict:
-        """Serializes annotation object to schematized JSON-like dict."""
+        """Serializes annotation object to schematized JSON dict."""
         raise NotImplementedError(
             "For serialization, use a specific subclass (e.g. SegmentationAnnotation), "
             "not the base annotation class."
         )
 
     def to_json(self) -> str:
-        """Serializes annotation object to schematized JSON-like string."""
+        """Serializes annotation object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
 

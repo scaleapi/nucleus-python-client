@@ -1105,7 +1105,7 @@ class NucleusClient:
             Requests command: ``requests.post``, ``requests.get``, or ``requests.delete``.
 
         Returns:
-            Response payload as JSON-like dict.
+            Response payload as JSON dict.
         """
         endpoint = f"{self.endpoint}/{route}"
 
