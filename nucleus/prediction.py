@@ -58,6 +58,22 @@ def from_json(payload: dict):
 class SegmentationPrediction(SegmentationAnnotation):
     """Predicted segmentation mask on a 2D image.
 
+    ::
+
+        from nucleus import SegmentationPrediction
+
+        segmentation = SegmentationPrediction(
+            mask_url="s3://your-bucket-name/pred-seg-masks/image_2_pred_mask_id1.png",
+            annotations=[
+                Segment(label="grass", index="1"),
+                Segment(label="road", index="2"),
+                Segment(label="bus", index="3", metadata={"vehicle_color": "yellow"}),
+                Segment(label="tree", index="4")
+            ],
+            reference_id="image_2",
+            annotation_id="image_2_pred_mask_1",
+        )
+
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
           accessible to Scale. The mask is an HxW int8 array saved in PNG format,

@@ -8,6 +8,7 @@ from nucleus.prediction import (
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
+    CategoryPrediction,
     from_json,
 )
 from nucleus.url_utils import sanitize_string_args

@@ -75,8 +75,23 @@ class Annotation:
 class BoxAnnotation(Annotation):  # pylint: disable=R0902
     """A bounding box annotation.
 
+    ::
+
+        from nucleus import BoxAnnotation
+
+        box = BoxAnnotation(
+            label="car",
+            x=0,
+            y=0,
+            width=10,
+            height=10,
+            reference_id="image_1",
+            annotation_id="image_1_car_box_1",
+            metadata={"vehicle_color": "red"}
+        )
+
     Parameters:
-        label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
+        label (str): The label for this annotation.
         x (Union[float, int]): The distance, in pixels, between the left border
             of the bounding box and the left border of the image.
         y (Union[float, int]): The distance, in pixels, between the top border
@@ -166,8 +181,20 @@ class Point:
 class PolygonAnnotation(Annotation):
     """A polygon annotation consisting of an ordered list of 2D points.
 
+    ::
+
+        from nucleus import PolygonAnnotation
+
+        polygon = PolygonAnnotation(
+            label="bus",
+            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
+            reference_id="image_2",
+            annotation_id="image_2_bus_polygon_1",
+            metadata={"vehicle_color": "yellow"}
+        )
+
     Parameters:
-        label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
+        label (str): The label for this annotation.
         vertices List[:class:`Point`]: The list of points making up the polygon.
         reference_id (str): User-defined ID of the image to which to apply this
             annotation.
@@ -256,8 +283,22 @@ class Point3D:
 class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     """A 3D Cuboid annotation.
 
+    ::
+
+        from nucleus import CuboidAnnotation
+
+        cuboid = CuboidAnnotation(
+            label="car",
+            position=Point3D(100, 100, 10),
+            dimensions=Point3D(5, 10, 5),
+            yaw=0,
+            reference_id="pointcloud_1",
+            annotation_id="pointcloud_1_car_cuboid_1",
+            metadata={"vehicle_color": "green"}
+        )
+
     Parameters:
-        label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
+        label (str): The label for this annotation.
         position (:class:`Point3D`): The point at the center of the cuboid
         dimensions (:class:`Point3D`): The length (x), width (y), and height (z) of the cuboid
         yaw (float): The rotation, in radians, about the Z axis of the cuboid
@@ -363,6 +404,22 @@ class Segment:
 class SegmentationAnnotation(Annotation):
     """A segmentation mask on a 2D image.
 
+    ::
+
+        from nucleus import SegmentationAnnotation
+
+        segmentation = SegmentationAnnotation(
+            mask_url="s3://your-bucket-name/segmentation-masks/image_2_mask_id1.png",
+            annotations=[
+                Segment(label="grass", index="1"),
+                Segment(label="road", index="2"),
+                Segment(label="bus", index="3", metadata={"vehicle_color": "yellow"}),
+                Segment(label="tree", index="4")
+            ],
+            reference_id="image_2",
+            annotation_id="image_2_mask_1",
+        )
+
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
           accessible to Scale. The mask is an HxW int8 array saved in PNG format,
@@ -442,8 +499,19 @@ class AnnotationTypes(Enum):
 class CategoryAnnotation(Annotation):
     """A category annotation.
 
+    ::
+
+        from nucleus import CategoryAnnotation
+
+        category = CategoryAnnotation(
+            label="dress",
+            taxonomy_name="clothing_type",
+            reference_id="image_1",
+            metadata={"dress_color": "navy"}
+        )
+
     Parameters:
-        label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
+        label (str): The label for this annotation.
         taxonomy_name (str): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
         reference_id (str): User-defined ID of the image to which to apply this annotation.
