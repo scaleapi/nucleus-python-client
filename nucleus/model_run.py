@@ -2,14 +2,14 @@
 Model Runs are deprecated and will be removed in a future version of the python client.
 It is now possible to upload model predictions without a need for creating a model run
 
-For example:
-..code-block:: python
-import nucleus
-client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-prediction_1 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="1", confidence=0.9, class_pdf={'label': 0.9, 'other_label': 0.1})
-prediction_2 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="2", confidence=0.2, class_pdf={'label': 0.2, 'other_label': 0.8})
-model = client.add_model(name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"})
-response = dataset.upload_predictions(model, [prediction_1, prediction_2])
+For example::
+
+    import nucleus
+    client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+    prediction_1 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="1", confidence=0.9, class_pdf={'label': 0.9, 'other_label': 0.1})
+    prediction_2 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="2", confidence=0.2, class_pdf={'label': 0.2, 'other_label': 0.8})
+    model = client.add_model(name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"})
+    response = dataset.upload_predictions(model, [prediction_1, prediction_2])
 """
 
 

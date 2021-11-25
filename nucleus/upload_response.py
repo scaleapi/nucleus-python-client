@@ -16,8 +16,10 @@ def json_list_to_dataset_item(item_list):
 
 
 class UploadResponse:
-    """
-    Response for long upload job
+    """Response for long upload job. For internal use only!
+
+    Parameters:
+        json: Payload from which to construct the UploadResponse.
 
     Attributes:
         dataset_id: The scale-generated id for the dataset that was uploaded to

@@ -1,4 +1,4 @@
-"""This module can be used to compute active learning metrics on your predictions.
+"""Compute active learning metrics on your predictions.
 
 For more details on usage see the example colab in scripts/autocurate_bdd.ipynb
 """

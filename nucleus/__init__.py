@@ -1,16 +1,12 @@
-"""
-Nucleus Python Library.
-
-For full documentation see: https://dashboard.scale.com/nucleus/docs/api?language=python
-"""
+"""Nucleus Python SDK. """
 
 __all__ = [
     "AsyncJob",
     "BoxAnnotation",
     "BoxPrediction",
     "CameraParams",
-    # "CategoryAnnotation", # coming soon!
-    # "CategoryPrediction", # coming soon!
+    "CategoryAnnotation",
+    "CategoryPrediction",
     "CuboidAnnotation",
     "CuboidPrediction",
     "Dataset",
@@ -25,16 +21,16 @@ __all__ = [
     # "MultiCategoryAnnotation", # coming soon!
     "NotFoundError",
     "NucleusAPIError",
+    "NucleusClient",
     "Point",
     "Point3D",
-    "PolygonPrediction",
+    "PolygonAnnotation",
     "PolygonPrediction",
     "Quaternion",
     "Segment",
     "SegmentationAnnotation",
     "SegmentationPrediction",
     "Slice",
-    "UploadResponse",
 ]
 
 import os
@@ -135,8 +131,14 @@ __version__ = pkg_resources.get_distribution("scale-nucleus").version
 
 
 class NucleusClient:
-    """
-    Nucleus client.
+    """Client to interact with the Nucleus API via Python SDK.
+
+    Parameters:
+        api_key: Follow `this guide <https://scale.com/docs/account#section-api-keys>`_
+          to retrieve your API keys.
+        use_notebook: Whether the client is being used in a notebook (toggles tqdm
+          style). Default is ``False``.
+        endpoint: Base URL of the API. Default is Nucleus's current production API.
     """
 
     def __init__(
@@ -181,6 +183,12 @@ class NucleusClient:
 
     @property
     def models(self) -> List[Model]:
+        # TODO: implement for Dataset, scoped just to associated models
+        """Fetches all of your Nucleus models.
+
+        Returns:
+            List[:class:`Model`]: List of models associated with the client API key.
+        """
         model_objects = self.make_request({}, "models/", requests.get)
 
         return [
@@ -207,26 +215,31 @@ class NucleusClient:
 
     @deprecated(msg="Use the NucleusClient.models property in the future.")
     def list_models(self) -> List[Model]:
-        """
-        Lists available models in your repo.
-        :return: model_ids
+        """Fetches all of your Nucleus models.
+
+        Returns:
+            List[:class:`Model`]: List of models associated with the client API key.
         """
         return self.models
 
     @deprecated(msg="Use the NucleusClient.datasets property in the future.")
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
-        """
-        Lists available datasets in your repo.
-        :return: { datasets_ids }
+        """Fetches all of your Nucleus datasets.
+
+        Returns:
+            Payload containing all dataset IDs associated with the client
+            API key.
         """
         return self.make_request({}, "dataset/", requests.get)
 
     def list_jobs(
         self, show_completed=None, date_limit=None
     ) -> List[AsyncJob]:
-        """
-        Lists jobs for user.
-        :return: jobs
+        """Fetches all of your running jobs in Nucleus.
+
+        Returns:
+            List[:class:`AsyncJob`]: List of running asynchronous jobs
+            associated with the client API key.
         """
         # TODO: What type is date_limit? Use pydantic ...
         payload = {show_completed: show_completed, date_limit: date_limit}
@@ -244,26 +257,29 @@ class NucleusClient:
 
     @deprecated(msg="Prefer using Dataset.items")
     def get_dataset_items(self, dataset_id) -> List[DatasetItem]:
-        """
-        Gets all the dataset items inside your repo as a json blob.
-        :return [ DatasetItem ]
-        """
         dataset = self.get_dataset(dataset_id)
         return dataset.items
 
     def get_dataset(self, dataset_id: str) -> Dataset:
-        """
-        Fetches a dataset for given id
-        :param dataset_id: internally controlled dataset_id
-        :return: dataset
+        """Fetches a dataset by its ID.
+
+        Parameters:
+            dataset_id: The ID of the dataset to fetch.
+
+        Returns:
+            :class:`Dataset`: The Nucleus dataset as an object.
         """
         return Dataset(dataset_id, self)
 
     def get_model(self, model_id: str) -> Model:
-        """
-        Fetched a model for a given id
-        :param model_id: internally controlled dataset_id
-        :return: model
+        """Fetches a model by its ID.
+
+        Parameters:
+            model_id: Nucleus-generated model ID (starts with ``prj_``). This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL.
+
+        Returns:
+            :class:`Model`: The Nucleus model as an object.
         """
         payload = self.make_request(
             payload={},
@@ -273,21 +289,11 @@ class NucleusClient:
         return Model.from_json(payload=payload, client=self)
 
     def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
-        """
-        Fetches a model_run for given id
-        :param model_run_id: internally controlled model_run_id
-        :param dataset_id: the dataset id which may determine the prediction schema
-            for this model run if present on the dataset.
-        :return: model_run
-        """
+        # TODO: deprecate ModelRun
         return ModelRun(model_run_id, dataset_id, self)
 
     def delete_model_run(self, model_run_id: str):
-        """
-        Fetches a model_run for given id
-        :param model_run_id: internally controlled model_run_id
-        :return: model_run
-        """
+        # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}", requests.delete
         )
@@ -295,12 +301,26 @@ class NucleusClient:
     def create_dataset_from_project(
         self, project_id: str, last_n_tasks: int = None, name: str = None
     ) -> Dataset:
-        """
-        Creates a new dataset based on payload params:
-        name -- A human-readable name of the dataset.
-        Returns a response with internal id and name for a new dataset.
-        :param payload: { "name": str }
-        :return: new Dataset object
+        """Create a new dataset from an existing Scale or Rapid project.
+
+        If you already have Annotation, SegmentAnnotation, VideoAnnotation,
+        Categorization, PolygonAnnotation, ImageAnnotation, DocumentTranscription,
+        LidarLinking, LidarAnnotation, or VideoboxAnnotation projects with Scale,
+        use this endpoint to import your project directly into Nucleus.
+
+        This endpoint is asynchronous because there can be delays when the
+        number of tasks is larger than 1000. As a result, the endpoint returns
+        an instance of :class:`AsyncJob`.
+
+        Parameters:
+            project_id: The ID of the Scale/Rapid project (retrievable from URL).
+            last_n_tasks: If supplied, only pull in this number of the most recent
+              tasks. By default the endpoint will pull in all eligible tasks.
+            name: The name for your new Nucleus dataset. By default the endpoint
+              will use the project's name.
+
+        Returns:
+            :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
         payload = {"project_id": project_id}
         if last_n_tasks:
@@ -317,12 +337,26 @@ class NucleusClient:
         annotation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
         """
-        Creates a new dataset:
-        Returns a response with internal id and name for a new dataset.
-        :param name -- A human-readable name of the dataset.
-        :param item_metadata_schema -- optional dictionary to define item metadata schema
-        :param annotation_metadata_schema -- optional dictionary to define annotation metadata schema
-        :return: new Dataset object
+        Creates a new, empty dataset.
+
+        Parameters:
+            name: A human-readable name for the dataset.
+            item_metadata_schema: Dict defining item-level metadata schema. See below.
+            annotation_metadata_schema: Dict defining annotation-level metadata schema.
+
+                Metadata schemas must be structured as follows::
+
+                    {
+                        "field_name": {
+                            "type": "category" | "number" | "text"
+                            "choices": List[str] | None
+                            "description": str | None
+                        },
+                        ...
+                    }
+
+        Returns:
+            :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
         response = self.make_request(
             {
@@ -337,11 +371,16 @@ class NucleusClient:
     # TODO(gunnar): Move to dataset?
     def delete_dataset(self, dataset_id: str) -> dict:
         """
-        Deletes a private dataset based on datasetId.
-        Returns an empty payload where response status `200` indicates
-        the dataset has been successfully deleted.
-        :param payload: { "name": str }
-        :return: { "dataset_id": str, "name": str }
+        Deletes a dataset by ID.
+
+        All items, annotations, and predictions associated with the dataset will
+        be deleted as well.
+
+        Parameters:
+            dataset_id: The ID of the dataset to delete.
+
+        Returns:
+            Payload to indicate deletion invocation.
         """
         return self.make_request({}, f"dataset/{dataset_id}", requests.delete)
 
@@ -385,14 +424,9 @@ class NucleusClient:
         ],
         update: bool,
         batch_size: int = 5000,
-    ):
-        """
-        Uploads ground truth annotations for a given dataset.
-        :param dataset_id: id of the dataset
-        :param annotations: List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]]
-        :param update: whether to update or ignore conflicting annotations
-        :return: {"dataset_id: str, "annotations_processed": int}
-        """
+    ) -> Dict[str, object]:
+        # TODO: deprecate in favor of Dataset.annotate invocation
+
         # Split payload into segmentations and Box/Polygon
         segmentations = [
             ann
@@ -462,14 +496,6 @@ class NucleusClient:
 
     @deprecated(msg="Use Dataset.ingest_tasks instead")
     def ingest_tasks(self, dataset_id: str, payload: dict):
-        """
-        If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
-        annotated by Scale into your Nucleus Dataset.
-        Right now we support ingestion from Videobox Annotation and 2D Box Annotation projects.
-        :param payload: {"tasks" : List[task_ids]}
-        :param dataset_id: id of the dataset
-        :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
-        """
         dataset = self.get_dataset(dataset_id)
         return dataset.ingest_tasks(payload["tasks"])
 
@@ -482,15 +508,19 @@ class NucleusClient:
     def create_model(
         self, name: str, reference_id: str, metadata: Optional[Dict] = None
     ) -> Model:
-        """
-        Adds a model info to your repo based on payload params:
-        name -- A human-readable name of the model project.
-        reference_id -- An optional user-specified identifier to reference this given model.
-        metadata -- An arbitrary metadata blob for the model.
-        :param name: A human-readable name of the model project.
-        :param reference_id: An user-specified identifier to reference this given model.
-        :param metadata: An optional arbitrary metadata blob for the model.
-        :return: Newly created Model
+        """Add a :class:`Model` to Nucleus.
+
+        Parameters:
+            name: A human-readable name for the model.
+            reference_id: Unique, user-controlled ID for the model. This can be
+              used, for example, to link to an external storage of models which
+              may have its own id scheme.
+            metadata: An arbitrary dictionary of additional data about this model
+              that can be stored and retrieved. For example, you can store information
+              about the hyperparameters used in training this model.
+
+        Returns:
+            :class:`Model`: The newly created model as an object.
         """
         response = self.make_request(
             construct_model_creation_payload(name, reference_id, metadata),
@@ -503,30 +533,7 @@ class NucleusClient:
         return Model(model_id, name, reference_id, metadata, self)
 
     def create_model_run(self, dataset_id: str, payload: dict) -> ModelRun:
-        """
-        Creates model run for dataset_id based on the given parameters specified in the payload:
-
-        'reference_id' -- The user-specified reference identifier to associate with the model.
-                        The 'model_id' field should be empty if this field is populated.
-
-        'model_id' -- The internally-controlled identifier of the model.
-                    The 'reference_id' field should be empty if this field is populated.
-
-        'name' -- An optional name for the model run.
-
-        'metadata' -- An arbitrary metadata blob for the current run.
-
-        :param
-        dataset_id: id of the dataset
-        payload:
-        {
-            "reference_id": str,
-            "model_id": str,
-            "name": Optional[str],
-            "metadata": Optional[Dict[str, Any]],
-        }
-        :return: new ModelRun object
-        """
+        # TODO: deprecate ModelRun
         response = self.make_request(
             payload, f"dataset/{dataset_id}/modelRun/create"
         )
@@ -554,18 +561,7 @@ class NucleusClient:
         update: bool = False,
         batch_size: int = 5000,
     ):
-        """
-        Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param annotations: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction, CategoryPrediction]],
-        :param update: bool
-        :return:
-        {
-            "dataset_id": str,
-            "model_run_id": str,
-            "predictions_processed": int,
-            "predictions_ignored": int,
-        }
-        """
+        # TODO: deprecate in favor of Dataset.upload_predictions invocation
         if model_run_id is not None:
             assert model_id is None and dataset_id is None
             endpoint = f"modelRun/{model_run_id}/predict"
@@ -636,30 +632,8 @@ class NucleusClient:
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
     ):
-        """
-        Commits the model run. Starts matching algorithm defined by payload.
-        class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
-                          Default value: True
-
-        allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
-                                 for ground truth and model predictions.
-                                 If specified, 'class_agnostic' flag is assumed to be False
-
-        Type 'AllowedMatch':
-        {
-            ground_truth_label: string,       # A label for ground truth annotation.
-            model_prediction_label: string,   # A label for model prediction that can be matched with
-                                              # corresponding ground truth label.
-        }
-
-        payload:
-        {
-            "class_agnostic": boolean,
-            "allowed_label_matches": List[AllowedMatch],
-        }
-
-        :return: {"model_run_id": str}
-        """
+        # TODO: deprecate ModelRun. this should be renamed to calculate_evaluation_metrics
+        #   or completely removed in favor of Model class methods
         if payload is None:
             payload = {}
         return self.make_request(payload, f"modelRun/{model_run_id}/commit")
@@ -681,151 +655,71 @@ class NucleusClient:
         return dataset.info()
 
     def model_run_info(self, model_run_id: str):
-        """
-        provides information about a Model Run with given model_run_id:
-        model_id -- Model Id corresponding to the run
-        name -- A human-readable name of the model project.
-        status -- Status of the Model Run.
-        metadata -- An arbitrary metadata blob specified for the run.
-        :return:
-        {
-            "model_id": str,
-            "name": str,
-            "status": str,
-            "metadata": Dict[str, Any],
-        }
-        """
+        # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/info", requests.get
         )
 
     @sanitize_string_args
     def dataitem_ref_id(self, dataset_id: str, reference_id: str):
-        """
-        :param dataset_id: internally controlled dataset id
-        :param reference_id: reference_id of a dataset_item
-        :return:
-        """
+        # TODO: deprecate in favor of Dataset.refloc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
         )
 
     @sanitize_string_args
     def predictions_ref_id(self, model_run_id: str, ref_id: str):
-        """
-        Returns Model Run info For Dataset Item by model_run_id and item reference_id.
-        :param model_run_id: id of the model run.
-        :param reference_id: reference_id of a dataset item.
-        :return:
-        {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction, CategoryPrediction]],
-        }
-        """
+        # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/refloc/{ref_id}", requests.get
         )
 
     def dataitem_iloc(self, dataset_id: str, i: int):
-        """
-        Returns Dataset Item info by dataset_id and absolute number of the dataset item.
-        :param dataset_id:  internally controlled dataset id
-        :param i: absolute number of the dataset_item
-        :return:
-        """
+        # TODO: deprecate in favor of Dataset.iloc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
         )
 
     def predictions_iloc(self, model_run_id: str, i: int):
-        """
-        Returns Model Run Info For Dataset Item by model_run_id and absolute number of an item.
-        :param model_run_id: id of the model run.
-        :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
-        :return:
-        {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction, CategoryPrediction]],
-        }
-        """
+        # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/iloc/{i}", requests.get
         )
 
     def dataitem_loc(self, dataset_id: str, dataset_item_id: str):
-        """
-        Returns Dataset Item Info By dataset_item_id and dataset_id
-        :param dataset_id: internally controlled id for the dataset.
-        :param dataset_item_id: internally controlled id for the dataset item.
-        :return:
-        {
-            "item": DatasetItem,
-            "annotations": List[Box2DAnnotation],
-        }
-        """
+        # TODO: deprecate in favor of Dataset.loc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/loc/{dataset_item_id}", requests.get
         )
 
     def predictions_loc(self, model_run_id: str, dataset_item_id: str):
-        """
-        Returns Model Run Info For Dataset Item by its id.
-        :param model_run_id: id of the model run.
-        :param dataset_item_id: dataset_item_id of a dataset item.
-        :return:
-        {
-            "annotations": List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
-        }
-        """
+        # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
 
     def create_slice(self, dataset_id: str, payload: dict) -> Slice:
-        """
-        Creates a slice from items already present in a dataset.
-        The caller must exclusively use either datasetItemIds or reference_ids
-        as a means of identifying items in the dataset.
-
-        "name" -- The human-readable name of the slice.
-        "reference_ids" -- An optional list of user-specified identifier for the items in the slice
-
-        :param
-        dataset_id: id of the dataset
-        payload:
-        {
-            "name": str,
-            "reference_ids": List[str],
-        }
-        :return: new Slice object
-        """
+        # TODO: deprecate in favor of Dataset.create_slice
         response = self.make_request(
             payload, f"dataset/{dataset_id}/create_slice"
         )
         return Slice(response[SLICE_ID_KEY], self)
 
     def get_slice(self, slice_id: str) -> Slice:
-        """
-        Returns a slice object by specified id.
+        # TODO: migrate to Dataset method and deprecate
+        """Returns a slice object by Nucleus-generated ID.
 
-        :param
-        slice_id: id of the slice
-        :return: a Slice object
+        Parameters:
+            slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
+              be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
+
+        Returns:
+            :class:`Slice`: The Nucleus slice as an object.
         """
         return Slice(slice_id, self)
 
     def slice_info(self, slice_id: str) -> dict:
-        """
-        This endpoint provides information about specified slice.
-
-        :param
-        slice_id: id of the slice
-
-        :return:
-        {
-            "name": str,
-            "dataset_id": str,
-            "reference_ids": List[str],
-        }
-        """
+        # TODO: migrate to Slice method and deprecate
         response = self.make_request(
             {},
             f"slice/{slice_id}",
@@ -834,14 +728,15 @@ class NucleusClient:
         return response
 
     def delete_slice(self, slice_id: str) -> dict:
-        """
-        This endpoint deletes specified slice.
+        # TODO: migrate to Dataset method and deprecate
+        """Deletes slice from Nucleus.
 
-        :param
-        slice_id: id of the slice
+        Parameters:
+            slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
+              be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
 
-        :return:
-        {}
+        Returns:
+            Empty payload response.
         """
         response = self.make_request(
             {},
@@ -854,15 +749,6 @@ class NucleusClient:
     def delete_annotations(
         self, dataset_id: str, reference_ids: list = None, keep_history=False
     ) -> AsyncJob:
-        """
-        This endpoint deletes annotations.
-
-        :param
-        slice_id: id of the slice
-
-        :return:
-        {}
-        """
         dataset = self.get_dataset(dataset_id)
         return dataset.delete_annotations(reference_ids, keep_history)
 
@@ -871,18 +757,17 @@ class NucleusClient:
         slice_id: str,
         reference_ids: List[str],
     ) -> dict:
-        """
-        Appends to a slice from items already present in a dataset.
-        The caller must exclusively use either datasetItemIds or reference_ids
-        as a means of identifying items in the dataset.
+        # TODO: migrate to Slice method and deprecate
+        """Appends dataset items to an existing slice.
 
-        :param
-        reference_ids: List[str],
+        Parameters:
+            slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
+              be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
+            reference_ids: List of user-defined reference IDs of the dataset items
+              to append to the slice.
 
-        :return:
-        {
-            "slice_id": str,
-        }
+        Returns:
+            Empty payload response.
         """
 
         response = self.make_request(
@@ -890,12 +775,8 @@ class NucleusClient:
         )
         return response
 
-    def list_autotags(self, dataset_id: str) -> List[str]:
-        """
-        Fetches a list of autotags for a given dataset id
-        :param dataset_id: internally controlled dataset_id
-        :return: List[str] representing autotag_ids
-        """
+    def list_autotags(self, dataset_id: str) -> List[dict]:
+        # TODO: deprecate in favor of Dataset.list_autotags invocation
         response = self.make_request(
             {},
             f"{dataset_id}/list_autotags",
@@ -904,25 +785,27 @@ class NucleusClient:
         return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
 
     def delete_autotag(self, autotag_id: str) -> dict:
-        """
-        Deletes an autotag based on autotagId.
-        Returns an empty payload where response status `200` indicates
-        the autotag has been successfully deleted.
-        :param autotag_id: id of the autotag to delete.
-        :return: {}
+        # TODO: migrate to Dataset method (use autotag name, not id) and deprecate
+        """Deletes an autotag by ID.
+
+        Parameters:
+            autotag_id: Nucleus-generated autotag ID (starts with ``tag_``). This can
+              be retrieved via :meth:`list_autotags` or a Nucleus dashboard URL.
+
+        Returns:
+            Empty payload response.
         """
         return self.make_request({}, f"autotag/{autotag_id}", requests.delete)
 
     def delete_model(self, model_id: str) -> dict:
-        """
-        This endpoint deletes the specified model, along with all
-        associated model_runs.
+        """Deletes a model by ID.
 
-        :param
-        model_id: id of the model_run to delete.
+        Parameters:
+            model_id: Nucleus-generated model ID (starts with ``prj_``). This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL.
 
-        :return:
-        {}
+        Returns:
+            Empty payload response.
         """
         response = self.make_request(
             {},
@@ -934,15 +817,7 @@ class NucleusClient:
     def create_custom_index(
         self, dataset_id: str, embeddings_urls: list, embedding_dim: int
     ):
-        """
-        Creates a custom index for a given dataset, which will then be used
-        for autotag and similarity search.
-
-        :param
-        dataset_id: id of dataset that the custom index is being added to.
-        embeddings_urls: list of urls, each of which being a json mapping reference_id -> embedding vector
-        embedding_dim: the dimension of the embedding vectors, must be consistent for all embedding vectors in the index.
-        """
+        # TODO: deprecate in favor of Dataset.create_custom_index invocation
         return self.make_request(
             {
                 EMBEDDINGS_URL_KEY: embeddings_urls,
@@ -953,6 +828,7 @@ class NucleusClient:
         )
 
     def delete_custom_index(self, dataset_id: str):
+        # TODO: deprecate in favor of Dataset.delete_custom_index invocation
         return self.make_request(
             {},
             f"indexing/{dataset_id}",
@@ -960,15 +836,7 @@ class NucleusClient:
         )
 
     def set_continuous_indexing(self, dataset_id: str, enable: bool = True):
-        """
-        Sets continuous indexing for a given dataset, which will automatically generate embeddings whenever
-        new images are uploaded. This endpoint is currently only enabled for enterprise customers.
-        Please reach out to nucleus@scale.com if you wish to learn more.
-
-        :param
-        dataset_id: id of dataset that continuous indexing is being toggled for
-        enable: boolean, sets whether we are enabling or disabling continuous indexing. The default behavior is to enable.
-        """
+        # TODO: deprecate in favor of Dataset.set_continuous_indexing invocation
         return self.make_request(
             {INDEX_CONTINUOUS_ENABLE_KEY: enable},
             f"indexing/{dataset_id}/setContinuous",
@@ -976,15 +844,7 @@ class NucleusClient:
         )
 
     def create_image_index(self, dataset_id: str):
-        """
-        Starts generating embeddings for images that don't have embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint is limited to generating embeddings for 2 million
-        images at a time. This endpoint is also currently only enabled for enterprise customers.
-        Please reach out to nucleus@scale.com if you wish to learn more.
-
-        :param
-        dataset_id: id of dataset for generating embeddings on.
-        """
+        # TODO: deprecate in favor of Dataset.set_continuous_indexing invocation
         return self.make_request(
             {},
             f"indexing/{dataset_id}/internal/image",
@@ -994,19 +854,7 @@ class NucleusClient:
     def create_object_index(
         self, dataset_id: str, model_run_id: str, gt_only: bool
     ):
-        """
-        Starts generating embeddings for objects that don't have embeddings in a given dataset. These embeddings will
-        be used for autotag and similarity search. This endpoint only supports indexing objects sourced from the predictions
-        of a single model run or the ground truth annotations of a dataset.
-
-        This endpoint is limited to generating embeddings for 3 million objects at a time. This endpoint is also currently
-        only enabled for enterprise customers. Please reach out to nucleus@scale.com if you wish to learn more.
-
-        :param
-        dataset_id: id of dataset for generating embeddings on.
-        model_run_id: id of the model run for generating embeddings on. Mutually exclusive with gt_only
-        gt_only: Whether we are generating embeddings on the ground truth objects in a dataset. Mutually exclusive with model_run_id
-        """
+        # TODO: deprecate in favor of Dataset.create_object_index invocation
         payload: Dict[str, Union[str, bool]] = {}
         if model_run_id:
             payload["model_run_id"] = model_run_id
@@ -1021,14 +869,17 @@ class NucleusClient:
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
-        """
-        Makes a request to Nucleus endpoint and logs a warning if not
-        successful.
+        """Makes a request to a Nucleus API endpoint.
 
-        :param payload: given payload
-        :param route: route for the request
-        :param requests_command: requests.post, requests.get, requests.delete
-        :return: response JSON
+        Logs a warning if not successful.
+
+        Parameters:
+            payload: Given request payload.
+            route: Route for the request.
+            Requests command: ``requests.post``, ``requests.get``, or ``requests.delete``.
+
+        Returns:
+            Response payload as JSON dict.
         """
         endpoint = f"{self.endpoint}/{route}"
 
