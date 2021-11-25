@@ -19,7 +19,7 @@ class Model:
 
     By uploading model predictions to Nucleus, you can compare your predictions
     to ground truth annotations and discover problems with your Models or
-    Dataset.
+    :class:`Dataset`.
 
     You can also upload predictions for unannotated images, letting you query
     them based on model predictions. This can help you prioritize which
@@ -27,11 +27,11 @@ class Model:
 
     Within Nucleus, Models work in the following way:
 
-    1. You first create a Model. You can do this just once and reuse the model
-       on multiple datasets.
-    2. You then upload predictions to a dataset.
-    3. Trigger calculation of model metrics in order to view model debugging
-       insights.
+    1. You first :meth:`create a Model<NucleusClient.add_model>`. You can do this
+       just once and reuse the model on multiple datasets.
+    2. You then :meth:`upload predictions <Dataset.upload_predictions>` to a dataset.
+    3. Trigger :meth:`calculation of metrics <Dataset.calculate_evaluation_metrics>`
+       in order to view model debugging insights.
 
     The above steps above will allow you to visualize model performance within
     Nucleus, or compare multiple models that have been run on the same Dataset.

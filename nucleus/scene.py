@@ -335,7 +335,7 @@ class LidarScene(Scene):
     by clicking through frames and providing context in the form of corresponding
     images.
 
-    You can think of Scenes and Frames as nested groupings of sensor data across
+    You can think of scenes and frames as nested groupings of sensor data across
     time:
 
     * LidarScene for a given location
@@ -351,14 +351,14 @@ class LidarScene(Scene):
 
     LidarScenes are uploaded to a :class:`Dataset` with any accompanying
     metadata. Frames do not accept metadata, but each of its constituent
-    DatasetItems does.
+    :class:`DatasetItems <DatasetItem>` does.
 
-    Note: Nucleus ignores conflicting uploads with a different number of
-    frames/items. Existing scenes are expected to retain the same structure,
-    i.e. the same number of frames, and same items per frame. If a scene
-    definition is changed (for example, additional frames added) the update
-    operation will be ignored. If you would like to alter the structure of a
-    scene, please delete the scene and re-upload.
+    Note: Uploads with a different number of frames/items will error out (only
+    on scenes that now differ). Existing scenes are expected to retain the
+    same structure, i.e. the same number of frames, and same items per frame.
+    If a scene definition is changed (for example, additional frames added) the
+    update operation will be ignored. If you would like to alter the structure
+    of a scene, please delete the scene and re-upload.
 
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
