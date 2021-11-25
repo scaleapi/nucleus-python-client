@@ -23,6 +23,19 @@ class Slice:
     Perhaps your Models perform poorly on foggy weather scenarios; it is then
     useful to slice your dataset into a "foggy" slice, and fine-tune model
     performance on this slice until it reaches the performance you desire.
+
+    Slices cannot be instantiated directly and instead must be created in the
+    dashboard, or via API endpoint using :meth:`Dataset.create_slice`.
+
+    ::
+
+        import nucleus
+
+        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+        dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+
+        ref_ids = ["interesting_item_1", "interesting_item_2"]
+        slice = dataset.create_slice(name="interesting", reference_ids=ref_ids)
     """
 
     def __init__(self, slice_id: str, client):

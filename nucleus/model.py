@@ -46,6 +46,7 @@ class Model:
 
         client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
         dataset = client.get_dataset("YOUR_DATASET_ID")
+
         prediction_1 = nucleus.BoxPrediction(
             label="label",
             x=0,
@@ -66,11 +67,14 @@ class Model:
             confidence=0.2,
             class_pdf={"label": 0.2, "other_label": 0.8},
         )
+
         model = client.add_model(
             name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"}
         )
+
         # For small ingestions, we recommend synchronous ingestion
         response = dataset.upload_predictions(model, [prediction_1, prediction_2])
+
         # For large ingestions, we recommend asynchronous ingestion
         job = dataset.upload_predictions(
             [prediction_1, prediction_2], asynchronous=True

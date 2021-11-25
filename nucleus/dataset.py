@@ -62,7 +62,7 @@ class Dataset:
     model predictions to evaluate and compare model performance on your data.
 
     Datasets cannot be instantiated directly and instead must be created via API
-    endpoint, using :meth:`NucleusClient.create_dataset`.
+    endpoint using :meth:`NucleusClient.create_dataset`, or in the dashboard.
 
     ::
 
