@@ -33,9 +33,13 @@ from .constants import (
 class Quaternion:
     """Quaternion objects are used to represent rotation.
 
-    We use the Hamilton quaternion convention, where i^2 = j^2 = k^2 = ijk =
-    -1, i.e. the right-handed convention.  The quaternion represented by the
-    tuple (x, y, z, w) is equal to w + x*i + y*j + z*k
+    We use the Hamilton/right-handed quaternion convention, where
+    ::
+
+        i^2 = j^2 = k^2 = ijk = -1
+
+    The quaternion represented by the tuple ``(x, y, z, w)`` is equal to
+    ``w + x*i + y*j + z*k``.
 
     Parameters:
         x (float): The x value.
