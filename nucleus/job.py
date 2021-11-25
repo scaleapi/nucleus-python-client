@@ -90,7 +90,7 @@ class AsyncJob:
         """Blocks until the job completes or errors.
 
         Parameters:
-            verbose_std_out (bool, optional): Whether or not to verbosely log while
+            verbose_std_out (Optional[bool]): Whether or not to verbosely log while
               sleeping. Defaults to True.
         """
         while 1:

@@ -122,7 +122,7 @@ class Dataset:
 
         Parameters:
             autotag_name: The user-defined name of the autotag.
-            for_scores_greater_than (int, optional): Score threshold between -1
+            for_scores_greater_than (Optional[int]): Score threshold between -1
                 and 1 above which to include autotag items.
 
         Returns:

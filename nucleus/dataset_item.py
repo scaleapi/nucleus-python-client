@@ -127,21 +127,21 @@ class DatasetItem:  # pylint: disable=R0902
     3D annotations to any image within a scene.
 
     Args:
-        image_location (str, optional): Required if pointcloud_location not present: The
+        image_location (Optional[str]): Required if pointcloud_location not present: The
           location containing the image for the given row of data. This can be a
           local path, or a remote URL.  Remote formats supported include any URL
           (``http://`` or ``https://``) or URIs for AWS S3, Azure, or GCS
           (i.e. ``s3://``, ``gcs://``).
 
-        pointcloud_location (str, optional): Required if image_location not
+        pointcloud_location (Optional[str]): Required if image_location not
           present: The remote URL containing the pointcloud JSON. Remote
           formats supported include any URL (``http://`` or ``https://``) or
           URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
 
-        reference_id (str, optional): A user-specified identifier to reference the
+        reference_id (Optional[str]): A user-specified identifier to reference the
           item.
 
-        metadata (dict, optional): Extra information about the particular
+        metadata (Optional[dict]): Extra information about the particular
           dataset item. ints, floats, string values will be made searchable in
           the query bar by the key in this dict For example, ``{"animal":
           "dog"}`` will become searchable via ``metadata.animal = "dog"``.
@@ -183,7 +183,7 @@ class DatasetItem:  # pylint: disable=R0902
               Shorten this once we have a guide migrated for metadata, or maybe link
               from other places to here.
 
-        upload_to_scale (bool, optional): Set this to false in order to use
+        upload_to_scale (Optional[bool]): Set this to false in order to use
           `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_.
 
           Setting this to false means the actual data within the item (i.e. the
