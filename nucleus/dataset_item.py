@@ -176,7 +176,7 @@ class DatasetItem:  # pylint: disable=R0902
           camera intrinsics the metadata of your camera image items. Nucleus
           requires these intrinsics to create visualizations such as cuboid
           projections. Refer to our `guide to uploading 3D data
-          <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more
+          <https://nucleus.scale.com/docs/uploading-3d-data>`_ for more
           info.
 
           .. todo ::
@@ -184,10 +184,7 @@ class DatasetItem:  # pylint: disable=R0902
               from other places to here.
 
         upload_to_scale (bool, optional): Set this to false in order to use
-          `privacy mode <https://dashboard.scale.com/nucleus/docs/api#privacy-mode>`_.
-
-          .. todo ::
-              update this once guide is migrated
+          `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_.
 
           Setting this to false means the actual data within the item (i.e. the
           image or pointcloud) will not be uploaded to scale meaning that you can

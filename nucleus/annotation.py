@@ -95,10 +95,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
-            our metadata guide.
-
-            .. todo ::
-                Insert link to metadata guide
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     label: str
@@ -181,10 +178,7 @@ class PolygonAnnotation(Annotation):
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
-            our metadata guide.
-
-            .. todo::
-                Insert link to metadata guide
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     label: str
@@ -274,11 +268,8 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
           for dataset.annotate.
         metadata (Optional[str]): Arbitrary key/value dictionary of info to attach to this
           annotation.  Strings, floats and ints are supported best by querying
-          and insights features within Nucleus. For more details see our metadata
-          guide.
-
-          .. todo ::
-              Insert link to metadata guide
+          and insights features within Nucleus. For more details see our `metadata
+          guide <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     label: str
@@ -342,10 +333,8 @@ class Segment:
         index (int): The integer pixel value in the mask this mapping refers to.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this segment.
           Strings, floats and ints are supported best by querying and insights
-          features within Nucleus. For more details see our metadata guide.
-
-          .. todo ::
-              Insert link to metadata guide
+          features within Nucleus. For more details see our `metadata guide
+          <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     label: str
@@ -460,10 +449,8 @@ class CategoryAnnotation(Annotation):
         reference_id (str): User-defined ID of the image to which to apply this annotation.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
           Strings, floats and ints are supported best by querying and insights
-          features within Nucleus. For more details see our metadata guide.
-
-          .. todo ::
-              Insert link to metadata guide
+          features within Nucleus. For more details see our `metadata guide
+          <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     label: str

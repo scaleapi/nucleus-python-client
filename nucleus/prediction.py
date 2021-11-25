@@ -126,10 +126,7 @@ class BoxPrediction(BoxAnnotation):
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
-            our metadata guide.
-
-            .. todo ::
-                Insert link to metadata guide
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
@@ -204,10 +201,7 @@ class PolygonPrediction(PolygonAnnotation):
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
-            our metadata guide.
-
-            .. todo::
-                Insert link to metadata guide
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
@@ -275,11 +269,8 @@ class CuboidPrediction(CuboidAnnotation):
           for dataset.annotate.
         metadata (Optional[str]): Arbitrary key/value dictionary of info to attach to this
           annotation.  Strings, floats and ints are supported best by querying
-          and insights features within Nucleus. For more details see our metadata
-          guide.
-
-          .. todo ::
-              Insert link to metadata guide
+          and insights features within Nucleus. For more details see our `metadata
+          guide <https://nucleus.scale.com/docs/upload-metadata>`_.
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
@@ -350,10 +341,8 @@ class CategoryPrediction(CategoryAnnotation):
             surface places where the model is most uncertain.
         metadata: Arbitrary key/value dictionary of info to attach to this annotation.
             Strings, floats and ints are supported best by querying and insights
-            features within Nucleus. For more details see our metadata guide.
-
-            .. todo::
-                Insert link to metadata guide
+            features within Nucleus. For more details see our `metadata guide
+            <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     def __init__(

@@ -256,10 +256,8 @@ class Dataset:
         by specifying the optional 'update' flag. Setting update = true will replace the
         existing segmentation with the new mask specified in the request body.
 
-        For ingesting large datasets, see the Guide for Large Ingestions.
-
-        .. todo ::
-            add link to Guide for Large Ingestions
+        For ingesting large datasets, see the `Guide for Large Ingestions
+        <https://nucleus.scale.com/docs/large-ingestion>`_.
 
         Parameters:
             annotations (Sequence[:class:`Annotation`]): List of annotation objects to upload.
