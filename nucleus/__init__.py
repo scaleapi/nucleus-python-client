@@ -288,10 +288,16 @@ class NucleusClient:
         )
         return Model.from_json(payload=payload, client=self)
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead"
+    )
     def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
         # TODO: deprecate ModelRun
         return ModelRun(model_run_id, dataset_id, self)
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead"
+    )
     def delete_model_run(self, model_run_id: str):
         # TODO: deprecate ModelRun
         return self.make_request(
@@ -532,6 +538,9 @@ class NucleusClient:
 
         return Model(model_id, name, reference_id, metadata, self)
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead"
+    )
     def create_model_run(self, dataset_id: str, payload: dict) -> ModelRun:
         # TODO: deprecate ModelRun
         response = self.make_request(
@@ -544,6 +553,7 @@ class NucleusClient:
             response[MODEL_RUN_ID_KEY], dataset_id=dataset_id, client=self
         )
 
+    @deprecated("Use Dataset.upload_predictions instead.")
     def predict(
         self,
         annotations: List[
@@ -629,6 +639,9 @@ class NucleusClient:
             ERRORS_KEY: errors,
         }
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead."
+    )
     def commit_model_run(
         self, model_run_id: str, payload: Optional[dict] = None
     ):
@@ -654,12 +667,16 @@ class NucleusClient:
         dataset = self.get_dataset(dataset_id)
         return dataset.info()
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead."
+    )
     def model_run_info(self, model_run_id: str):
         # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/info", requests.get
         )
 
+    @deprecated("Prefer calling Dataset.refloc instead.")
     @sanitize_string_args
     def dataitem_ref_id(self, dataset_id: str, reference_id: str):
         # TODO: deprecate in favor of Dataset.refloc invocation
@@ -667,6 +684,9 @@ class NucleusClient:
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
         )
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead."
+    )
     @sanitize_string_args
     def predictions_ref_id(self, model_run_id: str, ref_id: str):
         # TODO: deprecate ModelRun
@@ -674,30 +694,39 @@ class NucleusClient:
             {}, f"modelRun/{model_run_id}/refloc/{ref_id}", requests.get
         )
 
+    @deprecated("Prefer calling Dataset.iloc instead.")
     def dataitem_iloc(self, dataset_id: str, i: int):
         # TODO: deprecate in favor of Dataset.iloc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
         )
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead."
+    )
     def predictions_iloc(self, model_run_id: str, i: int):
         # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/iloc/{i}", requests.get
         )
 
+    @deprecated("Prefer calling Dataset.loc instead.")
     def dataitem_loc(self, dataset_id: str, dataset_item_id: str):
         # TODO: deprecate in favor of Dataset.loc invocation
         return self.make_request(
             {}, f"dataset/{dataset_id}/loc/{dataset_item_id}", requests.get
         )
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead."
+    )
     def predictions_loc(self, model_run_id: str, dataset_item_id: str):
         # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}/loc/{dataset_item_id}", requests.get
         )
 
+    @deprecated("Prefer calling Dataset.create_slice instead.")
     def create_slice(self, dataset_id: str, payload: dict) -> Slice:
         # TODO: deprecate in favor of Dataset.create_slice
         response = self.make_request(
@@ -814,6 +843,7 @@ class NucleusClient:
         )
         return response
 
+    @deprecated("Prefer calling Dataset.create_custom_index instead.")
     def create_custom_index(
         self, dataset_id: str, embeddings_urls: list, embedding_dim: int
     ):
@@ -827,6 +857,7 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
+    @deprecated("Prefer calling Dataset.delete_custom_index instead.")
     def delete_custom_index(self, dataset_id: str):
         # TODO: deprecate in favor of Dataset.delete_custom_index invocation
         return self.make_request(
@@ -835,6 +866,7 @@ class NucleusClient:
             requests_command=requests.delete,
         )
 
+    @deprecated("Prefer calling Dataset.set_continuous_indexing instead.")
     def set_continuous_indexing(self, dataset_id: str, enable: bool = True):
         # TODO: deprecate in favor of Dataset.set_continuous_indexing invocation
         return self.make_request(
@@ -843,14 +875,16 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
+    @deprecated("Prefer calling Dataset.create_image_index instead.")
     def create_image_index(self, dataset_id: str):
-        # TODO: deprecate in favor of Dataset.set_continuous_indexing invocation
+        # TODO: deprecate in favor of Dataset.create_image_index invocation
         return self.make_request(
             {},
             f"indexing/{dataset_id}/internal/image",
             requests_command=requests.post,
         )
 
+    @deprecated("Prefer calling Dataset.create_object_index instead.")
     def create_object_index(
         self, dataset_id: str, model_run_id: str, gt_only: bool
     ):
