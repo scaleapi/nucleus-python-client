@@ -20,8 +20,7 @@ from nucleus.utils import (
     serialize_and_write_to_presigned_url,
 )
 
-# TODO: Rename .dataset_populator module to dataset_item_uploader
-from .dataset_populator import DatasetItemUploader
+from .dataset_item_uploader import DatasetItemUploader
 from .upload_response import UploadResponse
 from .errors import DatasetItemRetrievalError
 
