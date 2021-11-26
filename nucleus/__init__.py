@@ -493,7 +493,7 @@ class NucleusClient:
     def create_model(
         self, name: str, reference_id: str, metadata: Optional[Dict] = None
     ) -> Model:
-        """Add a :class:`Model` to Nucleus.
+        """Adds a :class:`Model` to Nucleus.
 
         Parameters:
             name: A human-readable name for the model.
@@ -650,9 +650,7 @@ class NucleusClient:
             {}, f"dataset/{dataset_id}/refloc/{reference_id}", requests.get
         )
 
-    @deprecated(
-        "Model runs have been deprecated and will be removed. Use a Model instead."
-    )
+    @deprecated("Prefer calling Dataset.predictions_refloc instead.")
     @sanitize_string_args
     def predictions_ref_id(self, model_run_id: str, ref_id: str):
         # TODO: deprecate ModelRun
@@ -667,9 +665,7 @@ class NucleusClient:
             {}, f"dataset/{dataset_id}/iloc/{i}", requests.get
         )
 
-    @deprecated(
-        "Model runs have been deprecated and will be removed. Use a Model instead."
-    )
+    @deprecated("Prefer calling Dataset.predictions_iloc instead.")
     def predictions_iloc(self, model_run_id: str, i: int):
         # TODO: deprecate ModelRun
         return self.make_request(
@@ -683,9 +679,7 @@ class NucleusClient:
             {}, f"dataset/{dataset_id}/loc/{dataset_item_id}", requests.get
         )
 
-    @deprecated(
-        "Model runs have been deprecated and will be removed. Use a Model instead."
-    )
+    @deprecated("Prefer calling Dataset.predictions_loc instead.")
     def predictions_loc(self, model_run_id: str, dataset_item_id: str):
         # TODO: deprecate ModelRun
         return self.make_request(
@@ -740,7 +734,7 @@ class NucleusClient:
         )
         return response
 
-    @deprecated("Use Dataset.delete_annotations instead.")
+    @deprecated("Prefer calling Dataset.delete_annotations instead.")
     def delete_annotations(
         self, dataset_id: str, reference_ids: list = None, keep_history=False
     ) -> AsyncJob:

@@ -932,7 +932,7 @@ class Dataset:
                 Default is False.
 
         Returns:
-            Empty payload response.
+            :class:`AsyncJob`: Empty payload response.
         """
         payload = {KEEP_HISTORY_KEY: keep_history}
         if reference_ids:
