@@ -52,7 +52,7 @@ def test_reprs():
 
 
 def test_model_creation_and_listing(CLIENT, dataset):
-    models_before = CLIENT.list_models()
+    models_before = CLIENT.models
 
     model_reference = "model_" + str(time.time())
     # Creation
@@ -64,7 +64,7 @@ def test_model_creation_and_listing(CLIENT, dataset):
     assert isinstance(m_run, ModelRun)
 
     # List the models
-    ms = CLIENT.list_models()
+    ms = CLIENT.models
 
     # Get a model
     m = CLIENT.get_model(model.id)
@@ -75,7 +75,7 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     # Delete the model
     CLIENT.delete_model(model.id)
-    ms = CLIENT.list_models()
+    ms = CLIENT.models
 
     assert model not in ms
     assert ms == models_before

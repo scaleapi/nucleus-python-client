@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
@@ -18,33 +19,44 @@ from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
-
-from .annotation import Annotation, check_all_mask_paths_remote
+from .annotation import (
+    Annotation,
+    check_all_mask_paths_remote,
+    BoxAnnotation,
+    PolygonAnnotation,
+    CuboidAnnotation,
+    CategoryAnnotation,
+    MultiCategoryAnnotation,
+    SegmentationAnnotation,
+)
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
-    DATASET_LENGTH_KEY,
-    DATASET_MODEL_RUNS_KEY,
-    DATASET_NAME_KEY,
-    DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     UPDATE_KEY,
+    KEEP_HISTORY_KEY,
 )
+from .data_transfer_object.dataset_info import DatasetInfo
+from .data_transfer_object.dataset_size import DatasetSize
 from .dataset_item import (
     DatasetItem,
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
+from .dataset_item_uploader import DatasetItemUploader
+from .deprecation_warning import deprecated
+from .errors import DatasetItemRetrievalError
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
 from .scene import LidarScene, Scene, check_all_scene_paths_remote
+from .upload_response import UploadResponse
 
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
@@ -78,12 +90,17 @@ class Dataset:
         existing_dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
     """
 
-    def __init__(self, dataset_id, client):
+    def __init__(self, dataset_id, client, name=None):
         self.id = dataset_id
         self._client = client
+        # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
+        self._name = name
 
     def __repr__(self):
-        return f"Dataset(dataset_id='{self.id}', client={self._client})"
+        if os.environ.get("NUCLEUS_DEBUG", None):
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', client={self._client})"
+        else:
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}')"
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -94,28 +111,57 @@ class Dataset:
     @property
     def name(self) -> str:
         """User-defined name of the Dataset."""
-        return self.info().get(DATASET_NAME_KEY, "")
+        if self._name is None:
+            self._name = self._client.make_request(
+                {}, f"dataset/{self.id}/name", requests.get
+            )["name"]
+        return self._name
 
     @property
-    def model_runs(self) -> List[str]:
+    def model_runs(self) -> Dict[Any, Any]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
-        return self.info().get(DATASET_MODEL_RUNS_KEY, [])
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/model_runs", requests.get
+        )
+        return response
 
     @property
-    def slices(self) -> List[str]:
+    def slices(self) -> Dict[Any, Any]:
         """List of all Slice IDs created from the Dataset."""
-        return self.info().get(DATASET_SLICES_KEY, [])
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/slices", requests.get
+        )
+        return response
 
     @property
     def size(self) -> int:
         """Number of items in the Dataset."""
-        return self.info().get(DATASET_LENGTH_KEY, 0)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/size", requests.get
+        )
+        dataset_size = DatasetSize.parse_obj(response)
+        return dataset_size.count
 
     @property
     def items(self) -> List[DatasetItem]:
         """List of all DatasetItem objects in the Dataset."""
-        return self._client.get_dataset_items(self.id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/datasetItems", requests.get
+        )
+        dataset_items = response.get("dataset_items", None)
+        error = response.get("error", None)
+        constructed_dataset_items = []
+        if dataset_items:
+            for item in dataset_items:
+                image_url = item.get("original_image_url")
+                metadata = item.get("metadata", None)
+                ref_id = item.get("ref_id", None)
+                dataset_item = DatasetItem(image_url, ref_id, metadata)
+                constructed_dataset_items.append(dataset_item)
+        elif error:
+            raise DatasetItemRetrievalError(message=error)
+        return constructed_dataset_items
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
@@ -189,21 +235,19 @@ class Dataset:
         )
         return response
 
-    def info(self) -> dict:
-        """Retrieve information about the dataset.
+    def info(self) -> DatasetInfo:
+        """Retrieve information about the dataset
 
         Returns:
-            Payload containing information and members of the dataset::
-
-                {
-                    'name': str,
-                    'length': int,
-                    'model_run_ids': List[str],
-                    'slice_ids': List[str]
-                }
+            :class:`DatasetInfo`
         """
-        return self._client.dataset_info(self.id)
+        response = self._client.dataset_info(self.id)
+        dataset_info = DatasetInfo.parse_obj(response)
+        return dataset_info
 
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead"
+    )
     def create_model_run(
         self,
         name: str,
@@ -212,7 +256,6 @@ class Dataset:
         metadata: Optional[Dict[str, Any]] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ):
-        # TODO: deprecate ModelRun
         payload = construct_model_run_creation_payload(
             name,
             reference_id,
@@ -224,8 +267,17 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: Sequence[Annotation],
-        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
+        annotations: Sequence[
+            Union[
+                BoxAnnotation,
+                PolygonAnnotation,
+                CuboidAnnotation,
+                CategoryAnnotation,
+                MultiCategoryAnnotation,
+                SegmentationAnnotation,
+            ]
+        ],
+        update: bool = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
         asynchronous: bool = False,
     ) -> Union[Dict[str, Any], AsyncJob]:
@@ -310,15 +362,18 @@ class Dataset:
                     "pending_tasks": int
                 }
         """
-        return self._client.ingest_tasks(self.id, {"tasks": task_ids})
+        # TODO(gunnar): Validate right behaviour. Pydantic?
+        return self._client.make_request(
+            {"tasks": task_ids}, f"dataset/{self.id}/ingest_tasks"
+        )
 
     def append(
         self,
         items: Union[Sequence[DatasetItem], Sequence[LidarScene]],
-        update: Optional[bool] = False,
-        batch_size: Optional[int] = 20,
-        asynchronous=False,
-    ) -> Union[dict, AsyncJob]:
+        update: bool = False,
+        batch_size: int = 20,
+        asynchronous: bool = False,
+    ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """Appends items or scenes to a dataset.
 
         ::
@@ -389,17 +444,20 @@ class Dataset:
               3D data to drastically increase throughput. Default is False.
 
         Returns:
-            If synchronous, returns a payload describing the upload result::
+            For scenes
+                If synchronous, returns a payload describing the upload result::
 
-                {
-                    "dataset_id: str,
-                    "new_items": int,
-                    "updated_items": int,
-                    "ignored_items": int,
-                    "upload_errors": int
-                }
+                    {
+                        "dataset_id: str,
+                        "new_items": int,
+                        "updated_items": int,
+                        "ignored_items": int,
+                        "upload_errors": int
+                    }
 
-            Otherwise, returns an :class:`AsyncJob` object.
+                Otherwise, returns an :class:`AsyncJob` object.
+            For images
+                If synchronous returns UploadResponse otherwise :class:`AsyncJob`
         """
         assert (
             batch_size is None or batch_size < 30
@@ -439,13 +497,13 @@ class Dataset:
             )
             return AsyncJob.from_json(response, self._client)
 
-        return self._client.populate_dataset(
-            self.id,
+        return self._upload_items(
             dataset_items,
             update=update,
             batch_size=batch_size,
         )
 
+    @deprecated("Prefer using Dataset.append instead.")
     def append_scenes(
         self,
         scenes: List[LidarScene],
@@ -595,6 +653,7 @@ class Dataset:
             self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
         )
 
+    @sanitize_string_args
     def delete_item(self, reference_id: str) -> dict:
         """Deletes an item from the dataset by item reference ID.
 
@@ -607,8 +666,10 @@ class Dataset:
         Returns:
             Payload to indicate deletion invocation.
         """
-        return self._client.delete_dataset_item(
-            self.id, reference_id=reference_id
+        return self._client.make_request(
+            {},
+            f"dataset/{self.id}/refloc/{reference_id}",
+            requests.delete,
         )
 
     def list_autotags(self):
@@ -839,11 +900,11 @@ class Dataset:
             route=f"dataset/{self.id}/embeddings",
             requests_command=requests.get,
         )
-        return api_payload
+        return api_payload  # type: ignore
 
     def delete_annotations(
         self, reference_ids: list = None, keep_history=False
-    ):
+    ) -> AsyncJob:
         """Deletes all annotations associated with the specified item reference IDs.
 
         Parameters:
@@ -855,10 +916,15 @@ class Dataset:
                 Default is False.
 
         Returns:
-            Empty payload response.
+            :class:`AsyncJob`: Empty payload response.
         """
-        response = self._client.delete_annotations(
-            self.id, reference_ids, keep_history
+        payload = {KEEP_HISTORY_KEY: keep_history}
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+        response = self._client.make_request(
+            payload,
+            f"annotation/{self.id}",
+            requests_command=requests.delete,
         )
         return AsyncJob.from_json(response, self._client)
 
@@ -1157,3 +1223,23 @@ class Dataset:
                 requests_command=requests.get,
             )
         )
+
+    def _upload_items(
+        self,
+        dataset_items: List[DatasetItem],
+        batch_size: int = 20,
+        update: bool = False,
+    ) -> UploadResponse:
+        """
+        Appends images to a dataset with given dataset_id.
+        Overwrites images on collision if updated.
+
+        Args:
+            dataset_items: Items to Upload
+            batch_size: size of the batch for long payload
+            update: Update records on conflict otherwise overwrite
+        Returns:
+            UploadResponse
+        """
+        populator = DatasetItemUploader(self.id, self._client)
+        return populator.upload(dataset_items, batch_size, update)

@@ -47,6 +47,8 @@ Please install the pre-commit hooks by running the following command:
 poetry run pre-commit install
 ```
 
+When releasing a new version please add release notes to the changelog in `CHANGELOG.md`.
+
 **Best practices for testing:**
 (1). Please run pytest from the root directory of the repo, i.e.
 
