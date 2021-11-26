@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
@@ -8,6 +9,7 @@ from nucleus.prediction import (
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
+    CategoryPrediction,
     from_json,
 )
 from nucleus.url_utils import sanitize_string_args
@@ -17,55 +19,88 @@ from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
-
-from .annotation import Annotation, check_all_mask_paths_remote
+from .annotation import (
+    Annotation,
+    check_all_mask_paths_remote,
+    BoxAnnotation,
+    PolygonAnnotation,
+    CuboidAnnotation,
+    CategoryAnnotation,
+    MultiCategoryAnnotation,
+    SegmentationAnnotation,
+)
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
-    DATASET_LENGTH_KEY,
-    DATASET_MODEL_RUNS_KEY,
-    DATASET_NAME_KEY,
-    DATASET_SLICES_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     UPDATE_KEY,
+    KEEP_HISTORY_KEY,
 )
+from .data_transfer_object.dataset_info import DatasetInfo
+from .data_transfer_object.dataset_size import DatasetSize
 from .dataset_item import (
     DatasetItem,
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
+from .dataset_item_uploader import DatasetItemUploader
+from .deprecation_warning import deprecated
+from .errors import DatasetItemRetrievalError
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
 from .scene import LidarScene, Scene, check_all_scene_paths_remote
+from .upload_response import UploadResponse
+
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
+
 
 WARN_FOR_LARGE_UPLOAD = 50000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
 class Dataset:
-    """
-    Nucleus Dataset. You can append images with metadata to your dataset,
-    annotate it with ground truth and upload model predictions to evaluate and
-    compare model performance on you data.
+    """Datasets are collections of your data that can be associated with models.
+
+    You can append :class:`DatasetItems<DatasetItem>` or :class:`Scenes<LidarScene>`
+    with metadata to your dataset, annotate it with ground truth, and upload
+    model predictions to evaluate and compare model performance on your data.
+
+    Datasets cannot be instantiated directly and instead must be created via API
+    endpoint using :meth:`NucleusClient.create_dataset`, or in the dashboard.
+
+    ::
+
+        import nucleus
+
+        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+
+        # Create new dataset
+        dataset = client.create_dataset(YOUR_DATASET_NAME)
+
+        # Or, retrieve existing dataset by ID
+        # This ID can be fetched using client.list_datasets() or from a dashboard URL
+        existing_dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
     """
 
-    def __init__(
-        self,
-        dataset_id: str,
-        client: "NucleusClient",  # type:ignore # noqa: F821
-    ):
+    def __init__(self, dataset_id, client, name=None):
         self.id = dataset_id
         self._client = client
+        # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
+        self._name = name
 
     def __repr__(self):
-        return f"Dataset(dataset_id='{self.id}', client={self._client})"
+        if os.environ.get("NUCLEUS_DEBUG", None):
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', client={self._client})"
+        else:
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}')"
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -75,44 +110,89 @@ class Dataset:
 
     @property
     def name(self) -> str:
-        return self.info().get(DATASET_NAME_KEY, "")
+        """User-defined name of the Dataset."""
+        if self._name is None:
+            self._name = self._client.make_request(
+                {}, f"dataset/{self.id}/name", requests.get
+            )["name"]
+        return self._name
 
     @property
-    def model_runs(self) -> List[str]:
-        return self.info().get(DATASET_MODEL_RUNS_KEY, [])
+    def model_runs(self) -> Dict[Any, Any]:
+        """List of all model runs associated with the Dataset."""
+        # TODO: model_runs -> models
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/model_runs", requests.get
+        )
+        return response
 
     @property
-    def slices(self) -> List[str]:
-        return self.info().get(DATASET_SLICES_KEY, [])
+    def slices(self) -> Dict[Any, Any]:
+        """List of all Slice IDs created from the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/slices", requests.get
+        )
+        return response
 
     @property
     def size(self) -> int:
-        return self.info().get(DATASET_LENGTH_KEY, 0)
+        """Number of items in the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/size", requests.get
+        )
+        dataset_size = DatasetSize.parse_obj(response)
+        return dataset_size.count
 
     @property
     def items(self) -> List[DatasetItem]:
-        return self._client.get_dataset_items(self.id)
+        """List of all DatasetItem objects in the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/datasetItems", requests.get
+        )
+        dataset_items = response.get("dataset_items", None)
+        error = response.get("error", None)
+        constructed_dataset_items = []
+        if dataset_items:
+            for item in dataset_items:
+                image_url = item.get("original_image_url")
+                metadata = item.get("metadata", None)
+                ref_id = item.get("ref_id", None)
+                dataset_item = DatasetItem(image_url, ref_id, metadata)
+                constructed_dataset_items.append(dataset_item)
+        elif error:
+            raise DatasetItemRetrievalError(message=error)
+        return constructed_dataset_items
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
-        """For a given Autotag of this dataset, export its tagged items with scores above a threshold, largest scores first.
+        """Fetches the autotag's items above the score threshold, sorted by descending score.
 
-        :return: dictionary of the form
-            {
-                'autotagItems': {
-                    ref_id: str,
-                    score: float,
-                    model_prediction_annotation_id: str | None
-                    ground_truth_annotation_id: str | None,
-                }[],
-                'autotag': {
-                    id: str,
-                    name: str,
-                    status: 'started' | 'completed',
-                    autotag_level: 'Image' | 'Object'
+        Parameters:
+            autotag_name: The user-defined name of the autotag.
+            for_scores_greater_than (Optional[int]): Score threshold between -1
+                and 1 above which to include autotag items.
+
+        Returns:
+            List of autotagged items above the given score threshold, sorted by
+            descending score, and autotag info, packaged into a dict as follows::
+
+                {
+                    "autotagItems": List[{
+                        ref_id: str,
+                        score: float,
+                        model_prediction_annotation_id: str | None
+                        ground_truth_annotation_id: str | None,
+                    }],
+                    "autotag": {
+                        id: str,
+                        name: str,
+                        status: "started" | "completed",
+                        autotag_level: "Image" | "Object"
+                    }
                 }
-            }
-        See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-items for more details on the return types.
+
+            Note ``model_prediction_annotation_id`` and ``ground_truth_annotation_id``
+            are only relevant for object autotags.
         """
         response = self._client.make_request(
             payload={AUTOTAG_SCORE_THRESHOLD: for_scores_greater_than},
@@ -122,23 +202,31 @@ class Dataset:
         return response
 
     def autotag_training_items(self, autotag_name):
-        """For a given Autotag of this dataset, export its training items. These are user selected positives during refinement.
+        """Fetches items that were manually selected during refinement of the autotag.
 
-        :return: dictionary of the form
-            {
-                'autotagPositiveTrainingItems': {
-                    ref_id: str,
-                    model_prediction_annotation_id: str | None,
-                    ground_truth_annotation_id: str | None,
-                }[],
-                'autotag': {
-                    id: str,
-                    name: str,
-                    status: 'started' | 'completed',
-                    autotag_level: 'Image' | 'Object'
+        Parameters:
+            autotag_name: The user-defined name of the autotag.
+
+        Returns:
+            List of user-selected positives and autotag info, packaged into a
+            dict as follows::
+
+                {
+                    "autotagPositiveTrainingItems": {
+                        ref_id: str,
+                        model_prediction_annotation_id: str | None,
+                        ground_truth_annotation_id: str | None,
+                    }[],
+                    "autotag": {
+                        id: str,
+                        name: str,
+                        status: "started" | "completed",
+                        autotag_level: "Image" | "Object"
+                    }
                 }
-            }
-        See https://dashboard.nucleus.scale.com/nucleus/docs/api#export-autotag-training-items for more details on the return types.
+
+            Note ``model_prediction_annotation_id`` and ``ground_truth_annotation_id``
+            are only relevant for object autotags.
         """
         response = self._client.make_request(
             payload={},
@@ -147,19 +235,19 @@ class Dataset:
         )
         return response
 
-    def info(self) -> dict:
-        """
-        Returns information about existing dataset
-        :return: dictionary of the form
-            {
-                'name': str,
-                'length': int,
-                'model_run_ids': List[str],
-                'slice_ids': List[str]
-            }
-        """
-        return self._client.dataset_info(self.id)
+    def info(self) -> DatasetInfo:
+        """Retrieve information about the dataset
 
+        Returns:
+            :class:`DatasetInfo`
+        """
+        response = self._client.dataset_info(self.id)
+        dataset_info = DatasetInfo.parse_obj(response)
+        return dataset_info
+
+    @deprecated(
+        "Model runs have been deprecated and will be removed. Use a Model instead"
+    )
     def create_model_run(
         self,
         name: str,
@@ -168,22 +256,6 @@ class Dataset:
         metadata: Optional[Dict[str, Any]] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ):
-        """
-        :param name: A name for the model run.
-        :param reference_id: The user-specified reference identifier to associate with the model.
-                        The 'model_id' field should be empty if this field is populated,
-        :param model_id: The internally-controlled identifier of the model.
-                    The 'reference_id' field should be empty if this field is populated,
-        :param metadata: An arbitrary metadata blob for the current run.
-        :param annotation_metadata_schema: A dictionary that defines schema for annotations.
-        :param segmentation_metadata_schema: A dictionary that defines schema for segmentation.
-
-        :return:
-        {
-          "model_id": str,
-          "model_run_id": str,
-        }
-        """
         payload = construct_model_run_creation_payload(
             name,
             reference_id,
@@ -195,22 +267,64 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: Sequence[Annotation],
-        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
+        annotations: Sequence[
+            Union[
+                BoxAnnotation,
+                PolygonAnnotation,
+                CuboidAnnotation,
+                CategoryAnnotation,
+                MultiCategoryAnnotation,
+                SegmentationAnnotation,
+            ]
+        ],
+        update: bool = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
         asynchronous: bool = False,
     ) -> Union[Dict[str, Any], AsyncJob]:
-        """
-        Uploads ground truth annotations for a given dataset.
-        :param annotations: ground truth annotations for a given dataset to upload
-        :param batch_size: batch parameter for long uploads
-        :return:
-        {
-            "dataset_id: str,
-            "new_items": int,
-            "updated_items": int,
-            "ignored_items": int,
-        }
+        """Uploads ground truth annotations to the dataset.
+
+        Adding ground truth to your dataset in Nucleus allows you to visualize
+        annotations, query dataset items based on the annotations they contain,
+        and evaluate models by comparing their predictions to ground truth.
+
+        Nucleus supports :class:`Box<BoxAnnotation>`, :class:`Polygon<PolygonAnnotation>`,
+        :class:`Cuboid<CuboidAnnotation>`, :class:`Segmentation<SegmentationAnnotation>`,
+        and :class:`Category<CategoryAnnotation>` annotations. Cuboid annotations
+        can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
+
+        When uploading an annotation, you need to specify which item you are
+        annotating via the reference_id you provided when uploading the image
+        or pointcloud.
+
+        Ground truth uploads can be made idempotent by specifying an optional
+        annotation_id for each annotation. This id should be unique within the
+        dataset_item so that (reference_id, annotation_id) is unique within the
+        dataset.
+
+        See :class:`SegmentationAnnotation` for specific requirements to upload
+        segmentation annotations.
+
+        For ingesting large annotation payloads, see the `Guide for Large Ingestions
+        <https://nucleus.scale.com/docs/large-ingestion>`_.
+
+        Parameters:
+            annotations (Sequence[:class:`Annotation`]): List of annotation
+              objects to upload.
+            update: Whether to ignore or overwrite metadata for conflicting annotations.
+            batch_size: Number of annotations processed in each concurrent batch.
+              Default is 5000.
+            asynchronous: Whether or not to process the upload asynchronously (and
+              return an :class:`AsyncJob` object). Default is False.
+
+        Returns:
+            If synchronous, payload describing the upload result::
+
+                {
+                    "dataset_id": str,
+                    "annotations_processed": int
+                }
+
+            Otherwise, returns an :class:`AsyncJob` object.
         """
         check_all_mask_paths_remote(annotations)
 
@@ -227,39 +341,123 @@ class Dataset:
             self.id, annotations, update=update, batch_size=batch_size
         )
 
-    def ingest_tasks(self, task_ids: dict):
+    def ingest_tasks(self, task_ids: List[str]) -> dict:
+        """Ingest specific tasks from an existing Scale or Rapid project into the dataset.
+
+        Note: if you would like to create a new Dataset from an exisiting Scale
+        labeling project, use :meth:`NucleusClient.create_dataset_from_project`.
+
+        For more info, see our `Ingest From Labeling Guide
+        <https://nucleus.scale.com/docs/ingest-from-labeling>`_.
+
+        Parameters:
+            task_ids: List of task IDs to ingest.
+
+        Returns:
+            Payload describing the asynchronous upload result::
+
+                {
+                    "ingested_tasks": int,
+                    "ignored_tasks": int,
+                    "pending_tasks": int
+                }
         """
-        If you already submitted tasks to Scale for annotation this endpoint ingests your completed tasks
-        annotated by Scale into your Nucleus Dataset.
-        Right now we support ingestion from Videobox Annotation and 2D Box Annotation projects.
-        Lated we'll support more annotation types.
-        :param task_ids: list of task ids
-        :return: {"ingested_tasks": int, "ignored_tasks": int, "pending_tasks": int}
-        """
-        return self._client.ingest_tasks(self.id, {"tasks": task_ids})
+        # TODO(gunnar): Validate right behaviour. Pydantic?
+        return self._client.make_request(
+            {"tasks": task_ids}, f"dataset/{self.id}/ingest_tasks"
+        )
 
     def append(
         self,
         items: Union[Sequence[DatasetItem], Sequence[LidarScene]],
-        update: Optional[bool] = False,
-        batch_size: Optional[int] = 20,
-        asynchronous=False,
-    ) -> Union[dict, AsyncJob]:
-        """
-        Appends images with metadata (dataset items) or scenes to the dataset. Overwrites images on collision if forced.
+        update: bool = False,
+        batch_size: int = 20,
+        asynchronous: bool = False,
+    ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
+        """Appends items or scenes to a dataset.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+
+            local_item = nucleus.DatasetItem(
+              image_location="./1.jpg",
+              reference_id="image_1",
+              metadata={"key": "value"}
+            )
+            remote_item = nucleus.DatasetItem(
+              image_location="s3://your-bucket/2.jpg",
+              reference_id="image_2",
+              metadata={"key": "value"}
+            )
+
+            # default is synchronous upload
+            sync_response = dataset.append(items=[local_item])
+
+            # async jobs have higher throughput but can be more difficult to debug
+            async_job = dataset.append(
+              items=[remote_item], # all items must be remote for async
+              asynchronous=True
+            )
+            print(async_job.status())
+
+        A :class:`Dataset` can be populated with labeled and unlabeled
+        data. Using Nucleus, you can filter down the data inside your dataset
+        using custom metadata about your images.
+
+        For instance, your local dataset may contain ``Sunny``, ``Foggy``, and
+        ``Rainy`` folders of images. All of these images can be uploaded into a
+        single Nucleus ``Dataset``, with (queryable) metadata like ``{"weather":
+        "Sunny"}``.
+
+        To update an item's metadata, you can re-ingest the same items with the
+        ``update`` argument set to true. Existing metadata will be overwritten
+        for ``DatasetItems`` in the payload that share a ``reference_id`` with a
+        previously uploaded ``DatasetItem``. To retrieve your existing
+        ``reference_ids``, use :meth:`Dataset.items`.
+
+        ::
+
+            # overwrite metadata by reuploading the item
+            remote_item.metadata["weather"] = "Sunny"
+
+            async_job_2 = dataset.append(
+              items=[remote_item],
+              update=True,
+              asynchronous=True
+            )
 
         Parameters:
-        :param items: items to upload
-        :param update: if True overwrites images and metadata on collision
-        :param batch_size: batch parameter for long uploads
-        :param aynchronous: if True, return a job object representing asynchronous ingestion job.
-        :return:
-        {
-            'dataset_id': str,
-            'new_items': int,
-            'updated_items': int,
-            'ignored_items': int,
-        }
+            dataset_items ( \
+              Union[ \
+                Sequence[:class:`DatasetItem`], \
+                Sequence[:class:`LidarScene`] \
+              ]): List of items or scenes to upload.
+            batch_size: Size of the batch for larger uploads. Default is 20.
+            update: Whether or not to overwrite metadata on reference ID collision.
+              Default is False.
+            asynchronous: Whether or not to process the upload asynchronously (and
+              return an :class:`AsyncJob` object). This is highly encouraged for
+              3D data to drastically increase throughput. Default is False.
+
+        Returns:
+            For scenes
+                If synchronous, returns a payload describing the upload result::
+
+                    {
+                        "dataset_id: str,
+                        "new_items": int,
+                        "updated_items": int,
+                        "ignored_items": int,
+                        "upload_errors": int
+                    }
+
+                Otherwise, returns an :class:`AsyncJob` object.
+            For images
+                If synchronous returns UploadResponse otherwise :class:`AsyncJob`
         """
         assert (
             batch_size is None or batch_size < 30
@@ -299,35 +497,20 @@ class Dataset:
             )
             return AsyncJob.from_json(response, self._client)
 
-        return self._client.populate_dataset(
-            self.id,
+        return self._upload_items(
             dataset_items,
             update=update,
             batch_size=batch_size,
         )
 
+    @deprecated("Prefer using Dataset.append instead.")
     def append_scenes(
         self,
         scenes: List[LidarScene],
         update: Optional[bool] = False,
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
-        """
-        Appends scenes with given frames (containing pointclouds and optional images) to the dataset
-
-        Parameters:
-        :param scenes: scenes to upload
-        :param update: if True, overwrite scene on collision
-        :param asynchronous: if True, return a job object representing asynchronous ingestion job
-        :return:
-        {
-            'dataset_id': str,
-            'new_scenes': int,
-            'ignored_scenes': int,
-            'scenes_errored': int,
-            'errors': List[str],
-        }
-        """
+        # TODO: make private in favor of Dataset.append invocation
         for scene in scenes:
             scene.validate()
 
@@ -359,51 +542,91 @@ class Dataset:
         return response
 
     def iloc(self, i: int) -> dict:
-        """
-        Returns Dataset Item Info By Dataset Item Number.
-        :param i: absolute number of dataset item for the given dataset.
-        :return:
-        {
-            "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
-        }
+        """Retrieves dataset item by absolute numerical index.
+
+        Parameters:
+            i: Absolute numerical index of the dataset item within the dataset.
+
+        Returns:
+            Payload describing the dataset item and associated annotations::
+
+                {
+                    "item": DatasetItem
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
+                }
         """
         response = self._client.dataitem_iloc(self.id, i)
         return format_dataset_item_response(response)
 
     def refloc(self, reference_id: str) -> dict:
-        """
-        Returns Dataset Item Info By Dataset Item Reference Id.
-        :param reference_id: reference_id of dataset item.
-        :return:
-        {
-            "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
-        }
+        """Retrieves a dataset item by reference ID.
+
+        Parameters:
+            reference_id: User-defined reference ID of the dataset item.
+
+        Returns:
+            Payload containing the dataset item and associated annotations::
+
+                {
+                    "item": DatasetItem
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
+                }
         """
         response = self._client.dataitem_ref_id(self.id, reference_id)
         return format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
-        """
-        Returns Dataset Item Info By Dataset Item Id.
-        :param dataset_item_id: internally controlled id for the dataset item.
-        :return:
-        {
-            "item": DatasetItem,
-            "annotations": List[Union[BoxAnnotation, PolygonAnnotation, CuboidAnnotation, SegmentationAnnotation]],
-        }
+        """Retrieves a dataset item by Nucleus-generated ID.
+
+        Parameters:
+            dataset_item_id: Nucleus-generated dataset item ID (starts with ``di_``).
+              This can be retrieved via :meth:`Dataset.items` or a Nucleus dashboard URL.
+
+        Returns:
+            Payload containing the dataset item and associated annotations::
+
+                {
+                    "item": DatasetItem
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
+                }
         """
         response = self._client.dataitem_loc(self.id, dataset_item_id)
         return format_dataset_item_response(response)
 
     def ground_truth_loc(self, reference_id: str, annotation_id: str):
-        """
-        Returns info for single ground truth Annotation by its id.
-        :param reference_id: User specified id for the dataset item the ground truth is attached to
-        :param annotation_id: User specified, or auto-generated id for the annotation
-        :return:
-        BoxAnnotation | PolygonAnnotation | CuboidAnnotation
+        """Fetches a single ground truth annotation by id.
+
+        Parameters:
+            reference_id: User-defined reference ID of the dataset item associated
+              with the ground truth annotation.
+            annotation_id: User-defined ID of the ground truth annotation.
+
+        Returns:
+            Union[\
+                :class:`BoxAnnotation`, \
+                :class:`PolygonAnnotation`, \
+                :class:`CuboidAnnotation`, \
+                :class:`SegmentationAnnotation` \
+                :class:`CategoryAnnotation` \
+            ]: Ground truth annotation object with the specified annotation ID.
         """
         response = self._client.make_request(
             {},
@@ -417,29 +640,86 @@ class Dataset:
         name: str,
         reference_ids: List[str],
     ):
-        """
-        Creates a slice from items already present in a dataset.
-        The caller must exclusively use either datasetItemIds or reference_ids
-        as a means of identifying items in the dataset.
+        """Creates a :class:`Slice` of dataset items within a dataset.
 
-        :param name: The human-readable name of the slice.
-        :param reference_ids: A list of user-specified identifier for the items in the slice
+        Parameters:
+            name: A human-readable name for the slice.
+            reference_ids: List of reference IDs of dataset items to add to the slice::
 
-        :return: new Slice object
+        Returns:
+            :class:`Slice`: The newly constructed slice item.
         """
         return self._client.create_slice(
             self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
         )
 
-    def delete_item(self, reference_id: str):
-        return self._client.delete_dataset_item(
-            self.id, reference_id=reference_id
+    @sanitize_string_args
+    def delete_item(self, reference_id: str) -> dict:
+        """Deletes an item from the dataset by item reference ID.
+
+        All annotations and predictions associated with the item will be deleted
+        as well.
+
+        Parameters:
+            reference_id: The user-defined reference ID of the item to delete.
+
+        Returns:
+            Payload to indicate deletion invocation.
+        """
+        return self._client.make_request(
+            {},
+            f"dataset/{self.id}/refloc/{reference_id}",
+            requests.delete,
         )
 
     def list_autotags(self):
+        """Fetches all autotags of the dataset.
+
+        Returns:
+            List of autotag payloads::
+
+                List[{
+                    "id": str,
+                    "name": str,
+                    "status": "completed" | "pending",
+                    "autotag_level": "Image" | "Object"
+                }]
+        """
         return self._client.list_autotags(self.id)
 
-    def create_custom_index(self, embeddings_urls: list, embedding_dim: int):
+    def create_custom_index(
+        self, embeddings_urls: List[str], embedding_dim: int
+    ):
+        """Processes user-provided embeddings for the dataset to use with autotag and simsearch.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+
+            embeddings = {
+                "reference_id_0": [0.1, 0.2, 0.3],
+                "reference_id_1": [0.4, 0.5, 0.6],
+            } # uploaded to s3 with the below URL
+
+            embeddings_url = "s3://dataset/embeddings_map.json"
+
+            response = dataset.create_custom_index(
+                embeddings_url=[embeddings_url],
+                embedding_dim=3
+            )
+
+        Parameters:
+            embeddings_urls:  List of URLs, each of which pointing to
+              a JSON mapping reference_id -> embedding vector.
+            embedding_dim: The dimension of the embedding vectors. Must be consistent
+              across all embedding vectors in the index.
+
+        Returns:
+            :class:`AsyncJob`: Asynchronous job object to track processing status.
+        """
         return AsyncJob.from_json(
             self._client.create_custom_index(
                 self.id,
@@ -450,18 +730,90 @@ class Dataset:
         )
 
     def delete_custom_index(self):
+        """Deletes the custom index uploaded to the dataset.
+
+        Returns:
+            Payload containing information that can be used to track the job's status::
+
+                {
+                    "dataset_id": str,
+                    "job_id": str,
+                    "message": str
+                }
+        """
         return self._client.delete_custom_index(self.id)
 
     def set_continuous_indexing(self, enable: bool = True):
+        """Toggle whether embeddings are automatically generated for new data.
+
+        Sets continuous indexing for a given dataset, which will automatically
+        generate embeddings for use with autotag whenever new images are uploaded.
+
+        Parameters:
+            enable: Whether to enable or disable continuous indexing. Default is
+              True.
+
+        Returns:
+            Response payload::
+
+                {
+                    "dataset_id": str,
+                    "message": str
+                }
+        """
         return self._client.set_continuous_indexing(self.id, enable)
 
     def create_image_index(self):
+        """Creates or updates image index by generating embeddings for images that do not already have embeddings.
+
+        The embeddings are used for autotag and similarity search.
+
+        This endpoint is limited to index up to 2 million images at a time and the
+        job will fail for payloads that exceed this limit.
+
+        Response:
+            :class:`AsyncJob`: Asynchronous job object to track processing status.
+        """
         response = self._client.create_image_index(self.id)
         return AsyncJob.from_json(response, self._client)
 
     def create_object_index(
         self, model_run_id: str = None, gt_only: bool = None
     ):
+        """Creates or updates object index by generating embeddings for objects that do not already have embeddings.
+
+        These embeddings are used for autotag and similarity search. This endpoint
+        only supports indexing objects sourced from the predictions of a specific
+        model or the ground truth annotations of the dataset.
+
+        This endpoint is idempotent. If this endpoint is called again for a model
+        whose predictions were indexed in the past, the previously indexed predictions
+        will not have new embeddings recomputed. The same is true for ground truth
+        annotations.
+
+        Note that this means if you change update a prediction or ground truth
+        bounding box that already has an associated embedding, the embedding will
+        not be updated, even with another call to this endpoint. For now, we
+        recommend deleting the prediction or ground truth annotation and
+        re-inserting it to force generate a new embedding.
+
+        This endpoint is limited to generating embeddings for 3 million objects
+        at a time and the job will fail for payloads that exceed this limit.
+
+        Parameters:
+            model_run_id: The ID of the model whose predictions should be indexed.
+              Default is None, but must be supplied in the absence of ``gt_only``.
+
+              .. todo ::
+                  Deprecate model run
+
+            gt_only: Whether to only generate embeddings for the ground truth
+              annotations of the dataset. Default is None, but must be supplied
+              in the absence of ``model_run_id``.
+
+        Returns:
+            Payload containing an :class:`AsyncJob` object to monitor progress.
+        """
         response = self._client.create_object_index(
             self.id, model_run_id, gt_only
         )
@@ -473,12 +825,29 @@ class Dataset:
         taxonomy_type: str,
         labels: List[str],
     ):
-        """
-        Creates a new taxonomy.
-        Returns a response with dataset_id, taxonomy_name and type for the new taxonomy.
-        :param taxonomy_name: name of the taxonomy
-        :param type: type of the taxonomy
-        :param labels: list of possible labels for the taxonomy
+        """Creates a new taxonomy.
+        ::
+
+            import nucleus
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+
+            response = dataset.add_taxonomy(
+                taxonomy_name="clothing_type",
+                taxonomy_type="category",
+                labels=["shirt", "trousers", "dress"]
+            )
+
+        Parameters:
+            taxonomy_name: The name of the taxonomy. Taxonomy names must be
+              unique within a dataset.
+            taxonomy_type: The type of this taxonomy as a string literal.
+              Currently, the only supported taxonomy type is "category".
+            labels: The list of possible labels for the taxonomy.
+
+        Returns:
+            Returns a response with dataset_id, taxonomy_name and type for the
+            new taxonomy.
         """
         return self._client.make_request(
             construct_taxonomy_payload(taxonomy_name, taxonomy_type, labels),
@@ -492,12 +861,18 @@ class Dataset:
         """Returns a list of all DatasetItems and Annotations in this slice.
 
         Returns:
-            A list, where each item is a dict with two keys representing a row
-            in the dataset.
-            * One value in the dict is the DatasetItem, containing a reference to the
-                item that was annotated.
-            * The other value is a dictionary containing all the annotations for this
-                dataset item, sorted by annotation type.
+            A list of dicts, each with two keys representing a row in the dataset::
+
+                List[{
+                    "item": DatasetItem,
+                    "annotations": {
+                        "box": Optional[List[BoxAnnotation]],
+                        "cuboid": Optional[List[CuboidAnnotation]],
+                        "polygon": Optional[List[PolygonAnnotation]],
+                        "segmentation": Optional[List[SegmentationAnnotation]],
+                        "category": Optional[List[CategoryAnnotation]],
+                    }
+                }]
         """
         api_payload = self._client.make_request(
             payload=None,
@@ -509,34 +884,59 @@ class Dataset:
     def export_embeddings(
         self,
     ) -> List[Dict[str, Union[str, List[float]]]]:
-        """Returns a pd.Dataframe-ready format of dataset embeddings.
+        """Fetches a pd.DataFrame-ready list of dataset embeddings.
 
         Returns:
             A list, where each item is a dict with two keys representing a row
-            in the dataset.
-            * One value in the dict is the reference id
-            * The other value is a list of the embedding values
+            in the dataset::
+
+                List[{
+                    "reference_id": str,
+                    "embedding_vector": List[float]
+                }]
         """
         api_payload = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/embeddings",
             requests_command=requests.get,
         )
-        return api_payload
+        return api_payload  # type: ignore
 
     def delete_annotations(
         self, reference_ids: list = None, keep_history=False
-    ):
-        response = self._client.delete_annotations(
-            self.id, reference_ids, keep_history
+    ) -> AsyncJob:
+        """Deletes all annotations associated with the specified item reference IDs.
+
+        Parameters:
+            reference_ids: List of user-defined reference IDs of the dataset items
+              from which to delete annotations.
+            keep_history: Whether to preserve version history. If False, all
+                previous versions will be deleted along with the annotations. If
+                True, the version history (including deletion) wil persist.
+                Default is False.
+
+        Returns:
+            :class:`AsyncJob`: Empty payload response.
+        """
+        payload = {KEEP_HISTORY_KEY: keep_history}
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+        response = self._client.make_request(
+            payload,
+            f"annotation/{self.id}",
+            requests_command=requests.delete,
         )
         return AsyncJob.from_json(response, self._client)
 
-    def get_scene(self, reference_id) -> Scene:
-        """Returns a scene by reference id
+    def get_scene(self, reference_id: str) -> Scene:
+        """Fetches a single scene in the dataset by its reference ID.
+
+        Parameters:
+            reference_id: User-defined reference ID of the scene.
 
         Returns:
-            a Scene object representing all dataset items organized into frames
+            :class:`Scene<LidarScene>`: A scene object containing frames, which
+            in turn contain pointcloud or image items.
         """
         return Scene.from_json(
             self._client.make_request(
@@ -547,7 +947,20 @@ class Dataset:
         )
 
     def export_predictions(self, model):
-        """Exports all predictions from a model on this dataset"""
+        """Fetches all predictions of a model that were uploaded to the dataset.
+
+        Parameters:
+            model (:class:`Model`): The model whose predictions to retrieve.
+
+        Returns:
+            List[Union[\
+                :class:`BoxPrediction`, \
+                :class:`PolygonPrediction`, \
+                :class:`CuboidPrediction`, \
+                :class:`SegmentationPrediction` \
+            ]]: List of prediction objects from the model.
+
+        """
         json_response = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/model/{model.id}/export",
@@ -555,30 +968,85 @@ class Dataset:
         )
         return format_prediction_response({ANNOTATIONS_KEY: json_response})
 
-    def calculate_evaluation_metrics(self, model, options=None):
+    def calculate_evaluation_metrics(self, model, options: dict = None):
+        """Starts computation of evaluation metrics for a model on the dataset.
+
+        To update matches and metrics calculated for a model on a given dataset you
+        can call this endpoint. This is required in order to sort by IOU, view false
+        positives/false negatives, and view model insights.
+
+        You can add predictions from a model to a dataset after running the
+        calculation of the metrics. However, the calculation of metrics will have
+        to be retriggered for the new predictions to be matched with ground truth
+        and appear as false positives/negatives, or for the new predictions effect
+        on metrics to be reflected in model run insights.
+
+        During IoU calculation, bounding box Predictions are compared to
+        GroundTruth using a greedy matching algorithm that matches prediction and
+        ground truth boxes that have the highest ious first. By default the
+        matching algorithm is class-agnostic: it will greedily create matches
+        regardless of the class labels.
+
+        The algorithm can be tuned to classify true positives between certain
+        classes, but not others. This is useful if the labels in your ground truth
+        do not match the exact strings of your model predictions, or if you want
+        to associate multiple predictions with one ground truth label, or multiple
+        ground truth labels with one prediction. To recompute metrics based on
+        different matching, you can re-commit the run with new request parameters.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            dataset = client.get_dataset(dataset_id="ds_bwkezj6g5c4g05gqp1eg")
+
+            model = client.get_model(
+                model_id="prj_bybpa3gjmjc30es761y0",
+                dataset_id="ds_bwkezj6g5c4g05gqp1eg"
+            )
+
+            # Compute all evaluation metrics including IOU-based matching:
+            dataset.calculate_evaluation_metrics(model)
+
+            # Match car and bus bounding boxes (for IOU computation)
+            # Otherwise enforce that class labels must match
+            dataset.calculate_evaluation_metrics(model, options={
+              'allowed_label_matches': [
+                {
+                  'ground_truth_label': 'car',
+                  'model_prediction_label': 'bus'
+                },
+                {
+                  'ground_truth_label': 'bus',
+                  'model_prediction_label': 'car'
+                }
+              ]
+            })
+
+        Parameters:
+            model (:class:`Model`): The model object for which to calculate metrics.
+            options: Dictionary of specific options to configure metrics calculation.
+
+                class_agnostic
+                  Whether ground truth and prediction classes can differ when
+                  being matched for evaluation metrics. Default is True.
+
+                allowed_label_matches
+                  Pairs of ground truth and prediction classes that should
+                  be considered matchable when computing metrics. If supplied,
+                  ``class_agnostic`` must be False.
+
+                ::
+
+                    {
+                        "class_agnostic": bool,
+                        "allowed_label_matches": List[{
+                            "ground_truth_label": str,
+                            "model_prediction_label": str
+                        }]
+                    }
         """
-
-        :param model: the model to calculate eval metrics for
-        :param options: Dict with keys:
-            class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
-                            Default value: True
-
-            allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
-                                    for ground truth and model predictions.
-                                    If specified, 'class_agnostic' flag is assumed to be False
-
-            Type 'AllowedMatch':
-            {
-                ground_truth_label: string,       # A label for ground truth annotation.
-                model_prediction_label: string,   # A label for model prediction that can be matched with
-                                                # corresponding ground truth label.
-            }
-
-        payload:
-        {
-            "class_agnostic": boolean,
-            "allowed_label_matches": List[AllowedMatch],
-        }"""
         if options is None:
             options = {}
         return self._client.make_request(
@@ -595,23 +1063,63 @@ class Dataset:
                 PolygonPrediction,
                 CuboidPrediction,
                 SegmentationPrediction,
+                CategoryPrediction,
             ]
         ],
-        update=False,
-        asynchronous=False,
+        update: bool = False,
+        asynchronous: bool = False,
     ):
-        """
-        Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param predictions: List of prediction objects to ingest
-        :param update: Whether to update (if true) or ignore (if false) on conflicting reference_id/annotation_id
-        :param asynchronous: If true, return launch and then return a reference to an asynchronous job object. This is recommended for large ingests.
-        :return:
-        If synchronoius
-        {
-            "model_run_id": str,
-            "predictions_processed": int,
-            "predictions_ignored": int,
-        }
+        """Uploads predictions and associates them with an existing :class:`Model`.
+
+        Adding predictions to your dataset in Nucleus allows you to visualize
+        discrepancies against ground truth, query dataset items based on the
+        predictions they contain, and evaluate your models by comparing their
+        predictions to ground truth.
+
+        Nucleus supports :class:`Box<BoxPrediction>`, :class:`Polygon<PolygonPrediction>`,
+        :class:`Cuboid<CuboidPrediction>`, :class:`Segmentation<SegmentationPrediction>`,
+        and :class:`Category<CategoryPrediction>` predictions. Cuboid predictions
+        can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
+
+        When uploading an prediction, you need to specify which item you are
+        annotating via the reference_id you provided when uploading the image
+        or pointcloud.
+
+        Ground truth uploads can be made idempotent by specifying an optional
+        annotation_id for each prediction. This id should be unique within the
+        dataset_item so that (reference_id, annotation_id) is unique within the
+        dataset.
+
+        See :class:`SegmentationPrediction` for specific requirements to upload
+        segmentation predictions.
+
+        For ingesting large prediction payloads, see the `Guide for Large Ingestions
+        <https://nucleus.scale.com/docs/large-ingestion>`_.
+
+        Parameters:
+            model (:class:`Model`): Nucleus-generated model ID (starts with ``prj_``). This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL.
+            predictions (List[Union[\
+                :class:`BoxPrediction`, \
+                :class:`PolygonPrediction`, \
+                :class:`CuboidPrediction`, \
+                :class:`SegmentationPrediction`, \
+                :class:`CategoryPrediction` \
+            ]]): List of prediction objects to upload.
+            update: Whether or not to overwrite metadata or ignore on reference ID
+              collision. Default is False.
+            asynchronous: Whether or not to process the upload asynchronously (and
+              return an :class:`AsyncJob` object). Default is False.
+
+        Returns:
+            Payload describing the synchronous upload::
+
+                {
+                    "dataset_id": str,
+                    "model_run_id": str,
+                    "predictions_processed": int,
+                    "predictions_ignored": int,
+                }
         """
         if asynchronous:
             check_all_mask_paths_remote(predictions)
@@ -634,12 +1142,24 @@ class Dataset:
             )
 
     def predictions_iloc(self, model, index):
-        """
-        Returns predictions For Dataset Item by index.
-        :param model: model object to get predictions from.
-        :param index: absolute number of Dataset Item for a dataset corresponding to the model run.
-        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
-        }
+        """Fetches all predictions of a dataset item by its absolute index.
+
+        Parameters:
+            model (:class:`Model`): Model object from which to fetch the prediction.
+            index (int): Absolute index of the dataset item within the dataset.
+
+        Returns:
+            Dict[str, List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction,
+            SegmentationPrediction, CategoryPrediction]]]: Dictionary mapping prediction
+            type to a list of such prediction objects from the given model::
+
+                {
+                    "box": List[BoxPrediction],
+                    "polygon": List[PolygonPrediction],
+                    "cuboid": List[CuboidPrediction],
+                    "segmentation": List[SegmentationPrediction],
+                    "category": List[CategoryPrediction],
+                }
         """
         return format_prediction_response(
             self._client.make_request(
@@ -650,11 +1170,25 @@ class Dataset:
         )
 
     def predictions_refloc(self, model, reference_id):
-        """
-        Returns predictions for dataset Item by its reference_id.
-        :param model: model object to get predictions from.
-        :param reference_id: reference_id of a dataset item.
-        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        """Fetches all predictions of a dataset item by its reference ID.
+
+        Parameters:
+            model (:class:`Model`): Model object from which to fetch the prediction.
+            reference_id (str): User-defined ID of the dataset item from which to fetch
+              all predictions.
+
+        Returns:
+            Dict[str, List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction,
+            SegmentationPrediction, CategoryPrediction]]]: Dictionary mapping prediction
+            type to a list of such prediction objects from the given model::
+
+                {
+                    "box": List[BoxPrediction],
+                    "polygon": List[PolygonPrediction],
+                    "cuboid": List[CuboidPrediction],
+                    "segmentation": List[SegmentationPrediction],
+                    "category": List[CategoryPrediction],
+                }
         """
         return format_prediction_response(
             self._client.make_request(
@@ -665,12 +1199,22 @@ class Dataset:
         )
 
     def prediction_loc(self, model, reference_id, annotation_id):
-        """
-        Returns info for single Prediction by its reference id and annotation id. Not supported for segmentation predictions yet.
-        :param reference_id: the user specified id for the image
-        :param annotation_id: the user specified id for the prediction, or if one was not provided, the Scale internally generated id for the prediction
-        :return:
-         BoxPrediction | PolygonPrediction | CuboidPrediction
+        """Fetches a single ground truth annotation by id.
+
+        Parameters:
+            model (:class:`Model`): Model object from which to fetch the prediction.
+            reference_id (str): User-defined reference ID of the dataset item
+              associated with the model prediction.
+            annotation_id (str): User-defined ID of the ground truth annotation.
+
+        Returns:
+            Union[\
+                :class:`BoxPrediction`, \
+                :class:`PolygonPrediction`, \
+                :class:`CuboidPrediction`, \
+                :class:`SegmentationPrediction` \
+                :class:`CategoryPrediction` \
+            ]: Model prediction object with the specified annotation ID.
         """
         return from_json(
             self._client.make_request(
@@ -679,3 +1223,23 @@ class Dataset:
                 requests_command=requests.get,
             )
         )
+
+    def _upload_items(
+        self,
+        dataset_items: List[DatasetItem],
+        batch_size: int = 20,
+        update: bool = False,
+    ) -> UploadResponse:
+        """
+        Appends images to a dataset with given dataset_id.
+        Overwrites images on collision if updated.
+
+        Args:
+            dataset_items: Items to Upload
+            batch_size: size of the batch for long payload
+            update: Update records on conflict otherwise overwrite
+        Returns:
+            UploadResponse
+        """
+        populator = DatasetItemUploader(self.id, self._client)
+        return populator.upload(dataset_items, batch_size, update)

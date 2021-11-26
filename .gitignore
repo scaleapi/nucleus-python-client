@@ -138,3 +138,6 @@ poetry.lock
 
 # vscode
 .vscode/
+
+# JetBrains
+.idea/

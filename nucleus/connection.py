@@ -1,19 +1,11 @@
 import time
 
-import logging
 import requests
 
 from .constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from .errors import NucleusAPIError
-
-logger = logging.getLogger(__name__)
-logging.basicConfig()
-
-
-# TODO: use retry library instead of custom code. Tenacity is one option.
-class RetryStrategy:
-    statuses = {503, 504}
-    sleep_times = [1, 3, 9]
+from .logger import logger
+from .retry_strategy import RetryStrategy
 
 
 class Connection:

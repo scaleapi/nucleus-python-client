@@ -51,30 +51,6 @@ from .helpers import (
 )
 
 
-def test_reprs():
-    # Have to define here in order to have access to all relevant objects
-    def test_repr(test_object: any):
-        assert eval(str(test_object)) == test_object
-
-    test_repr(
-        DatasetItem(
-            image_location="test_url",
-            reference_id="test_reference_id",
-            metadata={
-                "made_with_pytest": True,
-                "example_int": 0,
-                "example_str": "hello",
-                "example_float": 0.5,
-                "example_dict": {
-                    "nested": True,
-                },
-                "example_list": ["hello", 1, False],
-            },
-        )
-    )
-    test_repr(Dataset("test_dataset", NucleusClient(api_key="fake_key")))
-
-
 @pytest.fixture()
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
@@ -218,6 +194,32 @@ def test_dataset_append(dataset):
 
     response = dataset.append(make_dataset_items())
     check_is_expected_response(response)
+
+
+def test_dataset_name_access(CLIENT, dataset):
+    assert dataset.name == TEST_DATASET_NAME
+
+
+def test_dataset_size_access(CLIENT, dataset):
+    assert dataset.size == 0
+    items = make_dataset_items()
+    dataset.append(items)
+    assert dataset.size == len(items)
+
+
+def test_dataset_model_runs_access(CLIENT, dataset):
+    # TODO: Change to Models
+    assert len(dataset.model_runs) == 0
+
+
+def test_dataset_slices(CLIENT, dataset):
+    assert len(dataset.slices) == 0
+    items = make_dataset_items()
+    dataset.append(items)
+    dataset.create_slice("test_slice", [item.reference_id for item in items])
+    slices = dataset.slices
+    assert len(slices) == 1
+    # TODO(gunnar): Test slice items -> Split up info!
 
 
 def test_dataset_append_local(CLIENT, dataset):
