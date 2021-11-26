@@ -19,18 +19,21 @@ from .constants import (
     UNIT_TEST_ID_KEY,
     UNIT_TEST_NAME_KEY,
 )
-from .eval_function import EvalFunctionResponse
+from .eval_function import EvalFunctionDefinition
 from .unit_test import (
-    ThresholdComparison,
     UnitTest,
     UnitTestInfo,
-    UnitTestMetric,
 )
+from .unit_test_metric import UnitTestMetric, ThresholdComparison
 from .unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
 )
 from .utils import format_unit_test_eval_response
+from .eval_function_collection import (
+    AvailableEvaluationFunctions,
+    EvalFunctionCondition,
+)
 
 SUCCESS_KEY = "success"
 EVALUATIONS_KEY = "evaluations"
@@ -50,7 +53,7 @@ class ModelCI:
         return self._connection == other._connection
 
     @property
-    def eval_functions(self) -> List[EvalFunctionResponse]:
+    def eval_functions(self) -> AvailableEvaluationFunctions:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -65,9 +68,9 @@ class ModelCI:
             requests_command=requests.get,
         )
         payload = GetEvalFunctions.parse_obj(response)
-        return payload.eval_functions
+        return AvailableEvaluationFunctions(payload.eval_functions)
 
-    def list_eval_functions(self) -> List[EvalFunctionResponse]:
+    def list_eval_functions(self) -> List[EvalFunctionDefinition]:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -81,11 +84,16 @@ class ModelCI:
             requests_command=requests.get,
         )
         return [
-            EvalFunctionResponse(**eval_function)
+            EvalFunctionDefinition(**eval_function)
             for eval_function in response[EVAL_FUNCTIONS_KEY]
         ]
 
-    def create_unit_test(self, name: str, slice_id: str) -> UnitTest:
+    def create_unit_test(
+        self,
+        name: str,
+        slice_id: str,
+        evalulation_conditions: List[EvalFunctionCondition],
+    ) -> UnitTest:
         """Creates a new Unit Test. ::
 
             import nucleus

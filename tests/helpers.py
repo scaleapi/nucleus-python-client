@@ -14,6 +14,7 @@ TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
+# What is this magic?
 TEST_EVAL_FUNCTION_ID = "ef_c61595wh49km7ppkk14g"
 
 DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"

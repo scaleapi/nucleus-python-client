@@ -4,21 +4,11 @@ With Model CI Unit Tests, an ML engineer can define a Unit Test from critical
 edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
-from enum import Enum
 from dataclasses import dataclass
 from typing import List, TYPE_CHECKING
 
 from .unit_test_evaluation import UnitTestEvaluation
-
-
-@dataclass
-class ThresholdComparison(str, Enum):
-    """Comparator between the result and the threshold."""
-
-    GREATER_THAN = "greater_than"
-    GREATER_THAN_EQUAL_TO = "greater_than_equal_to"
-    LESS_THAN = "less_than"
-    LESS_THAN_EQUAL_TO = "less_than_equal_to"
+from .unit_test_metric import UnitTestMetric, ThresholdComparison
 
 
 @dataclass
@@ -27,18 +17,8 @@ class UnitTestInfo:
     slice_id: str
 
 
-@dataclass
-class UnitTestMetric:
-    """A Unit Test Metric is an evaluation function and comparator associated with a Unit Test."""
-
-    unit_test_id: str
-    eval_function_id: str
-    threshold: float
-    threshold_comparison: ThresholdComparison
-
-
 if TYPE_CHECKING:
-    from nucleus.modelci import ModelCI
+    from nucleus.modelci import ModelCI, UnitTestMetric
 
 
 class UnitTest:

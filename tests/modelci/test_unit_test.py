@@ -57,9 +57,11 @@ def test_list_unit_test(CLIENT, dataset):
         reference_ids=[items[0].reference_id],
     )
 
+    e = CLIENT.modelci.eval_functions
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=slc.slice_id,
+        evalulation_conditions=[e.iou() > 0.5]
     )
 
     unit_tests = CLIENT.modelci.list_unit_tests()
