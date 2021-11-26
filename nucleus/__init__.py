@@ -215,21 +215,10 @@ class NucleusClient:
 
     @deprecated(msg="Use the NucleusClient.models property in the future.")
     def list_models(self) -> List[Model]:
-        """Fetches all of your Nucleus models.
-
-        Returns:
-            List[:class:`Model`]: List of models associated with the client API key.
-        """
         return self.models
 
     @deprecated(msg="Use the NucleusClient.datasets property in the future.")
     def list_datasets(self) -> Dict[str, Union[str, List[str]]]:
-        """Fetches all of your Nucleus datasets.
-
-        Returns:
-            Payload containing all dataset IDs associated with the client
-            API key.
-        """
         return self.make_request({}, "dataset/", requests.get)
 
     def list_jobs(
@@ -292,14 +281,12 @@ class NucleusClient:
         "Model runs have been deprecated and will be removed. Use a Model instead"
     )
     def get_model_run(self, model_run_id: str, dataset_id: str) -> ModelRun:
-        # TODO: deprecate ModelRun
         return ModelRun(model_run_id, dataset_id, self)
 
     @deprecated(
         "Model runs have been deprecated and will be removed. Use a Model instead"
     )
     def delete_model_run(self, model_run_id: str):
-        # TODO: deprecate ModelRun
         return self.make_request(
             {}, f"modelRun/{model_run_id}", requests.delete
         )
@@ -374,7 +361,6 @@ class NucleusClient:
         )
         return Dataset(response[DATASET_ID_KEY], self)
 
-    # TODO(gunnar): Move to dataset?
     def delete_dataset(self, dataset_id: str) -> dict:
         """
         Deletes a dataset by ID.
@@ -392,13 +378,6 @@ class NucleusClient:
 
     @deprecated("Use Dataset.delete_item instead.")
     def delete_dataset_item(self, dataset_id: str, reference_id) -> dict:
-        """
-        Deletes a private dataset based on datasetId.
-        Returns an empty payload where response status `200` indicates
-        the dataset has been successfully deleted.
-        :param payload: { "name": str }
-        :return: { "dataset_id": str, "name": str }
-        """
         dataset = self.get_dataset(dataset_id)
         return dataset.delete_item(reference_id)
 
@@ -542,7 +521,6 @@ class NucleusClient:
         "Model runs have been deprecated and will be removed. Use a Model instead"
     )
     def create_model_run(self, dataset_id: str, payload: dict) -> ModelRun:
-        # TODO: deprecate ModelRun
         response = self.make_request(
             payload, f"dataset/{dataset_id}/modelRun/create"
         )
@@ -571,7 +549,6 @@ class NucleusClient:
         update: bool = False,
         batch_size: int = 5000,
     ):
-        # TODO: deprecate in favor of Dataset.upload_predictions invocation
         if model_run_id is not None:
             assert model_id is None and dataset_id is None
             endpoint = f"modelRun/{model_run_id}/predict"
@@ -653,17 +630,6 @@ class NucleusClient:
 
     @deprecated(msg="Prefer calling Dataset.info() directly.")
     def dataset_info(self, dataset_id: str):
-        """
-        Returns information about existing dataset
-        :param dataset_id: dataset id
-        :return: dictionary of the form
-            {
-                'name': str,
-                'length': int,
-                'model_run_ids': List[str],
-                'slice_ids': List[str]
-            }
-        """
         dataset = self.get_dataset(dataset_id)
         return dataset.info()
 

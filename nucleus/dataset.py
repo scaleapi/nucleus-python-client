@@ -272,7 +272,6 @@ class Dataset:
         metadata: Optional[Dict[str, Any]] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ):
-        # TODO: deprecate ModelRun
         payload = construct_model_run_creation_payload(
             name,
             reference_id,
