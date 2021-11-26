@@ -10,6 +10,7 @@ __all__ = [
     "CuboidAnnotation",
     "CuboidPrediction",
     "Dataset",
+    "DatasetInfo",
     "DatasetItem",
     "DatasetItemRetrievalError",
     "Frame",
@@ -89,6 +90,7 @@ from .constants import (
     UPDATE_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
+from .data_transfer_object.dataset_info import DatasetInfo
 from .dataset import Dataset
 from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .deprecation_warning import deprecated

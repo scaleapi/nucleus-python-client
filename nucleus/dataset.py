@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
 
@@ -19,12 +19,6 @@ from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
-
-from .dataset_item_uploader import DatasetItemUploader
-from .deprecation_warning import deprecated
-from .upload_response import UploadResponse
-from .errors import DatasetItemRetrievalError
-
 from .annotation import (
     Annotation,
     check_all_mask_paths_remote,
@@ -53,12 +47,16 @@ from .dataset_item import (
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
 )
+from .dataset_item_uploader import DatasetItemUploader
+from .deprecation_warning import deprecated
+from .errors import DatasetItemRetrievalError
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
 from .scene import LidarScene, Scene, check_all_scene_paths_remote
+from .upload_response import UploadResponse
 
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
@@ -66,9 +64,6 @@ from .scene import LidarScene, Scene, check_all_scene_paths_remote
 
 WARN_FOR_LARGE_UPLOAD = 50000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
-
-if TYPE_CHECKING:
-    from . import NucleusClient
 
 
 class Dataset:
@@ -95,21 +90,10 @@ class Dataset:
         existing_dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
     """
 
-    def __init__(
-        self,
-        dataset_id: str,
-        client: "NucleusClient",  # noqa: F821
-        name: Optional[str] = None,
-    ):
-        """
-
-        Args:
-            dataset_id: Reference id of dataset
-            client: NucleusClient instance
-            name: Optionally set name on creation such that the property access doesn't need to hit the server
-        """
+    def __init__(self, dataset_id, client, name=None):
         self.id = dataset_id
         self._client = client
+        # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
         self._name = name
 
     def __repr__(self):
@@ -460,20 +444,20 @@ class Dataset:
               3D data to drastically increase throughput. Default is False.
 
         Returns:
-            For scenes:
-            If synchronous, returns a payload describing the upload result::
+            For scenes
+                If synchronous, returns a payload describing the upload result::
 
-                {
-                    "dataset_id: str,
-                    "new_items": int,
-                    "updated_items": int,
-                    "ignored_items": int,
-                    "upload_errors": int
-                }
+                    {
+                        "dataset_id: str,
+                        "new_items": int,
+                        "updated_items": int,
+                        "ignored_items": int,
+                        "upload_errors": int
+                    }
 
-            Otherwise, returns an :class:`AsyncJob` object.
-            For images:
-            If synchronous returns UploadResponse otherwise :class:`AsyncJob`
+                Otherwise, returns an :class:`AsyncJob` object.
+            For images
+                If synchronous returns UploadResponse otherwise :class:`AsyncJob`
         """
         assert (
             batch_size is None or batch_size < 30
