@@ -241,7 +241,9 @@ class Dataset:
         Returns:
             :class:`DatasetInfo`
         """
-        response = self._client.dataset_info(self.id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/info", requests.get
+        )
         dataset_info = DatasetInfo.parse_obj(response)
         return dataset_info
 
