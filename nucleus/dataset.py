@@ -690,6 +690,26 @@ class Dataset:
         """
         return self._client.list_autotags(self.id)
 
+    def update_autotag(self, autotag_id):
+        """Will rerun inference on all dataset items in the dataset.
+        For now this endpoint does not try to skip already inferenced items, but this
+        improvement is planned for the future.
+
+        Parameters:
+            autotag_id: Id of the autotag to re-inference. You can figure out which
+            id you want by using dataset.list_autotags, or by looking at the URL in the
+            manage autotag page.
+
+        Returns:
+          :class:`AsyncJob`: Asynchronous job object to track processing status.
+        """
+        return AsyncJob.from_json(
+            payload=self._client.make_request(
+                {}, f"autotag/{autotag_id}", requests.post
+            ),
+            client=self._client,
+        )
+
     def create_custom_index(
         self, embeddings_urls: List[str], embedding_dim: int
     ):
