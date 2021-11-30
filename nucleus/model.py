@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional, Union
+import requests
 
 from .constants import METADATA_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
@@ -179,6 +180,9 @@ class Model:
         Returns:
             AsyncJob object of evaluation job
         """
-        return self._client.modelci.evaluate_model_on_unit_tests(
-            self.id, unit_test_names
+        response = self._client.make_request(
+            {"test_names": unit_test_names},
+            f"modelci/{self.id}/evaluate",
+            requests_command=requests.post,
         )
+        return AsyncJob.from_json(response, self._client)
