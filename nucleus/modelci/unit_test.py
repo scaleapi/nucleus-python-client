@@ -164,6 +164,6 @@ class UnitTest:
             requests_command=requests.get,
         )
         return [
-            self.get_unit_test_eval_info(eval[ID_KEY])
+            UnitTestEvaluation(eval[ID_KEY], self.connection)
             for eval in response[EVALUATIONS_KEY]
         ]
