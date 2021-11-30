@@ -30,10 +30,10 @@ class ModelCI:
     def list_eval_functions(self) -> List[EvalFunction]:
         """Lists all available evaluation functions. ::
 
-            import nucleus
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+        import nucleus
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            eval_functions = client.modelci.list_eval_functions()
+        eval_functions = client.modelci.list_eval_functions()
         """
         response = self._connection.make_request(
             {},
@@ -92,7 +92,8 @@ class ModelCI:
             requests_command=requests.get,
         )
         return [
-            UnitTest(test_id, self._connection) for test_id in response["unit_test_ids"]
+            UnitTest(test_id, self._connection)
+            for test_id in response["unit_test_ids"]
         ]
 
     def delete_unit_test(self, unit_test_id: str) -> bool:
