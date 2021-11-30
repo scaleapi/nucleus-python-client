@@ -36,7 +36,7 @@ jobs:
           command: |
             poetry run mypy --ignore-missing-imports nucleus
       - run :
-          name: isort Import Formatting Check # Only validation, without re-formatting
+          name: Isort Import Formatting Check # Only validation, without re-formatting
           command: |
             poetry run isort --check-only .
       - run:
