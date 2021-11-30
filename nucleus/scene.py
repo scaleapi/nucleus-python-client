@@ -1,18 +1,20 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Optional, Any, Dict, List
+from typing import Any, Dict, List, Optional
+
 from nucleus.constants import (
     FRAMES_KEY,
+    IMAGE_LOCATION_KEY,
     LENGTH_KEY,
     METADATA_KEY,
     NUM_SENSORS_KEY,
-    REFERENCE_ID_KEY,
     POINTCLOUD_LOCATION_KEY,
-    IMAGE_LOCATION_KEY,
+    REFERENCE_ID_KEY,
 )
+
 from .annotation import is_local_path
-from .dataset_item import DatasetItemType, DatasetItem
+from .dataset_item import DatasetItem, DatasetItemType
 
 
 class Frame:

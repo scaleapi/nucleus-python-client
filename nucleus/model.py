@@ -1,16 +1,13 @@
-from typing import List, Optional, Dict, Union
+from typing import Dict, List, Optional, Union
+
+from .constants import METADATA_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
+from .model_run import ModelRun
 from .prediction import (
     BoxPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
-)
-from .model_run import ModelRun
-from .constants import (
-    NAME_KEY,
-    REFERENCE_ID_KEY,
-    METADATA_KEY,
 )
 
 

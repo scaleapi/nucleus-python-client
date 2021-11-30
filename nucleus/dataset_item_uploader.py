@@ -2,25 +2,25 @@ import asyncio
 import json
 import os
 import time
-from typing import List, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List
 
 import aiohttp
 import nest_asyncio
 
 from .constants import (
     DATASET_ID_KEY,
-    UPDATE_KEY,
-    ITEMS_KEY,
-    IMAGE_URL_KEY,
-    IMAGE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
+    IMAGE_KEY,
+    IMAGE_URL_KEY,
+    ITEMS_KEY,
+    UPDATE_KEY,
 )
-from .payload_constructor import construct_append_payload
-from .retry_strategy import RetryStrategy
 from .dataset_item import DatasetItem
-from .upload_response import UploadResponse
 from .errors import NotFoundError
 from .logger import logger
+from .payload_constructor import construct_append_payload
+from .retry_strategy import RetryStrategy
+from .upload_response import UploadResponse
 
 if TYPE_CHECKING:
     from . import NucleusClient

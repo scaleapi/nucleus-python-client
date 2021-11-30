@@ -1,31 +1,31 @@
-from collections import Counter
 import json
 import os.path
+from collections import Counter
 from dataclasses import dataclass
-from typing import Optional, Sequence, Dict, Any
 from enum import Enum
+from typing import Any, Dict, Optional, Sequence
 
-from .annotation import is_local_path, Point3D
+from .annotation import Point3D, is_local_path
 from .constants import (
+    CAMERA_PARAMS_KEY,
+    CX_KEY,
+    CY_KEY,
+    FX_KEY,
+    FY_KEY,
+    HEADING_KEY,
     IMAGE_URL_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
-    UPLOAD_TO_SCALE_KEY,
+    POINTCLOUD_URL_KEY,
+    POSITION_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
+    UPLOAD_TO_SCALE_KEY,
     URL_KEY,
-    CAMERA_PARAMS_KEY,
-    POINTCLOUD_URL_KEY,
+    W_KEY,
     X_KEY,
     Y_KEY,
     Z_KEY,
-    W_KEY,
-    POSITION_KEY,
-    HEADING_KEY,
-    FX_KEY,
-    FY_KEY,
-    CX_KEY,
-    CY_KEY,
 )
 
 
