@@ -7,12 +7,12 @@ and have confidence that they’re always shipping the best model.
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List
+
 import requests
 
 from nucleus.connection import Connection
 from nucleus.constants import NAME_KEY, SLICE_ID_KEY
 
-from .unit_test_evaluation import UnitTestEvaluation
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
     ID_KEY,
@@ -21,6 +21,7 @@ from .constants import (
     UNIT_TEST_ID_KEY,
     UNIT_TEST_NAME_KEY,
 )
+from .unit_test_evaluation import UnitTestEvaluation
 
 EVALUATIONS_KEY = "evaluations"
 

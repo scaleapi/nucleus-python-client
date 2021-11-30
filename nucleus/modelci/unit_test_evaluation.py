@@ -1,7 +1,8 @@
 """Data types for Unit Test Evaluation results."""
-from dataclasses import dataclass, field, InitVar
+from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import List, Optional
+
 import requests
 
 from nucleus.connection import Connection
@@ -15,7 +16,6 @@ from nucleus.modelci.constants import (
 )
 
 from .utils import try_convert_float
-
 
 UNIT_TEST_EVAL_KEY = "unit_test_evaluation"
 ITEM_EVAL_KEY = "unit_test_item_evaluations"
