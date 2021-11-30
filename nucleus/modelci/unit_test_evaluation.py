@@ -72,11 +72,11 @@ class UnitTestEvaluation:
     unit_test_id: str = field(init=False)
     eval_function_id: str = field(init=False)
     model_id: str = field(init=False)
-    status: str = field(init=False)
+    status: UnitTestEvaluationStatus = field(init=False)
     result: Optional[float] = field(init=False)
     passed: bool = field(init=False)
     item_evals: List[UnitTestItemEvaluation] = field(init=False)
-    connection: InitVar(Connection)
+    connection: InitVar[Connection]
 
     def __post_init__(self, connection: Connection):
         response = connection.make_request(
@@ -90,7 +90,7 @@ class UnitTestEvaluation:
         self.unit_test_id: str = eval_response[UNIT_TEST_ID_KEY]
         self.eval_function_id: str = eval_response[EVAL_FUNCTION_ID_KEY]
         self.model_id: str = eval_response[MODEL_ID_KEY]
-        self.status: str = UnitTestEvaluationStatus(eval_response[STATUS_KEY])
+        self.status: UnitTestEvaluationStatus = UnitTestEvaluationStatus(eval_response[STATUS_KEY])
         self.result: Optional[float] = try_convert_float(
             eval_response[RESULT_KEY]
         )
