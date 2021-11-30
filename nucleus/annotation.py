@@ -9,7 +9,6 @@ from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
-    MULTICATEGORY_TYPE,
     CUBOID_TYPE,
     DIMENSIONS_KEY,
     GEOMETRY_KEY,
@@ -20,6 +19,7 @@ from .constants import (
     MASK_TYPE,
     MASK_URL_KEY,
     METADATA_KEY,
+    MULTICATEGORY_TYPE,
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
@@ -28,8 +28,8 @@ from .constants import (
     VERTICES_KEY,
     WIDTH_KEY,
     X_KEY,
-    YAW_KEY,
     Y_KEY,
+    YAW_KEY,
     Z_KEY,
 )
 

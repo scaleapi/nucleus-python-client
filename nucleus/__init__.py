@@ -36,7 +36,7 @@ __all__ = [
 
 import os
 import time
-from typing import Dict, List, Optional, Union, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import pkg_resources
 import pydantic
@@ -45,14 +45,15 @@ import tqdm
 import tqdm.notebook as tqdm_notebook
 
 from nucleus.url_utils import sanitize_string_args
+
 from .annotation import (
     BoxAnnotation,
+    CategoryAnnotation,
     CuboidAnnotation,
+    MultiCategoryAnnotation,
     Point,
     Point3D,
     PolygonAnnotation,
-    CategoryAnnotation,
-    MultiCategoryAnnotation,
     Segment,
     SegmentationAnnotation,
 )
@@ -114,10 +115,10 @@ from .payload_constructor import (
 )
 from .prediction import (
     BoxPrediction,
+    CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
-    CategoryPrediction,
 )
 from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene

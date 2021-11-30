@@ -1,32 +1,32 @@
 import pytest
 
-from .helpers import (
-    TEST_DATASET_NAME,
-    TEST_IMG_URLS,
-    TEST_BOX_ANNOTATIONS,
-    TEST_POLYGON_ANNOTATIONS,
-    TEST_CATEGORY_ANNOTATIONS,
-    TEST_MULTICATEGORY_ANNOTATIONS,
-    TEST_SEGMENTATION_ANNOTATIONS,
-    reference_id_from_url,
-    assert_box_annotation_matches_dict,
-    assert_polygon_annotation_matches_dict,
-    assert_category_annotation_matches_dict,
-    assert_multicategory_annotation_matches_dict,
-    assert_segmentation_annotation_matches_dict,
-)
-
 from nucleus import (
     BoxAnnotation,
-    PolygonAnnotation,
     CategoryAnnotation,
-    MultiCategoryAnnotation,
-    SegmentationAnnotation,
     DatasetItem,
-    Segment,
+    MultiCategoryAnnotation,
     Point,
+    PolygonAnnotation,
+    Segment,
+    SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
+
+from .helpers import (
+    TEST_BOX_ANNOTATIONS,
+    TEST_CATEGORY_ANNOTATIONS,
+    TEST_DATASET_NAME,
+    TEST_IMG_URLS,
+    TEST_MULTICATEGORY_ANNOTATIONS,
+    TEST_POLYGON_ANNOTATIONS,
+    TEST_SEGMENTATION_ANNOTATIONS,
+    assert_box_annotation_matches_dict,
+    assert_category_annotation_matches_dict,
+    assert_multicategory_annotation_matches_dict,
+    assert_polygon_annotation_matches_dict,
+    assert_segmentation_annotation_matches_dict,
+    reference_id_from_url,
+)
 
 
 def test_reprs():

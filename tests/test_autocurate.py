@@ -1,8 +1,11 @@
-from nucleus.prediction import BoxPrediction
-from nucleus.job import AsyncJob
-from nucleus import autocurate, DatasetItem
 import time
+
+import pytest
+
+from nucleus import DatasetItem, autocurate
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.job import AsyncJob
+from nucleus.prediction import BoxPrediction
 from tests.helpers import (
     TEST_BOX_PREDICTIONS,
     TEST_DATASET_NAME,
@@ -11,7 +14,6 @@ from tests.helpers import (
     TEST_MODEL_RUN,
     reference_id_from_url,
 )
-import pytest
 
 
 @pytest.fixture()
