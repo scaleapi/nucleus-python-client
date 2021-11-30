@@ -8,7 +8,8 @@ from dataclasses import dataclass
 from typing import List, TYPE_CHECKING
 
 from .unit_test_evaluation import UnitTestEvaluation
-from .unit_test_metric import UnitTestMetric, ThresholdComparison
+from .unit_test_metric import UnitTestMetric
+from .constants import ThresholdComparison
 
 
 @dataclass
@@ -18,7 +19,7 @@ class UnitTestInfo:
 
 
 if TYPE_CHECKING:
-    from nucleus.modelci import ModelCI, UnitTestMetric
+    from nucleus.modelci import ModelCI
 
 
 class UnitTest:
@@ -36,7 +37,7 @@ class UnitTest:
         self.slice_id = info.slice_id
 
     def __repr__(self):
-        return f"UnitTest(unit_test_id='{self.id}', client={self._client}"
+        return f"UnitTest(name='{self.name}', slice_id='{self.slice_id}', unit_test_id='{self.id}')"
 
     def __eq__(self, other):
         return self.id == other.id and self._client == other._client

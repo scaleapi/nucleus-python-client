@@ -1,19 +1,12 @@
 import abc
 from typing import List, Dict, Union, Type
 
-from pydantic import BaseModel
-
+from .data_transfer_objects.eval_function_condition import EvalFunctionCondition
+from .constants import ThresholdComparison
 from .eval_function import EvalFunctionDefinition
-from .unit_test_metric import UnitTestMetric, ThresholdComparison
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 IOU_NAME = "IOU"
-
-
-class EvalFunctionCondition(BaseModel):
-    eval_func_id: str
-    threshold_comparison: str
-    threshold: float
 
 
 class BaseEvalFunction(abc.ABC):
@@ -29,6 +22,7 @@ class BaseEvalFunction(abc.ABC):
     @property
     @abc.abstractmethod
     def name(self):
+        """Name to look for in the EvalFunctionDefinitions"""
         pass
 
     def __call__(self) -> "BaseEvalFunction":
@@ -65,7 +59,7 @@ class BaseEvalFunction(abc.ABC):
 
     def _op_to_test_metric(self, comparison: ThresholdComparison, value):
         return EvalFunctionCondition(
-            eval_func_id=self.eval_func_definition.id,
+            eval_function_id=self.eval_func_definition.id,
             threshold_comparison=comparison,
             threshold=value,
         )
@@ -99,9 +93,6 @@ EvalFunction = Union[Type[IoU], Type[MeanAveragePrecisionForBoxes]]
 
 class AvailableEvaluationFunctions:
     """Collection class that acts as a common entrypoint to access evaluation function.
-
-    e = client.model_ci.eval_functions
-
     """
 
     def __init__(self, available_functions: List[EvalFunctionDefinition]):

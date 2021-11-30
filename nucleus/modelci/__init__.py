@@ -1,15 +1,10 @@
 """Model CI Python Library."""
 from typing import List
 
-import requests
 
 from nucleus.job import AsyncJob
-from nucleus.constants import (
-    NAME_KEY,
-    SLICE_ID_KEY,
-)
 from nucleus.connection import Connection
-from tests.modelci.data_transfer_objects.eval_functions import GetEvalFunctions
+from nucleus.modelci.data_transfer_objects.get_eval_functions import GetEvalFunctions
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -17,14 +12,15 @@ from .constants import (
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
     UNIT_TEST_ID_KEY,
-    UNIT_TEST_NAME_KEY,
+    UNIT_TEST_NAME_KEY, ThresholdComparison,
 )
+from .data_transfer_objects.create_unit_test import CreateUnitTestRequest
 from .eval_function import EvalFunctionDefinition
 from .unit_test import (
     UnitTest,
     UnitTestInfo,
 )
-from .unit_test_metric import UnitTestMetric, ThresholdComparison
+from .unit_test_metric import UnitTestMetric
 from .unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
@@ -32,6 +28,8 @@ from .unit_test_evaluation import (
 from .utils import format_unit_test_eval_response
 from .eval_function_collection import (
     AvailableEvaluationFunctions,
+)
+from .data_transfer_objects.eval_function_condition import (
     EvalFunctionCondition,
 )
 
@@ -61,11 +59,11 @@ class ModelCI:
 
         eval_functions = client.modelci.eval_functions
 
+        Returns:
+            :class:`AvailableEvalFunctions`: A container for all the available eval functions
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             "modelci/eval_fn",
-            requests_command=requests.get,
         )
         payload = GetEvalFunctions.parse_obj(response)
         return AvailableEvaluationFunctions(payload.eval_functions)
@@ -78,10 +76,8 @@ class ModelCI:
 
         eval_functions = client.modelci.list_eval_functions()
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             "modelci/eval_fn",
-            requests_command=requests.get,
         )
         return [
             EvalFunctionDefinition(**eval_function)
@@ -110,13 +106,13 @@ class ModelCI:
         Returns:
             Created UnitTest object.
         """
-        response = self._connection.make_request(
-            {
-                NAME_KEY: name,
-                SLICE_ID_KEY: slice_id,
-            },
+        response = self._connection.post(
+            CreateUnitTestRequest(
+                name=name,
+                slice_id=slice_id,
+                evaluation_conditions=evalulation_conditions,
+            ).dict(),
             "modelci/unit_test",
-            requests_command=requests.post,
         )
         return UnitTest(response[UNIT_TEST_ID_KEY], self)
 
@@ -154,7 +150,7 @@ class ModelCI:
         Returns:
             The created UnitTestMetric object.
         """
-        response = self._connection.make_request(
+        response = self._connection.post(
             {
                 UNIT_TEST_NAME_KEY: unit_test_name,
                 EVAL_FUNCTION_ID_KEY: eval_function_id,
@@ -162,7 +158,6 @@ class ModelCI:
                 THRESHOLD_COMPARISON_KEY: threshold_comparison,
             },
             "modelci/unit_test_metric",
-            requests_command=requests.post,
         )
         return UnitTestMetric(
             unit_test_id=response[UNIT_TEST_ID_KEY],
@@ -180,10 +175,8 @@ class ModelCI:
         Returns:
             A UnitTestInfo object
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             f"modelci/unit_test/{unit_test_id}/info",
-            requests_command=requests.get,
         )
         return UnitTestInfo(**response)
 
@@ -201,10 +194,8 @@ class ModelCI:
         Returns:
             A list of UnitTest objects.
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             "modelci/unit_test",
-            requests_command=requests.get,
         )
         return [
             UnitTest(test_id, self) for test_id in response["unit_test_ids"]
@@ -225,10 +216,8 @@ class ModelCI:
         Returns:
             A list of UnitTestMetric objects
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             f"modelci/unit_test/{unit_test_id}/metrics",
-            requests_command=requests.get,
         )
         return [
             UnitTestMetric(**metric)
@@ -250,10 +239,8 @@ class ModelCI:
         Returns:
             Whether deletion was successful.
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.delete(
             f"modelci/unit_test/{unit_test_id}",
-            requests_command=requests.delete,
         )
         return response[SUCCESS_KEY]
 
@@ -281,10 +268,9 @@ class ModelCI:
         Returns:
             AsyncJob object of evaluation job
         """
-        response = self._connection.make_request(
+        response = self._connection.post(
             {"test_names": unit_test_names},
             f"modelci/{model_id}/evaluate",
-            requests_command=requests.post,
         )
         return AsyncJob.from_json(response, self._connection)
 
@@ -305,10 +291,8 @@ class ModelCI:
         Returns:
             A list of UnitTestEvaluation objects
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             f"modelci/unit_test/{unit_test_id}/eval_history",
-            requests_command=requests.get,
         )
         return [
             self.get_unit_test_eval_info(eval[ID_KEY])
@@ -326,9 +310,7 @@ class ModelCI:
         Returns:
             A list of UnitTestEvaluation objects
         """
-        response = self._connection.make_request(
-            {},
+        response = self._connection.get(
             f"modelci/eval/{evaluation_id}/info",
-            requests_command=requests.get,
         )
         return format_unit_test_eval_response(response)

@@ -1,15 +1,7 @@
 from dataclasses import dataclass
-from enum import Enum
 
+from nucleus.modelci import ThresholdComparison
 
-@dataclass
-class ThresholdComparison(str, Enum):
-    """Comparator between the result and the threshold."""
-
-    GREATER_THAN = "greater_than"
-    GREATER_THAN_EQUAL_TO = "greater_than_equal_to"
-    LESS_THAN = "less_than"
-    LESS_THAN_EQUAL_TO = "less_than_equal_to"
 
 @dataclass
 class UnitTestMetric:

@@ -13,7 +13,7 @@ from tests.helpers import (
 
 from nucleus import BoxAnnotation, BoxPrediction
 from nucleus.job import AsyncJob
-from nucleus.modelci.unit_test import ThresholdComparison
+from nucleus.modelci import ThresholdComparison
 from nucleus.modelci.unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,

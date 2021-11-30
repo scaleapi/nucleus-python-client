@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from nucleus.modelci.eval_function import EvalFunctionDefinition
+from ..eval_function import EvalFunctionDefinition
 
 
 class GetEvalFunctions(BaseModel):
