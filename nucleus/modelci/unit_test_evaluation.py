@@ -1,6 +1,6 @@
 """Data types for Unit Test Evaluation results."""
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from typing import List, Optional
 
 

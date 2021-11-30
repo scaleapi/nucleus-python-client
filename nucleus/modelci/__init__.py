@@ -3,12 +3,9 @@ from typing import List
 
 import requests
 
-from nucleus.job import AsyncJob
-from nucleus.constants import (
-    NAME_KEY,
-    SLICE_ID_KEY,
-)
 from nucleus.connection import Connection
+from nucleus.constants import NAME_KEY, SLICE_ID_KEY
+from nucleus.job import AsyncJob
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -25,10 +22,7 @@ from .unit_test import (
     UnitTestInfo,
     UnitTestMetric,
 )
-from .unit_test_evaluation import (
-    UnitTestEvaluation,
-    UnitTestItemEvaluation,
-)
+from .unit_test_evaluation import UnitTestEvaluation, UnitTestItemEvaluation
 from .utils import format_unit_test_eval_response
 
 SUCCESS_KEY = "success"

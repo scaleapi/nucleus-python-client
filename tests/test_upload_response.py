@@ -1,10 +1,7 @@
 import pytest
+
 from nucleus import Slice, UploadResponse
-
-
-from nucleus.constants import (
-    DATASET_ID_KEY,
-)
+from nucleus.constants import DATASET_ID_KEY
 
 
 def test_reprs():

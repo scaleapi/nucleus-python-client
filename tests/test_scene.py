@@ -1,5 +1,8 @@
 import copy
+
 import pytest
+
+from nucleus import CuboidAnnotation, DatasetItem, Frame, LidarScene
 from nucleus.constants import (
     ANNOTATIONS_KEY,
     FRAMES_KEY,
@@ -16,21 +19,11 @@ from nucleus.constants import (
     UPDATE_KEY,
     URL_KEY,
 )
-
-from nucleus import (
-    CuboidAnnotation,
-    LidarScene,
-    Frame,
-    DatasetItem,
-)
-
-from nucleus.scene import (
-    flatten,
-)
+from nucleus.scene import flatten
 
 from .helpers import (
-    TEST_DATASET_3D_NAME,
     TEST_CUBOID_ANNOTATIONS,
+    TEST_DATASET_3D_NAME,
     TEST_DATASET_ITEMS,
     TEST_LIDAR_ITEMS,
     TEST_LIDAR_SCENES,

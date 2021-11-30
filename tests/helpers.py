@@ -1,9 +1,9 @@
-from pathlib import Path
 import time
-from urllib.parse import urlparse
 import uuid
+from pathlib import Path
+from urllib.parse import urlparse
 
-from nucleus import DatasetItem, BoxPrediction
+from nucleus import BoxPrediction, DatasetItem
 from nucleus.modelci.unit_test import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days

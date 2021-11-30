@@ -3,7 +3,7 @@ import os
 import pytest
 
 import nucleus
-from tests.helpers import TEST_DATASET_NAME, TEST_DATASET_ITEMS
+from tests.helpers import TEST_DATASET_ITEMS, TEST_DATASET_NAME
 
 assert "NUCLEUS_PYTEST_API_KEY" in os.environ, (
     "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid "

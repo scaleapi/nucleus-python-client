@@ -1,7 +1,9 @@
-from dataclasses import dataclass
 import time
+from dataclasses import dataclass
 from typing import Dict, List
+
 import requests
+
 from nucleus.constants import (
     JOB_CREATION_TIME_KEY,
     JOB_ID_KEY,

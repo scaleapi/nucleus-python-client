@@ -35,7 +35,7 @@ __all__ = [
 ]
 
 import os
-from typing import Dict, List, Optional, Union, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import pkg_resources
 import pydantic
@@ -44,17 +44,19 @@ import tqdm
 import tqdm.notebook as tqdm_notebook
 
 from nucleus.url_utils import sanitize_string_args
+
 from .annotation import (
     BoxAnnotation,
+    CategoryAnnotation,
     CuboidAnnotation,
+    MultiCategoryAnnotation,
     Point,
     Point3D,
     PolygonAnnotation,
-    CategoryAnnotation,
-    MultiCategoryAnnotation,
     Segment,
     SegmentationAnnotation,
 )
+from .connection import Connection
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATIONS_IGNORED_KEY,
@@ -90,7 +92,6 @@ from .constants import (
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
-from .connection import Connection
 from .dataset import Dataset
 from .dataset_item import CameraParams, DatasetItem, Quaternion
 from .deprecation_warning import deprecated
@@ -105,6 +106,7 @@ from .job import AsyncJob
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
+from .modelci import ModelCI
 from .payload_constructor import (
     construct_annotation_payload,
     construct_append_payload,
@@ -114,16 +116,15 @@ from .payload_constructor import (
 )
 from .prediction import (
     BoxPrediction,
+    CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
-    CategoryPrediction,
 )
 from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene
 from .slice import Slice
 from .upload_response import UploadResponse
-from .modelci import ModelCI
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -885,6 +886,8 @@ class NucleusClient:
         Returns:
             Response payload as JSON dict.
         """
+        if payload is None:
+            payload = {}
         return self._connection.make_request(payload, route, requests_command)
 
     def handle_bad_response(

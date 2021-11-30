@@ -1,7 +1,8 @@
-import pytest
 import time
 
-from tests.helpers import TEST_MODEL_NAME, get_uuid, TEST_SLICE_NAME
+import pytest
+
+from tests.helpers import TEST_MODEL_NAME, TEST_SLICE_NAME, get_uuid
 from tests.test_dataset import make_dataset_items
 
 

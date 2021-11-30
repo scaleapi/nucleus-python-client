@@ -1,15 +1,6 @@
-import pytest
 import uuid
 
-from tests.test_dataset import make_dataset_items
-from tests.helpers import (
-    TEST_BOX_ANNOTATIONS,
-    TEST_BOX_PREDICTIONS,
-    TEST_SLICE_NAME,
-    TEST_EVAL_FUNCTION_ID,
-    EVAL_FUNCTION_THRESHOLD,
-    get_uuid,
-)
+import pytest
 
 from nucleus import BoxAnnotation, BoxPrediction
 from nucleus.job import AsyncJob
@@ -18,6 +9,15 @@ from nucleus.modelci.unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
 )
+from tests.helpers import (
+    EVAL_FUNCTION_THRESHOLD,
+    TEST_BOX_ANNOTATIONS,
+    TEST_BOX_PREDICTIONS,
+    TEST_EVAL_FUNCTION_ID,
+    TEST_SLICE_NAME,
+    get_uuid,
+)
+from tests.test_dataset import make_dataset_items
 
 
 @pytest.mark.integration

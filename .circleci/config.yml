@@ -35,6 +35,10 @@ jobs:
           name: MyPy typing check
           command: |
             poetry run mypy --ignore-missing-imports nucleus
+      - run :
+          name: Isort Import Formatting Check # Only validation, without re-formatting
+          command: |
+            poetry run isort --check-only .
       - run:
           name: Pytest Test Cases
           command: | # Run test suite, uses NUCLEUS_TEST_API_KEY env variable

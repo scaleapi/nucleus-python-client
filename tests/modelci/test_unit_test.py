@@ -1,13 +1,12 @@
-from tests.test_dataset import make_dataset_items
+from nucleus.modelci.unit_test import UnitTest
 from tests.helpers import (
+    EVAL_FUNCTION_COMPARISON,
+    EVAL_FUNCTION_THRESHOLD,
     TEST_EVAL_FUNCTION_ID,
     TEST_SLICE_NAME,
-    EVAL_FUNCTION_THRESHOLD,
-    EVAL_FUNCTION_COMPARISON,
     get_uuid,
 )
-
-from nucleus.modelci.unit_test import UnitTest
+from tests.test_dataset import make_dataset_items
 
 
 def test_client_unit_test_metric_creation(CLIENT, unit_test):

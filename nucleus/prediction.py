@@ -3,40 +3,41 @@ All of the prediction types supported. In general, prediction types are the same
 as annotation types, but come with additional, optional data that can be attached
 such as confidence or probability distributions.
 """
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
+
 from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
+    CuboidAnnotation,
     Point,
+    Point3D,
     PolygonAnnotation,
     Segment,
     SegmentationAnnotation,
-    CuboidAnnotation,
-    Point3D,
 )
 from .constants import (
     ANNOTATION_ID_KEY,
+    ANNOTATIONS_KEY,
     BOX_TYPE,
-    CUBOID_TYPE,
-    POLYGON_TYPE,
     CATEGORY_TYPE,
-    REFERENCE_ID_KEY,
-    METADATA_KEY,
-    GEOMETRY_KEY,
-    LABEL_KEY,
-    TAXONOMY_NAME_KEY,
-    TYPE_KEY,
-    X_KEY,
-    Y_KEY,
-    WIDTH_KEY,
-    HEIGHT_KEY,
     CLASS_PDF_KEY,
     CONFIDENCE_KEY,
-    VERTICES_KEY,
-    ANNOTATIONS_KEY,
-    MASK_URL_KEY,
-    POSITION_KEY,
+    CUBOID_TYPE,
     DIMENSIONS_KEY,
+    GEOMETRY_KEY,
+    HEIGHT_KEY,
+    LABEL_KEY,
+    MASK_URL_KEY,
+    METADATA_KEY,
+    POLYGON_TYPE,
+    POSITION_KEY,
+    REFERENCE_ID_KEY,
+    TAXONOMY_NAME_KEY,
+    TYPE_KEY,
+    VERTICES_KEY,
+    WIDTH_KEY,
+    X_KEY,
+    Y_KEY,
     YAW_KEY,
 )
 

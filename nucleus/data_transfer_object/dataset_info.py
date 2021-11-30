@@ -1,5 +1,4 @@
-from typing import List, Optional, Dict, Any
-
+from typing import Any, Dict, List, Optional
 
 from nucleus.data_transfer_object.dict_compatible_model import (
     DictCompatibleModel,

@@ -4,8 +4,8 @@ With Model CI Unit Tests, an ML engineer can define a Unit Test from critical
 edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 from typing import List
 
 from .unit_test_evaluation import UnitTestEvaluation

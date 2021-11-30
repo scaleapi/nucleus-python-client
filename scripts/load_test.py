@@ -1,16 +1,13 @@
+import os
+import time
+from itertools import zip_longest
+
+from absl import app, flags
+
+import nucleus
 from nucleus import annotation
 from nucleus.dataset import Dataset
 from nucleus.job import JobError
-import nucleus
-import os
-
-from itertools import zip_longest
-
-import time
-
-
-from absl import app
-from absl import flags
 
 FLAGS = flags.FLAGS
 
