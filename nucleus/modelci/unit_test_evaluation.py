@@ -90,7 +90,9 @@ class UnitTestEvaluation:
         self.unit_test_id: str = eval_response[UNIT_TEST_ID_KEY]
         self.eval_function_id: str = eval_response[EVAL_FUNCTION_ID_KEY]
         self.model_id: str = eval_response[MODEL_ID_KEY]
-        self.status: UnitTestEvaluationStatus = UnitTestEvaluationStatus(eval_response[STATUS_KEY])
+        self.status: UnitTestEvaluationStatus = UnitTestEvaluationStatus(
+            eval_response[STATUS_KEY]
+        )
         self.result: Optional[float] = try_convert_float(
             eval_response[RESULT_KEY]
         )
