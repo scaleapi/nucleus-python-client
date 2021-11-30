@@ -141,7 +141,12 @@ class UnitTest:
             requests_command=requests.get,
         )
         return [
-            UnitTestMetric(**metric)
+            UnitTestMetric(
+                metric[UNIT_TEST_ID_KEY],
+                metric[EVAL_FUNCTION_ID_KEY],
+                metric[THRESHOLD_KEY],
+                ThresholdComparison(metric[THRESHOLD_COMPARISON_KEY]),
+            )
             for metric in response["unit_test_metrics"]
         ]
 
