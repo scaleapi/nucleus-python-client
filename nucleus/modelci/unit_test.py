@@ -25,7 +25,6 @@ from .constants import (
 EVALUATIONS_KEY = "evaluations"
 
 
-@dataclass
 class ThresholdComparison(Enum):
     """Comparator between the result and the threshold."""
 
@@ -112,7 +111,7 @@ class UnitTest:
                 UNIT_TEST_NAME_KEY: self.name,
                 EVAL_FUNCTION_ID_KEY: eval_function_id,
                 THRESHOLD_KEY: threshold,
-                THRESHOLD_COMPARISON_KEY: threshold_comparison,
+                THRESHOLD_COMPARISON_KEY: threshold_comparison.value,
             },
             "modelci/unit_test_metric",
             requests_command=requests.post,

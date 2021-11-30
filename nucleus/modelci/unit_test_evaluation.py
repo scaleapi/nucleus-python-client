@@ -21,7 +21,6 @@ UNIT_TEST_EVAL_KEY = "unit_test_evaluation"
 ITEM_EVAL_KEY = "unit_test_item_evaluations"
 
 
-@dataclass
 class UnitTestEvaluationStatus(Enum):
     """The Job status of unit test evaluation."""
 
