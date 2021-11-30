@@ -693,7 +693,9 @@ class Dataset:
     def update_autotag(self, autotag_id):
         """Will rerun inference on all dataset items in the dataset.
         For now this endpoint does not try to skip already inferenced items, but this
-        improvement is planned for the future.
+        improvement is planned for the future. This means that for now, you can only
+        have one job running at time, so please await the result using job.sleep_until_complete()
+        before launching another job.
 
         Parameters:
             autotag_id: Id of the autotag to re-inference. You can figure out which
