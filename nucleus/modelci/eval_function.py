@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True)
 class EvalFunction:
     """Encapsulates an evaluation function for Model CI."""
 

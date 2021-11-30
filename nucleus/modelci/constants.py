@@ -1,5 +1,8 @@
+EVALUATION_ID_KEY = "evaluation_id"
 EVAL_FUNCTION_ID_KEY = "eval_function_id"
 ID_KEY = "id"
+PASS_KEY = "pass"
+RESULT_KEY = "result"
 THRESHOLD_COMPARISON_KEY = "threshold_comparison"
 THRESHOLD_KEY = "threshold"
 UNIT_TEST_ID_KEY = "unit_test_id"
