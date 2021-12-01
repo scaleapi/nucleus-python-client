@@ -4,14 +4,14 @@ import pytest
 
 from nucleus.dataset import Dataset
 from nucleus.errors import NucleusAPIError
-from tests.helpers import DATASET_WITH_AUTOTAG, NUCLEUS_PYTEST_USER_ID
+from tests.helpers import DATASET_WITH_AUTOTAG, running_as_nucleus_pytest_user
 
 # TODO: Test delete_autotag once API support for autotag creation is added.
 
 
 @pytest.mark.integration
 def test_update_autotag(CLIENT):
-    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+    if running_as_nucleus_pytest_user(CLIENT):
         job = Dataset(DATASET_WITH_AUTOTAG, CLIENT).update_autotag(
             "tag_c5jwvzzde8c00604mkx0"
         )
@@ -23,7 +23,7 @@ def test_update_autotag(CLIENT):
 def test_dataset_export_autotag_training_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
+    if running_as_nucleus_pytest_user(CLIENT):
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
@@ -51,7 +51,7 @@ def test_dataset_export_autotag_training_items(CLIENT):
 
 
 def test_export_embeddings(CLIENT):
-    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
+    if running_as_nucleus_pytest_user(CLIENT):
         embeddings = Dataset(DATASET_WITH_AUTOTAG, CLIENT).export_embeddings()
         assert "embedding_vector" in embeddings[0]
         assert "reference_id" in embeddings[0]
@@ -60,7 +60,7 @@ def test_export_embeddings(CLIENT):
 def test_dataset_export_autotag_tagged_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
+    if running_as_nucleus_pytest_user(CLIENT):
         dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
 
         with pytest.raises(NucleusAPIError) as api_error:
@@ -85,3 +85,11 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
 
         for column in ["id", "name", "status", "autotag_level"]:
             assert column in autotag
+
+
+def test_export_slice_embeddings(CLIENT):
+    test_slice = CLIENT.get_slice("slc_c4s4ts3v7bw00b1hkj0g")
+    if running_as_nucleus_pytest_user(CLIENT):
+        embeddings = test_slice.export_embeddings()
+        assert "embedding_vector" in embeddings[0]
+        assert "reference_id" in embeddings[0]

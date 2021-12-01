@@ -1,6 +1,5 @@
-import time
+import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 from nucleus import BoxPrediction, DatasetItem
 
@@ -367,3 +366,11 @@ def assert_category_prediction_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def running_as_nucleus_pytest_user(client):
+    if NUCLEUS_PYTEST_USER_ID in client.api_key:
+        return True
+    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
+        return True
+    return False
