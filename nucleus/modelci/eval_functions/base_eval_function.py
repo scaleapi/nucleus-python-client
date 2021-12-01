@@ -1,13 +1,18 @@
 import abc
 
-from nucleus.modelci import EvalFunctionEntry, EvalFunctionCondition, ThresholdComparison
+from nucleus.modelci import (
+    EvalFunctionEntry,
+    EvalFunctionCondition,
+    ThresholdComparison,
+)
 
 
 class BaseEvalFunction(abc.ABC):
-    """ Abstract base class for concrete implementations of EvalFunctions
+    """Abstract base class for concrete implementations of EvalFunctions
 
     Operating on this class with comparison operators produces an EvalFunctionMetric
     """
+
     def __init__(self, eval_func_response: EvalFunctionEntry):
         self.eval_func_definition = eval_func_response
 
@@ -19,7 +24,7 @@ class BaseEvalFunction(abc.ABC):
         pass
 
     def __call__(self) -> "BaseEvalFunction":
-        """ Adding call to prepare for being able to pass parameters to function
+        """Adding call to prepare for being able to pass parameters to function
 
         Notes:
             Technically now you could do something like eval_function > 0.5 but we want it

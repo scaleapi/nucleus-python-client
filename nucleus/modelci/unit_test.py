@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from typing import List, TYPE_CHECKING
 
 from .data_transfer_objects.add_unit_test_metric import AddUnitTestMetric
+from .data_transfer_objects.unit_test_evaluations import GetEvalHistory
 from .unit_test_evaluation import UnitTestEvaluation
 from .unit_test_metric import UnitTestMetric
-from .constants import ThresholdComparison
 
 
 @dataclass
@@ -22,13 +22,8 @@ class UnitTestInfo:
 if TYPE_CHECKING:
     from nucleus.modelci import (
         ModelCI,
-        UnitTestMetric,
-        UNIT_TEST_ID_KEY,
-        EVAL_FUNCTION_ID_KEY,
-        UNIT_TEST_NAME_KEY,
-        THRESHOLD_KEY,
-        THRESHOLD_COMPARISON_KEY,
         EvalFunctionCondition,
+        format_unit_test_eval_response,
     )
 
 
@@ -84,8 +79,8 @@ class UnitTest:
             "modelci/unit_test_metric",
         )
         return UnitTestMetric(
-            unit_test_id=response[UNIT_TEST_ID_KEY],
-            eval_function_id=response[EVAL_FUNCTION_ID_KEY],
+            unit_test_id=response["unit_test_id"],
+            eval_function_id=response["eval_function_id"],
             threshold=evaluation_condition.threshold,
             threshold_comparison=evaluation_condition.threshold_comparison,
         )
@@ -122,7 +117,15 @@ class UnitTest:
         Returns:
             A list of UnitTestEvaluation objects.
         """
-        return self._client.get_unit_test_eval_history(self.id)
+        response = self._client._connection.get(
+            f"modelci/unit_test/{self.id}/eval_history",
+        )
+        # TODO(gunnar): Repeated info calls are slow -> Move work to backend
+        eval_history = GetEvalHistory.parse_obj(response)
+        return [
+            self.get_unit_test_eval_info(evaluation.id)
+            for evaluation in eval_history.evaluations
+        ]
 
     def info(self):
         """Retrieves info of the Unit Test.
@@ -137,3 +140,20 @@ class UnitTest:
             f"modelci/unit_test/{self.id}/info",
         )
         return UnitTestInfo(**response)
+
+    def get_unit_test_eval_info(
+        self, evaluation_id: str
+    ) -> UnitTestEvaluation:
+        """Retrieves info of the Unit Test Evaluation.
+
+        Args:
+            evaluation_id: ID of Unit Test
+
+        Returns:
+            A list of UnitTestEvaluation objects
+        """
+        response = self._client._connection.get(
+            f"modelci/eval/{evaluation_id}/info",
+        )
+        # TODO(gunnar): Use pydantic
+        return format_unit_test_eval_response(response)

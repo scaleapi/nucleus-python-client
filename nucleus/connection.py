@@ -32,7 +32,9 @@ class Connection:
         return self.make_request({}, route, requests_command=requests.get)
 
     def post(self, payload: dict, route: str):
-        return self.make_request(payload, route, requests_command=requests.post)
+        return self.make_request(
+            payload, route, requests_command=requests.post
+        )
 
     def put(self, payload: dict, route: str):
         return self.make_request(payload, route, requests_command=requests.put)

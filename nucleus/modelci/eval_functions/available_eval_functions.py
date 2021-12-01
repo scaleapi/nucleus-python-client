@@ -8,8 +8,8 @@ IOU_NAME = "IOU"
 
 
 class IoU(BaseEvalFunction):
-    """Intersection over union for all bounding boxes
-    """
+    """Intersection over union for all bounding boxes"""
+
     @classmethod
     @property
     def name(self) -> str:
@@ -18,6 +18,7 @@ class IoU(BaseEvalFunction):
 
 class MeanAveragePrecisionForBoxes(BaseEvalFunction):
     """Mean average precision for boxes fitting the provided parameters"""
+
     @classmethod
     @property
     def name(self) -> str:
@@ -38,10 +39,14 @@ class AvailableEvalFunctions:
 
     def __init__(self, available_functions: List[EvalFunctionEntry]):
         # Names taken from: https://github.com/scaleapi/models/pull/2100/files
-        self._name_to_entry: Dict[str, EvalFunctionEntry] = {f.name: f for f in available_functions}
+        self._name_to_entry: Dict[str, EvalFunctionEntry] = {
+            f.name: f for f in available_functions
+        }
         self._name_to_function: Dict[str, EvalFunction] = {}
         # TODO(gunnar): Extract common function that assigns to self.name_to_function and checks for existence
-        self.iou = self._assign_eval_function_if_defined(self._name_to_entry, IoU)
+        self.iou = self._assign_eval_function_if_defined(
+            self._name_to_entry, IoU
+        )
         self.mean_average_precision_for_boxes = (
             self._assign_eval_function_if_defined(
                 self._name_to_entry, MeanAveragePrecisionForBoxes
@@ -68,7 +73,9 @@ class AvailableEvalFunctions:
         if eval_function_constructor.name in name_to_definition:
             definition = name_to_definition[eval_function_constructor.name]
             eval_function = eval_function_constructor(definition)
-            self._name_to_function[eval_function_constructor.name] = eval_function
+            self._name_to_function[
+                eval_function_constructor.name
+            ] = eval_function
             return eval_function
         else:
             return None

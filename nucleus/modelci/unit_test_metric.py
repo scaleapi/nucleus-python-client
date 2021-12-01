@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 from nucleus.modelci import ThresholdComparison
 
 
-@dataclass
-class UnitTestMetric:
+class UnitTestMetric(BaseModel):
     """A Unit Test Metric is an evaluation function and comparator associated with a Unit Test."""
 
     unit_test_id: str

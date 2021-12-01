@@ -11,7 +11,9 @@ class CreateUnitTestRequest(BaseModel):
     evaluation_conditions: List[EvalFunctionCondition]
 
     @validator("slice_id")
-    def startswith_slice_indicator(cls, v):  # Pydantic says the first param should be `cls` not `self`
+    def startswith_slice_indicator(
+        cls, v
+    ):  # Pydantic says the first param should be `cls` not `self`
         if not v.startswith("slc_"):
             raise ValueError(f"Expected field to start with 'slc_', got '{v}'")
         return v
