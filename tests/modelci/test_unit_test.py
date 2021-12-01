@@ -1,6 +1,5 @@
 from tests.test_dataset import make_dataset_items
 from tests.helpers import (
-    TEST_EVAL_FUNCTION_ID,
     TEST_SLICE_NAME,
     EVAL_FUNCTION_THRESHOLD,
     EVAL_FUNCTION_COMPARISON,
@@ -10,32 +9,10 @@ from tests.helpers import (
 from nucleus.modelci.unit_test import UnitTest
 
 
-def test_client_unit_test_metric_creation(CLIENT, unit_test):
+def test_unit_test_metric_creation(CLIENT, unit_test):
     # create some dataset_items for the unit test to reference
-    unit_test_metric = CLIENT.modelci.create_unit_test_metric(
-        unit_test_name=unit_test.name,
-        eval_function_id=TEST_EVAL_FUNCTION_ID,
-        threshold=EVAL_FUNCTION_THRESHOLD,
-        threshold_comparison=EVAL_FUNCTION_COMPARISON,
-    )
-    assert unit_test_metric.unit_test_id == unit_test.id
-    assert unit_test_metric.eval_function_id
-    assert unit_test_metric.threshold == EVAL_FUNCTION_THRESHOLD
-    assert unit_test_metric.threshold_comparison == EVAL_FUNCTION_COMPARISON
-
-    metrics = unit_test.get_metrics()
-    assert isinstance(metrics, list)
-    assert len(metrics) == 1
-    assert metrics[0] == unit_test_metric
-
-
-def test_unit_test_metric_creation_from_class(unit_test):
-    # create some dataset_items for the unit test to reference
-    unit_test_metric = unit_test.add_metric(
-        eval_function_id=TEST_EVAL_FUNCTION_ID,
-        threshold=EVAL_FUNCTION_THRESHOLD,
-        threshold_comparison=EVAL_FUNCTION_COMPARISON,
-    )
+    iou = CLIENT.modelci.eval_functions.iou
+    unit_test_metric = unit_test.add_metric(iou() > EVAL_FUNCTION_THRESHOLD)
     assert unit_test_metric.unit_test_id == unit_test.id
     assert unit_test_metric.eval_function_id
     assert unit_test_metric.threshold == EVAL_FUNCTION_THRESHOLD
@@ -61,7 +38,7 @@ def test_list_unit_test(CLIENT, dataset):
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=slc.slice_id,
-        evalulation_conditions=[e.iou() > 0.5]
+        evaluation_metrics=[e.iou() > 0.5],
     )
 
     unit_tests = CLIENT.modelci.list_unit_tests()

@@ -4,7 +4,9 @@ from typing import List
 
 from nucleus.job import AsyncJob
 from nucleus.connection import Connection
-from nucleus.modelci.data_transfer_objects.get_eval_functions import GetEvalFunctions
+from nucleus.modelci.data_transfer_objects.get_eval_functions import (
+    GetEvalFunctions,
+)
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -12,10 +14,11 @@ from .constants import (
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
     UNIT_TEST_ID_KEY,
-    UNIT_TEST_NAME_KEY, ThresholdComparison,
+    UNIT_TEST_NAME_KEY,
+    ThresholdComparison,
 )
 from .data_transfer_objects.create_unit_test import CreateUnitTestRequest
-from .eval_function import EvalFunctionDefinition
+from .eval_function import EvalFunctionEntry
 from .unit_test import (
     UnitTest,
     UnitTestInfo,
@@ -26,8 +29,8 @@ from .unit_test_evaluation import (
     UnitTestItemEvaluation,
 )
 from .utils import format_unit_test_eval_response
-from .eval_function_collection import (
-    AvailableEvaluationFunctions,
+from nucleus.modelci.eval_functions.available_eval_functions import (
+    AvailableEvalFunctions,
 )
 from .data_transfer_objects.eval_function_condition import (
     EvalFunctionCondition,
@@ -51,7 +54,7 @@ class ModelCI:
         return self._connection == other._connection
 
     @property
-    def eval_functions(self) -> AvailableEvaluationFunctions:
+    def eval_functions(self) -> AvailableEvalFunctions:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -66,9 +69,9 @@ class ModelCI:
             "modelci/eval_fn",
         )
         payload = GetEvalFunctions.parse_obj(response)
-        return AvailableEvaluationFunctions(payload.eval_functions)
+        return AvailableEvalFunctions(payload.eval_functions)
 
-    def list_eval_functions(self) -> List[EvalFunctionDefinition]:
+    def list_eval_functions(self) -> List[EvalFunctionEntry]:
         """List all available evaluation functions. ::
 
         import nucleus
@@ -80,7 +83,7 @@ class ModelCI:
             "modelci/eval_fn",
         )
         return [
-            EvalFunctionDefinition(**eval_function)
+            EvalFunctionEntry(**eval_function)
             for eval_function in response[EVAL_FUNCTIONS_KEY]
         ]
 
@@ -116,70 +119,6 @@ class ModelCI:
         )
         return UnitTest(response[UNIT_TEST_ID_KEY], self)
 
-    def create_unit_test_metric(
-        self,
-        unit_test_name: str,
-        eval_function_id: str,
-        threshold: float,
-        threshold_comparison: ThresholdComparison,
-    ) -> UnitTestMetric:
-        """Creates and adds a new metric for the provided Unit Test. ::
-
-            import nucleus
-            from nucleus.modelci.unit_test import ThresholdComparison
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
-            )
-
-            client.modelci.create_unit_test_metric(
-                unit_test_name="sample_unit_test",
-                eval_function_id="ef_c61595wh49km7ppkk14g",
-                threshold=0.5,
-                threshold_comparison=ThresholdComparison.GREATER_THAN
-            )
-
-        Args:
-            unit_test_name: name of unit test
-            eval_function_id: name of evaluation function
-            threshold: numerical threshold that together with threshold comparison, defines success criteria for test
-                evaluation.
-            threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that
-                a test only passes if score > 0.5.
-
-        Returns:
-            The created UnitTestMetric object.
-        """
-        response = self._connection.post(
-            {
-                UNIT_TEST_NAME_KEY: unit_test_name,
-                EVAL_FUNCTION_ID_KEY: eval_function_id,
-                THRESHOLD_KEY: threshold,
-                THRESHOLD_COMPARISON_KEY: threshold_comparison,
-            },
-            "modelci/unit_test_metric",
-        )
-        return UnitTestMetric(
-            unit_test_id=response[UNIT_TEST_ID_KEY],
-            eval_function_id=response[EVAL_FUNCTION_ID_KEY],
-            threshold=threshold,
-            threshold_comparison=threshold_comparison,
-        )
-
-    def get_unit_test_info(self, unit_test_id: str) -> UnitTestInfo:
-        """Retrieves info of the Unit Test.
-
-        Args:
-            unit_test_id: ID of Unit Test
-
-        Returns:
-            A UnitTestInfo object
-        """
-        response = self._connection.get(
-            f"modelci/unit_test/{unit_test_id}/info",
-        )
-        return UnitTestInfo(**response)
-
     def list_unit_tests(self) -> List[UnitTest]:
         """Lists all Unit Tests of the current user. ::
 
@@ -199,29 +138,6 @@ class ModelCI:
         )
         return [
             UnitTest(test_id, self) for test_id in response["unit_test_ids"]
-        ]
-
-    def get_unit_test_metrics(self, unit_test_id: str) -> List[UnitTestMetric]:
-        """Retrieves all metrics of the Unit Test. ::
-
-            import nucleus
-            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.modelci.list_unit_tests()[0]
-
-            client.modelci.get_unit_test_metrics(unit_test.id)
-
-        Args:
-            unit_test_id: ID of Unit Test
-
-        Returns:
-            A list of UnitTestMetric objects
-        """
-        response = self._connection.get(
-            f"modelci/unit_test/{unit_test_id}/metrics",
-        )
-        return [
-            UnitTestMetric(**metric)
-            for metric in response["unit_test_metrics"]
         ]
 
     def delete_unit_test(self, unit_test_id: str) -> bool:

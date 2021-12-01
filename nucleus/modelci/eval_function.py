@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class EvalFunctionDefinition(BaseModel):
+class EvalFunctionEntry(BaseModel):
     """Encapsulates information about an evaluation function for Model CI."""
 
     id: str
