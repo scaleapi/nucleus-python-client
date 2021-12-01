@@ -11,6 +11,8 @@ from .data_transfer_objects.unit_test_metric import AddUnitTestMetric
 from .data_transfer_objects.unit_test_evaluations import GetEvalHistory
 from .unit_test_evaluation import UnitTestEvaluation
 from .unit_test_metric import UnitTestMetric
+from .data_transfer_objects.eval_function import EvalFunctionCondition
+from .utils import format_unit_test_eval_response
 
 
 @dataclass
@@ -22,8 +24,6 @@ class UnitTestInfo:
 if TYPE_CHECKING:
     from nucleus.modelci import (
         ModelCI,
-        EvalFunctionCondition,
-        format_unit_test_eval_response,
     )
 
 

@@ -3,7 +3,7 @@ import abc
 from ..data_transfer_objects.eval_function import (
     EvalFunctionCondition,
 )
-from .. import EvalFunctionEntry
+from ..data_transfer_objects.eval_function import EvalFunctionEntry
 
 from ..constants import ThresholdComparison
 
@@ -11,7 +11,7 @@ from ..constants import ThresholdComparison
 class BaseEvalFunction(abc.ABC):
     """Abstract base class for concrete implementations of EvalFunctions
 
-    Operating on this class with comparison operators produces an EvalFunctionMetric
+    Operating on this class with comparison operators produces an EvalFunctionCondition
     """
 
     def __init__(self, eval_func_response: EvalFunctionEntry):

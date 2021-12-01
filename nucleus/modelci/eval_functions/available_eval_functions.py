@@ -1,7 +1,7 @@
 from typing import List, Dict, Union, Type
 
 from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
-from nucleus.modelci import EvalFunctionEntry
+from ..data_transfer_objects.eval_function import EvalFunctionEntry
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 IOU_NAME = "IOU"
