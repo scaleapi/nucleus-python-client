@@ -4,9 +4,6 @@ from typing import List
 
 from nucleus.job import AsyncJob
 from nucleus.connection import Connection
-from nucleus.modelci.data_transfer_objects.get_eval_functions import (
-    GetEvalFunctions,
-)
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -17,8 +14,7 @@ from .constants import (
     UNIT_TEST_NAME_KEY,
     ThresholdComparison,
 )
-from .data_transfer_objects.create_unit_test import CreateUnitTestRequest
-from .eval_function import EvalFunctionEntry
+from .data_transfer_objects.unit_test import CreateUnitTestRequest
 from .unit_test import (
     UnitTest,
     UnitTestInfo,
@@ -32,8 +28,8 @@ from .utils import format_unit_test_eval_response
 from nucleus.modelci.eval_functions.available_eval_functions import (
     AvailableEvalFunctions,
 )
-from .data_transfer_objects.eval_function_condition import (
-    EvalFunctionCondition,
+from .data_transfer_objects.eval_function import (
+    EvalFunctionCondition, GetEvalFunctions, EvalFunctionEntry,
 )
 
 SUCCESS_KEY = "success"

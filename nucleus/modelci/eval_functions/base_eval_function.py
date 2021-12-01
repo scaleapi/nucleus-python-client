@@ -1,10 +1,11 @@
 import abc
 
-from nucleus.modelci import (
-    EvalFunctionEntry,
+from ..data_transfer_objects.eval_function import (
     EvalFunctionCondition,
-    ThresholdComparison,
 )
+from .. import EvalFunctionEntry
+
+from ..constants import ThresholdComparison
 
 
 class BaseEvalFunction(abc.ABC):

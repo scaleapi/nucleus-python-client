@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic import BaseModel, validator
 
-from .eval_function_condition import EvalFunctionCondition
+from .eval_function import EvalFunctionCondition
 
 
 class CreateUnitTestRequest(BaseModel):

@@ -1,4 +1,4 @@
-from nucleus.modelci.eval_function import EvalFunctionEntry
+from nucleus.modelci import EvalFunctionEntry
 
 
 def test_list_eval_functions(CLIENT):

@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from pydantic import BaseModel, validator
 
 from ..constants import ThresholdComparison
@@ -20,3 +22,17 @@ class EvalFunctionCondition(BaseModel):
         if not v.startswith("ef_"):
             raise ValueError(f"Expected field to start with 'ef_', got '{v}'")
         return v
+
+
+class EvalFunctionEntry(BaseModel):
+    """Encapsulates information about an evaluation function for Model CI."""
+
+    id: str
+    name: str
+    user_id: str
+    serialized_fn: str
+    is_public: bool
+    raw_source: Optional[str] = None
+
+class GetEvalFunctions(BaseModel):
+    eval_functions: List[EvalFunctionEntry]
