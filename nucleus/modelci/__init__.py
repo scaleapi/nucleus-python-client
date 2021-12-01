@@ -29,7 +29,9 @@ from nucleus.modelci.eval_functions.available_eval_functions import (
     AvailableEvalFunctions,
 )
 from .data_transfer_objects.eval_function import (
-    EvalFunctionCondition, GetEvalFunctions, EvalFunctionEntry,
+    EvalFunctionCondition,
+    GetEvalFunctions,
+    EvalFunctionEntry,
 )
 
 SUCCESS_KEY = "success"

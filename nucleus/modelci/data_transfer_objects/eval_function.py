@@ -34,5 +34,6 @@ class EvalFunctionEntry(BaseModel):
     is_public: bool
     raw_source: Optional[str] = None
 
+
 class GetEvalFunctions(BaseModel):
     eval_functions: List[EvalFunctionEntry]
