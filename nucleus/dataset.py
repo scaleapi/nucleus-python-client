@@ -33,9 +33,12 @@ from .annotation import (
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
+    BACKFILL_JOB_KEY,
+    DATASET_ID_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     KEEP_HISTORY_KEY,
+    MESSAGE_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
@@ -762,9 +765,20 @@ class Dataset:
                 {
                     "dataset_id": str,
                     "message": str
+                    "backfill_job": AsyncJob,
                 }
         """
-        return self._client.set_continuous_indexing(self.id, enable)
+        preprocessed_response = self._client.set_continuous_indexing(
+            self.id, enable
+        )
+        response = {
+            DATASET_ID_KEY: preprocessed_response[DATASET_ID_KEY],
+            MESSAGE_KEY: preprocessed_response[MESSAGE_KEY],
+            BACKFILL_JOB_KEY: AsyncJob.from_json(
+                preprocessed_response, self._client
+            ),
+        }
+        return response
 
     def create_image_index(self):
         """Creates or updates image index by generating embeddings for images that do not already have embeddings.
