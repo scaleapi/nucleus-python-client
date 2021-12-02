@@ -47,10 +47,10 @@ class UnitTest:
     def __eq__(self, other):
         return self.id == other.id and self._client == other._client
 
-    def add_metric(
-        self, evaluation_condition: EvaluationCriteria
+    def add_criteria(
+        self, evaluation_criteria: EvaluationCriteria
     ) -> UnitTestMetric:
-        """Creates and adds a new metric to the Unit Test. ::
+        """Creates and adds a new criteria to the Unit Test. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -64,7 +64,7 @@ class UnitTest:
             )
 
         Args:
-            evaluation_condition: :class:`EvaluationCriteria` created by comparison with an :class:`EvalFunction`
+            evaluation_criteria: :class:`EvaluationCriteria` created by comparison with an :class:`EvalFunction`
 
         Returns:
             The created UnitTestMetric object.
@@ -72,20 +72,20 @@ class UnitTest:
         response = self._client._connection.post(
             AddUnitTestMetric(
                 unit_test_name=self.name,
-                eval_function_id=evaluation_condition.eval_function_id,
-                threshold=evaluation_condition.threshold,
-                threshold_comparison=evaluation_condition.threshold_comparison,
+                eval_function_id=evaluation_criteria.eval_function_id,
+                threshold=evaluation_criteria.threshold,
+                threshold_comparison=evaluation_criteria.threshold_comparison,
             ).dict(),
             "modelci/unit_test_metric",
         )
         return UnitTestMetric(
             unit_test_id=response["unit_test_id"],
             eval_function_id=response["eval_function_id"],
-            threshold=evaluation_condition.threshold,
-            threshold_comparison=evaluation_condition.threshold_comparison,
+            threshold=evaluation_criteria.threshold,
+            threshold_comparison=evaluation_criteria.threshold_comparison,
         )
 
-    def get_metrics(self) -> List[UnitTestMetric]:
+    def get_criteria(self) -> List[UnitTestMetric]:
         """Retrieves all metrics of the Unit Test. ::
 
             import nucleus
