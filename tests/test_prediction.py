@@ -20,6 +20,7 @@ from .helpers import (
     TEST_BOX_PREDICTIONS,
     TEST_CATEGORY_PREDICTIONS,
     TEST_DATASET_NAME,
+    TEST_DEFAULT_CATEGORY_PREDICTIONS,
     TEST_IMG_URLS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
@@ -52,6 +53,11 @@ def test_reprs():
     [
         test_repr(CategoryPrediction.from_json(_))
         for _ in TEST_CATEGORY_PREDICTIONS
+    ]
+
+    [
+        test_repr(CategoryPrediction.from_json(_))
+        for _ in TEST_DEFAULT_CATEGORY_PREDICTIONS
     ]
 
 
@@ -135,6 +141,23 @@ def test_category_pred_upload(model_run):
     assert len(response) == 1
     assert_category_prediction_matches_dict(
         response[0], TEST_CATEGORY_PREDICTIONS[0]
+    )
+
+
+def test_default_category_pred_upload(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_ignored"] == 0
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["category"]
+    assert len(response) == 1
+    assert_category_prediction_matches_dict(
+        response[0], TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
     )
 
 
@@ -337,6 +360,67 @@ def test_category_pred_upload_ignore(model_run):
     )
 
 
+def test_default_category_pred_upload_update(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["predictions_processed"] == 1
+
+    # Copy so we don't modify the original.
+    prediction_update_params = dict(TEST_DEFAULT_CATEGORY_PREDICTIONS[1])
+    prediction_update_params[
+        "annotation_id"
+    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["taxonomy_name"]
+    prediction_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
+
+    prediction_update = CategoryPrediction.from_json(prediction_update_params)
+    response = model_run.predict(annotations=[prediction_update], update=True)
+
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["category"]
+    assert len(response) == 1
+    assert_category_prediction_matches_dict(
+        response[0], prediction_update_params
+    )
+
+
+def test_default_category_pred_upload_ignore(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["predictions_processed"] == 1
+
+    # Copy so we don't modify the original.
+    prediction_update_params = dict(TEST_DEFAULT_CATEGORY_PREDICTIONS[1])
+    prediction_update_params[
+        "annotation_id"
+    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["taxonomy_name"]
+    prediction_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
+
+    prediction_update = CategoryPrediction.from_json(prediction_update_params)
+    # Default behavior is ignore.
+    response = model_run.predict(annotations=[prediction_update])
+
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 1
+
+    response = model_run.refloc(prediction.reference_id)["category"]
+    assert len(response) == 1
+    assert_category_prediction_matches_dict(
+        response[0], TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
+    )
+
+
 def test_mixed_pred_upload(model_run: ModelRun):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
@@ -472,3 +556,35 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
+
+
+@pytest.mark.integration
+def test_default_category_pred_upload_async(model_run: ModelRun):
+    prediction_default_category = CategoryPrediction.from_json(
+        TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
+    )
+    job: AsyncJob = model_run.predict(
+        annotations=[
+            prediction_default_category,
+        ],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "prediction_upload": {
+                "epoch": 1,
+                "total": 1,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": model_run.dataset_id,
+                "processed": 1,
+            },
+        },
+        "job_progress": "1.00",
+        "completed_steps": 1,
+        "total_steps": 1,
+    }

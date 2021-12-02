@@ -11,11 +11,14 @@ from nucleus import (
     SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.job import AsyncJob
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,
     TEST_CATEGORY_ANNOTATIONS,
     TEST_DATASET_NAME,
+    TEST_DEFAULT_CATEGORY_ANNOTATIONS,
+    TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
@@ -138,6 +141,26 @@ def test_category_gt_upload(dataset):
     )
 
 
+def test_default_category_gt_upload(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+
+
 def test_multicategory_gt_upload(dataset):
     annotation = MultiCategoryAnnotation.from_json(
         TEST_MULTICATEGORY_ANNOTATIONS[0]
@@ -156,6 +179,27 @@ def test_multicategory_gt_upload(dataset):
     response_annotation = response[0]
     assert_multicategory_annotation_matches_dict(
         response_annotation, TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_default_multicategory_gt_upload(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
     )
 
 
@@ -426,6 +470,67 @@ def test_category_gt_upload_ignore(dataset):
     )
 
 
+def test_default_category_gt_upload_update(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_DEFAULT_CATEGORY_ANNOTATIONS[1])
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
+
+    annotation_update = CategoryAnnotation.from_json(annotation_update_params)
+    response = dataset.annotate(annotations=[annotation_update], update=True)
+
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, annotation_update_params
+    )
+
+
+def test_default_category_gt_upload_ignore(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_DEFAULT_CATEGORY_ANNOTATIONS[1])
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
+
+    annotation_update = CategoryAnnotation.from_json(annotation_update_params)
+    # Default behavior is ignore.
+    response = dataset.annotate(annotations=[annotation_update])
+
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 1
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+
+
 def test_multicategory_gt_upload_update(dataset):
     annotation = MultiCategoryAnnotation.from_json(
         TEST_MULTICATEGORY_ANNOTATIONS[0]
@@ -491,6 +596,71 @@ def test_multicategory_gt_upload_ignore(dataset):
     )
 
 
+def test_default_multicategory_gt_upload_update(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[1])
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
+
+    annotation_update = MultiCategoryAnnotation.from_json(
+        annotation_update_params
+    )
+    response = dataset.annotate(annotations=[annotation_update], update=True)
+
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, annotation_update_params
+    )
+
+
+def test_default_multicategory_gt_upload_ignore(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["annotations_processed"] == 1
+
+    # Copy so we don't modify the original.
+    annotation_update_params = dict(TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[1])
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
+
+    annotation_update = MultiCategoryAnnotation.from_json(
+        annotation_update_params
+    )
+    # Default behavior is ignore.
+    response = dataset.annotate(annotations=[annotation_update])
+
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 1
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+
 @pytest.mark.integration
 def test_box_gt_deletion(dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
@@ -542,3 +712,35 @@ def test_multicategory_gt_deletion(dataset):
     job_status = job.status()
     assert job_status["status"] == "Completed"
     assert job_status["job_id"] == job.job_id
+
+
+@pytest.mark.integration
+def test_default_category_pred_upload_async(dataset):
+    prediction_default_category = CategoryAnnotation.from_json(
+        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+    job: AsyncJob = dataset.annotate(
+        annotations=[
+            prediction_default_category,
+        ],
+        asynchronous=True,
+    )
+    job.sleep_until_complete()
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "annotation_upload": {
+                "epoch": 1,
+                "total": 1,
+                "errored": 0,
+                "ignored": 0,
+                "datasetId": dataset.id,
+                "processed": 1,
+            },
+        },
+        "job_progress": "1.00",
+        "completed_steps": 1,
+        "total_steps": 1,
+    }

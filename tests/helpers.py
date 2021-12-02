@@ -168,7 +168,29 @@ TEST_CATEGORY_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_DEFAULT_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Category Label ${i}",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "taxonomy_name": "[Pytest] Category Taxonomy 1",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_MULTICATEGORY_ANNOTATIONS = [
+    {
+        "labels": [
+            f"[Pytest] MultiCategory Label ${i}",
+            f"[Pytest] MultiCategory Label ${i+1}",
+        ],
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "taxonomy_name": "[Pytest] MultiCategory Taxonomy 1",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+
+TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
     {
         "labels": [
             f"[Pytest] MultiCategory Label ${i}",
@@ -251,6 +273,20 @@ TEST_CATEGORY_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_CATEGORY_ANNOTATIONS))
+]
+
+TEST_DEFAULT_CATEGORY_PREDICTIONS = [
+    {
+        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_CATEGORY_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_DEFAULT_CATEGORY_ANNOTATIONS))
 ]
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
