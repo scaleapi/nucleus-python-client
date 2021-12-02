@@ -29,7 +29,7 @@ from nucleus.modelci.eval_functions.available_eval_functions import (
     AvailableEvalFunctions,
 )
 from .data_transfer_objects.eval_function import (
-    EvalFunctionCondition,
+    EvaluationCriteria,
     GetEvalFunctions,
     EvalFunctionEntry,
 )
@@ -69,27 +69,11 @@ class ModelCI:
         payload = GetEvalFunctions.parse_obj(response)
         return AvailableEvalFunctions(payload.eval_functions)
 
-    def list_eval_functions(self) -> List[EvalFunctionEntry]:
-        """List all available evaluation functions. ::
-
-        import nucleus
-        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-
-        eval_functions = client.modelci.list_eval_functions()
-        """
-        response = self._connection.get(
-            "modelci/eval_fn",
-        )
-        return [
-            EvalFunctionEntry(**eval_function)
-            for eval_function in response[EVAL_FUNCTIONS_KEY]
-        ]
-
     def create_unit_test(
         self,
         name: str,
         slice_id: str,
-        evalulation_conditions: List[EvalFunctionCondition],
+        evaluation_criteria: List[EvaluationCriteria],
     ) -> UnitTest:
         """Creates a new Unit Test. ::
 
@@ -111,7 +95,7 @@ class ModelCI:
             CreateUnitTestRequest(
                 name=name,
                 slice_id=slice_id,
-                evaluation_conditions=evalulation_conditions,
+                evaluation_criteria=evaluation_criteria,
             ).dict(),
             "modelci/unit_test",
         )

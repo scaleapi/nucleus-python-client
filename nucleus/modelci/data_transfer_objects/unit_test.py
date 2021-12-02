@@ -2,13 +2,13 @@ from typing import List
 
 from pydantic import BaseModel, validator
 
-from .eval_function import EvalFunctionCondition
+from .eval_function import EvaluationCriteria
 
 
 class CreateUnitTestRequest(BaseModel):
     name: str
     slice_id: str
-    evaluation_conditions: List[EvalFunctionCondition]
+    evaluation_criteria: List[EvaluationCriteria]
 
     @validator("slice_id")
     def startswith_slice_indicator(

@@ -11,7 +11,7 @@ from .data_transfer_objects.unit_test_metric import AddUnitTestMetric
 from .data_transfer_objects.unit_test_evaluations import GetEvalHistory
 from .unit_test_evaluation import UnitTestEvaluation
 from .unit_test_metric import UnitTestMetric
-from .data_transfer_objects.eval_function import EvalFunctionCondition
+from .data_transfer_objects.eval_function import EvaluationCriteria
 from .utils import format_unit_test_eval_response
 
 
@@ -48,7 +48,7 @@ class UnitTest:
         return self.id == other.id and self._client == other._client
 
     def add_metric(
-        self, evaluation_condition: EvalFunctionCondition
+        self, evaluation_condition: EvaluationCriteria
     ) -> UnitTestMetric:
         """Creates and adds a new metric to the Unit Test. ::
 
@@ -64,7 +64,7 @@ class UnitTest:
             )
 
         Args:
-            evaluation_condition: :class:`EvalFunctionCondition` created by comparison with an :class:`EvalFunction`
+            evaluation_condition: :class:`EvaluationCriteria` created by comparison with an :class:`EvalFunction`
 
         Returns:
             The created UnitTestMetric object.

@@ -5,7 +5,7 @@ from pydantic import BaseModel, validator
 from ..constants import ThresholdComparison
 
 
-class EvalFunctionCondition(BaseModel):
+class EvaluationCriteria(BaseModel):
     """
     eval_function_id: ID of evaluation function
     threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
@@ -36,4 +36,6 @@ class EvalFunctionEntry(BaseModel):
 
 
 class GetEvalFunctions(BaseModel):
+    """ Expected format from GET modelci/eval_fn"""
+
     eval_functions: List[EvalFunctionEntry]

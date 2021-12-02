@@ -1,7 +1,7 @@
 import abc
 
 from ..data_transfer_objects.eval_function import (
-    EvalFunctionCondition,
+    EvaluationCriteria,
 )
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 
@@ -11,7 +11,7 @@ from ..constants import ThresholdComparison
 class BaseEvalFunction(abc.ABC):
     """Abstract base class for concrete implementations of EvalFunctions
 
-    Operating on this class with comparison operators produces an EvalFunctionCondition
+    Operating on this class with comparison operators produces an EvaluationCriteria
     """
 
     def __init__(self, eval_func_response: EvalFunctionEntry):
@@ -34,24 +34,24 @@ class BaseEvalFunction(abc.ABC):
         """
         return self
 
-    def __gt__(self, other) -> EvalFunctionCondition:
+    def __gt__(self, other) -> EvaluationCriteria:
         return self._op_to_test_metric(ThresholdComparison.GREATER_THAN, other)
 
-    def __ge__(self, other) -> EvalFunctionCondition:
+    def __ge__(self, other) -> EvaluationCriteria:
         return self._op_to_test_metric(
             ThresholdComparison.GREATER_THAN_EQUAL_TO, other
         )
 
-    def __lt__(self, other) -> EvalFunctionCondition:
+    def __lt__(self, other) -> EvaluationCriteria:
         return self._op_to_test_metric(ThresholdComparison.LESS_THAN, other)
 
-    def __le__(self, other) -> EvalFunctionCondition:
+    def __le__(self, other) -> EvaluationCriteria:
         return self._op_to_test_metric(
             ThresholdComparison.LESS_THAN_EQUAL_TO, other
         )
 
     def _op_to_test_metric(self, comparison: ThresholdComparison, value):
-        return EvalFunctionCondition(
+        return EvaluationCriteria(
             eval_function_id=self.eval_func_definition.id,
             threshold_comparison=comparison,
             threshold=value,
