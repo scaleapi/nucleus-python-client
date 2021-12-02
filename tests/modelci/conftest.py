@@ -9,7 +9,7 @@ from tests.test_dataset import make_dataset_items
 @pytest.fixture()
 def model(CLIENT):
     model_reference = "model_" + str(time.time())
-    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
+    model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
     yield model
 
     CLIENT.delete_model(model.id)

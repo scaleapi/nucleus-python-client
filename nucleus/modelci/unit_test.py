@@ -4,15 +4,29 @@ With Model CI Unit Tests, an ML engineer can define a Unit Test from critical
 edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import List
 
+import requests
+
+from nucleus.connection import Connection
+from nucleus.constants import NAME_KEY, SLICE_ID_KEY
+
+from .constants import (
+    EVAL_FUNCTION_ID_KEY,
+    ID_KEY,
+    THRESHOLD_COMPARISON_KEY,
+    THRESHOLD_KEY,
+    UNIT_TEST_ID_KEY,
+    UNIT_TEST_NAME_KEY,
+)
 from .unit_test_evaluation import UnitTestEvaluation
 
+EVALUATIONS_KEY = "evaluations"
 
-@dataclass
-class ThresholdComparison(str, Enum):
+
+class ThresholdComparison(Enum):
     """Comparator between the result and the threshold."""
 
     GREATER_THAN = "greater_than"
@@ -21,15 +35,17 @@ class ThresholdComparison(str, Enum):
     LESS_THAN_EQUAL_TO = "less_than_equal_to"
 
 
-@dataclass
-class UnitTestInfo:
-    name: str
-    slice_id: str
-
-
-@dataclass
+@dataclass(frozen=True)
 class UnitTestMetric:
-    """A Unit Test Metric is an evaluation function and comparator associated with a Unit Test."""
+    """A Unit Test Metric is an evaluation function and comparator associated with a Unit Test.
+    Note that this class is immutable.
+
+    Attributes:
+        unit_test_id (str): The ID of the associated unit test.
+        eval_function_id (str): The ID of the associated evaluation function.
+        threshold (float): The threshold for the unit test.
+        threshold_comparison (ThresholdComparison): The comparator for the unit test.
+    """
 
     unit_test_id: str
     eval_function_id: str
@@ -37,28 +53,30 @@ class UnitTestMetric:
     threshold_comparison: ThresholdComparison
 
 
+@dataclass
 class UnitTest:
-    """A Unit Test combines a slice and at least one evaluation metric."""
+    """A Unit Test combines a slice and at least one evaluation metric.
 
-    def __init__(
-        self,
-        unit_test_id: str,
-        client: "ModelCI",  # type:ignore # noqa: F821
-    ):
-        # Hack: lazy import to avoid circular dependencies.
-        from nucleus.modelci import ModelCI
+    Attributes:
+        id (str): The ID of the unit test.
+        connection (Connection): The connection to Nucleus API.
+        name (str): The name of the unit test.
+        slice_id (str): The ID of the associated Nucleus slice.
+    """
 
-        self.id = unit_test_id
-        self._client: ModelCI = client
-        info = self._client.get_unit_test_info(self.id)
-        self.name = info.name
-        self.slice_id = info.slice_id
+    id: str
+    connection: Connection
+    name: str = field(init=False)
+    slice_id: str = field(init=False)
 
-    def __repr__(self):
-        return f"UnitTest(unit_test_id='{self.id}', client={self._client}"
-
-    def __eq__(self, other):
-        return self.id == other.id and self._client == other._client
+    def __post_init__(self):
+        response = self.connection.make_request(
+            {},
+            f"modelci/unit_test/{self.id}/info",
+            requests_command=requests.get,
+        )
+        self.name = response[NAME_KEY]
+        self.slice_id = response[SLICE_ID_KEY]
 
     def add_metric(
         self,
@@ -89,8 +107,21 @@ class UnitTest:
         Returns:
             The created UnitTestMetric object.
         """
-        return self._client.create_unit_test_metric(
-            self.name, eval_function_id, threshold, threshold_comparison
+        response = self.connection.make_request(
+            {
+                UNIT_TEST_NAME_KEY: self.name,
+                EVAL_FUNCTION_ID_KEY: eval_function_id,
+                THRESHOLD_KEY: threshold,
+                THRESHOLD_COMPARISON_KEY: threshold_comparison.value,
+            },
+            "modelci/unit_test_metric",
+            requests_command=requests.post,
+        )
+        return UnitTestMetric(
+            unit_test_id=response[UNIT_TEST_ID_KEY],
+            eval_function_id=response[EVAL_FUNCTION_ID_KEY],
+            threshold=threshold,
+            threshold_comparison=threshold_comparison,
         )
 
     def get_metrics(self) -> List[UnitTestMetric]:
@@ -105,7 +136,20 @@ class UnitTest:
         Returns:
             A list of UnitTestMetric objects.
         """
-        return self._client.get_unit_test_metrics(self.id)
+        response = self.connection.make_request(
+            {},
+            f"modelci/unit_test/{self.id}/metrics",
+            requests_command=requests.get,
+        )
+        return [
+            UnitTestMetric(
+                metric[UNIT_TEST_ID_KEY],
+                metric[EVAL_FUNCTION_ID_KEY],
+                metric[THRESHOLD_KEY],
+                ThresholdComparison(metric[THRESHOLD_COMPARISON_KEY]),
+            )
+            for metric in response["unit_test_metrics"]
+        ]
 
     def get_eval_history(self) -> List[UnitTestEvaluation]:
         """Retrieves evaluation history for Unit Test. ::
@@ -119,4 +163,12 @@ class UnitTest:
         Returns:
             A list of UnitTestEvaluation objects.
         """
-        return self._client.get_unit_test_eval_history(self.id)
+        response = self.connection.make_request(
+            {},
+            f"modelci/unit_test/{self.id}/eval_history",
+            requests_command=requests.get,
+        )
+        return [
+            UnitTestEvaluation(eval[ID_KEY], self.connection)
+            for eval in response[EVALUATIONS_KEY]
+        ]
