@@ -774,10 +774,11 @@ class Dataset:
         response = {
             DATASET_ID_KEY: preprocessed_response[DATASET_ID_KEY],
             MESSAGE_KEY: preprocessed_response[MESSAGE_KEY],
-            BACKFILL_JOB_KEY: AsyncJob.from_json(
-                preprocessed_response, self._client
-            ),
         }
+        if enable:
+            response[BACKFILL_JOB_KEY] = (
+                AsyncJob.from_json(preprocessed_response, self._client),
+            )
         return response
 
     def create_image_index(self):
