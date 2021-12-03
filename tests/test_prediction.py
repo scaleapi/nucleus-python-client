@@ -311,9 +311,6 @@ def test_category_pred_upload_update(model_run):
 
     # Copy so we don't modify the original.
     prediction_update_params = dict(TEST_CATEGORY_PREDICTIONS[1])
-    prediction_update_params["annotation_id"] = TEST_CATEGORY_PREDICTIONS[0][
-        "taxonomy_name"
-    ]
     prediction_update_params["reference_id"] = TEST_CATEGORY_PREDICTIONS[0][
         "reference_id"
     ]
@@ -339,9 +336,6 @@ def test_category_pred_upload_ignore(model_run):
 
     # Copy so we don't modify the original.
     prediction_update_params = dict(TEST_CATEGORY_PREDICTIONS[1])
-    prediction_update_params["annotation_id"] = TEST_CATEGORY_PREDICTIONS[0][
-        "taxonomy_name"
-    ]
     prediction_update_params["reference_id"] = TEST_CATEGORY_PREDICTIONS[0][
         "reference_id"
     ]
@@ -371,9 +365,6 @@ def test_default_category_pred_upload_update(model_run):
     # Copy so we don't modify the original.
     prediction_update_params = dict(TEST_DEFAULT_CATEGORY_PREDICTIONS[1])
     prediction_update_params[
-        "annotation_id"
-    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["taxonomy_name"]
-    prediction_update_params[
         "reference_id"
     ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
 
@@ -400,9 +391,6 @@ def test_default_category_pred_upload_ignore(model_run):
 
     # Copy so we don't modify the original.
     prediction_update_params = dict(TEST_DEFAULT_CATEGORY_PREDICTIONS[1])
-    prediction_update_params[
-        "annotation_id"
-    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["taxonomy_name"]
     prediction_update_params[
         "reference_id"
     ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]

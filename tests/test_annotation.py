@@ -156,6 +156,7 @@ def test_default_category_gt_upload(dataset):
     ]
     assert len(response) == 1
     response_annotation = response[0]
+
     assert_category_annotation_matches_dict(
         response_annotation, TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
     )
@@ -715,13 +716,13 @@ def test_multicategory_gt_deletion(dataset):
 
 
 @pytest.mark.integration
-def test_default_category_pred_upload_async(dataset):
-    prediction_default_category = CategoryAnnotation.from_json(
+def test_default_category_gt_upload_async(dataset):
+    annotation = CategoryAnnotation.from_json(
         TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
     )
     job: AsyncJob = dataset.annotate(
         annotations=[
-            prediction_default_category,
+            annotation,
         ],
         asynchronous=True,
     )
