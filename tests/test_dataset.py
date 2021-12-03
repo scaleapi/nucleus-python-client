@@ -114,6 +114,7 @@ def test_dataset_create_and_delete_no_scene(CLIENT):
     response = CLIENT.delete_dataset(ds.id)
     assert response == {"message": "Beginning dataset deletion..."}
 
+
 def test_dataset_create_and_delete_scene(CLIENT):
     # Creation
     ds = CLIENT.create_dataset(name=TEST_DATASET_NAME, is_scene=True)
