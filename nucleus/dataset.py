@@ -564,9 +564,12 @@ class Dataset:
                     }
                 }
         """
-        response = self._client.dataitem_iloc(self.id, i)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/iloc/{i}", requests.get
+        )
         return format_dataset_item_response(response)
 
+    @sanitize_string_args
     def refloc(self, reference_id: str) -> dict:
         """Retrieves a dataset item by reference ID.
 
@@ -587,7 +590,9 @@ class Dataset:
                     }
                 }
         """
-        response = self._client.dataitem_ref_id(self.id, reference_id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/refloc/{reference_id}", requests.get
+        )
         return format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
@@ -611,7 +616,9 @@ class Dataset:
                     }
                 }
         """
-        response = self._client.dataitem_loc(self.id, dataset_item_id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/loc/{dataset_item_id}", requests.get
+        )
         return format_dataset_item_response(response)
 
     def ground_truth_loc(self, reference_id: str, annotation_id: str):
