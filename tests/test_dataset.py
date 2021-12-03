@@ -99,11 +99,27 @@ def make_dataset_items():
     return ds_items_with_metadata
 
 
-def test_dataset_create_and_delete(CLIENT):
+def test_dataset_create_and_delete_no_scene(CLIENT):
     # Creation
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     assert isinstance(ds, Dataset)
     assert ds.name == TEST_DATASET_NAME
+    assert ds.is_scene == False
+    assert ds.model_runs == []
+    assert ds.slices == []
+    assert ds.size == 0
+    assert ds.items == []
+
+    # Deletion
+    response = CLIENT.delete_dataset(ds.id)
+    assert response == {"message": "Beginning dataset deletion..."}
+
+def test_dataset_create_and_delete_scene(CLIENT):
+    # Creation
+    ds = CLIENT.create_dataset(name=TEST_DATASET_NAME, is_scene=True)
+    assert isinstance(ds, Dataset)
+    assert ds.name == TEST_DATASET_NAME
+    assert ds.is_scene == True
     assert ds.model_runs == []
     assert ds.slices == []
     assert ds.size == 0
