@@ -515,16 +515,16 @@ class CategoryAnnotation(Annotation):
 
         category = CategoryAnnotation(
             label="dress",
-            taxonomy_name="clothing_type",
             reference_id="image_1",
+            taxonomy_name="clothing_type",
             metadata={"dress_color": "navy"}
         )
 
     Parameters:
         label (str): The label for this annotation.
-        taxonomy_name (str): The name of the taxonomy this annotation conforms to.
-          See :meth:`Dataset.add_taxonomy`.
         reference_id (str): User-defined ID of the image to which to apply this annotation.
+        taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
+          See :meth:`Dataset.add_taxonomy`.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
@@ -543,8 +543,8 @@ class CategoryAnnotation(Annotation):
     def from_json(cls, payload: dict):
         return cls(
             label=payload[LABEL_KEY],
-            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload[REFERENCE_ID_KEY],
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
@@ -577,8 +577,8 @@ class MultiCategoryAnnotation(Annotation):
     def from_json(cls, payload: dict):
         return cls(
             labels=payload[LABELS_KEY],
-            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload[REFERENCE_ID_KEY],
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
