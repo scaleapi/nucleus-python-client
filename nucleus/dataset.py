@@ -33,6 +33,7 @@ from .annotation import (
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
+    DATASET_IS_SCENE_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     KEEP_HISTORY_KEY,

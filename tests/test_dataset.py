@@ -104,7 +104,7 @@ def test_dataset_create_and_delete_no_scene(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     assert isinstance(ds, Dataset)
     assert ds.name == TEST_DATASET_NAME
-    assert ds.is_scene == False
+    assert not ds.is_scene
     assert ds.model_runs == []
     assert ds.slices == []
     assert ds.size == 0
@@ -120,7 +120,7 @@ def test_dataset_create_and_delete_scene(CLIENT):
     ds = CLIENT.create_dataset(name=TEST_DATASET_NAME, is_scene=True)
     assert isinstance(ds, Dataset)
     assert ds.name == TEST_DATASET_NAME
-    assert ds.is_scene == True
+    assert ds.is_scene
     assert ds.model_runs == []
     assert ds.slices == []
     assert ds.size == 0
