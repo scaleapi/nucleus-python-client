@@ -885,7 +885,7 @@ class NucleusClient:
         Returns:
             Response payload as JSON dict.
         """
-        return self._connection.make_request(payload, route, requests_command)
+        return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
     def handle_bad_response(
         self,

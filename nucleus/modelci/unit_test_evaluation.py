@@ -30,6 +30,8 @@ class UnitTestItemEvaluation:
 class UnitTestEvaluation:
     """Results and attributes of an evaluation of a unit test."""
 
+    # pylint: disable=too-many-instance-attributes
+
     id: str
     unit_test_id: str
     eval_function_id: str

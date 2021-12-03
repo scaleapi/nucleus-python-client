@@ -1,31 +1,84 @@
-from typing import List, Dict, Union, Type
+from typing import List, Dict, Union, Type, Callable
 
 from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
+from nucleus.logger import logger
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 IOU_NAME = "IOU"
 
 
-class IoU(BaseEvalFunction):
+class IOU(BaseEvalFunction):
     """Intersection over union for all bounding boxes"""
 
     @classmethod
     @property
-    def name(self) -> str:
+    def name(cls) -> str:
         return "IOU"
 
 
-class MeanAveragePrecisionForBoxes(BaseEvalFunction):
-    """Mean average precision for boxes fitting the provided parameters"""
+class BoundingBoxIOU(BaseEvalFunction):
+    @classmethod
+    @property
+    def name(cls) -> str:
+        return "bbox_iou"
+
+
+class BoundingBoxMeanAveragePrecision(BaseEvalFunction):
+    @classmethod
+    @property
+    def name(cls) -> str:
+        return "bbox_map"
+
+
+class BoundingBoxRecall(BaseEvalFunction):
+    @classmethod
+    @property
+    def name(cls) -> str:
+        return "bbox_recall"
+
+
+class BoundingBoxPrecision(BaseEvalFunction):
+    @classmethod
+    @property
+    def name(cls) -> str:
+        return "bbox_precision"
+
+
+class CustomEvalFunction(BaseEvalFunction):
+    @classmethod
+    @property
+    def name(cls) -> str:
+        return "private_custom_function"  # Placeholder: See super().eval_func_entry for actual name
+
+
+class StandardEvalFunction(BaseEvalFunction):
+    """Class for standard Model CI eval functions that have not been added as attributes on
+    AvailableEvalFunctions yet.
+    """
+
+    def __init__(self, eval_function_entry: EvalFunctionEntry):
+        logger.warning(
+            "Standard function %s not implemented as an attribute on AvailableEvalFunctions",
+            eval_function_entry.name,
+        )
+        super().__init__(eval_function_entry)
 
     @classmethod
     @property
-    def name(self) -> str:
-        return "mean_average_precision_for_boxes"
+    def name(cls) -> str:
+        return "public_function"  # Placeholder: See super().eval_func_entry for actual name
 
 
-EvalFunction = Union[Type[IoU], Type[MeanAveragePrecisionForBoxes]]
+EvalFunction = Union[
+    Type[BoundingBoxIOU],
+    Type[BoundingBoxMeanAveragePrecision],
+    Type[BoundingBoxPrecision],
+    Type[BoundingBoxRecall],
+    Type[CustomEvalFunction],
+    Type[IOU],
+    Type[StandardEvalFunction],
+]
 
 
 class AvailableEvalFunctions:
@@ -37,45 +90,80 @@ class AvailableEvalFunctions:
         unit_test_metrics = [e.iou() > 5, e.map() > 0.95, e.custom["customer_function"]() == True]
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, available_functions: List[EvalFunctionEntry]):
         # Names taken from: https://github.com/scaleapi/models/pull/2100/files
-        self._name_to_entry: Dict[str, EvalFunctionEntry] = {
-            f.name: f for f in available_functions
+        self._public_func_entries: Dict[str, EvalFunctionEntry] = {
+            f.name: f for f in available_functions if f.is_public
         }
-        self._name_to_function: Dict[str, EvalFunction] = {}
-        # TODO(gunnar): Extract common function that assigns to self.name_to_function and checks for existence
-        self.iou = self._assign_eval_function_if_defined(
-            self._name_to_entry, IoU
+        # NOTE: Public are assigned
+        self._public_to_function: Dict[str, BaseEvalFunction] = {}
+        self._custom_to_function: Dict[str, CustomEvalFunction] = {
+            f.name: CustomEvalFunction(f)
+            for f in available_functions
+            if not f.is_public
+        }
+        self.iou = self._assign_eval_function_if_defined(IOU)  # type: ignore
+        self.bbox_iou = self._assign_eval_function_if_defined(BoundingBoxIOU)  # type: ignore
+        self.bbox_precision = self._assign_eval_function_if_defined(
+            BoundingBoxPrecision  # type: ignore
         )
-        self.mean_average_precision_for_boxes = (
-            self._assign_eval_function_if_defined(
-                self._name_to_entry, MeanAveragePrecisionForBoxes
-            )
+        self.bbox_recall = self._assign_eval_function_if_defined(
+            BoundingBoxRecall  # type: ignore
         )
+        self.bbox_mean_average_precision = self._assign_eval_function_if_defined(
+            BoundingBoxMeanAveragePrecision  # type: ignore
+        )
+
+        # Add public entries that have not been implemented as an attribute on this class
+        for func_entry in self._public_func_entries.values():
+            if func_entry.name not in self._public_to_function:
+                self._public_to_function[
+                    func_entry.name
+                ] = StandardEvalFunction(func_entry)
 
     def __repr__(self):
         """Standard functions are ones Scale provides and custom ones customer defined"""
         return (
-            f"<AvailableEvaluationFunctions: standard:{list(self._name_to_function.keys())}, "
-            f"custom: {set(self._name_to_entry.keys()) - set(self._name_to_function.keys())}>"
+            f"<AvailableEvaluationFunctions: public:{list(self._public_func_entries.keys())}, "
+            f"private: {list(self._custom_to_function.keys())}"
         )
 
-    def all(self) -> Dict[str, EvalFunction]:
-        return self._name_to_function
+    @property
+    def public_functions(self) -> Dict[str, BaseEvalFunction]:
+        """Standard functions provided by Model CI.
+
+        Notes:
+            These functions are also available as attributes on :class:`AvailableEvalFunctions`
+
+        Returns:
+            Dict of function name to :class:`EvalFunction`.
+        """
+        return self._public_to_function
+
+    @property
+    def private_functions(self) -> Dict[str, CustomEvalFunction]:
+        """Custom functions uploaded to Model CI
+
+        Returns:
+            Dict of function name to :class:`CustomEvalFunction`.
+        """
+        return self._custom_to_function
 
     def _assign_eval_function_if_defined(
-        self, name_to_definition: dict, eval_function_constructor: EvalFunction
+        self,
+        eval_function_constructor: Callable[[EvalFunctionEntry], EvalFunction],
     ):
         """Helper function for book-keeping and assignment of standard Scale provided functions that are accessible
         via attribute access
         """
         # TODO(gunnar): Too convoluted .. simplify
-        if eval_function_constructor.name in name_to_definition:
-            definition = name_to_definition[eval_function_constructor.name]
+        expected_name = eval_function_constructor.name  # type: ignore
+        if expected_name in self._public_func_entries:
+            definition = self._public_func_entries[expected_name]
             eval_function = eval_function_constructor(definition)
-            self._name_to_function[
-                eval_function_constructor.name
-            ] = eval_function
+            self._public_to_function[expected_name] = eval_function  # type: ignore
             return eval_function
         else:
             return None

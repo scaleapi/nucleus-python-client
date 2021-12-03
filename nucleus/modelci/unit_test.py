@@ -36,7 +36,7 @@ class UnitTest:
         client: "ModelCI",  # type:ignore # noqa: F821
     ):
         self.id = unit_test_id
-        self._client: ModelCI = client
+        self._client = client
         info = self.info()
         self.name = info.name
         self.slice_id = info.slice_id
@@ -69,7 +69,7 @@ class UnitTest:
         Returns:
             The created UnitTestMetric object.
         """
-        response = self._client._connection.post(
+        response = self._client.connection.post(
             AddUnitTestMetric(
                 unit_test_name=self.name,
                 eval_function_id=evaluation_criteria.eval_function_id,
@@ -97,7 +97,7 @@ class UnitTest:
         Returns:
             A list of UnitTestMetric objects.
         """
-        response = self._client._connection.get(
+        response = self._client.connection.get(
             f"modelci/unit_test/{self.id}/metrics",
         )
         return [
@@ -117,7 +117,7 @@ class UnitTest:
         Returns:
             A list of UnitTestEvaluation objects.
         """
-        response = self._client._connection.get(
+        response = self._client.connection.get(
             f"modelci/unit_test/{self.id}/eval_history",
         )
         # TODO(gunnar): Repeated info calls are slow -> Move work to backend
@@ -136,7 +136,7 @@ class UnitTest:
         Returns:
             A UnitTestInfo object
         """
-        response = self._client._connection.get(
+        response = self._client.connection.get(
             f"modelci/unit_test/{self.id}/info",
         )
         return UnitTestInfo(**response)
@@ -152,7 +152,7 @@ class UnitTest:
         Returns:
             A list of UnitTestEvaluation objects
         """
-        response = self._client._connection.get(
+        response = self._client.connection.get(
             f"modelci/eval/{evaluation_id}/info",
         )
         # TODO(gunnar): Use pydantic

@@ -14,15 +14,14 @@ class BaseEvalFunction(abc.ABC):
     Operating on this class with comparison operators produces an EvaluationCriteria
     """
 
-    def __init__(self, eval_func_response: EvalFunctionEntry):
-        self.eval_func_definition = eval_func_response
+    def __init__(self, eval_func_entry: EvalFunctionEntry):
+        self.eval_func_entry = eval_func_entry
 
     @classmethod
     @property
     @abc.abstractmethod
-    def name(self) -> str:
+    def name(cls) -> str:
         """Name to look for in the EvalFunctionDefinitions"""
-        pass
 
     def __call__(self) -> "BaseEvalFunction":
         """Adding call to prepare for being able to pass parameters to function
@@ -52,7 +51,7 @@ class BaseEvalFunction(abc.ABC):
 
     def _op_to_test_metric(self, comparison: ThresholdComparison, value):
         return EvaluationCriteria(
-            eval_function_id=self.eval_func_definition.id,
+            eval_function_id=self.eval_func_entry.id,
             threshold_comparison=comparison,
             threshold=value,
         )

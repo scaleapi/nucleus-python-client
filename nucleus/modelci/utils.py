@@ -35,8 +35,8 @@ def format_unit_test_eval_response(response: dict) -> UnitTestEvaluation:
         unit_test_id=eval_response["unit_test_id"],
         eval_function_id=eval_response["eval_function_id"],
         model_id=eval_response["model_id"],
-        status=UnitTestEvaluationStatus(
-            eval_response["status"]  # pylint: disable=E1121
+        status=UnitTestEvaluationStatus(  # pylint: disable=E1121
+            eval_response["status"]
         ),
         result=try_convert_float(eval_response["result"]),
         passed=bool(eval_response["pass"]),

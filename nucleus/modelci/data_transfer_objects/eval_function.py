@@ -18,7 +18,7 @@ class EvaluationCriteria(BaseModel):
     threshold: float
 
     @validator("eval_function_id")
-    def valid_eval_function_id(cls, v):
+    def valid_eval_function_id(self, v):
         if not v.startswith("ef_"):
             raise ValueError(f"Expected field to start with 'ef_', got '{v}'")
         return v
@@ -29,9 +29,9 @@ class EvalFunctionEntry(BaseModel):
 
     id: str
     name: str
+    is_public: bool
     user_id: str
     serialized_fn: str
-    is_public: bool
     raw_source: Optional[str] = None
 
 

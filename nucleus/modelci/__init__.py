@@ -14,7 +14,15 @@ from .constants import (
     UNIT_TEST_NAME_KEY,
     ThresholdComparison,
 )
+from .data_transfer_objects.eval_function import (
+    EvaluationCriteria,
+    GetEvalFunctions,
+    EvalFunctionEntry,
+)
 from .data_transfer_objects.unit_test import CreateUnitTestRequest
+from .eval_functions.available_eval_functions import (
+    AvailableEvalFunctions,
+)
 from .unit_test import (
     UnitTest,
     UnitTestInfo,
@@ -25,14 +33,6 @@ from .unit_test_evaluation import (
     UnitTestItemEvaluation,
 )
 from .utils import format_unit_test_eval_response
-from nucleus.modelci.eval_functions.available_eval_functions import (
-    AvailableEvalFunctions,
-)
-from .data_transfer_objects.eval_function import (
-    EvaluationCriteria,
-    GetEvalFunctions,
-    EvalFunctionEntry,
-)
 
 SUCCESS_KEY = "success"
 EVALUATIONS_KEY = "evaluations"
@@ -43,13 +43,13 @@ class ModelCI:
     """Model CI Python Client extension."""
 
     def __init__(self, api_key: str, endpoint: str):
-        self._connection = Connection(api_key, endpoint)
+        self.connection = Connection(api_key, endpoint)
 
     def __repr__(self):
-        return f"ModelCI(connection='{self._connection}')"
+        return f"ModelCI(connection='{self.connection}')"
 
     def __eq__(self, other):
-        return self._connection == other._connection
+        return self.connection == other.connection
 
     @property
     def eval_functions(self) -> AvailableEvalFunctions:
@@ -63,7 +63,7 @@ class ModelCI:
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
         """
-        response = self._connection.get(
+        response = self.connection.get(
             "modelci/eval_fn",
         )
         payload = GetEvalFunctions.parse_obj(response)
@@ -91,7 +91,7 @@ class ModelCI:
         Returns:
             Created UnitTest object.
         """
-        response = self._connection.post(
+        response = self.connection.post(
             CreateUnitTestRequest(
                 name=name,
                 slice_id=slice_id,
@@ -115,7 +115,7 @@ class ModelCI:
         Returns:
             A list of UnitTest objects.
         """
-        response = self._connection.get(
+        response = self.connection.get(
             "modelci/unit_test",
         )
         return [
@@ -137,7 +137,7 @@ class ModelCI:
         Returns:
             Whether deletion was successful.
         """
-        response = self._connection.delete(
+        response = self.connection.delete(
             f"modelci/unit_test/{unit_test_id}",
         )
         return response[SUCCESS_KEY]
@@ -166,8 +166,8 @@ class ModelCI:
         Returns:
             AsyncJob object of evaluation job
         """
-        response = self._connection.post(
+        response = self.connection.post(
             {"test_names": unit_test_names},
             f"modelci/{model_id}/evaluate",
         )
-        return AsyncJob.from_json(response, self._connection)
+        return AsyncJob.from_json(response, self.connection)
