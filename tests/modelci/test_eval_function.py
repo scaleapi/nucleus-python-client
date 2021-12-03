@@ -1,8 +1,3 @@
-from nucleus.modelci import EvalFunctionEntry
-
-
 def test_list_eval_functions(CLIENT):
-    eval_functions = CLIENT.modelci.list_eval_functions()
-    assert all(
-        isinstance(eval_fn, EvalFunctionEntry) for eval_fn in eval_functions
-    )
+    eval_functions = CLIENT.modelci.eval_functions
+    print(eval_functions.iou > 0.5)

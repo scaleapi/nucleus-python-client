@@ -6,10 +6,10 @@ import requests
 from nucleus.job import AsyncJob
 from nucleus.prediction import (
     BoxPrediction,
+    CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
-    CategoryPrediction,
     from_json,
 )
 from nucleus.url_utils import sanitize_string_args
@@ -19,26 +19,27 @@ from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,
 )
+
 from .annotation import (
     Annotation,
-    check_all_mask_paths_remote,
     BoxAnnotation,
-    PolygonAnnotation,
-    CuboidAnnotation,
     CategoryAnnotation,
+    CuboidAnnotation,
     MultiCategoryAnnotation,
+    PolygonAnnotation,
     SegmentationAnnotation,
+    check_all_mask_paths_remote,
 )
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
+    KEEP_HISTORY_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     UPDATE_KEY,
-    KEEP_HISTORY_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -241,7 +242,9 @@ class Dataset:
         Returns:
             :class:`DatasetInfo`
         """
-        response = self._client.dataset_info(self.id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/info", requests.get
+        )
         dataset_info = DatasetInfo.parse_obj(response)
         return dataset_info
 

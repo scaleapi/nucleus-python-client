@@ -1,12 +1,11 @@
-from tests.test_dataset import make_dataset_items
+from nucleus.modelci.unit_test import UnitTest
 from tests.helpers import (
-    TEST_SLICE_NAME,
-    EVAL_FUNCTION_THRESHOLD,
     EVAL_FUNCTION_COMPARISON,
+    EVAL_FUNCTION_THRESHOLD,
+    TEST_SLICE_NAME,
     get_uuid,
 )
-
-from nucleus.modelci.unit_test import UnitTest
+from tests.test_dataset import make_dataset_items
 
 
 def test_unit_test_metric_creation(CLIENT, unit_test):
@@ -20,8 +19,7 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
 
     metrics = unit_test.get_criteria()
     assert isinstance(metrics, list)
-    assert len(metrics) == 1
-    assert metrics[0] == unit_test_metric
+    assert unit_test_metric in metrics
 
 
 def test_list_unit_test(CLIENT, dataset):
@@ -38,7 +36,7 @@ def test_list_unit_test(CLIENT, dataset):
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=slc.slice_id,
-        evaluation_metrics=[e.iou() > 0.5],
+        evaluation_criteria=[e.iou() > 0.5],
     )
 
     unit_tests = CLIENT.modelci.list_unit_tests()

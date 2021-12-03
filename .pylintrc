@@ -9,7 +9,7 @@ disable=
     unused-argument,
     no-self-use,
     import-outside-toplevel,
-    cyclic-import,
+    too-many-instance-attributes,
     W0511,
     R0914,
     R0913,

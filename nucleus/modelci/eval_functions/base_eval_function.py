@@ -1,11 +1,10 @@
 import abc
 
+from ..constants import ThresholdComparison
 from ..data_transfer_objects.eval_function import (
+    EvalFunctionEntry,
     EvaluationCriteria,
 )
-from ..data_transfer_objects.eval_function import EvalFunctionEntry
-
-from ..constants import ThresholdComparison
 
 
 class BaseEvalFunction(abc.ABC):

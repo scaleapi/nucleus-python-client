@@ -1,24 +1,26 @@
 import copy
+
 import pytest
-from nucleus import Slice, NucleusClient, DatasetItem, BoxAnnotation, Dataset
+
+from nucleus import BoxAnnotation, Dataset, DatasetItem, NucleusClient, Slice
 from nucleus.constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     ERROR_PAYLOAD,
     ITEM_KEY,
 )
+from nucleus.job import AsyncJob
+
 from .helpers import (
-    DATASET_WITH_AUTOTAG,
     NUCLEUS_PYTEST_USER_ID,
+    TEST_BOX_ANNOTATIONS,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
-    TEST_SLICE_NAME,
-    TEST_BOX_ANNOTATIONS,
     TEST_PROJECT_ID,
+    TEST_SLICE_NAME,
     get_uuid,
     reference_id_from_url,
 )
-from nucleus.job import AsyncJob
 
 
 @pytest.fixture()

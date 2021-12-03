@@ -1,37 +1,38 @@
-from typing import List, Optional, Dict, Union
-from .dataset_item import DatasetItem
-from .scene import LidarScene
+from typing import Dict, List, Optional, Union
+
 from .annotation import (
     BoxAnnotation,
-    CuboidAnnotation,
-    PolygonAnnotation,
     CategoryAnnotation,
+    CuboidAnnotation,
     MultiCategoryAnnotation,
+    PolygonAnnotation,
     SegmentationAnnotation,
 )
-from .prediction import (
-    BoxPrediction,
-    CuboidPrediction,
-    PolygonPrediction,
-    SegmentationPrediction,
-    CategoryPrediction,
-)
 from .constants import (
+    ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATION_UPDATE_KEY,
-    NAME_KEY,
-    METADATA_KEY,
-    REFERENCE_ID_KEY,
     ANNOTATIONS_KEY,
     ITEMS_KEY,
-    SCENES_KEY,
-    UPDATE_KEY,
+    LABELS_KEY,
+    METADATA_KEY,
     MODEL_ID_KEY,
-    ANNOTATION_METADATA_SCHEMA_KEY,
+    NAME_KEY,
+    REFERENCE_ID_KEY,
+    SCENES_KEY,
     SEGMENTATIONS_KEY,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
-    LABELS_KEY,
+    UPDATE_KEY,
 )
+from .dataset_item import DatasetItem
+from .prediction import (
+    BoxPrediction,
+    CategoryPrediction,
+    CuboidPrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+)
+from .scene import LidarScene
 
 
 def construct_append_payload(

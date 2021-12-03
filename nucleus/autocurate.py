@@ -5,7 +5,9 @@ For more details on usage see the example colab in scripts/autocurate_bdd.ipynb
 
 
 import datetime
+
 import requests
+
 from nucleus.constants import (
     JOB_CREATION_TIME_KEY,
     JOB_LAST_KNOWN_STATUS_KEY,

@@ -1,10 +1,9 @@
 import copy
 import math
-from nucleus.model import Model
-from nucleus.prediction import BoxPrediction
 import os
 
 import pytest
+
 from nucleus import (
     Dataset,
     DatasetItem,
@@ -14,39 +13,41 @@ from nucleus import (
 )
 from nucleus.annotation import (
     BoxAnnotation,
-    PolygonAnnotation,
-    SegmentationAnnotation,
     CategoryAnnotation,
     MultiCategoryAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
 )
 from nucleus.constants import (
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
     CATEGORY_TYPE,
     DATASET_ID_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     IGNORED_ITEMS,
+    ITEM_KEY,
     MULTICATEGORY_TYPE,
     NEW_ITEMS,
     POLYGON_TYPE,
     SEGMENTATION_TYPE,
     UPDATED_ITEMS,
-    ITEM_KEY,
-    ANNOTATIONS_KEY,
-    BOX_TYPE,
 )
 from nucleus.job import AsyncJob, JobError
+from nucleus.model import Model
+from nucleus.prediction import BoxPrediction
 
 from .helpers import (
+    DATASET_WITH_AUTOTAG,
     LOCAL_FILENAME,
+    NUCLEUS_PYTEST_USER_ID,
     TEST_BOX_ANNOTATIONS,
+    TEST_CATEGORY_ANNOTATIONS,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
+    TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
-    TEST_CATEGORY_ANNOTATIONS,
-    TEST_MULTICATEGORY_ANNOTATIONS,
-    DATASET_WITH_AUTOTAG,
-    NUCLEUS_PYTEST_USER_ID,
     reference_id_from_url,
 )
 

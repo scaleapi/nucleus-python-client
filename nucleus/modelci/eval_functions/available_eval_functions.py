@@ -1,7 +1,8 @@
-from typing import List, Dict, Union, Type, Callable
+from typing import Callable, Dict, List, Type, Union
 
-from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
 from nucleus.logger import logger
+from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
+
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"

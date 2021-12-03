@@ -1,10 +1,9 @@
-from pathlib import Path
 import time
+from pathlib import Path
+
 import pytest
-from nucleus import (
-    AsyncJob,
-    NucleusClient,
-)
+
+from nucleus import AsyncJob, NucleusClient
 
 
 def test_reprs():

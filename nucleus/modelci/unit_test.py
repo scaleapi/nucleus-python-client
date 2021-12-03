@@ -4,15 +4,16 @@ With Model CI Unit Tests, an ML engineer can define a Unit Test from critical
 edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
-from dataclasses import dataclass
-from typing import List, TYPE_CHECKING
+from dataclasses import dataclass, field
+from typing import List
 
-from .data_transfer_objects.unit_test_metric import AddUnitTestMetric
+from ..connection import Connection
+from ..constants import NAME_KEY, SLICE_ID_KEY
+from .data_transfer_objects.eval_function import EvaluationCriteria
 from .data_transfer_objects.unit_test_evaluations import GetEvalHistory
+from .data_transfer_objects.unit_test_metric import AddUnitTestMetric
 from .unit_test_evaluation import UnitTestEvaluation
 from .unit_test_metric import UnitTestMetric
-from .data_transfer_objects.eval_function import EvaluationCriteria
-from .utils import format_unit_test_eval_response
 
 
 @dataclass
@@ -21,31 +22,28 @@ class UnitTestInfo:
     slice_id: str
 
 
-if TYPE_CHECKING:
-    from nucleus.modelci import (
-        ModelCI,
-    )
-
-
+@dataclass
 class UnitTest:
-    """A Unit Test combines a slice and at least one evaluation metric."""
+    """A Unit Test combines a slice and at least one evaluation metric.
 
-    def __init__(
-        self,
-        unit_test_id: str,
-        client: "ModelCI",  # type:ignore # noqa: F821
-    ):
-        self.id = unit_test_id
-        self._client = client
-        info = self.info()
-        self.name = info.name
-        self.slice_id = info.slice_id
+    Attributes:
+        id (str): The ID of the unit test.
+        connection (Connection): The connection to Nucleus API.
+        name (str): The name of the unit test.
+        slice_id (str): The ID of the associated Nucleus slice.
+    """
 
-    def __repr__(self):
-        return f"UnitTest(name='{self.name}', slice_id='{self.slice_id}', unit_test_id='{self.id}')"
+    id: str
+    connection: Connection
+    name: str = field(init=False)
+    slice_id: str = field(init=False)
 
-    def __eq__(self, other):
-        return self.id == other.id and self._client == other._client
+    def __post_init__(self):
+        response = self.connection.get(
+            f"modelci/unit_test/{self.id}/info",
+        )
+        self.name = response[NAME_KEY]
+        self.slice_id = response[SLICE_ID_KEY]
 
     def add_criteria(
         self, evaluation_criteria: EvaluationCriteria
@@ -69,7 +67,7 @@ class UnitTest:
         Returns:
             The created UnitTestMetric object.
         """
-        response = self._client.connection.post(
+        response = self.connection.post(
             AddUnitTestMetric(
                 unit_test_name=self.name,
                 eval_function_id=evaluation_criteria.eval_function_id,
@@ -97,7 +95,7 @@ class UnitTest:
         Returns:
             A list of UnitTestMetric objects.
         """
-        response = self._client.connection.get(
+        response = self.connection.get(
             f"modelci/unit_test/{self.id}/metrics",
         )
         return [
@@ -117,7 +115,7 @@ class UnitTest:
         Returns:
             A list of UnitTestEvaluation objects.
         """
-        response = self._client.connection.get(
+        response = self.connection.get(
             f"modelci/unit_test/{self.id}/eval_history",
         )
         # TODO(gunnar): Repeated info calls are slow -> Move work to backend
@@ -136,7 +134,7 @@ class UnitTest:
         Returns:
             A UnitTestInfo object
         """
-        response = self._client.connection.get(
+        response = self.connection.get(
             f"modelci/unit_test/{self.id}/info",
         )
         return UnitTestInfo(**response)
@@ -152,8 +150,5 @@ class UnitTest:
         Returns:
             A list of UnitTestEvaluation objects
         """
-        response = self._client.connection.get(
-            f"modelci/eval/{evaluation_id}/info",
-        )
-        # TODO(gunnar): Use pydantic
-        return format_unit_test_eval_response(response)
+        # TODO(gunnar): Use pydantic and remove need to call info under the hood
+        return UnitTestEvaluation(id=evaluation_id, connection=self.connection)

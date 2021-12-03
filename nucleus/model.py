@@ -1,18 +1,16 @@
-from typing import List, Optional, Dict, Union
+from typing import Dict, List, Optional, Union
 
-from nucleus.job import AsyncJob
+import requests
+
+from .constants import METADATA_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
+from .job import AsyncJob
+from .model_run import ModelRun
 from .prediction import (
     BoxPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
-)
-from .model_run import ModelRun
-from .constants import (
-    NAME_KEY,
-    REFERENCE_ID_KEY,
-    METADATA_KEY,
 )
 
 
@@ -183,6 +181,9 @@ class Model:
         Returns:
             AsyncJob object of evaluation job
         """
-        return self._client.modelci.evaluate_model_on_unit_tests(
-            self.id, unit_test_names
+        response = self._client.make_request(
+            {"test_names": unit_test_names},
+            f"modelci/{self.id}/evaluate",
+            requests_command=requests.post,
         )
+        return AsyncJob.from_json(response, self._client)

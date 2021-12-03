@@ -1,9 +1,8 @@
 """Model CI Python Library."""
 from typing import List
 
-
-from nucleus.job import AsyncJob
 from nucleus.connection import Connection
+from nucleus.job import AsyncJob
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -15,27 +14,17 @@ from .constants import (
     ThresholdComparison,
 )
 from .data_transfer_objects.eval_function import (
+    EvalFunctionEntry,
     EvaluationCriteria,
     GetEvalFunctions,
-    EvalFunctionEntry,
 )
 from .data_transfer_objects.unit_test import CreateUnitTestRequest
-from .eval_functions.available_eval_functions import (
-    AvailableEvalFunctions,
-)
-from .unit_test import (
-    UnitTest,
-    UnitTestInfo,
-)
+from .eval_functions.available_eval_functions import AvailableEvalFunctions
+from .unit_test import UnitTest, UnitTestInfo
+from .unit_test_evaluation import UnitTestEvaluation, UnitTestItemEvaluation
 from .unit_test_metric import UnitTestMetric
-from .unit_test_evaluation import (
-    UnitTestEvaluation,
-    UnitTestItemEvaluation,
-)
-from .utils import format_unit_test_eval_response
 
 SUCCESS_KEY = "success"
-EVALUATIONS_KEY = "evaluations"
 EVAL_FUNCTIONS_KEY = "eval_functions"
 
 
@@ -99,7 +88,7 @@ class ModelCI:
             ).dict(),
             "modelci/unit_test",
         )
-        return UnitTest(response[UNIT_TEST_ID_KEY], self)
+        return UnitTest(response[UNIT_TEST_ID_KEY], self.connection)
 
     def list_unit_tests(self) -> List[UnitTest]:
         """Lists all Unit Tests of the current user. ::
@@ -119,11 +108,12 @@ class ModelCI:
             "modelci/unit_test",
         )
         return [
-            UnitTest(test_id, self) for test_id in response["unit_test_ids"]
+            UnitTest(test_id, self.connection)
+            for test_id in response["unit_test_ids"]
         ]
 
     def delete_unit_test(self, unit_test_id: str) -> bool:
-        """Creates a new Unit Test. ::
+        """Deletes a Unit Test. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")

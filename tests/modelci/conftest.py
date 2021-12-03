@@ -1,14 +1,15 @@
-import pytest
 import time
 
-from tests.helpers import TEST_MODEL_NAME, get_uuid, TEST_SLICE_NAME
+import pytest
+
+from tests.helpers import TEST_MODEL_NAME, TEST_SLICE_NAME, get_uuid
 from tests.test_dataset import make_dataset_items
 
 
 @pytest.fixture()
 def model(CLIENT):
     model_reference = "model_" + str(time.time())
-    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
+    model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
     yield model
 
     CLIENT.delete_model(model.id)
@@ -26,6 +27,7 @@ def unit_test(CLIENT, dataset):
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=slc.slice_id,
+        evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_recall > 0.5],
     )
     yield unit_test
 

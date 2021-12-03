@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from nucleus.modelci import ThresholdComparison
+from .constants import ThresholdComparison
 
 
 class UnitTestMetric(BaseModel):

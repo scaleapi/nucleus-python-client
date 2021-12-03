@@ -18,7 +18,7 @@ class EvaluationCriteria(BaseModel):
     threshold: float
 
     @validator("eval_function_id")
-    def valid_eval_function_id(self, v):
+    def valid_eval_function_id(cls, v):  # pylint: disable=no-self-argument
         if not v.startswith("ef_"):
             raise ValueError(f"Expected field to start with 'ef_', got '{v}'")
         return v

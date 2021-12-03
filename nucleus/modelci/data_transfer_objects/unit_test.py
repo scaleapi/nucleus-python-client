@@ -11,7 +11,7 @@ class CreateUnitTestRequest(BaseModel):
     evaluation_criteria: List[EvaluationCriteria]
 
     @validator("slice_id")
-    def startswith_slice_indicator(self, v):
+    def startswith_slice_indicator(cls, v):  # pylint: disable=no-self-argument
         if not v.startswith("slc_"):
             raise ValueError(f"Expected field to start with 'slc_', got '{v}'")
         return v

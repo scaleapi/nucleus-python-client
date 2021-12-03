@@ -1,34 +1,36 @@
-from nucleus.job import AsyncJob
 import os
-import pytest
 import time
-from .helpers import (
-    TEST_DATASET_NAME,
-    TEST_MODEL_NAME,
-    TEST_MODEL_RUN,
-    TEST_IMG_URLS,
-    TEST_BOX_PREDICTIONS,
-    TEST_POLYGON_PREDICTIONS,
-    TEST_SEGMENTATION_PREDICTIONS,
-    TEST_CATEGORY_PREDICTIONS,
-    reference_id_from_url,
-    assert_box_prediction_matches_dict,
-    assert_polygon_prediction_matches_dict,
-    assert_segmentation_annotation_matches_dict,
-    assert_category_prediction_matches_dict,
-)
+
+import pytest
 
 from nucleus import (
     BoxPrediction,
-    PolygonPrediction,
-    SegmentationPrediction,
     CategoryPrediction,
     DatasetItem,
     ModelRun,
-    Segment,
     Point,
+    PolygonPrediction,
+    Segment,
+    SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.job import AsyncJob
+
+from .helpers import (
+    TEST_BOX_PREDICTIONS,
+    TEST_CATEGORY_PREDICTIONS,
+    TEST_DATASET_NAME,
+    TEST_IMG_URLS,
+    TEST_MODEL_NAME,
+    TEST_MODEL_RUN,
+    TEST_POLYGON_PREDICTIONS,
+    TEST_SEGMENTATION_PREDICTIONS,
+    assert_box_prediction_matches_dict,
+    assert_category_prediction_matches_dict,
+    assert_polygon_prediction_matches_dict,
+    assert_segmentation_annotation_matches_dict,
+    reference_id_from_url,
+)
 
 
 def test_reprs():

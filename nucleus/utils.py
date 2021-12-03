@@ -1,9 +1,9 @@
 """Shared stateless utility function library"""
 
-from collections import defaultdict
 import io
-import uuid
 import json
+import uuid
+from collections import defaultdict
 from typing import IO, Dict, List, Sequence, Type, Union
 
 import requests
@@ -12,10 +12,10 @@ from requests.models import HTTPError
 from nucleus.annotation import (
     Annotation,
     BoxAnnotation,
-    CuboidAnnotation,
-    PolygonAnnotation,
     CategoryAnnotation,
+    CuboidAnnotation,
     MultiCategoryAnnotation,
+    PolygonAnnotation,
     SegmentationAnnotation,
 )
 
@@ -23,10 +23,10 @@ from .constants import (
     ANNOTATION_TYPES,
     ANNOTATIONS_KEY,
     BOX_TYPE,
-    CUBOID_TYPE,
     CATEGORY_TYPE,
-    MULTICATEGORY_TYPE,
+    CUBOID_TYPE,
     ITEM_KEY,
+    MULTICATEGORY_TYPE,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
     SEGMENTATION_TYPE,

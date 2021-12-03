@@ -1,22 +1,15 @@
 import pytest
-import uuid
-
-from tests.test_dataset import make_dataset_items
-from tests.helpers import (
-    TEST_BOX_ANNOTATIONS,
-    TEST_BOX_PREDICTIONS,
-    TEST_SLICE_NAME,
-    TEST_EVAL_FUNCTION_ID,
-    EVAL_FUNCTION_THRESHOLD,
-    get_uuid,
-)
 
 from nucleus import BoxAnnotation, BoxPrediction
 from nucleus.job import AsyncJob
-from nucleus.modelci import ThresholdComparison
 from nucleus.modelci.unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
+)
+from tests.helpers import (
+    EVAL_FUNCTION_THRESHOLD,
+    TEST_BOX_ANNOTATIONS,
+    TEST_BOX_PREDICTIONS,
 )
 
 
@@ -27,11 +20,8 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     dataset.upload_predictions(model, [prediction])
 
-    unit_test.add_criteria(
-        eval_function_id=TEST_EVAL_FUNCTION_ID,
-        threshold=EVAL_FUNCTION_THRESHOLD,
-        threshold_comparison=ThresholdComparison.GREATER_THAN,
-    )
+    iou = CLIENT.modelci.eval_functions.iou
+    unit_test.add_criteria(iou() > EVAL_FUNCTION_THRESHOLD)
 
     job: AsyncJob = CLIENT.modelci.evaluate_model_on_unit_tests(
         model.id, [unit_test.name]
