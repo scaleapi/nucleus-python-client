@@ -119,6 +119,14 @@ class Dataset:
         return self._name
 
     @property
+    def is_scene(self) -> bool:
+        """If the dataset can contain scenes or not."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/is_scene", requests.get
+        )["is_scene"]
+        return response
+
+    @property
     def model_runs(self) -> Dict[Any, Any]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
