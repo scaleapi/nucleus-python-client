@@ -63,6 +63,7 @@ from .constants import (
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
     DATASET_ID_KEY,
+    DATASET_IS_SCENE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -329,6 +330,7 @@ class NucleusClient:
     def create_dataset(
         self,
         name: str,
+        is_scene: bool = False,
         item_metadata_schema: Optional[Dict] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
@@ -337,6 +339,7 @@ class NucleusClient:
 
         Parameters:
             name: A human-readable name for the dataset.
+            is_scene: Boolean specifying if the dataset contains / will contain scenes. Cannot be changed at a later point in time.
             item_metadata_schema: Dict defining item-level metadata schema. See below.
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
 
@@ -357,6 +360,7 @@ class NucleusClient:
         response = self.make_request(
             {
                 NAME_KEY: name,
+                DATASET_IS_SCENE_KEY: is_scene,
                 ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
                 ITEM_METADATA_SCHEMA_KEY: item_metadata_schema,
             },
