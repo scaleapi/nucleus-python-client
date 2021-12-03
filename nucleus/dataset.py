@@ -123,7 +123,7 @@ class Dataset:
         """If the dataset can contain scenes or not."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/is_scene", requests.get
-        )["is_scene"]
+        )[DATASET_IS_SCENE_KEY]
         return response
 
     @property
