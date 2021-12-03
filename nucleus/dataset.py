@@ -569,6 +569,7 @@ class Dataset:
         )
         return format_dataset_item_response(response)
 
+    @sanitize_string_args
     def refloc(self, reference_id: str) -> dict:
         """Retrieves a dataset item by reference ID.
 
