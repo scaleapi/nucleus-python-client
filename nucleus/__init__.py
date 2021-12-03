@@ -339,7 +339,9 @@ class NucleusClient:
 
         Parameters:
             name: A human-readable name for the dataset.
-            is_scene: Boolean specifying if the dataset contains / will contain scenes. Cannot be changed at a later point in time.
+            is_scene: Boolean specifying if the dataset contains / will contain scenes. Default is 'False'.
+                      Cannot be changed at a later point in time. 'False' will not allow users to uplaod scenes at
+                      a later point in time. If you consider to upload scenes, set to 'True'.
             item_metadata_schema: Dict defining item-level metadata schema. See below.
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
 
