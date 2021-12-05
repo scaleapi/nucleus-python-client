@@ -37,7 +37,9 @@ class ThresholdComparison(Enum):
 
 @dataclass(frozen=True)
 class UnitTestMetric:
-    """A Unit Test Metric is an evaluation function and comparator associated with a Unit Test.
+    """A Unit Test Metric is an evaluation function combined with a comparator and associated with a Unit Test.
+    Unit Test Metrics serve as the basis when evaluating a Model on a Unit Test.
+
     Note that this class is immutable.
 
     Attributes:
@@ -52,7 +54,7 @@ class UnitTestMetric:
     threshold: float
     threshold_comparison: ThresholdComparison
 
-
+#Todo (Mark): Does this make sense? A created unit test doesn't have a metric right now. Docs for sure are wrong, but what makes sense from a UX perspective?
 @dataclass
 class UnitTest:
     """A Unit Test combines a slice and at least one evaluation metric.
@@ -93,8 +95,10 @@ class UnitTest:
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
+            eval_function = client.modelci.list_eval_functions()[0]
+
             unit_test.add_metric(
-                eval_function_id="ef_c61595wh49km7ppkk14g",
+                eval_function_id="eval_function.id",
                 threshold=0.5,
                 threshold_comparison=ThresholdComparison.GREATER_THAN
             )

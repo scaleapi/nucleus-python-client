@@ -9,7 +9,7 @@ from nucleus.job import AsyncJob
 
 from .constants import UNIT_TEST_ID_KEY
 from .eval_function import EvalFunction
-from .unit_test import UnitTest
+from .unit_test import UnitTest, UnitTestMetric
 
 SUCCESS_KEY = "success"
 EVAL_FUNCTIONS_KEY = "eval_functions"
@@ -46,7 +46,7 @@ class ModelCI:
         ]
 
     def create_unit_test(self, name: str, slice_id: str) -> UnitTest:
-        """Creates a new Unit Test. ::
+        """Creates a new Unit Test from an existing Slice within Nucleus. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -57,7 +57,7 @@ class ModelCI:
 
         Args:
             name: unique name of test
-            slice_id: id of slice of items to evaluate test on.
+            slice_id: id of a (pre-defined) slice of items to evaluate test on.
 
         Returns:
             Created UnitTest object.
@@ -77,11 +77,8 @@ class ModelCI:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
-            )
 
-            client.modelci.list_unit_tests()
+            unit_test_list = client.modelci.list_unit_tests()
 
         Returns:
             A list of UnitTest objects.
@@ -103,7 +100,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
-            success = client.modelci.create_unit_test(unit_test.id)
+            success = client.modelci.delete_unit_test(unit_test.id)
 
         Args:
             unit_test_id: unique ID of unit test
@@ -124,10 +121,17 @@ class ModelCI:
         """Evaluates the given model on the specified Unit Tests. ::
 
             import nucleus
+            from nucleus.modelci.unit_test import ThresholdComparison
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
             unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
+            )
+
+            unit_test.add_metric(
+                eval_function_id="ef_c61595wh49km7ppkk14g",
+                threshold=0.5,
+                threshold_comparison=ThresholdComparison.GREATER_THAN
             )
 
             client.modelci.evaluate_model_on_unit_tests(
