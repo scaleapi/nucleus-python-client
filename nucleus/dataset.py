@@ -486,6 +486,10 @@ class Dataset:
             assert (
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
+            assert self.is_scene, (
+                "Your dataset does not support scenes. In order to be able to append scenes, "
+                "please create a new dataset with client.create_dataset(<dataset_name>, is_scene=True)"
+            )
             return self.append_scenes(scenes, update, asynchronous)
 
         check_for_duplicate_reference_ids(dataset_items)
