@@ -54,7 +54,8 @@ class UnitTestMetric:
     threshold: float
     threshold_comparison: ThresholdComparison
 
-#Todo (Mark): Does this make sense? A created unit test doesn't have a metric right now. Docs for sure are wrong, but what makes sense from a UX perspective?
+
+# Todo (Mark): Does this make sense? A created unit test doesn't have a metric right now. Docs for sure are wrong, but what makes sense from a UX perspective?
 @dataclass
 class UnitTest:
     """A Unit Test combines a slice and at least one evaluation metric.
