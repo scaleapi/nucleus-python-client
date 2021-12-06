@@ -4,6 +4,7 @@ from nucleus.logger import logger
 from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
 
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
+from ..errors import EvalFunctionNotAvailableError
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 IOU_NAME = "IOU"
@@ -71,12 +72,37 @@ class StandardEvalFunction(BaseEvalFunction):
         return "public_function"  # Placeholder: See super().eval_func_entry for actual name
 
 
+class EvalFunctionNotAvailable(BaseEvalFunction):
+    def __init__(
+        self, expected_name: str
+    ):  # pylint: disable=super-init-not-called
+        self.expected_name = expected_name
+
+    def __call__(self, *args, **kwargs):
+        self._raise_error()
+
+    def _op_to_test_metric(self, *args, **kwargs):
+        self._raise_error()
+
+    def _raise_error(self):
+        raise EvalFunctionNotAvailableError(
+            f"Eval function '{self.expected_name}' is not available to the current user. "
+            f"Is Model CI enabled for the user?"
+        )
+
+    @classmethod
+    @property
+    def name(cls) -> str:
+        return "public_function"  # Placeholder: See super().eval_func_entry for actual name
+
+
 EvalFunction = Union[
     Type[BoundingBoxIOU],
     Type[BoundingBoxMeanAveragePrecision],
     Type[BoundingBoxPrecision],
     Type[BoundingBoxRecall],
     Type[CustomEvalFunction],
+    Type[EvalFunctionNotAvailable],
     Type[IOU],
     Type[StandardEvalFunction],
 ]
@@ -169,4 +195,4 @@ class AvailableEvalFunctions:
             self._public_to_function[expected_name] = eval_function  # type: ignore
             return eval_function
         else:
-            return None
+            return EvalFunctionNotAvailable(expected_name)
