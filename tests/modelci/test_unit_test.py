@@ -1,11 +1,12 @@
+import pytest
+
+from nucleus.modelci import CreateUnitTestError
 from nucleus.modelci.unit_test import UnitTest
 from tests.helpers import (
     EVAL_FUNCTION_COMPARISON,
     EVAL_FUNCTION_THRESHOLD,
-    TEST_SLICE_NAME,
     get_uuid,
 )
-from tests.test_dataset import make_dataset_items
 
 
 def test_unit_test_metric_creation(CLIENT, unit_test):
@@ -22,23 +23,26 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
     assert unit_test_metric in metrics
 
 
-def test_list_unit_test(CLIENT, dataset):
-    # create some dataset_items for the unit test to reference
-    items = make_dataset_items()
-    dataset.append(items)
+def test_list_unit_test(CLIENT, dataset, test_slice):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
-    slc = dataset.create_slice(
-        name=TEST_SLICE_NAME,
-        reference_ids=[items[0].reference_id],
-    )
 
     e = CLIENT.modelci.eval_functions
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
-        slice_id=slc.slice_id,
+        slice_id=test_slice.slice_id,
         evaluation_criteria=[e.iou() > 0.5],
     )
 
     unit_tests = CLIENT.modelci.list_unit_tests()
     assert all(isinstance(unit_test, UnitTest) for unit_test in unit_tests)
     assert unit_test in unit_tests
+
+
+def test_no_criteria_raises_error(CLIENT, dataset, test_slice):
+    test_name = "unit_test_" + get_uuid()  # use uuid to make unique
+    with pytest.raises(CreateUnitTestError):
+        CLIENT.modelci.create_unit_test(
+            name=test_name,
+            slice_id=test_slice.slice_id,
+            evaluation_criteria=[],
+        )

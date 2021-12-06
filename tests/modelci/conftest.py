@@ -32,3 +32,16 @@ def unit_test(CLIENT, dataset):
     yield unit_test
 
     CLIENT.modelci.delete_unit_test(unit_test.id)
+
+
+@pytest.fixture()
+def test_slice(CLIENT, dataset):
+    items = make_dataset_items()
+    dataset.append(items)
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=[items[0].reference_id],
+    )
+    yield slc
+
+    CLIENT.delete_slice(slc.slice_id)

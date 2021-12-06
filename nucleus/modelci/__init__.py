@@ -19,6 +19,7 @@ from .data_transfer_objects.eval_function import (
     GetEvalFunctions,
 )
 from .data_transfer_objects.unit_test import CreateUnitTestRequest
+from .errors import CreateUnitTestError
 from .eval_functions.available_eval_functions import AvailableEvalFunctions
 from .unit_test import UnitTest, UnitTestInfo
 from .unit_test_evaluation import UnitTestEvaluation, UnitTestItemEvaluation
@@ -44,10 +45,11 @@ class ModelCI:
     def eval_functions(self) -> AvailableEvalFunctions:
         """List all available evaluation functions. ::
 
-        import nucleus
-        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-        eval_functions = client.modelci.eval_functions
+            eval_functions = client.modelci.eval_functions
+            unit_test_criteria = eval_functions.iou() > 0.5  # Creates a EvaluationCriteria by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -69,17 +71,25 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
+            iou = client.modelci.eval_functions.iou
             unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+                "sample_unit_test", "slc_bx86ea222a6g057x4380", evaluation_criteria=[iou() > 0.5]
             )
 
         Args:
             name: unique name of test
             slice_id: id of slice of items to evaluate test on.
+            evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functons.
+                See :attribute:`eval_functions`.
 
         Returns:
             Created UnitTest object.
         """
+        if not evaluation_criteria:
+            raise CreateUnitTestError(
+                "Must pass an evaluation_criteria to the unit test! I.e. "
+                "evaluation_criteria = [client.modelci.eval_functions.iou() > 0.5]"
+            )
         response = self.connection.post(
             CreateUnitTestRequest(
                 name=name,
