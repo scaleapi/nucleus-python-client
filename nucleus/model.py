@@ -105,7 +105,7 @@ class Model:
     def __eq__(self, other):
         return (
             (self.id == other.id)
-            and (self.name == other.expected_name)
+            and (self.name == other.name)
             and (self.metadata == other.metadata)
             and (self._client == other._client)
         )

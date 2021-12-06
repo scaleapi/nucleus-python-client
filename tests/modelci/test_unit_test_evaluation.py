@@ -25,7 +25,7 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     unit_test.add_criteria(iou() > EVAL_FUNCTION_THRESHOLD)
 
     job: AsyncJob = CLIENT.modelci.evaluate_model_on_unit_tests(
-        model.id, [unit_test.expected_name]
+        model.id, [unit_test.name]
     )
     job.sleep_until_complete()
 

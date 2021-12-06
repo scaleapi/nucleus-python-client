@@ -198,7 +198,7 @@ def test_dataset_append(dataset):
 
 
 def test_dataset_name_access(CLIENT, dataset):
-    assert dataset.expected_name == TEST_DATASET_NAME
+    assert dataset.name == TEST_DATASET_NAME
 
 
 def test_dataset_size_access(CLIENT, dataset):
