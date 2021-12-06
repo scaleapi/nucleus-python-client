@@ -1,4 +1,5 @@
 [tool.pylint.MESSAGE_CONTROL]
+extension-pkg-whitelist = "pydantic" # https://github.com/samuelcolvin/pydantic/issues/1961
 disable=
     bad-continuation,
     no-else-return,
