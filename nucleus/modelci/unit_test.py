@@ -9,7 +9,7 @@ from typing import List
 
 from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
-from .data_transfer_objects.eval_function import EvaluationCriteria
+from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.unit_test_evaluations import GetEvalHistory
 from .data_transfer_objects.unit_test_metric import AddUnitTestMetric
 from .unit_test_evaluation import UnitTestEvaluation
@@ -40,7 +40,7 @@ class UnitTest:
         self.slice_id = response[SLICE_ID_KEY]
 
     def add_criteria(
-        self, evaluation_criteria: EvaluationCriteria
+        self, evaluation_criteria: EvaluationCriterion
     ) -> UnitTestMetric:
         """Creates and adds a new criteria to the Unit Test. ::
 
@@ -56,7 +56,7 @@ class UnitTest:
             )
 
         Args:
-            evaluation_criteria: :class:`EvaluationCriteria` created by comparison with an :class:`EvalFunction`
+            evaluation_criteria: :class:`EvaluationCriterion` created by comparison with an :class:`EvalFunction`
 
         Returns:
             The created UnitTestMetric object.

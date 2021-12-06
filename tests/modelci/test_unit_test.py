@@ -23,7 +23,7 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
     assert unit_test_metric in criteria
 
 
-def test_list_unit_test(CLIENT, dataset, test_slice):
+def test_list_unit_test(CLIENT, test_slice):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
 
     e = CLIENT.modelci.eval_functions
@@ -38,7 +38,7 @@ def test_list_unit_test(CLIENT, dataset, test_slice):
     assert unit_test in unit_tests
 
 
-def test_no_criteria_raises_error(CLIENT, dataset, test_slice):
+def test_no_criteria_raises_error(CLIENT, test_slice):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
     with pytest.raises(CreateUnitTestError):
         CLIENT.modelci.create_unit_test(

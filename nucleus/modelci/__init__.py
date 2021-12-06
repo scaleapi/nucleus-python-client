@@ -15,7 +15,7 @@ from .constants import (
 )
 from .data_transfer_objects.eval_function import (
     EvalFunctionEntry,
-    EvaluationCriteria,
+    EvaluationCriterion,
     GetEvalFunctions,
 )
 from .data_transfer_objects.unit_test import CreateUnitTestRequest
@@ -49,7 +49,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
             eval_functions = client.modelci.eval_functions
-            unit_test_criteria = eval_functions.bbox_iou() > 0.5  # Creates a EvaluationCriteria by comparison
+            unit_test_criteria = eval_functions.bbox_iou() > 0.5  # Creates a EvaluationCriterion by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -64,7 +64,7 @@ class ModelCI:
         self,
         name: str,
         slice_id: str,
-        evaluation_criteria: List[EvaluationCriteria],
+        evaluation_criteria: List[EvaluationCriterion],
     ) -> UnitTest:
         """Creates a new Unit Test. ::
 

@@ -14,43 +14,37 @@ class IOU(BaseEvalFunction):
     """Intersection over union for all bounding boxes"""
 
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "IOU"
 
 
 class BoundingBoxIOU(BaseEvalFunction):
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "bbox_iou"
 
 
 class BoundingBoxMeanAveragePrecision(BaseEvalFunction):
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "bbox_map"
 
 
 class BoundingBoxRecall(BaseEvalFunction):
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "bbox_recall"
 
 
 class BoundingBoxPrecision(BaseEvalFunction):
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "bbox_precision"
 
 
 class CustomEvalFunction(BaseEvalFunction):
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "private_custom_function"  # Placeholder: See super().eval_func_entry for actual name
 
 
@@ -67,16 +61,15 @@ class StandardEvalFunction(BaseEvalFunction):
         super().__init__(eval_function_entry)
 
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "public_function"  # Placeholder: See super().eval_func_entry for actual name
 
 
 class EvalFunctionNotAvailable(BaseEvalFunction):
     def __init__(
-        self, expected_name: str
+        self, not_available_name: str
     ):  # pylint: disable=super-init-not-called
-        self.expected_name = expected_name
+        self.not_available_name = not_available_name
 
     def __call__(self, *args, **kwargs):
         self._raise_error()
@@ -86,13 +79,12 @@ class EvalFunctionNotAvailable(BaseEvalFunction):
 
     def _raise_error(self):
         raise EvalFunctionNotAvailableError(
-            f"Eval function '{self.expected_name}' is not available to the current user. "
+            f"Eval function '{self.not_available_name}' is not available to the current user. "
             f"Is Model CI enabled for the user?"
         )
 
     @classmethod
-    @property
-    def name(cls) -> str:
+    def expected_name(cls) -> str:
         return "public_function"  # Placeholder: See super().eval_func_entry for actual name
 
 
@@ -188,7 +180,7 @@ class AvailableEvalFunctions:
         via attribute access
         """
         # TODO(gunnar): Too convoluted .. simplify
-        expected_name = eval_function_constructor.name  # type: ignore
+        expected_name = eval_function_constructor.expected_name()  # type: ignore
         if expected_name in self._public_func_entries:
             definition = self._public_func_entries[expected_name]
             eval_function = eval_function_constructor(definition)

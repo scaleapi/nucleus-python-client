@@ -7,7 +7,7 @@ from nucleus.pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
 
 
-class EvaluationCriteria(ImmutableModel):
+class EvaluationCriterion(ImmutableModel):
     """
     eval_function_id: ID of evaluation function
     threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.

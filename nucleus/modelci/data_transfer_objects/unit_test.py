@@ -4,13 +4,13 @@ from pydantic import validator
 
 from nucleus.pydantic_base import ImmutableModel
 
-from .eval_function import EvaluationCriteria
+from .eval_function import EvaluationCriterion
 
 
 class CreateUnitTestRequest(ImmutableModel):
     name: str
     slice_id: str
-    evaluation_criteria: List[EvaluationCriteria]
+    evaluation_criteria: List[EvaluationCriterion]
 
     @validator("slice_id")
     def startswith_slice_indicator(cls, v):  # pylint: disable=no-self-argument
