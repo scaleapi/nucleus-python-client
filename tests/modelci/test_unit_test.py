@@ -11,7 +11,7 @@ from tests.helpers import (
 
 def test_unit_test_metric_creation(CLIENT, unit_test):
     # create some dataset_items for the unit test to reference
-    iou = CLIENT.modelci.eval_functions.iou
+    iou = CLIENT.modelci.eval_functions.bbox_iou
     unit_test_metric = unit_test.add_criteria(iou() > EVAL_FUNCTION_THRESHOLD)
     assert unit_test_metric.unit_test_id == unit_test.id
     assert unit_test_metric.eval_function_id

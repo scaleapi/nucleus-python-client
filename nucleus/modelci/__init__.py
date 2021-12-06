@@ -49,7 +49,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
             eval_functions = client.modelci.eval_functions
-            unit_test_criteria = eval_functions.iou() > 0.5  # Creates a EvaluationCriteria by comparison
+            unit_test_criteria = eval_functions.bbox_iou() > 0.5  # Creates a EvaluationCriteria by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -71,7 +71,7 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            iou = client.modelci.eval_functions.iou
+            iou = client.modelci.eval_functions.bbox_iou
             unit_test = client.modelci.create_unit_test(
                 "sample_unit_test", "slc_bx86ea222a6g057x4380", evaluation_criteria=[iou() > 0.5]
             )
@@ -88,7 +88,7 @@ class ModelCI:
         if not evaluation_criteria:
             raise CreateUnitTestError(
                 "Must pass an evaluation_criteria to the unit test! I.e. "
-                "evaluation_criteria = [client.modelci.eval_functions.iou() > 0.5]"
+                "evaluation_criteria = [client.modelci.eval_functions.bbox_iou() > 0.5]"
             )
         response = self.connection.post(
             CreateUnitTestRequest(

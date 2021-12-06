@@ -94,7 +94,9 @@ class AvailableEvalFunctions:
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, available_functions: List[EvalFunctionEntry]):
-        # Names taken from: https://github.com/scaleapi/models/pull/2100/files
+        assert (
+            available_functions
+        ), "Passed no available functions for current user. Is the feature flag enabled?"
         self._public_func_entries: Dict[str, EvalFunctionEntry] = {
             f.name: f for f in available_functions if f.is_public
         }

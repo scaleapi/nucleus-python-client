@@ -56,7 +56,7 @@ class UnitTest:
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            iou = client.modelci.eval_functions.iou
+            iou = client.modelci.eval_functions.bbox_iou
             unit_test.add_metric(
                 iou() > 0.5
             )
