@@ -18,6 +18,9 @@ class BaseEvalFunction(abc.ABC):
         self.id = eval_func_entry.id
         self.name = eval_func_entry.name
 
+    def __repr__(self):
+        return f"<EvalFunction: name={self.name}, id={self.id}>"
+
     @classmethod
     @abc.abstractmethod
     def expected_name(cls) -> str:
