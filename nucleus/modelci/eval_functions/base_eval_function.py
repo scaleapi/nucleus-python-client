@@ -15,6 +15,8 @@ class BaseEvalFunction(abc.ABC):
 
     def __init__(self, eval_func_entry: EvalFunctionEntry):
         self.eval_func_entry = eval_func_entry
+        self.id = eval_func_entry.id
+        self.name = eval_func_entry.name
 
     @classmethod
     @abc.abstractmethod
