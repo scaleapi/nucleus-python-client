@@ -17,12 +17,6 @@ from .unit_test_metric import UnitTestMetric
 
 
 @dataclass
-class UnitTestInfo:
-    name: str
-    slice_id: str
-
-
-@dataclass
 class UnitTest:
     """A Unit Test combines a slice and at least one evaluation metric.
 
@@ -124,20 +118,6 @@ class UnitTest:
             self.get_unit_test_eval_info(evaluation.id)
             for evaluation in eval_history.evaluations
         ]
-
-    def info(self):
-        """Retrieves info of the Unit Test.
-
-        Args:
-            unit_test_id: ID of Unit Test
-
-        Returns:
-            A UnitTestInfo object
-        """
-        response = self.connection.get(
-            f"modelci/unit_test/{self.id}/info",
-        )
-        return UnitTestInfo(**response)
 
     def get_unit_test_eval_info(
         self, evaluation_id: str

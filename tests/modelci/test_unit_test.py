@@ -18,9 +18,9 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
     assert unit_test_metric.threshold == EVAL_FUNCTION_THRESHOLD
     assert unit_test_metric.threshold_comparison == EVAL_FUNCTION_COMPARISON
 
-    metrics = unit_test.get_criteria()
-    assert isinstance(metrics, list)
-    assert unit_test_metric in metrics
+    criteria = unit_test.get_criteria()
+    assert isinstance(criteria, list)
+    assert unit_test_metric in criteria
 
 
 def test_list_unit_test(CLIENT, dataset, test_slice):
