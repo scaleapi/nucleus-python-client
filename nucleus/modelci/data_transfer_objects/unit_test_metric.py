@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from nucleus.pydantic_base import ImmutableModel
 
 from ..constants import ThresholdComparison
 
 
-class AddUnitTestMetric(BaseModel):
+class AddUnitTestMetric(ImmutableModel):
     """ Data transfer object to add a unit test."""
 
     unit_test_name: str

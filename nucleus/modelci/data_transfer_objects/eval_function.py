@@ -1,11 +1,13 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import validator
+
+from nucleus.pydantic_base import ImmutableModel
 
 from ..constants import ThresholdComparison
 
 
-class EvaluationCriteria(BaseModel):
+class EvaluationCriteria(ImmutableModel):
     """
     eval_function_id: ID of evaluation function
     threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
@@ -24,7 +26,7 @@ class EvaluationCriteria(BaseModel):
         return v
 
 
-class EvalFunctionEntry(BaseModel):
+class EvalFunctionEntry(ImmutableModel):
     """Encapsulates information about an evaluation function for Model CI."""
 
     id: str
@@ -35,7 +37,7 @@ class EvalFunctionEntry(BaseModel):
     raw_source: Optional[str] = None
 
 
-class GetEvalFunctions(BaseModel):
+class GetEvalFunctions(ImmutableModel):
     """ Expected format from GET modelci/eval_fn"""
 
     eval_functions: List[EvalFunctionEntry]

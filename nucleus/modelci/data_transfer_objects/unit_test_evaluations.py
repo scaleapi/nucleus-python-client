@@ -1,11 +1,11 @@
 from typing import List
 
-from pydantic import BaseModel
+from nucleus.pydantic_base import ImmutableModel
 
 
-class EvalDetail(BaseModel):
+class EvalDetail(ImmutableModel):
     id: str
 
 
-class GetEvalHistory(BaseModel):
+class GetEvalHistory(ImmutableModel):
     evaluations: List[EvalDetail]

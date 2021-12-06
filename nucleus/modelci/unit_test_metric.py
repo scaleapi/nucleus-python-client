@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from nucleus.pydantic_base import ImmutableModel
 
 from .constants import ThresholdComparison
 
 
-class UnitTestMetric(BaseModel):
+class UnitTestMetric(ImmutableModel):
     """A Unit Test Metric is an evaluation function and comparator associated with a Unit Test."""
 
     unit_test_id: str

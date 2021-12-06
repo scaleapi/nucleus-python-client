@@ -1,11 +1,13 @@
 from typing import List
 
-from pydantic import BaseModel, validator
+from pydantic import validator
+
+from nucleus.pydantic_base import ImmutableModel
 
 from .eval_function import EvaluationCriteria
 
 
-class CreateUnitTestRequest(BaseModel):
+class CreateUnitTestRequest(ImmutableModel):
     name: str
     slice_id: str
     evaluation_criteria: List[EvaluationCriteria]
