@@ -14,10 +14,7 @@ from tests.helpers import (
     TEST_BOX_ANNOTATIONS,
     TEST_BOX_PREDICTIONS,
     TEST_EVAL_FUNCTION_ID,
-    TEST_SLICE_NAME,
-    get_uuid,
 )
-from tests.test_dataset import make_dataset_items
 
 
 @pytest.mark.integration

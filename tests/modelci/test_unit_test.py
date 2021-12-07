@@ -45,3 +45,28 @@ def test_list_unit_test(CLIENT, dataset):
     unit_tests = CLIENT.modelci.list_unit_tests()
     assert all(isinstance(unit_test, UnitTest) for unit_test in unit_tests)
     assert unit_test in unit_tests
+
+    CLIENT.modelci.delete_unit_test(unit_test.id)
+
+
+def test_unit_test_items(CLIENT, dataset):
+    # create some dataset_items for the unit test to reference
+    items = make_dataset_items()
+    dataset.append(items)
+    test_name = "unit_test_" + get_uuid()  # use uuid to make unique
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=[item.reference_id for item in items],
+    )
+
+    unit_test = CLIENT.modelci.create_unit_test(
+        name=test_name,
+        slice_id=slc.slice_id,
+    )
+
+    expected_items_locations = [item.image_location for item in items]
+    actual_items_locations = [
+        item.image_location for item in unit_test.get_items()
+    ]
+    assert expected_items_locations == actual_items_locations
+    CLIENT.modelci.delete_unit_test(unit_test.id)

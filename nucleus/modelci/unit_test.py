@@ -12,6 +12,7 @@ import requests
 
 from nucleus.connection import Connection
 from nucleus.constants import NAME_KEY, SLICE_ID_KEY
+from nucleus.dataset_item import DatasetItem
 
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
@@ -24,6 +25,7 @@ from .constants import (
 from .unit_test_evaluation import UnitTestEvaluation
 
 EVALUATIONS_KEY = "evaluations"
+DATASET_ITEMS_KEY = "dataset_items"
 
 
 class ThresholdComparison(Enum):
@@ -171,4 +173,14 @@ class UnitTest:
         return [
             UnitTestEvaluation(eval[ID_KEY], self.connection)
             for eval in response[EVALUATIONS_KEY]
+        ]
+
+    def get_items(self) -> List[DatasetItem]:
+        response = self.connection.make_request(
+            {},
+            f"modelci/unit_test/{self.id}/items",
+            requests_command=requests.get,
+        )
+        return [
+            DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
         ]
