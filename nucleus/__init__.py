@@ -110,7 +110,7 @@ from .job import AsyncJob
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
-from .modelci import ModelCI, UnitTest, UnitTestMetric, AvailableEvalFunctions
+from .modelci import AvailableEvalFunctions, ModelCI, UnitTest, UnitTestMetric
 from .payload_constructor import (
     construct_annotation_payload,
     construct_append_payload,
