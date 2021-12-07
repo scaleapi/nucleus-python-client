@@ -36,6 +36,7 @@ __all__ = [
 
 import os
 import time
+import warnings
 from typing import Dict, List, Optional, Sequence, Union
 
 import pkg_resources
@@ -337,11 +338,14 @@ class NucleusClient:
         """
         Creates a new, empty dataset.
 
+        Make sure that the dataset is created for the data type you would like to support.
+        Be aware to set the `is_scene` correctly.
+
         Parameters:
             name: A human-readable name for the dataset.
-            is_scene: Boolean specifying if the dataset contains / will contain scenes. Default is 'False'.
-                      Cannot be changed at a later point in time. 'False' will not allow users to uplaod scenes at
-                      a later point in time. If you consider to upload scenes, set to 'True'.
+            is_scene: Boolean specifying if the dataset type. This value is immutable.
+                     `False` will allow users to uplaod :class:`DatasetItems<DatasetItem>`s.
+                     `True` will allow users to upload :class:`Scenes<LidarScene>`s.
             item_metadata_schema: Dict defining item-level metadata schema. See below.
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
 
@@ -359,6 +363,13 @@ class NucleusClient:
         Returns:
             :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
+        warnings.warn(
+            "The default create_dataset('dataset_name', ...) method will be deprecated soon. "
+            "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=True, ...) to upload "
+            "DatasetItems or create_dataset('dataset_name', is_scene=False, ...) to upload "
+            "LidarScenes.",
+            DeprecationWarning,
+        )
         response = self.make_request(
             {
                 NAME_KEY: name,
