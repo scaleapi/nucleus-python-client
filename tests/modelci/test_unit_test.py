@@ -58,6 +58,7 @@ def test_unit_test_items(CLIENT, dataset):
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=slc.slice_id,
+        evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_iou() > 0.5],
     )
 
     expected_items_locations = [item.image_location for item in items]
