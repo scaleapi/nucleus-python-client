@@ -54,7 +54,7 @@ from .helpers import (
 
 @pytest.fixture()
 def dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
 
     response = ds.add_taxonomy(
         "[Pytest] Category Taxonomy 1",
@@ -75,6 +75,11 @@ def dataset(CLIENT):
 
     response = CLIENT.delete_dataset(ds.id)
     assert response == {"message": "Beginning dataset deletion..."}
+
+
+@pytest.fixture()
+def dataset_scene(CLIENT):
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=True)
 
 
 def make_dataset_items():
@@ -213,6 +218,22 @@ def test_dataset_append(dataset):
     response = dataset.append(make_dataset_items())
     check_is_expected_response(response)
 
+def test_scene_dataset_append(dataset):
+    # Plain image upload
+    ds_items_plain = []
+    for i, url in enumerate(TEST_IMG_URLS):
+        # Upload just the first item in privacy mode
+        upload_to_scale = i == 0
+        ds_items_plain.append(
+            DatasetItem(
+                image_location=url,
+                upload_to_scale=upload_to_scale,
+                reference_id=url.split("/")[-1] + "_plain",
+            )
+        )
+
+    with pytest.raises(Exception):
+        dataset.append(ds_items_plain)
 
 def test_dataset_name_access(CLIENT, dataset):
     assert dataset.name == TEST_DATASET_NAME
