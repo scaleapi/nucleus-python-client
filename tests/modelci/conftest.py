@@ -34,7 +34,7 @@ def unit_test(CLIENT, dataset):
     CLIENT.modelci.delete_unit_test(unit_test.id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def test_slice(CLIENT, dataset):
     items = make_dataset_items()
     dataset.append(items)
