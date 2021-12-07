@@ -49,7 +49,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
             eval_functions = client.modelci.eval_functions
-            unit_test_criteria = eval_functions.bbox_iou() > 0.5  # Creates a EvaluationCriterion by comparison
+            unit_test_criteria = eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -66,7 +66,7 @@ class ModelCI:
         slice_id: str,
         evaluation_criteria: List[EvaluationCriterion],
     ) -> UnitTest:
-        """Creates a new Unit Test. ::
+        """Creates a new Unit Test from an existing Nucleus :class:`Slice`:. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -78,8 +78,8 @@ class ModelCI:
 
         Args:
             name: unique name of test
-            slice_id: id of slice of items to evaluate test on.
-            evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functons.
+            slice_id: id of (pre-defined) slice of items to evaluate test on.
+            evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functions.
                 See :attribute:`eval_functions`.
 
         Returns:
