@@ -9,11 +9,14 @@ from typing import List
 
 from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
+from ..dataset_item import DatasetItem
 from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.unit_test_evaluations import GetEvalHistory
 from .data_transfer_objects.unit_test_metric import AddUnitTestMetric
 from .unit_test_evaluation import UnitTestEvaluation
 from .unit_test_metric import UnitTestMetric
+
+DATASET_ITEMS_KEY = "dataset_items"
 
 
 @dataclass
@@ -112,23 +115,16 @@ class UnitTest:
         response = self.connection.get(
             f"modelci/unit_test/{self.id}/eval_history",
         )
-        # TODO(gunnar): Repeated info calls are slow -> Move work to backend
         eval_history = GetEvalHistory.parse_obj(response)
         return [
-            self.get_unit_test_eval_info(evaluation.id)
+            UnitTestEvaluation(evaluation.id, self.connection)
             for evaluation in eval_history.evaluations
         ]
 
-    def get_unit_test_eval_info(
-        self, evaluation_id: str
-    ) -> UnitTestEvaluation:
-        """Retrieves info of the Unit Test Evaluation.
-
-        Args:
-            evaluation_id: ID of Unit Test
-
-        Returns:
-            A list of UnitTestEvaluation objects
-        """
-        # TODO(gunnar): Use pydantic and remove need to call info under the hood
-        return UnitTestEvaluation(id=evaluation_id, connection=self.connection)
+    def get_items(self) -> List[DatasetItem]:
+        response = self.connection.get(
+            f"modelci/unit_test/{self.id}/items",
+        )
+        return [
+            DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
+        ]

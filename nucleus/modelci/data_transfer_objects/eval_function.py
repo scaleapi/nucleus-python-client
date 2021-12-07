@@ -2,8 +2,7 @@ from typing import List, Optional
 
 from pydantic import validator
 
-from nucleus.pydantic_base import ImmutableModel
-
+from ...pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
 
 

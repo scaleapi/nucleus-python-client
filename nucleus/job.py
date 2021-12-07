@@ -11,6 +11,7 @@ from nucleus.constants import (
     JOB_TYPE_KEY,
     STATUS_KEY,
 )
+from nucleus.utils import replace_double_slashes
 
 JOB_POLLING_INTERVAL = 5
 
@@ -82,11 +83,12 @@ class AsyncJob:
                     '{"annotation":{"label":"car","type":"box","geometry":{"x":50,"y":60,"width":70,"height":80},"referenceId":"bad_ref_id","annotationId":"attempted_annot_upload","metadata":{}},"error":"Item with id bad_ref_id doesn\'t exist."}'
                 ]
         """
-        return self.client.make_request(
+        errors = self.client.make_request(
             payload={},
             route=f"job/{self.job_id}/errors",
             requests_command=requests.get,
         )
+        return [replace_double_slashes(error) for error in errors]
 
     def sleep_until_complete(self, verbose_std_out=True):
         """Blocks until the job completes or errors.
@@ -132,4 +134,5 @@ class JobError(Exception):
             f"The final status message was: {final_status_message} \n"
             f"For more detailed error messages you can call {str(job)}.errors()"
         )
+        message = replace_double_slashes(message)
         super().__init__(message)
