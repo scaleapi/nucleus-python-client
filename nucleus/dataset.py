@@ -75,6 +75,8 @@ class Dataset:
     with metadata to your dataset, annotate it with ground truth, and upload
     model predictions to evaluate and compare model performance on your data.
 
+    Make sure that the dataset is set up correctly supporting the required datatype (see code sample below).
+
     Datasets cannot be instantiated directly and instead must be created via API
     endpoint using :meth:`NucleusClient.create_dataset`, or in the dashboard.
 
@@ -84,8 +86,11 @@ class Dataset:
 
         client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
 
-        # Create new dataset
-        dataset = client.create_dataset(YOUR_DATASET_NAME)
+        # Create new dataset supporting DatasetItems
+        dataset = client.create_dataset(YOUR_DATASET_NAME, is_scene=False)
+
+        # OR create new dataset supporting LidarScenes
+        dataset = client.create_dataset(YOUR_DATASET_NAME, is_scene=True)
 
         # Or, retrieve existing dataset by ID
         # This ID can be fetched using client.list_datasets() or from a dashboard URL
@@ -388,6 +393,14 @@ class Dataset:
     ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """Appends items or scenes to a dataset.
 
+        Attention (!!!)
+        You will only be able to add :class:`DatasetItems<DatasetItem>`s to a dataset supporting "
+        ":class:`DatasetItems<DatasetItem>`s.
+        Also, you will only be able to add :class:`Scenes<LidarScene>`s to a dataset supporting "
+        ":class:`Scenes<LidarScene>`s.
+        A :class:`DatasetItems<DatasetItem>` dataset can be created with the is_scene flag set to False.
+        A :class:`Scenes<LidarScene>` dataset can be created with the is_scene flag set to True.
+
         ::
 
             import nucleus
@@ -486,11 +499,23 @@ class Dataset:
             assert (
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
-            assert self.is_scene, (
-                "Your dataset does not support scenes. In order to be able to append scenes, "
-                "please create a new dataset with client.create_dataset(<dataset_name>, is_scene=True)"
-            )
+
+            if not self.is_scene:
+                raise Exception(
+                    "Your dataset is not a scene dataset but only supports single dataset items. "
+                    "In order to be able to add scenes, please create another dataset with "
+                    "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
+                    "an existing scene dataset."
+                )
             return self.append_scenes(scenes, update, asynchronous)
+
+        if self.is_scene:
+            raise Exception(
+                "Your dataset is a scene dataset and does not support the upload of single dataset items. "
+                "In order to be able to add dataset items, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
+                "an existing dataset supporting dataset items."
+            )
 
         check_for_duplicate_reference_ids(dataset_items)
 
