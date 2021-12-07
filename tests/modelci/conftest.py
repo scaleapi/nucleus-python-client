@@ -27,7 +27,22 @@ def unit_test(CLIENT, dataset):
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=slc.slice_id,
+        evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_recall > 0.5],
     )
     yield unit_test
 
     CLIENT.modelci.delete_unit_test(unit_test.id)
+
+
+@pytest.fixture()
+def test_slice(CLIENT, dataset):
+    items = make_dataset_items()
+    dataset.append(items)
+    slice_name = TEST_SLICE_NAME + f"_{get_uuid()}"
+    slc = dataset.create_slice(
+        name=slice_name,
+        reference_ids=[items[0].reference_id],
+    )
+    yield slc
+
+    CLIENT.delete_slice(slc.slice_id)

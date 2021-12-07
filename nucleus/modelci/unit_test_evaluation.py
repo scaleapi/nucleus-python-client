@@ -68,6 +68,8 @@ class UnitTestEvaluation:
         connection (Connection): The connection to the Nucleus API.
     """
 
+    # pylint: disable=too-many-instance-attributes
+
     id: str
     unit_test_id: str = field(init=False)
     eval_function_id: str = field(init=False)
@@ -79,6 +81,8 @@ class UnitTestEvaluation:
     connection: InitVar[Connection]
 
     def __post_init__(self, connection: Connection):
+        # TODO(gunnar): Having the function call /info on every construction is too slow. The original
+        #  endpoint should rather return the necessary human-readable information
         response = connection.make_request(
             {},
             f"modelci/eval/{self.id}/info",

@@ -888,7 +888,7 @@ class NucleusClient:
         """
         if payload is None:
             payload = {}
-        return self._connection.make_request(payload, route, requests_command)
+        return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
     def handle_bad_response(
         self,

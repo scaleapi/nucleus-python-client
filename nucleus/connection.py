@@ -25,6 +25,20 @@ class Connection:
             self.api_key == other.api_key and self.endpoint == other.endpoint
         )
 
+    def delete(self, route: str):
+        return self.make_request({}, route, requests_command=requests.delete)
+
+    def get(self, route: str):
+        return self.make_request({}, route, requests_command=requests.get)
+
+    def post(self, payload: dict, route: str):
+        return self.make_request(
+            payload, route, requests_command=requests.post
+        )
+
+    def put(self, payload: dict, route: str):
+        return self.make_request(payload, route, requests_command=requests.put)
+
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:

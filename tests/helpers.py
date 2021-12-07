@@ -1,10 +1,8 @@
-import time
 import uuid
 from pathlib import Path
-from urllib.parse import urlparse
 
 from nucleus import BoxPrediction, DatasetItem
-from nucleus.modelci.unit_test import ThresholdComparison
+from nucleus.modelci import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 N_UUID_CHARACTERS = 10
@@ -14,7 +12,6 @@ TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
-TEST_EVAL_FUNCTION_ID = "ef_c61595wh49km7ppkk14g"
 
 DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"

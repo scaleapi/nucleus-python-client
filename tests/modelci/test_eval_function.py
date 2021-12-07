@@ -1,6 +1,7 @@
-from nucleus.modelci.eval_function import EvalFunction
+from nucleus.modelci import EvaluationCriterion
 
 
 def test_list_eval_functions(CLIENT):
-    eval_functions = CLIENT.modelci.list_eval_functions()
-    assert all(isinstance(eval_fn, EvalFunction) for eval_fn in eval_functions)
+    eval_functions = CLIENT.modelci.eval_functions
+    criteria = eval_functions.iou() > 0.5
+    assert isinstance(criteria, EvaluationCriterion)

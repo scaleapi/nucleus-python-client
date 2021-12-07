@@ -1,10 +1,7 @@
-import uuid
-
 import pytest
 
 from nucleus import BoxAnnotation, BoxPrediction
 from nucleus.job import AsyncJob
-from nucleus.modelci.unit_test import ThresholdComparison
 from nucleus.modelci.unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
@@ -13,22 +10,19 @@ from tests.helpers import (
     EVAL_FUNCTION_THRESHOLD,
     TEST_BOX_ANNOTATIONS,
     TEST_BOX_PREDICTIONS,
-    TEST_EVAL_FUNCTION_ID,
 )
 
 
 @pytest.mark.integration
+@pytest.mark.xfail(reason="The test 500s on the backend currently.")
 def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     dataset.annotate(annotations=[annotation])
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     dataset.upload_predictions(model, [prediction])
 
-    unit_test.add_metric(
-        eval_function_id=TEST_EVAL_FUNCTION_ID,
-        threshold=EVAL_FUNCTION_THRESHOLD,
-        threshold_comparison=ThresholdComparison.GREATER_THAN,
-    )
+    iou = CLIENT.modelci.eval_functions.bbox_iou
+    unit_test.add_criteria(iou() > EVAL_FUNCTION_THRESHOLD)
 
     job: AsyncJob = CLIENT.modelci.evaluate_model_on_unit_tests(
         model.id, [unit_test.name]

@@ -1,6 +1,11 @@
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
 
+class ImmutableModel(BaseModel):
+    class Config:
+        allow_mutation = False
+
+
 class DictCompatibleModel(BaseModel):
     """Backwards compatible wrapper where we transform dictionaries into Pydantic Models
 
