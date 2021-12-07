@@ -184,11 +184,3 @@ def test_slice_send_to_labeling(dataset):
 
     response = slc.send_to_labeling(TEST_PROJECT_ID)
     assert isinstance(response, AsyncJob)
-
-
-def test_export_slice_embeddings(CLIENT):
-    test_slice = CLIENT.get_slice("slc_c4s4ts3v7bw00b1hkj0g")
-    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
-        embeddings = test_slice.export_embeddings()
-        assert "embedding_vector" in embeddings[0]
-        assert "reference_id" in embeddings[0]
