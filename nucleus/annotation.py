@@ -515,16 +515,16 @@ class CategoryAnnotation(Annotation):
 
         category = CategoryAnnotation(
             label="dress",
-            taxonomy_name="clothing_type",
             reference_id="image_1",
+            taxonomy_name="clothing_type",
             metadata={"dress_color": "navy"}
         )
 
     Parameters:
         label (str): The label for this annotation.
-        taxonomy_name (str): The name of the taxonomy this annotation conforms to.
-          See :meth:`Dataset.add_taxonomy`.
         reference_id (str): User-defined ID of the image to which to apply this annotation.
+        taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
+          See :meth:`Dataset.add_taxonomy`.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
@@ -532,8 +532,8 @@ class CategoryAnnotation(Annotation):
     """
 
     label: str
-    taxonomy_name: str
     reference_id: str
+    taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
@@ -543,20 +543,22 @@ class CategoryAnnotation(Annotation):
     def from_json(cls, payload: dict):
         return cls(
             label=payload[LABEL_KEY],
-            taxonomy_name=payload[TAXONOMY_NAME_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
     def to_payload(self) -> dict:
-        return {
+        payload = {
             LABEL_KEY: self.label,
-            TAXONOMY_NAME_KEY: self.taxonomy_name,
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
         }
+        if self.taxonomy_name is not None:
+            payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
+        return payload
 
 
 @dataclass
@@ -564,8 +566,8 @@ class MultiCategoryAnnotation(Annotation):
     """This class is not yet supported: MultiCategory annotation support coming soon!"""
 
     labels: List[str]
-    taxonomy_name: str
     reference_id: str
+    taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
@@ -575,20 +577,22 @@ class MultiCategoryAnnotation(Annotation):
     def from_json(cls, payload: dict):
         return cls(
             labels=payload[LABELS_KEY],
-            taxonomy_name=payload[TAXONOMY_NAME_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
 
     def to_payload(self) -> dict:
-        return {
+        payload = {
             LABELS_KEY: self.labels,
-            TAXONOMY_NAME_KEY: self.taxonomy_name,
             TYPE_KEY: MULTICATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
         }
+        if self.taxonomy_name is not None:
+            payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
+        return payload
 
 
 def is_local_path(path: str) -> bool:

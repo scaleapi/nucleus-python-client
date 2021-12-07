@@ -168,6 +168,14 @@ TEST_CATEGORY_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_DEFAULT_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Category Label ${i}",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_MULTICATEGORY_ANNOTATIONS = [
     {
         "labels": [
@@ -176,6 +184,17 @@ TEST_MULTICATEGORY_ANNOTATIONS = [
         ],
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "taxonomy_name": "[Pytest] MultiCategory Taxonomy 1",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
+    {
+        "labels": [
+            f"[Pytest] MultiCategory Label ${i}",
+            f"[Pytest] MultiCategory Label ${i+1}",
+        ],
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
     }
     for i in range(len(TEST_IMG_URLS))
 ]
@@ -253,6 +272,20 @@ TEST_CATEGORY_PREDICTIONS = [
     for i in range(len(TEST_CATEGORY_ANNOTATIONS))
 ]
 
+TEST_DEFAULT_CATEGORY_PREDICTIONS = [
+    {
+        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_CATEGORY_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_DEFAULT_CATEGORY_ANNOTATIONS))
+]
+
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
 
 
@@ -310,18 +343,20 @@ def assert_category_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert annotation_instance.label == annotation_dict["label"]
-    assert (
-        annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
-    )
+    if annotation_instance.taxonomy_name:
+        assert annotation_instance.taxonomy_name == annotation_dict.get(
+            "taxonomy_name", None
+        )
 
 
 def assert_multicategory_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert set(annotation_instance.labels) == set(annotation_dict["labels"])
-    assert (
-        annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
-    )
+    if annotation_instance.taxonomy_name:
+        assert annotation_instance.taxonomy_name == annotation_dict.get(
+            "taxonomy_name", None
+        )
 
 
 def assert_segmentation_annotation_matches_dict(
