@@ -56,7 +56,7 @@ def test_unit_test_items(CLIENT, dataset):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
     slc = dataset.create_slice(
         name=TEST_SLICE_NAME,
-        reference_ids=[items[0].reference_id],
+        reference_ids=[item.reference_id for item in items],
     )
 
     unit_test = CLIENT.modelci.create_unit_test(
@@ -64,5 +64,9 @@ def test_unit_test_items(CLIENT, dataset):
         slice_id=slc.slice_id,
     )
 
-    assert items == unit_test.get_items()
+    expected_items_locations = [item.image_location for item in items]
+    actual_items_locations = [
+        item.image_location for item in unit_test.get_items()
+    ]
+    assert expected_items_locations == actual_items_locations
     CLIENT.modelci.delete_unit_test(unit_test.id)
