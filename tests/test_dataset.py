@@ -52,7 +52,7 @@ from .helpers import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
 

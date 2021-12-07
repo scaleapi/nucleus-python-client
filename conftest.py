@@ -19,7 +19,7 @@ def CLIENT():
     return client
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     ds.append(TEST_DATASET_ITEMS)
