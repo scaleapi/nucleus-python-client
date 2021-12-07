@@ -105,9 +105,9 @@ class Dataset:
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):
-            return f"Dataset(name='{self.name}, dataset_id='{self.id}', client={self._client})"
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', is_scene='{self.is_scene}', client={self._client})"
         else:
-            return f"Dataset(name='{self.name}, dataset_id='{self.id}')"
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', is_scene='{self.is_scene}')"
 
     def __eq__(self, other):
         if self.id == other.id:
