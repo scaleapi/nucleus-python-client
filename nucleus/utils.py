@@ -235,7 +235,7 @@ def serialize_and_write_to_presigned_url(
     return request_id
 
 
-def replace_double_slashes(s):
+def replace_double_slashes(s: str) -> str:
     for key, val in STRING_REPLACEMENTS.items():
         s = s.replace(key, val)
     return s
