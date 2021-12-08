@@ -133,7 +133,7 @@ class AvailableEvalFunctions:
         self.bbox_recall = self._assign_eval_function_if_defined(
             BoundingBoxRecall  # type: ignore
         )
-        self.bbox_mean_average_precision = self._assign_eval_function_if_defined(
+        self.bbox_map = self._assign_eval_function_if_defined(
             BoundingBoxMeanAveragePrecision  # type: ignore
         )
 
@@ -146,8 +146,12 @@ class AvailableEvalFunctions:
 
     def __repr__(self):
         """Standard functions are ones Scale provides and custom ones customer defined"""
+        # NOTE: setting to lower to be consistent with attribute names
+        functions_lower = [
+            str(name).lower() for name in self._public_func_entries.keys()
+        ]
         return (
-            f"<AvailableEvaluationFunctions: public:{list(self._public_func_entries.keys())}, "
+            f"<AvailableEvaluationFunctions: public:{functions_lower} "
             f"private: {list(self._custom_to_function.keys())}"
         )
 
