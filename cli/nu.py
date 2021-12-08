@@ -9,6 +9,12 @@ from shellingham import detect_shell
 import nucleus
 
 
+def compose_client():
+    # TODO: Use env var!
+    client = nucleus.NucleusClient("test_0b302578b4164aed9f2454a107cb1915")
+    return client
+
+
 @click.group("cli")
 def nu():
     pass
@@ -42,12 +48,32 @@ def install_completion():
     click.echo(f"Don't forget to `source {rc_path}")
 
 
-@nu.group("modelci")
+@nu.command("datasets")
 def datasets():
+    console = Console()
+    with console.status("Finding your Datasets!", spinner="dots4"):
+        client = compose_client()
+        datasets = client.datasets
+        table = Table(
+            "Name",
+            "id",
+            Column("url", overflow="fold"),
+            title=":fire: :fire: Datasets",
+            title_justify="left",
+        )
+        for ds in datasets:
+            table.add_row(
+                ds.name, ds.id, f"https://dashboard.scale.com/nucleus/{ds.id}"
+            )
+    console.print(table)
+
+
+@nu.group("modelci")
+def modelci():
     pass
 
 
-@datasets.group("unit-tests")
+@modelci.group("unit-tests")
 def unit_tests():
     pass
 
@@ -57,7 +83,7 @@ def list_unit_tests():
     # TODO: Read from env
     console = Console()
     with console.status("Finding your unit tests", spinner="dots4"):
-        client = nucleus.NucleusClient("test_0b302578b4164aed9f2454a107cb1915")
+        client = compose_client()
         unit_tests = client.modelci.list_unit_tests()
         table = Table(
             "Name",
