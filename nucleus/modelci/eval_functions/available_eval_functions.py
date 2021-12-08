@@ -104,9 +104,15 @@ class AvailableEvalFunctions:
     """Collection class that acts as a common entrypoint to access evaluation functions. Standard evaluation functions
     provided by Scale are attributes of this class.
 
-    Examples:
+    The available evaluation functions are listed in the sample below::
+
         e = client.modelci.eval_functions
-        unit_test_metrics = [e.iou() > 5, e.map() > 0.95, e.custom["customer_function"]() == True]
+        unit_test_criteria = [
+            e.bbox_iou() > 5,
+            e.bbox_map() > 0.95,
+            e.bbox_precision() > 0.8,
+            e.bbox_recall() > 0.5,
+        ]
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -163,7 +169,7 @@ class AvailableEvalFunctions:
             These functions are also available as attributes on :class:`AvailableEvalFunctions`
 
         Returns:
-            Dict of function name to :class:`EvalFunction`.
+            Dict of function name to :class:`BaseEvalFunction`.
         """
         return self._public_to_function
 

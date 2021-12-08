@@ -21,7 +21,9 @@ DATASET_ITEMS_KEY = "dataset_items"
 
 @dataclass
 class UnitTest:
-    """A Unit Test combines a slice and at least one evaluation metric.
+    """A Unit Test combines a slice and at least one evaluation criterion. A :class:`UnitTest` is not created through
+    the default constructor but using the instructions shown in :class:`ModelCI`. This :class:`UnitTest` class only
+    simplifies the interaction with the unit tests from this SDK.
 
     Attributes:
         id (str): The ID of the unit test.
@@ -42,10 +44,10 @@ class UnitTest:
         self.name = response[NAME_KEY]
         self.slice_id = response[SLICE_ID_KEY]
 
-    def add_criteria(
-        self, evaluation_criteria: EvaluationCriterion
+    def add_criterion(
+        self, evaluation_criterion: EvaluationCriterion
     ) -> UnitTestMetric:
-        """Creates and adds a new criteria to the Unit Test. ::
+        """Creates and adds a new criteria to the :class:`UnitTest`. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -53,13 +55,23 @@ class UnitTest:
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            iou = client.modelci.eval_functions.bbox_iou
-            unit_test.add_criteria(
-                iou() > 0.5
+            e = client.modelci.eval_functions
+            # Assuming a user would like to add all available public evaluation functions as criteria
+            unit_test.add_criterion(
+                e.bbox_iou() > 0.5
+            )
+            unit_test.add_criterion(
+                e.bbox_map() > 0.85
+            )
+            unit_test.add_criterion(
+                e.bbox_precision() > 0.7
+            )
+            unit_test.add_criterion(
+                e.bbox_recall() > 0.6
             )
 
         Args:
-            evaluation_criteria: :class:`EvaluationCriterion` created by comparison with an :class:`EvalFunction`
+            evaluation_criterion: :class:`EvaluationCriterion` created by comparison with an :class:`EvalFunction`
 
         Returns:
             The created UnitTestMetric object.
@@ -67,21 +79,21 @@ class UnitTest:
         response = self.connection.post(
             AddUnitTestMetric(
                 unit_test_name=self.name,
-                eval_function_id=evaluation_criteria.eval_function_id,
-                threshold=evaluation_criteria.threshold,
-                threshold_comparison=evaluation_criteria.threshold_comparison,
+                eval_function_id=evaluation_criterion.eval_function_id,
+                threshold=evaluation_criterion.threshold,
+                threshold_comparison=evaluation_criterion.threshold_comparison,
             ).dict(),
             "modelci/unit_test_metric",
         )
         return UnitTestMetric(
             unit_test_id=response["unit_test_id"],
             eval_function_id=response["eval_function_id"],
-            threshold=evaluation_criteria.threshold,
-            threshold_comparison=evaluation_criteria.threshold_comparison,
+            threshold=evaluation_criterion.threshold,
+            threshold_comparison=evaluation_criterion.threshold_comparison,
         )
 
     def get_criteria(self) -> List[UnitTestMetric]:
-        """Retrieves all metrics of the Unit Test. ::
+        """Retrieves all criteria of the :class:`UnitTest`. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -101,7 +113,7 @@ class UnitTest:
         ]
 
     def get_eval_history(self) -> List[UnitTestEvaluation]:
-        """Retrieves evaluation history for Unit Test. ::
+        """Retrieves evaluation history for :class:`UnitTest`. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -110,7 +122,7 @@ class UnitTest:
             unit_test.get_eval_history()
 
         Returns:
-            A list of UnitTestEvaluation objects.
+            A list of :class:`UnitTestEvaluation` objects.
         """
         response = self.connection.get(
             f"modelci/unit_test/{self.id}/eval_history",
