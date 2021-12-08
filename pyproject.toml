@@ -29,7 +29,7 @@ readme = "README.md"
 homepage = "https://scale.com/nucleus"
 repository = "https://github.com/scaleapi/nucleus-python-client"
 documentation = "https://dashboard.scale.com/nucleus/docs/api"
-packages = [{include="nucleus"}]
+packages = [{include="nucleus"}, {include="cli"}]
 
 [tool.poetry.dependencies]
 python = "^3.6.2"
@@ -44,6 +44,8 @@ isort = "^5.10.1"
 numpy = "^1.19.5"
 scipy = "^1.5.4"
 Shapely = "^1.8.0"
+click = "^8.0.3"
+rich = "^10.15.2"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
@@ -62,6 +64,8 @@ furo = "^2021.10.9"
 sphinx-autoapi = "^1.8.4"
 pytest-xdist = "^2.5.0"
 
+[tool.poetry.scripts]
+nu = "cli.nu:nu"
 
 [tool.pytest.ini_options]
 markers = [
