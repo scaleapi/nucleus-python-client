@@ -21,7 +21,9 @@ DATASET_ITEMS_KEY = "dataset_items"
 
 @dataclass
 class UnitTest:
-    """A Unit Test combines a slice and at least one evaluation criterion.
+    """A Unit Test combines a slice and at least one evaluation criterion. A :class:`UnitTest` is not created through
+    the default constructor but using the instructions shown in :class:`ModelCI`. This :class:`UnitTest` class only
+    simplifies the interaction with the unit tests from this SDK.
 
     Attributes:
         id (str): The ID of the unit test.

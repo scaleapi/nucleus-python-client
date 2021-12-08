@@ -48,8 +48,7 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            eval_functions = client.modelci.eval_functions
-            unit_test_criterion = eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
+            unit_test_criterion = client.modelci.eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
