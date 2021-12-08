@@ -38,9 +38,7 @@ from nucleus.model import Model
 from nucleus.prediction import BoxPrediction
 
 from .helpers import (
-    DATASET_WITH_AUTOTAG,
     LOCAL_FILENAME,
-    NUCLEUS_PYTEST_USER_ID,
     TEST_BOX_ANNOTATIONS,
     TEST_CATEGORY_ANNOTATIONS,
     TEST_DATASET_NAME,
@@ -354,66 +352,6 @@ def test_raises_error_for_duplicate():
     )
 
 
-def test_dataset_export_autotag_tagged_items(CLIENT):
-    # This test can only run for the test user who has an indexed dataset.
-    # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
-        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
-
-        with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_items(autotag_name="NONSENSE_GARBAGE")
-        assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
-            in str(api_error.value)
-        )
-
-        items = dataset.autotag_items(autotag_name="PytestTestTag")
-
-        assert "autotagItems" in items
-        assert "autotag" in items
-
-        autotagItems = items["autotagItems"]
-        autotag = items["autotag"]
-
-        assert len(autotagItems) > 0
-        for item in autotagItems:
-            for column in ["ref_id", "score"]:
-                assert column in item
-
-        for column in ["id", "name", "status", "autotag_level"]:
-            assert column in autotag
-
-
-def test_dataset_export_autotag_training_items(CLIENT):
-    # This test can only run for the test user who has an indexed dataset.
-    # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
-        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
-
-        with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_training_items(autotag_name="NONSENSE_GARBAGE")
-        assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
-            in str(api_error.value)
-        )
-
-        items = dataset.autotag_training_items(autotag_name="PytestTestTag")
-
-        assert "autotagPositiveTrainingItems" in items
-        assert "autotag" in items
-
-        autotagTrainingItems = items["autotagPositiveTrainingItems"]
-        autotag = items["autotag"]
-
-        assert len(autotagTrainingItems) > 0
-        for item in autotagTrainingItems:
-            for column in ["ref_id"]:
-                assert column in item
-
-        for column in ["id", "name", "status", "autotag_level"]:
-            assert column in autotag
-
-
 @pytest.mark.integration
 def test_annotate_async(dataset: Dataset):
     dataset.append(make_dataset_items())
@@ -578,10 +516,3 @@ def test_append_and_export(dataset):
         exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0]
         == multicategory_annotation
     )
-
-
-def test_export_embeddings(CLIENT):
-    if NUCLEUS_PYTEST_USER_ID in CLIENT.api_key:
-        embeddings = Dataset(DATASET_WITH_AUTOTAG, CLIENT).export_embeddings()
-        assert "embedding_vector" in embeddings[0]
-        assert "reference_id" in embeddings[0]
