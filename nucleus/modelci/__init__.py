@@ -43,13 +43,13 @@ class ModelCI:
 
     @property
     def eval_functions(self) -> AvailableEvalFunctions:
-        """List all available evaluation functions. ::
+        """List all available evaluation functions which can be used to set up evaluation criteria.::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
             eval_functions = client.modelci.eval_functions
-            unit_test_criteria = eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
+            unit_test_criterion = eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -71,16 +71,17 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            iou = client.modelci.eval_functions.bbox_iou
             unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380", evaluation_criteria=[iou() > 0.5]
+                name="sample_unit_test",
+                slice_id="slc_bx86ea222a6g057x4380",
+                evaluation_criteria=[client.modelci.eval_functions.bbox_iou() > 0.5]
             )
 
         Args:
             name: unique name of test
             slice_id: id of (pre-defined) slice of items to evaluate test on.
             evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functions.
-                See :attribute:`eval_functions`.
+                See :class:`eval_functions`.
 
         Returns:
             Created UnitTest object.
@@ -154,14 +155,15 @@ class ModelCI:
                 "sample_unit_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.modelci.evaluate_model_on_unit_tests(
+            job = client.modelci.evaluate_model_on_unit_tests(
                 model_id=model.id,
                 unit_test_names=["sample_unit_test"],
             )
+            job.sleep_until_complete() # Not required. Will block and update on status of the job.
 
         Args:
             model_id: ID of model to evaluate
-            unit_test_names: list of unit tests to evaluate
+            unit_test_names: list of unit test names of test to evaluate
 
         Returns:
             AsyncJob object of evaluation job

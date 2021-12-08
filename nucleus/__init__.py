@@ -2,7 +2,6 @@
 
 __all__ = [
     "AsyncJob",
-    "AvailableEvalFunctions",
     "BoxAnnotation",
     "BoxPrediction",
     "CameraParams",
@@ -35,7 +34,6 @@ __all__ = [
     "SegmentationPrediction",
     "Slice",
     "UnitTest",
-    "UnitTestMetric",
 ]
 
 import os
