@@ -21,7 +21,7 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     dataset.upload_predictions(model, predictions)
 
     iou = CLIENT.modelci.eval_functions.bbox_iou
-    unit_test.add_criteria(iou() > EVAL_FUNCTION_THRESHOLD)
+    unit_test.add_criterion(iou() > EVAL_FUNCTION_THRESHOLD)
 
     job: AsyncJob = CLIENT.modelci.evaluate_model_on_unit_tests(
         model.id, [unit_test.name]

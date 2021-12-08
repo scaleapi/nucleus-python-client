@@ -10,6 +10,7 @@ disable=
     no-self-use,
     import-outside-toplevel,
     too-many-instance-attributes,
+    no-member,
     W0511,
     R0914,
     R0913,
