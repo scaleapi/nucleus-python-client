@@ -54,7 +54,7 @@ class UnitTest:
             )
 
             iou = client.modelci.eval_functions.bbox_iou
-            unit_test.add_metric(
+            unit_test.add_criteria(
                 iou() > 0.5
             )
 
@@ -87,7 +87,7 @@ class UnitTest:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
-            unit_test.get_metrics()
+            unit_test.get_criteria()
 
         Returns:
             A list of UnitTestMetric objects.
