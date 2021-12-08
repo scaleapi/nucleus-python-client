@@ -6,6 +6,7 @@ from shellingham import detect_shell
 
 from cli.datasets import datasets
 from cli.modelci import modelci
+from cli.models import models
 
 
 @click.group("cli")
@@ -43,6 +44,7 @@ def install_completion():
 
 nu.add_command(modelci)  # type: ignore
 nu.add_command(datasets)  # type: ignore
+nu.add_command(models)  # type: ignore
 
 if __name__ == "__main__":
     nu()
