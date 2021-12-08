@@ -14,7 +14,6 @@ from tests.helpers import (
 
 
 @pytest.mark.integration
-@pytest.mark.xfail(reason="The test 500s on the backend currently.")
 def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     dataset.annotate(annotations=[annotation])
@@ -29,12 +28,18 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     )
     job.sleep_until_complete()
 
+    criteria = unit_test.get_criteria()
     evaluations = unit_test.get_eval_history()
     assert isinstance(evaluations, list)
-    assert len(evaluations) == 1
-    assert isinstance(evaluations[0], UnitTestEvaluation)
-    assert evaluations[0].unit_test_id == unit_test.id
-    assert evaluations[0].model_id == model.id
+    assert len(evaluations) == len(criteria)
+    assert all(
+        isinstance(evaluation, UnitTestEvaluation)
+        for evaluation in evaluations
+    )
+    assert all(
+        evaluation.unit_test_id == unit_test.id for evaluation in evaluations
+    )
+    assert all(evaluation.model_id == model.id for evaluation in evaluations)
 
     item_evaluations = evaluations[0].item_evals
     assert isinstance(item_evaluations, list)

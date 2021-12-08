@@ -97,17 +97,24 @@ class AsyncJob:
             verbose_std_out (Optional[bool]): Whether or not to verbosely log while
               sleeping. Defaults to True.
         """
+        start_time = time.perf_counter()
         while 1:
             status = self.status()
             time.sleep(JOB_POLLING_INTERVAL)
 
             if verbose_std_out:
-                print(f"Status at {time.ctime()}: {status}")
+                print(
+                    f"Status at {time.perf_counter() - start_time} s: {status}"
+                )
             if status["status"] == "Running":
                 continue
 
             break
 
+        if verbose_std_out:
+            print(
+                f"Finished at {time.perf_counter() - start_time} s: {status}"
+            )
         final_status = status
         if final_status["status"] == "Errored":
             raise JobError(final_status, self)
