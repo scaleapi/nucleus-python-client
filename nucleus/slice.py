@@ -44,7 +44,7 @@ class Slice:
         self._dataset_id = None
 
     def __repr__(self):
-        return f"<Slice(id='{self.id}')>"
+        return f"Slice(slice_id='{self.id}', client={self._client})"
 
     def __eq__(self, other):
         if self.id == other.id:
