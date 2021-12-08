@@ -8,9 +8,11 @@ from ..constants import ThresholdComparison
 
 class EvaluationCriterion(ImmutableModel):
     """
-    eval_function_id: ID of evaluation function
-    threshold_comparison: comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
-    threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
+
+    Parameters:
+        eval_function_id: ID of evaluation function
+        threshold_comparison (:class:`ThresholdComparison`): comparator for evaluation. i.e. threshold=0.5 and threshold_comparator > implies that a test only passes if score > 0.5.
+        threshold: numerical threshold that together with threshold comparison, defines success criteria for test evaluation.
     """
 
     # TODO: Having only eval_function_id hurts readability -> Add function name
