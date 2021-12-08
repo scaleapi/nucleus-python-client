@@ -31,7 +31,7 @@ class UnitTest:
     """
 
     id: str
-    connection: Connection
+    connection: Connection = field(repr=False)
     name: str = field(init=False)
     slice_id: str = field(init=False)
 
