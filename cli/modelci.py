@@ -7,17 +7,19 @@ from cli.client import compose_client
 
 @click.group("modelci")
 def modelci():
+    """Interactions with Model CI"""
     pass
 
 
 @modelci.group("unit-tests")
 def unit_tests():
+    """ Model CI Unit Tests """
     pass
 
 
 @unit_tests.command("list")
 def list_unit_tests():
-    # TODO: Read from env
+    """View all your Unit Tests"""
     console = Console()
     with console.status("Finding your unit tests", spinner="dots4"):
         client = compose_client()
