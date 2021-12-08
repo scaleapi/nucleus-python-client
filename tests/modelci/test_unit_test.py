@@ -32,7 +32,7 @@ def test_list_unit_test(CLIENT, test_slice):
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[e.iou() > 0.5],
+        evaluation_criteria=[e.bbox_iou() > 0.5],
     )
 
     unit_tests = CLIENT.modelci.list_unit_tests()

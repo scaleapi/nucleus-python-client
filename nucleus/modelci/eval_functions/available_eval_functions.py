@@ -7,15 +7,6 @@ from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
-IOU_NAME = "IOU"
-
-
-class IOU(BaseEvalFunction):
-    """Intersection over union for all bounding boxes"""
-
-    @classmethod
-    def expected_name(cls) -> str:
-        return "IOU"
 
 
 class BoundingBoxIOU(BaseEvalFunction):
@@ -95,7 +86,6 @@ EvalFunction = Union[
     Type[BoundingBoxRecall],
     Type[CustomEvalFunction],
     Type[EvalFunctionNotAvailable],
-    Type[IOU],
     Type[StandardEvalFunction],
 ]
 
@@ -131,7 +121,6 @@ class AvailableEvalFunctions:
             for f in available_functions
             if not f.is_public
         }
-        self.iou = self._assign_eval_function_if_defined(IOU)  # type: ignore
         self.bbox_iou = self._assign_eval_function_if_defined(BoundingBoxIOU)  # type: ignore
         self.bbox_precision = self._assign_eval_function_if_defined(
             BoundingBoxPrecision  # type: ignore
