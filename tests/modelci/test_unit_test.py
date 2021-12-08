@@ -11,9 +11,6 @@ from tests.helpers import (
 from tests.test_dataset import make_dataset_items
 
 
-@pytest.mark.xfail(
-    reason="Blocked by bugfix being rolled out related to https://github.com/scaleapi/scaleapi/pull/33371"
-)
 def test_unit_test_metric_creation(CLIENT, unit_test):
     # create some dataset_items for the unit test to reference
     iou = CLIENT.modelci.eval_functions.bbox_iou

@@ -15,10 +15,10 @@ from tests.helpers import (
 
 @pytest.mark.integration
 def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
-    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
-    dataset.annotate(annotations=[annotation])
-    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
-    dataset.upload_predictions(model, [prediction])
+    annotations = [BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])]
+    dataset.annotate(annotations=annotations)
+    predictions = [BoxPrediction(**TEST_BOX_PREDICTIONS[0])]
+    dataset.upload_predictions(model, predictions)
 
     iou = CLIENT.modelci.eval_functions.bbox_iou
     unit_test.add_criteria(iou() > EVAL_FUNCTION_THRESHOLD)
@@ -41,9 +41,12 @@ def test_unit_test_evaluation(CLIENT, dataset, model, unit_test):
     )
     assert all(evaluation.model_id == model.id for evaluation in evaluations)
 
+    unit_test_slice = CLIENT.get_slice(unit_test.slice_id)
     item_evaluations = evaluations[0].item_evals
     assert isinstance(item_evaluations, list)
-    assert len(item_evaluations) == 1  # 1 item in slice
+    assert len(item_evaluations) == len(
+        unit_test_slice.items_and_annotations()
+    )
     assert isinstance(item_evaluations[0], UnitTestItemEvaluation)
     assert all(
         eval.evaluation_id == evaluations[0].id for eval in item_evaluations
