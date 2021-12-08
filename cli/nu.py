@@ -6,13 +6,8 @@ from rich.console import Console
 from rich.table import Column, Table
 from shellingham import detect_shell
 
-import nucleus
-
-
-def compose_client():
-    # TODO: Use env var!
-    client = nucleus.NucleusClient("test_0b302578b4164aed9f2454a107cb1915")
-    return client
+from cli.client import compose_client
+from cli.modelci import modelci
 
 
 @click.group("cli")
@@ -58,7 +53,7 @@ def datasets():
             "Name",
             "id",
             Column("url", overflow="fold"),
-            title=":fire: :fire: Datasets",
+            title=":fire: Datasets",
             title_justify="left",
         )
         for ds in datasets:
@@ -68,40 +63,7 @@ def datasets():
     console.print(table)
 
 
-@nu.group("modelci")
-def modelci():
-    pass
-
-
-@modelci.group("unit-tests")
-def unit_tests():
-    pass
-
-
-@unit_tests.command("list")
-def list_unit_tests():
-    # TODO: Read from env
-    console = Console()
-    with console.status("Finding your unit tests", spinner="dots4"):
-        client = compose_client()
-        unit_tests = client.modelci.list_unit_tests()
-        table = Table(
-            "Name",
-            "id",
-            "slice_id",
-            Column("url", overflow="fold"),
-            title=":triangular_flag_on_post: Unit tests",
-            title_justify="left",
-        )
-        for ut in unit_tests:
-            table.add_row(
-                ut.name,
-                ut.id,
-                ut.slice_id,
-                f"https://dashboard.scale.com/nucleus/{ut.id}",
-            )
-    console.print(table)
-
+nu.add_command(modelci)
 
 if __name__ == "__main__":
     nu()
