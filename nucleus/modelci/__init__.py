@@ -72,7 +72,7 @@ class ModelCI:
 
             unit_test = client.modelci.create_unit_test(
                 name="sample_unit_test",
-                slice_id="slc_bx86ea222a6g057x4380",
+                slice_id="YOUR_SLICE_ID",
                 evaluation_criteria=[client.modelci.eval_functions.bbox_iou() > 0.5]
             )
 
