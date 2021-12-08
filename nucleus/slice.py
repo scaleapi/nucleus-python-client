@@ -1,3 +1,4 @@
+import warnings
 from typing import Dict, Iterable, List, Set, Tuple, Union
 
 import requests
@@ -37,18 +38,27 @@ class Slice:
     """
 
     def __init__(self, slice_id: str, client):
-        self.slice_id = slice_id
+        self.id = slice_id
+        self._slice_id = slice_id
         self._client = client
         self._dataset_id = None
 
     def __repr__(self):
-        return f"Slice(slice_id='{self.slice_id}', client={self._client})"
+        return f"<Slice(id='{self.id}')>"
 
     def __eq__(self, other):
-        if self.slice_id == other.slice_id:
+        if self.id == other.id:
             if self._client == other._client:
                 return True
         return False
+
+    @property
+    def slice_id(self):
+        warnings.warn(
+            "Using Slice.slice_id is deprecated. Prefer using Slice.id",
+            DeprecationWarning,
+        )
+        return self._slice_id
 
     @property
     def dataset_id(self):
@@ -75,7 +85,7 @@ class Slice:
                     }]
                 }
         """
-        info = self._client.slice_info(self.slice_id)
+        info = self._client.slice_info(self.id)
         self._dataset_id = info["dataset_id"]
         return info
 
@@ -101,7 +111,7 @@ class Slice:
                 }
         """
         response = self._client.append_to_slice(
-            slice_id=self.slice_id,
+            slice_id=self.id,
             reference_ids=reference_ids,
         )
         return response
@@ -159,7 +169,7 @@ class Slice:
         """
         api_payload = self._client.make_request(
             payload=None,
-            route=f"slice/{self.slice_id}/exportForTraining",
+            route=f"slice/{self.id}/exportForTraining",
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
@@ -206,7 +216,7 @@ class Slice:
                 through Scale Rapid.
         """
         response = self._client.make_request(
-            {}, f"slice/{self.slice_id}/{project_id}/send_to_labeling"
+            {}, f"slice/{self.id}/{project_id}/send_to_labeling"
         )
         return AsyncJob.from_json(response, self._client)
 
@@ -225,7 +235,7 @@ class Slice:
         """
         api_payload = self._client.make_request(
             payload=None,
-            route=f"slice/{self.slice_id}/embeddings",
+            route=f"slice/{self.id}/embeddings",
             requests_command=requests.get,
         )
         return api_payload

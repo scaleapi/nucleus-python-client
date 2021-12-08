@@ -26,7 +26,7 @@ def unit_test(CLIENT, dataset):
     )
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
-        slice_id=slc.slice_id,
+        slice_id=slc.id,
         evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_recall > 0.5],
     )
     yield unit_test
@@ -45,4 +45,4 @@ def test_slice(CLIENT, dataset):
     )
     yield slc
 
-    CLIENT.delete_slice(slc.slice_id)
+    CLIENT.delete_slice(slc.id)
