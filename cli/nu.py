@@ -2,11 +2,9 @@ import os.path
 import shutil
 
 import click
-from rich.console import Console
-from rich.table import Column, Table
 from shellingham import detect_shell
 
-from cli.client import compose_client
+from cli.datasets import datasets
 from cli.modelci import modelci
 
 
@@ -43,27 +41,8 @@ def install_completion():
     click.echo(f"Don't forget to `source {rc_path}")
 
 
-@nu.command("datasets")
-def datasets():
-    console = Console()
-    with console.status("Finding your Datasets!", spinner="dots4"):
-        client = compose_client()
-        datasets = client.datasets
-        table = Table(
-            "Name",
-            "id",
-            Column("url", overflow="fold"),
-            title=":fire: Datasets",
-            title_justify="left",
-        )
-        for ds in datasets:
-            table.add_row(
-                ds.name, ds.id, f"https://dashboard.scale.com/nucleus/{ds.id}"
-            )
-    console.print(table)
-
-
-nu.add_command(modelci)
+nu.add_command(modelci)  # type: ignore
+nu.add_command(datasets)  # type: ignore
 
 if __name__ == "__main__":
     nu()
