@@ -31,7 +31,7 @@ def test_list_unit_test(CLIENT, test_slice):
     e = CLIENT.modelci.eval_functions
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
-        slice_id=test_slice.slice_id,
+        slice_id=test_slice.id,
         evaluation_criteria=[e.iou() > 0.5],
     )
 
@@ -54,7 +54,7 @@ def test_unit_test_items(CLIENT, dataset):
 
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
-        slice_id=slc.slice_id,
+        slice_id=slc.id,
         evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_iou() > 0.5],
     )
 
@@ -71,6 +71,6 @@ def test_no_criteria_raises_error(CLIENT, test_slice):
     with pytest.raises(CreateUnitTestError):
         CLIENT.modelci.create_unit_test(
             name=test_name,
-            slice_id=test_slice.slice_id,
+            slice_id=test_slice.id,
             evaluation_criteria=[],
         )
