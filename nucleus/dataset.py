@@ -500,22 +500,7 @@ class Dataset:
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
 
-            if not self.is_scene:
-                raise Exception(
-                    "Your dataset is not a scene dataset but only supports single dataset items. "
-                    "In order to be able to add scenes, please create another dataset with "
-                    "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
-                    "an existing scene dataset."
-                )
             return self.append_scenes(scenes, update, asynchronous)
-
-        if self.is_scene:
-            raise Exception(
-                "Your dataset is a scene dataset and does not support the upload of single dataset items. "
-                "In order to be able to add dataset items, please create another dataset with "
-                "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
-                "an existing dataset supporting dataset items."
-            )
 
         check_for_duplicate_reference_ids(dataset_items)
 
@@ -552,6 +537,14 @@ class Dataset:
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
         # TODO: make private in favor of Dataset.append invocation
+        if not self.is_scene:
+            raise Exception(
+                "Your dataset is not a scene dataset but only supports single dataset items. "
+                "In order to be able to add scenes, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
+                "an existing scene dataset."
+            )
+
         for scene in scenes:
             scene.validate()
 
@@ -1282,5 +1275,13 @@ class Dataset:
         Returns:
             UploadResponse
         """
+        if self.is_scene:
+            raise Exception(
+                "Your dataset is a scene dataset and does not support the upload of single dataset items. "
+                "In order to be able to add dataset items, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
+                "an existing dataset supporting dataset items."
+            )
+
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)
