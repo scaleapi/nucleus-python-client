@@ -2,7 +2,7 @@ import click
 from rich.console import Console
 from rich.table import Column, Table
 
-from cli.client import compose_client
+from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 
 
@@ -17,7 +17,7 @@ def list_datasets():
     """List all available datasets"""
     console = Console()
     with console.status("Finding your Datasets!", spinner="dots4"):
-        client = compose_client()
+        client = init_client()
         all_datasets = client.datasets
         table = Table(
             "Name",
@@ -36,7 +36,7 @@ def list_datasets():
 def delete_dataset(id):
     """Delete a dataset"""
     console = Console()
-    client = compose_client()
+    client = init_client()
     dataset = [ds for ds in client.datasets if ds.id == id][0]
     delete_string = click.prompt(
         click.style(f"Type 'DELETE' to delete dataset: {dataset}", fg="red")

@@ -1,9 +1,11 @@
+import functools
 import os
 
 import nucleus
 
 
-def compose_client():
+@functools.lru_cache()
+def init_client():
     api_key = os.environ.get("NUCLEUS_API_KEY", None)
     if api_key:
         client = nucleus.NucleusClient(api_key)

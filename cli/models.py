@@ -2,7 +2,7 @@ import click
 from rich.console import Console
 from rich.table import Column, Table
 
-from cli.client import compose_client
+from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 
 
@@ -15,7 +15,7 @@ def models():
 def list_models():
     console = Console()
     with console.status("Finding your Models!", spinner="dots4"):
-        client = compose_client()
+        client = init_client()
         table = Table("name", "id", Column("url", overflow="fold"))
         models = client.models
         for m in models:
