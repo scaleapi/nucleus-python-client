@@ -8,7 +8,7 @@ from cli.helpers.nucleus_url import nucleus_url
 
 @click.group("datasets")
 def datasets():
-    """Common operations for datasets"""
+    """Common operations for Datasets"""
     pass
 
 

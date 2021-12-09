@@ -12,6 +12,7 @@ from cli.slices import slices
 
 @click.group("cli")
 def nu():
+    """Nucleus CLI or nu"""
     pass
 
 
