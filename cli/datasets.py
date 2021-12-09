@@ -3,15 +3,18 @@ from rich.console import Console
 from rich.table import Column, Table
 
 from cli.client import compose_client
+from cli.helpers.nucleus_url import nucleus_url
 
 
 @click.group("datasets")
 def datasets():
+    """Common operations for datasets"""
     pass
 
 
 @datasets.command("list")
 def list_datasets():
+    """List all available datasets"""
     console = Console()
     with console.status("Finding your Datasets!", spinner="dots4"):
         client = compose_client()
@@ -24,15 +27,14 @@ def list_datasets():
             title_justify="left",
         )
         for ds in all_datasets:
-            table.add_row(
-                ds.name, ds.id, f"https://dashboard.scale.com/nucleus/{ds.id}"
-            )
+            table.add_row(ds.name, ds.id, nucleus_url(ds.id))
     console.print(table)
 
 
 @datasets.command("delete")
 @click.option("--id", prompt=True)
 def delete_dataset(id):
+    """Delete a dataset"""
     console = Console()
     client = compose_client()
     dataset = [ds for ds in client.datasets if ds.id == id][0]

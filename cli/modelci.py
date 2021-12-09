@@ -3,6 +3,7 @@ from rich.console import Console
 from rich.table import Column, Table
 
 from cli.client import compose_client
+from cli.helpers.nucleus_url import nucleus_url
 
 
 @click.group("modelci")
@@ -33,10 +34,5 @@ def list_unit_tests():
             title_justify="left",
         )
         for ut in unit_tests:
-            table.add_row(
-                ut.name,
-                ut.id,
-                ut.slice_id,
-                f"https://dashboard.scale.com/nucleus/{ut.id}",
-            )
+            table.add_row(ut.name, ut.id, ut.slice_id, nucleus_url(ut.id))
     console.print(table)

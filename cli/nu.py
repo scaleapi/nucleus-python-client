@@ -7,6 +7,7 @@ from shellingham import detect_shell
 from cli.datasets import datasets
 from cli.modelci import modelci
 from cli.models import models
+from cli.slices import slices
 
 
 @click.group("cli")
@@ -16,7 +17,7 @@ def nu():
 
 @nu.command("install-completion")
 def install_completion():
-    """TODO: https://click.palletsprojects.com/en/8.0.x/shell-completion/, click_completion is outdated"""
+    """Install shell completion script to your rc file"""
     shell, _ = detect_shell()
     if shell == "zsh":
         rc_path = "~/.zshrc"
@@ -45,6 +46,7 @@ def install_completion():
 nu.add_command(modelci)  # type: ignore
 nu.add_command(datasets)  # type: ignore
 nu.add_command(models)  # type: ignore
+nu.add_command(slices)  # type: ignore
 
 if __name__ == "__main__":
     nu()

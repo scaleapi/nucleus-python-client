@@ -4,6 +4,9 @@ import nucleus
 
 
 def compose_client():
-    # TODO: Use env var!
-    client = nucleus.NucleusClient(os.environ["NUCLEUS_API_KEY"])
+    api_key = os.environ.get("NUCLEUS_API_KEY", None)
+    if api_key:
+        client = nucleus.NucleusClient(api_key)
+    else:
+        raise RuntimeError("No NUCLEUS_API_KEY set")
     return client
