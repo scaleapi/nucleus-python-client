@@ -170,7 +170,7 @@ class Model:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
             unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
+                "sample_unit_test", "YOUR_SLICE_ID"
             )
 
             model.evaluate(["sample_unit_test"])

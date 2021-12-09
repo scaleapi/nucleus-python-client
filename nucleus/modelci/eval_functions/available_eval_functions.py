@@ -36,7 +36,9 @@ class BoundingBoxPrecision(BaseEvalFunction):
 class CustomEvalFunction(BaseEvalFunction):
     @classmethod
     def expected_name(cls) -> str:
-        return "private_custom_function"  # Placeholder: See super().eval_func_entry for actual name
+        raise NotImplementedError(
+            "Custm evaluation functions are coming soon"
+        )  # Placeholder: See super().eval_func_entry for actual name
 
 
 class StandardEvalFunction(BaseEvalFunction):
