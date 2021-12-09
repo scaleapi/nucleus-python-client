@@ -4,6 +4,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.3.0) - 2021-08-12
+
+### Added
+- `NucleusClient.modelci` client extension that houses all features related to Model CI, a continuous integration and testing framework for evaluation machine learning models.
+- `NucleusClient.modelci.UnitTest`- class to represent a Model CI unit test.
+- `NucleusClient.modelci.UnitTestEvaluation`- class to represent an evaluation result of a Model CI unit test.
+- `NucleusClient.modelci.UnitTestItemEvaluation`- class to represent an evaluation result of an individual dataset item within a Model CI unit test.
+- `NucleusClient.modelci.eval_functions`- Collection class housing a library of standard evaluation functions used in computer vision.
+
 ## [0.3.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.3.0) - 2021-11-23
 
 ### Added

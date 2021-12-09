@@ -1,4 +1,10 @@
 """Model CI Python Library."""
+
+__all__ = [
+    "ModelCI",
+    "UnitTest",
+]
+
 from .client import ModelCI
 from .constants import ThresholdComparison
 from .data_transfer_objects.eval_function import (

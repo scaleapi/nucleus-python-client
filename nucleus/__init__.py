@@ -18,7 +18,6 @@ __all__ = [
     "LidarScene",
     "LidarScene",
     "Model",
-    "ModelCI",
     "ModelCreationError",
     # "MultiCategoryAnnotation", # coming soon!
     "NotFoundError",
@@ -33,7 +32,6 @@ __all__ = [
     "SegmentationAnnotation",
     "SegmentationPrediction",
     "Slice",
-    "UnitTest",
 ]
 
 import os
@@ -108,7 +106,7 @@ from .job import AsyncJob
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
-from .modelci import AvailableEvalFunctions, ModelCI, UnitTest, UnitTestMetric
+from .modelci import ModelCI
 from .payload_constructor import (
     construct_annotation_payload,
     construct_append_payload,
