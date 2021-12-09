@@ -41,6 +41,12 @@ from .prediction import (
 )
 from .scene import LidarScene
 
+STRING_REPLACEMENTS = {
+    "\\\\n": "\n",
+    "\\\\t": "\t",
+    '\\\\"': '"',
+}
+
 
 def format_prediction_response(
     response: dict,
@@ -227,3 +233,9 @@ def serialize_and_write_to_presigned_url(
     strio.seek(0)
     upload_to_presigned_url(response["signed_url"], strio)
     return request_id
+
+
+def replace_double_slashes(s: str) -> str:
+    for key, val in STRING_REPLACEMENTS.items():
+        s = s.replace(key, val)
+    return s

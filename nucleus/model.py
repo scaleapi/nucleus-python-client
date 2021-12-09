@@ -1,7 +1,10 @@
 from typing import Dict, List, Optional, Union
 
+import requests
+
 from .constants import METADATA_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
+from .job import AsyncJob
 from .model_run import ModelRun
 from .prediction import (
     BoxPrediction,
@@ -159,3 +162,28 @@ class Model:
         model_run.predict(predictions, asynchronous=asynchronous)
 
         return model_run
+
+    def evaluate(self, unit_test_names: List[str]) -> AsyncJob:
+        """Evaluates this on the specified Unit Tests. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+            unit_test = client.modelci.create_unit_test(
+                "sample_unit_test", "YOUR_SLICE_ID"
+            )
+
+            model.evaluate(["sample_unit_test"])
+
+        Args:
+            unit_test_names: list of unit tests to evaluate
+
+        Returns:
+            AsyncJob object of evaluation job
+        """
+        response = self._client.make_request(
+            {"test_names": unit_test_names},
+            f"modelci/{self.id}/evaluate",
+            requests_command=requests.post,
+        )
+        return AsyncJob.from_json(response, self._client)

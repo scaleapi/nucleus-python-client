@@ -1,8 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from nucleus.data_transfer_object.dict_compatible_model import (
-    DictCompatibleModel,
-)
+from nucleus.pydantic_base import DictCompatibleModel
 
 
 class DatasetInfo(DictCompatibleModel):

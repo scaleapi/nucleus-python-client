@@ -35,7 +35,6 @@ __all__ = [
 ]
 
 import os
-import time
 from typing import Dict, List, Optional, Sequence, Union
 
 import pkg_resources
@@ -57,6 +56,7 @@ from .annotation import (
     Segment,
     SegmentationAnnotation,
 )
+from .connection import Connection
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATIONS_IGNORED_KEY,
@@ -106,6 +106,7 @@ from .job import AsyncJob
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
+from .modelci import ModelCI
 from .payload_constructor import (
     construct_annotation_payload,
     construct_append_payload,
@@ -161,6 +162,9 @@ class NucleusClient:
         self._use_notebook = use_notebook
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
+        self._connection = Connection(self.api_key, self.endpoint)
+
+        self.modelci = ModelCI(self.api_key, self.endpoint)
 
     def __repr__(self):
         return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"
@@ -882,29 +886,9 @@ class NucleusClient:
         Returns:
             Response payload as JSON dict.
         """
-        endpoint = f"{self.endpoint}/{route}"
-
-        logger.info("Posting to %s", endpoint)
-
-        for retry_wait_time in RetryStrategy.sleep_times:
-            response = requests_command(
-                endpoint,
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                auth=(self.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            )
-            logger.info(
-                "API request has response code %s", response.status_code
-            )
-            if response.status_code not in RetryStrategy.statuses:
-                break
-            time.sleep(retry_wait_time)
-
-        if not response.ok:
-            self.handle_bad_response(endpoint, requests_command, response)
-
-        return response.json()
+        if payload is None:
+            payload = {}
+        return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
     def handle_bad_response(
         self,
@@ -913,6 +897,6 @@ class NucleusClient:
         requests_response=None,
         aiohttp_response=None,
     ):
-        raise NucleusAPIError(
+        self._connection.handle_bad_response(
             endpoint, requests_command, requests_response, aiohttp_response
         )

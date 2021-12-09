@@ -1,5 +1,4 @@
 import copy
-import uuid
 
 import pytest
 
@@ -13,13 +12,13 @@ from nucleus.constants import (
 from nucleus.job import AsyncJob
 
 from .helpers import (
-    DATASET_WITH_AUTOTAG,
     NUCLEUS_PYTEST_USER_ID,
     TEST_BOX_ANNOTATIONS,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
     TEST_PROJECT_ID,
     TEST_SLICE_NAME,
+    get_uuid,
     reference_id_from_url,
 )
 
@@ -175,7 +174,7 @@ def test_slice_send_to_labeling(dataset):
 
     # Slice creation
     slc = dataset.create_slice(
-        name=(TEST_SLICE_NAME + str(uuid.uuid4())[-10:]),
+        name=(TEST_SLICE_NAME + get_uuid()),
         reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
     )
 

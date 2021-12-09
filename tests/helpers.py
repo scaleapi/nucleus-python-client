@@ -1,10 +1,12 @@
 import os
+import uuid
 from pathlib import Path
 
 from nucleus import BoxPrediction, DatasetItem
+from nucleus.modelci import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
-
+N_UUID_CHARACTERS = 10
 TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
@@ -14,6 +16,9 @@ TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
 DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
+
+EVAL_FUNCTION_THRESHOLD = 0.5
+EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN
 
 
 TEST_IMG_URLS = [
@@ -401,6 +406,10 @@ def assert_category_prediction_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def get_uuid():
+    return str(uuid.uuid4())[-N_UUID_CHARACTERS:]
 
 
 def running_as_nucleus_pytest_user(client):

@@ -18,6 +18,14 @@ repos:
 
 -   repo: local
     hooks:
+      - id: system
+        name: isort
+        entry: poetry run isort .
+        pass_filenames: false
+        language: system
+
+-   repo: local
+    hooks:
     - id: system
       name: pylint
       entry: poetry run pylint nucleus
@@ -29,13 +37,5 @@ repos:
     - id: system
       name: mypy
       entry: poetry run mypy --ignore-missing-imports nucleus
-      pass_filenames: false
-      language: system
-
--   repo: local
-    hooks:
-    - id: system
-      name: isort
-      entry: poetry run isort .
       pass_filenames: false
       language: system
