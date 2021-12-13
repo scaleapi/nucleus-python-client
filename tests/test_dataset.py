@@ -77,7 +77,7 @@ def dataset(CLIENT):
 
 @pytest.fixture()
 def dataset_scene(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=True)
+    CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=True)
 
 
 def make_dataset_items():
