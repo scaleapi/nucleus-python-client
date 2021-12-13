@@ -866,6 +866,18 @@ class NucleusClient:
             requests_command=requests.post,
         )
 
+    def delete(self, route: str):
+        return self._connection.delete(route)
+
+    def get(self, route: str):
+        return self._connection.get(route)
+
+    def post(self, payload: dict, route: str):
+        return self._connection.post(payload, route)
+
+    def put(self, payload: dict, route: str):
+        return self._connection.put(payload, route)
+
     # TODO: Fix return type, can be a list as well. Brings on a lot of mypy errors ...
     def make_request(
         self,
