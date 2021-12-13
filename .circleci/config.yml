@@ -9,6 +9,7 @@ jobs:
     docker:
       - image: python:3.6-buster
     resource_class: small
+    parallelism: 6
     steps:
       - checkout # checkout source code to working directory
       - run:
@@ -43,7 +44,9 @@ jobs:
           name: Pytest Test Cases
           command: | # Run test suite, uses NUCLEUS_TEST_API_KEY env variable
             mkdir test_results
-            poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml
+            set -e
+            TEST_FILES=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings)
+            poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml $TEST_FILES
             poetry run coverage report
             poetry run coverage html
       - store_test_results:
