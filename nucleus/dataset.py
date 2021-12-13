@@ -36,12 +36,15 @@ from .constants import (
     BACKFILL_JOB_KEY,
     DATASET_ID_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
+    EMBEDDING_DIMENSION_KEY,
+    EMBEDDINGS_URL_KEY,
     EXPORTED_ROWS,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    SLICE_ID_KEY,
     UPDATE_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -60,6 +63,7 @@ from .payload_constructor import (
     construct_taxonomy_payload,
 )
 from .scene import LidarScene, Scene, check_all_scene_paths_remote
+from .slice import Slice
 from .upload_response import UploadResponse
 
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -480,7 +484,7 @@ class Dataset:
             assert (
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
-            return self.append_scenes(scenes, update, asynchronous)
+            return self._append_scenes(scenes, update, asynchronous)
 
         check_for_duplicate_reference_ids(dataset_items)
 
@@ -511,6 +515,14 @@ class Dataset:
 
     @deprecated("Prefer using Dataset.append instead.")
     def append_scenes(
+        self,
+        scenes: List[LidarScene],
+        update: Optional[bool] = False,
+        asynchronous: Optional[bool] = False,
+    ) -> Union[dict, AsyncJob]:
+        return self._append_scenes(scenes, update, asynchronous)
+
+    def _append_scenes(
         self,
         scenes: List[LidarScene],
         update: Optional[bool] = False,
@@ -652,7 +664,7 @@ class Dataset:
         self,
         name: str,
         reference_ids: List[str],
-    ):
+    ) -> Slice:
         """Creates a :class:`Slice` of dataset items within a dataset.
 
         Parameters:
@@ -662,9 +674,11 @@ class Dataset:
         Returns:
             :class:`Slice`: The newly constructed slice item.
         """
-        return self._client.create_slice(
-            self.id, {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
+        payload = {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
+        response = self._client.make_request(
+            payload, f"dataset/{self.id}/create_slice"
         )
+        return Slice(response[SLICE_ID_KEY], self._client)
 
     @sanitize_string_args
     def delete_item(self, reference_id: str) -> dict:
@@ -755,12 +769,15 @@ class Dataset:
         Returns:
             :class:`AsyncJob`: Asynchronous job object to track processing status.
         """
+        res = self._client.post(
+            {
+                EMBEDDINGS_URL_KEY: embeddings_urls,
+                EMBEDDING_DIMENSION_KEY: embedding_dim,
+            },
+            f"indexing/{self.id}",
+        )
         return AsyncJob.from_json(
-            self._client.create_custom_index(
-                self.id,
-                embeddings_urls,
-                embedding_dim,
-            ),
+            res,
             self._client,
         )
 

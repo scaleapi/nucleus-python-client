@@ -161,8 +161,8 @@ class ModelRun:
         :param reference_id: reference_id of a dataset item.
         :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         """
-        response = self._client.predictions_ref_id(
-            self.model_run_id, reference_id
+        response = self._client.get(
+            f"modelRun/{self.model_run_id}/refloc/{reference_id}"
         )
         return format_prediction_response(response)
 
