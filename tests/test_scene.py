@@ -39,6 +39,7 @@ def dataset_scene(CLIENT):
     response = CLIENT.delete_dataset(ds.id)
     assert response == {"message": "Beginning dataset deletion..."}
 
+
 @pytest.fixture()
 def dataset_item(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=False)
@@ -300,9 +301,9 @@ def test_scene_and_cuboid_upload_sync(dataset_scene):
     assert response["annotations_processed"] == len(annotations)
     assert response["annotations_ignored"] == 0
 
-    response_annotations = dataset_scene.refloc(lidar_item_ref)[ANNOTATIONS_KEY][
-        "cuboid"
-    ]
+    response_annotations = dataset_scene.refloc(lidar_item_ref)[
+        ANNOTATIONS_KEY
+    ]["cuboid"]
     assert len(response_annotations) == 1
     assert_cuboid_annotation_matches_dict(
         response_annotations[0], TEST_CUBOID_ANNOTATIONS[0]

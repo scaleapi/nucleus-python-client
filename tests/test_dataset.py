@@ -216,6 +216,7 @@ def test_dataset_append(dataset):
     response = dataset.append(make_dataset_items())
     check_is_expected_response(response)
 
+
 def test_scene_dataset_append(dataset):
     # Plain image upload
     ds_items_plain = []
@@ -232,6 +233,7 @@ def test_scene_dataset_append(dataset):
 
     with pytest.raises(Exception):
         dataset.append(ds_items_plain)
+
 
 def test_dataset_name_access(CLIENT, dataset):
     assert dataset.name == TEST_DATASET_NAME
