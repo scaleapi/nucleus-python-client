@@ -186,7 +186,7 @@ def upload_annotations(dataset: Dataset):
 
 
 def upload_predictions(dataset: Dataset):
-    model = client().add_model(
+    model = client().create_model(
         name="Load test model", reference_id="model_" + str(time.time())
     )
     run = model.create_run(

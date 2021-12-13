@@ -59,7 +59,7 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     model_reference = "model_" + str(time.time())
     # Creation
-    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
+    model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
     m_run = model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
     m_run.commit()
 
@@ -87,7 +87,7 @@ def test_model_creation_and_listing(CLIENT, dataset):
 # Until we fully remove the other endpoints (and then migrate those tests) just quickly test the basics of the new ones since they are basically just simple wrappers around the old ones.
 def test_new_model_endpoints(CLIENT, dataset: Dataset):
     model_reference = "model_" + str(time.time())
-    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
+    model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
     predictions = [BoxPrediction(**TEST_BOX_PREDICTIONS[0])]
 
     dataset.upload_predictions(model, predictions=predictions)
