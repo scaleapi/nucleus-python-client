@@ -22,9 +22,10 @@ def list_slices():
             branch = tree.add(f"{ds.id}: {ds.name}")
             ds_slices = ds.slices
             if ds_slices:
-                for slc in ds_slices:
-                    slice_url = nucleus_url(f"{ds.id}/{slc}")
-                    branch.add(f"{slc}: {slice_url}")
+                for slc_id in ds_slices:
+                    slice_url = nucleus_url(f"{ds.id}/{slc_id}")
+                    slice_info = client.get_slice(slc_id).info()
+                    branch.add(f"{slc_id}: {slice_info['name']} ({slice_url})")
                     live.update(tree)
             else:
                 branch.add("No slices in this dataset ... :sleeping:")
