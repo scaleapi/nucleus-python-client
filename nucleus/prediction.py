@@ -348,9 +348,9 @@ class CategoryPrediction(CategoryAnnotation):
 
     Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle).
+        reference_id: The reference ID of the image you wish to apply this annotation to.
         taxonomy_name: The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
-        reference_id: The reference ID of the image you wish to apply this annotation to.
         confidence: 0-1 indicating the confidence of the prediction.
         class_pdf: An optional complete class probability distribution on this
             prediction. Each value should be between 0 and 1 (inclusive), and sum up to
@@ -365,8 +365,8 @@ class CategoryPrediction(CategoryAnnotation):
     def __init__(
         self,
         label: str,
-        taxonomy_name: str,
         reference_id: str,
+        taxonomy_name: Optional[str] = None,
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,

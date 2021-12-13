@@ -1,11 +1,12 @@
-import time
+import os
+import uuid
 from pathlib import Path
-from urllib.parse import urlparse
 
 from nucleus import BoxPrediction, DatasetItem
+from nucleus.modelci import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
-
+N_UUID_CHARACTERS = 10
 TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
@@ -15,6 +16,9 @@ TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
 DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
+
+EVAL_FUNCTION_THRESHOLD = 0.5
+EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN
 
 
 TEST_IMG_URLS = [
@@ -168,6 +172,14 @@ TEST_CATEGORY_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_DEFAULT_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Category Label ${i}",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_MULTICATEGORY_ANNOTATIONS = [
     {
         "labels": [
@@ -176,6 +188,17 @@ TEST_MULTICATEGORY_ANNOTATIONS = [
         ],
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "taxonomy_name": "[Pytest] MultiCategory Taxonomy 1",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
+    {
+        "labels": [
+            f"[Pytest] MultiCategory Label ${i}",
+            f"[Pytest] MultiCategory Label ${i+1}",
+        ],
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
     }
     for i in range(len(TEST_IMG_URLS))
 ]
@@ -253,6 +276,20 @@ TEST_CATEGORY_PREDICTIONS = [
     for i in range(len(TEST_CATEGORY_ANNOTATIONS))
 ]
 
+TEST_DEFAULT_CATEGORY_PREDICTIONS = [
+    {
+        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_CATEGORY_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_DEFAULT_CATEGORY_ANNOTATIONS))
+]
+
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
 
 
@@ -310,18 +347,20 @@ def assert_category_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert annotation_instance.label == annotation_dict["label"]
-    assert (
-        annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
-    )
+    if annotation_instance.taxonomy_name:
+        assert annotation_instance.taxonomy_name == annotation_dict.get(
+            "taxonomy_name", None
+        )
 
 
 def assert_multicategory_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
     assert set(annotation_instance.labels) == set(annotation_dict["labels"])
-    assert (
-        annotation_instance.taxonomy_name == annotation_dict["taxonomy_name"]
-    )
+    if annotation_instance.taxonomy_name:
+        assert annotation_instance.taxonomy_name == annotation_dict.get(
+            "taxonomy_name", None
+        )
 
 
 def assert_segmentation_annotation_matches_dict(
@@ -367,3 +406,15 @@ def assert_category_prediction_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def get_uuid():
+    return str(uuid.uuid4())[-N_UUID_CHARACTERS:]
+
+
+def running_as_nucleus_pytest_user(client):
+    if NUCLEUS_PYTEST_USER_ID in client.api_key:
+        return True
+    if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
+        return True
+    return False

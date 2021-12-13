@@ -34,9 +34,12 @@ from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     DATASET_IS_SCENE_KEY,
+    BACKFILL_JOB_KEY,
+    DATASET_ID_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EXPORTED_ROWS,
     KEEP_HISTORY_KEY,
+    MESSAGE_KEY,
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
@@ -595,9 +598,12 @@ class Dataset:
                     }
                 }
         """
-        response = self._client.dataitem_iloc(self.id, i)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/iloc/{i}", requests.get
+        )
         return format_dataset_item_response(response)
 
+    @sanitize_string_args
     def refloc(self, reference_id: str) -> dict:
         """Retrieves a dataset item by reference ID.
 
@@ -618,7 +624,9 @@ class Dataset:
                     }
                 }
         """
-        response = self._client.dataitem_ref_id(self.id, reference_id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/refloc/{reference_id}", requests.get
+        )
         return format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
@@ -642,7 +650,9 @@ class Dataset:
                     }
                 }
         """
-        response = self._client.dataitem_loc(self.id, dataset_item_id)
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/loc/{dataset_item_id}", requests.get
+        )
         return format_dataset_item_response(response)
 
     def ground_truth_loc(self, reference_id: str, annotation_id: str):
@@ -721,6 +731,28 @@ class Dataset:
         """
         return self._client.list_autotags(self.id)
 
+    def update_autotag(self, autotag_id):
+        """Will rerun inference on all dataset items in the dataset.
+        For now this endpoint does not try to skip already inferenced items, but this
+        improvement is planned for the future. This means that for now, you can only
+        have one job running at time, so please await the result using job.sleep_until_complete()
+        before launching another job.
+
+        Parameters:
+            autotag_id: Id of the autotag to re-inference. You can figure out which
+            id you want by using dataset.list_autotags, or by looking at the URL in the
+            manage autotag page.
+
+        Returns:
+          :class:`AsyncJob`: Asynchronous job object to track processing status.
+        """
+        return AsyncJob.from_json(
+            payload=self._client.make_request(
+                {}, f"autotag/{autotag_id}", requests.post
+            ),
+            client=self._client,
+        )
+
     def create_custom_index(
         self, embeddings_urls: List[str], embedding_dim: int
     ):
@@ -793,9 +825,21 @@ class Dataset:
                 {
                     "dataset_id": str,
                     "message": str
+                    "backfill_job": AsyncJob,
                 }
         """
-        return self._client.set_continuous_indexing(self.id, enable)
+        preprocessed_response = self._client.set_continuous_indexing(
+            self.id, enable
+        )
+        response = {
+            DATASET_ID_KEY: preprocessed_response[DATASET_ID_KEY],
+            MESSAGE_KEY: preprocessed_response[MESSAGE_KEY],
+        }
+        if enable:
+            response[BACKFILL_JOB_KEY] = (
+                AsyncJob.from_json(preprocessed_response, self._client),
+            )
+        return response
 
     def create_image_index(self):
         """Creates or updates image index by generating embeddings for images that do not already have embeddings.
