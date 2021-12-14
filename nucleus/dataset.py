@@ -1016,7 +1016,7 @@ class Dataset:
             :class:`Scene<LidarScene>`: A scene object containing frames, which
             in turn contain pointcloud or image items.
         """
-        return Scene.from_json(
+        return LidarScene.from_json(
             self._client.make_request(
                 payload=None,
                 route=f"dataset/{self.id}/scene/{reference_id}",
