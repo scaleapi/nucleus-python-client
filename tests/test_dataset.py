@@ -217,7 +217,7 @@ def test_dataset_append(dataset):
     check_is_expected_response(response)
 
 
-def test_scene_dataset_append(dataset):
+def test_scene_dataset_append(dataset_scene):
     # Plain image upload
     ds_items_plain = []
     for i, url in enumerate(TEST_IMG_URLS):
@@ -232,7 +232,7 @@ def test_scene_dataset_append(dataset):
         )
 
     with pytest.raises(Exception):
-        dataset.append(ds_items_plain)
+        dataset_scene.append(ds_items_plain)
 
 
 def test_dataset_name_access(CLIENT, dataset):

@@ -349,7 +349,5 @@ def test_scene_upload_async_item_dataset(dataset_item):
     ]
     update = payload[UPDATE_KEY]
 
-    dataset_item.append(scenes, update=update, asynchronous=True)
-
     with pytest.raises(Exception):
         dataset_item.append(scenes, update=update, asynchronous=True)
