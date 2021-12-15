@@ -236,6 +236,12 @@ class NucleusClient:
     ) -> List[AsyncJob]:
         """Fetches all of your running jobs in Nucleus.
 
+        Parameters:
+            show_completed: Whether to fetch completed and errored jobs or just
+              running jobs. Default behavior is False.
+            date_limit: Only fetch jobs that were started after this date. Default
+              behavior is 2 weeks prior to the current date.
+
         Returns:
             List[:class:`AsyncJob`]: List of running asynchronous jobs
             associated with the client API key.
