@@ -342,6 +342,65 @@ def test_scene_upload_async(dataset_scene):
 
 
 @pytest.mark.integration
+def test_scene_upload_and_update(dataset_scene):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    reference_ids = [s.reference_id for s in scenes]
+    update = payload[UPDATE_KEY]
+
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+    status = job.status()
+
+    assert status == {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "message": {
+            "scene_upload_progress": {
+                "errors": [],
+                "dataset_id": dataset_scene.id,
+                "new_scenes": len(scenes),
+                "ignored_scenes": 0,
+                "scenes_errored": 0,
+                "updated_scenes": 0,
+            }
+        },
+        "job_progress": "1.00",
+        "completed_steps": 1,
+        "total_steps": 1,
+    }
+
+    fetched_scenes = [
+        dataset_scene.get_scene(ref_id) for ref_id in reference_ids
+    ]
+    assert len(fetched_scenes) == len(scenes)
+
+    job2 = dataset_scene.append(scenes, update=True, asynchronous=True)
+    job2.sleep_until_complete()
+    status2 = job2.status()
+
+    assert status2 == {
+        "job_id": job2.job_id,
+        "status": "Completed",
+        "message": {
+            "scene_upload_progress": {
+                "errors": [],
+                "dataset_id": dataset_scene.id,
+                "new_scenes": 0,
+                "ignored_scenes": 0,
+                "scenes_errored": 0,
+                "updated_scenes": len(scenes),
+            }
+        },
+        "job_progress": "1.00",
+        "completed_steps": 1,
+        "total_steps": 1,
+    }
+
+
+@pytest.mark.integration
 def test_scene_upload_async_item_dataset(dataset_item):
     payload = TEST_LIDAR_SCENES
     scenes = [
