@@ -195,7 +195,7 @@ class PolygonAnnotation(Annotation):
 
     Parameters:
         label (str): The label for this annotation.
-        vertices List[:class:`Point`]: The list of points making up the polygon.
+        vertices (List[:class:`Point`]): The list of points making up the polygon.
         reference_id (str): User-defined ID of the image to which to apply this
             annotation.
         annotation_id (Optional[str]): The annotation ID that uniquely identifies

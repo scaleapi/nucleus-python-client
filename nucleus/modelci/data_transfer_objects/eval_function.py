@@ -41,6 +41,6 @@ class EvalFunctionEntry(ImmutableModel):
 
 
 class GetEvalFunctions(ImmutableModel):
-    """ Expected format from GET modelci/eval_fn"""
+    """Expected format from GET modelci/eval_fn"""
 
     eval_functions: List[EvalFunctionEntry]
