@@ -97,7 +97,7 @@ class Dataset:
 
         # Or, retrieve existing dataset by ID
         # This ID can be fetched using client.list_datasets() or from a dashboard URL
-        existing_dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+        existing_dataset = client.get_dataset("YOUR_DATASET_ID")
     """
 
     def __init__(self, dataset_id, client, name=None):
@@ -396,20 +396,19 @@ class Dataset:
     ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """Appends items or scenes to a dataset.
 
-        Attention (!!!)
-        You will only be able to add :class:`DatasetItems<DatasetItem>`s to a dataset supporting "
-        ":class:`DatasetItems<DatasetItem>`s.
-        Also, you will only be able to add :class:`Scenes<LidarScene>`s to a dataset supporting "
-        ":class:`Scenes<LidarScene>`s.
-        A :class:`DatasetItems<DatasetItem>` dataset can be created with the is_scene flag set to False.
-        A :class:`Scenes<LidarScene>` dataset can be created with the is_scene flag set to True.
+        .. note::
+            Datasets can only accept one of :class:`DatasetItems <DatasetItem>`
+            or :class:`Scenes <LidarScene>`, never both.
+
+            This behavior is set during Dataset :meth:`creation
+            <NucleusClient.create_dataset>` with the ``is_scene`` flag.
 
         ::
 
             import nucleus
 
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("YOUR_DATASET_ID")
 
             local_item = nucleus.DatasetItem(
               image_location="./1.jpg",
@@ -762,8 +761,8 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("YOUR_DATASET_ID")
 
             embeddings = {
                 "reference_id_0": [0.1, 0.2, 0.3],
@@ -907,8 +906,8 @@ class Dataset:
         ::
 
             import nucleus
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("YOUR_DATASET_ID")
 
             response = dataset.add_taxonomy(
                 taxonomy_name="clothing_type",
@@ -1076,12 +1075,12 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset(dataset_id="ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset(dataset_id="YOUR_DATASET_ID")
 
             model = client.get_model(
-                model_id="prj_bybpa3gjmjc30es761y0",
-                dataset_id="ds_bwkezj6g5c4g05gqp1eg"
+                model_id="YOUR_MODEL_PRJ_ID",
+                dataset_id="YOUR_DATASET_ID"
             )
 
             # Compute all evaluation metrics including IOU-based matching:

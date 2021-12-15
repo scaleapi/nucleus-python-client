@@ -344,13 +344,13 @@ class NucleusClient:
         Creates a new, empty dataset.
 
         Make sure that the dataset is created for the data type you would like to support.
-        Be aware to set the `is_scene` correctly.
+        Be sure to set the ``is_scene`` parameter correctly.
 
         Parameters:
             name: A human-readable name for the dataset.
-            is_scene: Boolean specifying if the dataset type. This value is immutable.
-                     `False` will allow users to uplaod :class:`DatasetItems<DatasetItem>`s.
-                     `True` will allow users to upload :class:`Scenes<LidarScene>`s.
+            is_scene: Whether the dataset contains strictly :class:`scenes
+              <LidarScene>` or :class:`items <DatasetItem>`. This value is immutable.
+              Default is False (dataset of items).
             item_metadata_schema: Dict defining item-level metadata schema. See below.
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
 
