@@ -76,6 +76,7 @@ class Slice:
 
                 {
                     "name": Union[str, int],
+                    "slice_id": str,
                     "dataset_id": str,
                     "dataset_items": List[{
                         "id": str,
@@ -85,7 +86,28 @@ class Slice:
                     }]
                 }
         """
-        info = self._client.slice_info(self.id)
+        info = self._client.make_request(
+            {}, f"slice/{self.id}", requests_command=requests.get
+        )
+        self._dataset_id = info["dataset_id"]
+        return info
+
+    def summary(self) -> dict:
+        """Retrieves the name and dataset_id of the Slice.
+
+        Returns:
+            A dict mapping keys to the corresponding info retrieved.
+            ::
+
+                {
+                    "name": Union[str, int],
+                    "slice_id": str,
+                    "dataset_id": str
+                }
+        """
+        info = self._client.make_request(
+            {}, f"slice/{self.id}/info", requests_command=requests.get
+        )
         self._dataset_id = info["dataset_id"]
         return info
 

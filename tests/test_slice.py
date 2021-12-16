@@ -74,6 +74,10 @@ def test_slice_create_and_delete_and_list(dataset):
             or item.reference_id == response["dataset_items"][1]["ref_id"]
         )
 
+    response = slc.summary()
+    assert response["name"] == TEST_SLICE_NAME
+    assert response["dataset_id"] == dataset.id
+
 
 def test_slice_create_and_export(dataset):
     # Dataset upload
