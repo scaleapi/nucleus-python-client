@@ -54,14 +54,19 @@ class KeyErrorDict(dict):
     Parameters:
         **kwargs: Mapping from the deprecated key to a warning message.
     """
+
     def __init__(self, **kwargs: dict) -> None:
         self._deprecated = dict()
 
         for key, msg in kwargs.items():
             if not isinstance(key, str):
-                raise TypeError(f"All keys must be strings! Received non-string '{key}'")
+                raise TypeError(
+                    f"All keys must be strings! Received non-string '{key}'"
+                )
             if not isinstance(msg, str):
-                raise TypeError(f"All warning messages must be strings! Received non-string '{msg}'")
+                raise TypeError(
+                    f"All warning messages must be strings! Received non-string '{msg}'"
+                )
 
             self._deprecated[key] = msg
 
@@ -73,6 +78,7 @@ class KeyErrorDict(dict):
             super().__missing__(key)
         except AttributeError:
             raise KeyError(key)
+
 
 def format_prediction_response(
     response: dict,

@@ -7,7 +7,11 @@ from nucleus.annotation import Annotation
 from nucleus.constants import EXPORTED_ROWS
 from nucleus.dataset_item import DatasetItem
 from nucleus.job import AsyncJob
-from nucleus.utils import convert_export_payload, format_dataset_item_response, KeyErrorDict
+from nucleus.utils import (
+    convert_export_payload,
+    format_dataset_item_response,
+    KeyErrorDict,
+)
 
 
 class Slice:
@@ -299,9 +303,7 @@ def check_annotations_are_in_slice(
         annotation.reference_id
         for annotation in annotations
         if annotation.reference_id is not None
-    }.difference(
-        {item_metadata["ref_id"] for item_metadata in self.items}
-    )
+    }.difference({item_metadata["ref_id"] for item_metadata in self.items})
     if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False
     else:
