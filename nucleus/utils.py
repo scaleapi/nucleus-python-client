@@ -55,7 +55,7 @@ class KeyErrorDict(dict):
         **kwargs: Mapping from the deprecated key to a warning message.
     """
 
-    def __init__(self, **kwargs: dict) -> None:
+    def __init__(self, **kwargs):
         self._deprecated = {}
 
         for key, msg in kwargs.items():
