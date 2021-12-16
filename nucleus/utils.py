@@ -56,7 +56,7 @@ class KeyErrorDict(dict):
     """
 
     def __init__(self, **kwargs: dict) -> None:
-        self._deprecated = dict()
+        self._deprecated = {}
 
         for key, msg in kwargs.items():
             if not isinstance(key, str):
@@ -70,14 +70,16 @@ class KeyErrorDict(dict):
 
             self._deprecated[key] = msg
 
+        super().__init__()
+
     def __missing__(self, key):
-        """Raises KeyError for deprecated keys, otherwise returns the value."""
+        """Raises KeyError for deprecated keys, otherwise uses base dict logic."""
         if key in self._deprecated:
             raise KeyError(self._deprecated[key])
         try:
             super().__missing__(key)
-        except AttributeError:
-            raise KeyError(key)
+        except AttributeError as e:
+            raise KeyError(key) from e
 
 
 def format_prediction_response(
