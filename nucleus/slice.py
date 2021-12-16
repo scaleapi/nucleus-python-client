@@ -181,7 +181,7 @@ class Slice:
         for item_metadata in self.items:
             yield format_dataset_item_response(
                 self._client.dataitem_loc(
-                    dataset_id=info["dataset_id"],
+                    dataset_id=self.dataset_id,
                     dataset_item_id=item_metadata["id"],
                 )
             )
@@ -303,7 +303,9 @@ def check_annotations_are_in_slice(
         annotation.reference_id
         for annotation in annotations
         if annotation.reference_id is not None
-    }.difference({item_metadata["ref_id"] for item_metadata in self.items})
+    }.difference(
+        {item_metadata["ref_id"] for item_metadata in slice_to_check.items}
+    )
     if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False
     else:
