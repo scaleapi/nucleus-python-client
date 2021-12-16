@@ -941,8 +941,6 @@ class NucleusClient:
             api_key if api_key else os.environ.get("NUCLEUS_API_KEY", None)
         )
         if api_key is None:
-            raise NoAPIKey(
-                "You need to pass an API key to the NucleusClient or set the environment variable NUCLEUS_API_KEY"
-            )
+            raise NoAPIKey()
 
         return api_key

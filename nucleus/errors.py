@@ -65,4 +65,9 @@ class NucleusAPIError(Exception):
 
 
 class NoAPIKey(Exception):
-    pass
+    def __init__(
+        self,
+        message="You need to pass an API key to the NucleusClient or set the environment variable NUCLEUS_API_KEY",
+    ):
+        self.message = message
+        super().__init__(self.message)
