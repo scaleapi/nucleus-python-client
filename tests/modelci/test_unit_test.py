@@ -40,7 +40,7 @@ def test_list_unit_test(CLIENT, test_slice):
     CLIENT.modelci.delete_unit_test(unit_test.id)
 
 
-def test_unit_test_items(CLIENT, test_slice, slice_items):
+def test_unit_test_items(CLIENT, test_slice, slice_items, annotations):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
 
     unit_test = CLIENT.modelci.create_unit_test(

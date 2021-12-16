@@ -65,6 +65,9 @@ def predictions(model, modelci_dataset, annotations):
 
 
 @pytest.fixture(scope="module")
+@pytest.mark.usefixtures(
+    "annotations"
+)  # Unit test needs to have annotations in the slice
 def unit_test(CLIENT, test_slice):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
     unit_test = CLIENT.modelci.create_unit_test(
