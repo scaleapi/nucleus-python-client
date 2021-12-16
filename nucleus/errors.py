@@ -62,3 +62,7 @@ class NucleusAPIError(Exception):
             message += "\n This likely indicates temporary downtime of the API, please try again in a minute or two"
 
         super().__init__(message)
+
+
+class NoAPIKey(Exception):
+    pass
