@@ -35,6 +35,7 @@ from .constants import (
     AUTOTAG_SCORE_THRESHOLD,
     BACKFILL_JOB_KEY,
     DATASET_ID_KEY,
+    DATASET_IS_SCENE_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -81,6 +82,8 @@ class Dataset:
     with metadata to your dataset, annotate it with ground truth, and upload
     model predictions to evaluate and compare model performance on your data.
 
+    Make sure that the dataset is set up correctly supporting the required datatype (see code sample below).
+
     Datasets cannot be instantiated directly and instead must be created via API
     endpoint using :meth:`NucleusClient.create_dataset`, or in the dashboard.
 
@@ -90,12 +93,15 @@ class Dataset:
 
         client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
 
-        # Create new dataset
-        dataset = client.create_dataset(YOUR_DATASET_NAME)
+        # Create new dataset supporting DatasetItems
+        dataset = client.create_dataset(YOUR_DATASET_NAME, is_scene=False)
+
+        # OR create new dataset supporting LidarScenes
+        dataset = client.create_dataset(YOUR_DATASET_NAME, is_scene=True)
 
         # Or, retrieve existing dataset by ID
         # This ID can be fetched using client.list_datasets() or from a dashboard URL
-        existing_dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+        existing_dataset = client.get_dataset("YOUR_DATASET_ID")
     """
 
     def __init__(self, dataset_id, client, name=None):
@@ -106,9 +112,9 @@ class Dataset:
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):
-            return f"Dataset(name='{self.name}, dataset_id='{self.id}', client={self._client})"
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', is_scene='{self.is_scene}', client={self._client})"
         else:
-            return f"Dataset(name='{self.name}, dataset_id='{self.id}')"
+            return f"Dataset(name='{self.name}, dataset_id='{self.id}', is_scene='{self.is_scene}')"
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -124,6 +130,14 @@ class Dataset:
                 {}, f"dataset/{self.id}/name", requests.get
             )["name"]
         return self._name
+
+    @property
+    def is_scene(self) -> bool:
+        """If the dataset can contain scenes or not."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/is_scene", requests.get
+        )[DATASET_IS_SCENE_KEY]
+        return response
 
     @property
     def model_runs(self) -> Dict[Any, Any]:
@@ -386,12 +400,19 @@ class Dataset:
     ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """Appends items or scenes to a dataset.
 
+        .. note::
+            Datasets can only accept one of :class:`DatasetItems <DatasetItem>`
+            or :class:`Scenes <LidarScene>`, never both.
+
+            This behavior is set during Dataset :meth:`creation
+            <NucleusClient.create_dataset>` with the ``is_scene`` flag.
+
         ::
 
             import nucleus
 
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("YOUR_DATASET_ID")
 
             local_item = nucleus.DatasetItem(
               image_location="./1.jpg",
@@ -484,6 +505,7 @@ class Dataset:
             assert (
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
+
             return self._append_scenes(scenes, update, asynchronous)
 
         check_for_duplicate_reference_ids(dataset_items)
@@ -529,6 +551,14 @@ class Dataset:
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
         # TODO: make private in favor of Dataset.append invocation
+        if not self.is_scene:
+            raise Exception(
+                "Your dataset is not a scene dataset but only supports single dataset items. "
+                "In order to be able to add scenes, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
+                "an existing scene dataset."
+            )
+
         for scene in scenes:
             scene.validate()
 
@@ -745,8 +775,8 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("YOUR_DATASET_ID")
 
             embeddings = {
                 "reference_id_0": [0.1, 0.2, 0.3],
@@ -893,8 +923,8 @@ class Dataset:
         ::
 
             import nucleus
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset("YOUR_DATASET_ID")
 
             response = dataset.add_taxonomy(
                 taxonomy_name="clothing_type",
@@ -1062,12 +1092,12 @@ class Dataset:
 
             import nucleus
 
-            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            dataset = client.get_dataset(dataset_id="ds_bwkezj6g5c4g05gqp1eg")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            dataset = client.get_dataset(dataset_id="YOUR_DATASET_ID")
 
             model = client.get_model(
-                model_id="prj_bybpa3gjmjc30es761y0",
-                dataset_id="ds_bwkezj6g5c4g05gqp1eg"
+                model_id="YOUR_MODEL_PRJ_ID",
+                dataset_id="YOUR_DATASET_ID"
             )
 
             # Compute all evaluation metrics including IOU-based matching:
@@ -1305,5 +1335,13 @@ class Dataset:
         Returns:
             UploadResponse
         """
+        if self.is_scene:
+            raise Exception(
+                "Your dataset is a scene dataset and does not support the upload of single dataset items. "
+                "In order to be able to add dataset items, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
+                "an existing dataset supporting dataset items."
+            )
+
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)

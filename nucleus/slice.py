@@ -30,8 +30,8 @@ class Slice:
 
         import nucleus
 
-        client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-        dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+        dataset = client.get_dataset("YOUR_DATASET_ID")
 
         ref_ids = ["interesting_item_1", "interesting_item_2"]
         slice = dataset.create_slice(name="interesting", reference_ids=ref_ids)

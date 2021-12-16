@@ -32,8 +32,17 @@ from .helpers import (
 
 
 @pytest.fixture()
-def dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME)
+def dataset_scene(CLIENT):
+    ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=True)
+    yield ds
+
+    response = CLIENT.delete_dataset(ds.id)
+    assert response == {"message": "Beginning dataset deletion..."}
+
+
+@pytest.fixture()
+def dataset_item(CLIENT):
+    ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=False)
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
@@ -246,38 +255,38 @@ def test_scene_add_frame():
 
 
 @pytest.mark.skip("Deactivated sync upload for scenes")
-def test_scene_upload_sync(dataset):
+def test_scene_upload_sync(dataset_scene):
     payload = TEST_LIDAR_SCENES
     scenes = [
         LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
 
-    response = dataset.append(scenes, update=update)
+    response = dataset_scene.append(scenes, update=update)
 
-    first_scene = dataset.get_scene(scenes[0].reference_id)
+    first_scene = dataset_scene.get_scene(scenes[0].reference_id)
 
     assert first_scene == scenes[0]
     first_scene_modified = copy.deepcopy(first_scene)
     first_scene_modified.reference_id = "WRONG!"
     assert first_scene_modified != scenes[0]
 
-    assert response["dataset_id"] == dataset.id
+    assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
 
 
 @pytest.mark.skip("Deactivated sync upload for scenes")
 @pytest.mark.integration
-def test_scene_and_cuboid_upload_sync(dataset):
+def test_scene_and_cuboid_upload_sync(dataset_scene):
     payload = TEST_LIDAR_SCENES
     scenes = [
         LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
 
-    response = dataset.append(scenes, update=update)
+    response = dataset_scene.append(scenes, update=update)
 
-    assert response["dataset_id"] == dataset.id
+    assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
 
     lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
@@ -286,15 +295,15 @@ def test_scene_and_cuboid_upload_sync(dataset):
     TEST_CUBOID_ANNOTATIONS[0][REFERENCE_ID_KEY] = lidar_item_ref
 
     annotations = [CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])]
-    response = dataset.annotate(annotations)
+    response = dataset_scene.annotate(annotations)
 
-    assert response["dataset_id"] == dataset.id
+    assert response["dataset_id"] == dataset_scene.id
     assert response["annotations_processed"] == len(annotations)
     assert response["annotations_ignored"] == 0
 
-    response_annotations = dataset.refloc(lidar_item_ref)[ANNOTATIONS_KEY][
-        "cuboid"
-    ]
+    response_annotations = dataset_scene.refloc(lidar_item_ref)[
+        ANNOTATIONS_KEY
+    ]["cuboid"]
     assert len(response_annotations) == 1
     assert_cuboid_annotation_matches_dict(
         response_annotations[0], TEST_CUBOID_ANNOTATIONS[0]
@@ -302,14 +311,14 @@ def test_scene_and_cuboid_upload_sync(dataset):
 
 
 @pytest.mark.integration
-def test_scene_upload_async(dataset):
+def test_scene_upload_async(dataset_scene):
     payload = TEST_LIDAR_SCENES
     scenes = [
         LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
 
-    job = dataset.append(scenes, update=update, asynchronous=True)
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
 
@@ -319,7 +328,7 @@ def test_scene_upload_async(dataset):
         "message": {
             "scene_upload_progress": {
                 "errors": [],
-                "dataset_id": dataset.id,
+                "dataset_id": dataset_scene.id,
                 "new_scenes": len(scenes),
                 "ignored_scenes": 0,
                 "scenes_errored": 0,
@@ -330,3 +339,15 @@ def test_scene_upload_async(dataset):
         "completed_steps": 1,
         "total_steps": 1,
     }
+
+
+@pytest.mark.integration
+def test_scene_upload_async_item_dataset(dataset_item):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    with pytest.raises(Exception):
+        dataset_item.append(scenes, update=update, asynchronous=True)

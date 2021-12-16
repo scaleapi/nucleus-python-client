@@ -35,6 +35,8 @@ __all__ = [
 ]
 
 import os
+import time
+import warnings
 from typing import Dict, List, Optional, Sequence, Union
 
 import pkg_resources
@@ -63,6 +65,7 @@ from .constants import (
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
     DATASET_ID_KEY,
+    DATASET_IS_SCENE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -233,6 +236,12 @@ class NucleusClient:
     ) -> List[AsyncJob]:
         """Fetches all of your running jobs in Nucleus.
 
+        Parameters:
+            show_completed: Whether to fetch completed and errored jobs or just
+              running jobs. Default behavior is False.
+            date_limit: Only fetch jobs that were started after this date. Default
+              behavior is 2 weeks prior to the current date.
+
         Returns:
             List[:class:`AsyncJob`]: List of running asynchronous jobs
             associated with the client API key.
@@ -333,14 +342,21 @@ class NucleusClient:
     def create_dataset(
         self,
         name: str,
+        is_scene: bool = False,
         item_metadata_schema: Optional[Dict] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
         """
         Creates a new, empty dataset.
 
+        Make sure that the dataset is created for the data type you would like to support.
+        Be sure to set the ``is_scene`` parameter correctly.
+
         Parameters:
             name: A human-readable name for the dataset.
+            is_scene: Whether the dataset contains strictly :class:`scenes
+              <LidarScene>` or :class:`items <DatasetItem>`. This value is immutable.
+              Default is False (dataset of items).
             item_metadata_schema: Dict defining item-level metadata schema. See below.
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
 
@@ -358,9 +374,17 @@ class NucleusClient:
         Returns:
             :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
+        warnings.warn(
+            "The default create_dataset('dataset_name', ...) method without the is_scene parameter will be deprecated soon in favor of providing the is_scene parameter explicitly. "
+            "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=True, ...) to upload "
+            "DatasetItems or create_dataset('dataset_name', is_scene=False, ...) to upload "
+            "LidarScenes.",
+            DeprecationWarning,
+        )
         response = self.make_request(
             {
                 NAME_KEY: name,
+                DATASET_IS_SCENE_KEY: is_scene,
                 ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
                 ITEM_METADATA_SCHEMA_KEY: item_metadata_schema,
             },
