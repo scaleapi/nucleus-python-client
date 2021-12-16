@@ -52,6 +52,7 @@ def test_unit_test_evaluation(
 @pytest.mark.xfail(
     reason="Missing predictions is currently treated as failure in evaluation."
 )
+@pytest.mark.skip
 def test_unit_test_evaluation_no_prediction_for_last_item(
     CLIENT, modelci_dataset, unit_test, annotations
 ):

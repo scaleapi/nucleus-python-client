@@ -18,7 +18,7 @@ def create_box_annotations(
         )
         for i, ds_item in enumerate(dataset_items)
     ]
-    dataset.append(annotations)
+    dataset.annotate(annotations)
     return annotations
 
 
