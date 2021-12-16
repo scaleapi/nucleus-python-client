@@ -683,11 +683,16 @@ class NucleusClient:
 
     @deprecated("Prefer calling Dataset.predictions_refloc instead.")
     @sanitize_string_args
-    def predictions_ref_id(self, model_run_id: str, ref_id: str):
+    def predictions_ref_id(
+        self, model_run_id: str, ref_id: str, dataset_id: Optional[str] = None
+    ):
+        if dataset_id:
+            raise RuntimeError(
+                "Need to pass a dataset id. Or use Dataset.predictions_refloc."
+            )
         # TODO: deprecate ModelRun
-        return self.make_request(
-            {}, f"modelRun/{model_run_id}/refloc/{ref_id}", requests.get
-        )
+        m_run = self.get_model_run(model_run_id, dataset_id)
+        return m_run.refloc(ref_id)
 
     @deprecated("Prefer calling Dataset.iloc instead.")
     def dataitem_iloc(self, dataset_id: str, i: int):
@@ -720,10 +725,8 @@ class NucleusClient:
     @deprecated("Prefer calling Dataset.create_slice instead.")
     def create_slice(self, dataset_id: str, payload: dict) -> Slice:
         # TODO: deprecate in favor of Dataset.create_slice
-        response = self.make_request(
-            payload, f"dataset/{dataset_id}/create_slice"
-        )
-        return Slice(response[SLICE_ID_KEY], self)
+        dataset = self.get_dataset(dataset_id)
+        return dataset.create_slice(payload["name"], payload["reference_ids"])
 
     def get_slice(self, slice_id: str) -> Slice:
         # TODO: migrate to Dataset method and deprecate
@@ -839,13 +842,9 @@ class NucleusClient:
         self, dataset_id: str, embeddings_urls: list, embedding_dim: int
     ):
         # TODO: deprecate in favor of Dataset.create_custom_index invocation
-        return self.make_request(
-            {
-                EMBEDDINGS_URL_KEY: embeddings_urls,
-                EMBEDDING_DIMENSION_KEY: embedding_dim,
-            },
-            f"indexing/{dataset_id}",
-            requests_command=requests.post,
+        dataset = self.get_dataset(dataset_id)
+        return dataset.create_custom_index(
+            embeddings_urls=embeddings_urls, embedding_dim=embedding_dim
         )
 
     @deprecated("Prefer calling Dataset.delete_custom_index instead.")
@@ -890,6 +889,18 @@ class NucleusClient:
             f"indexing/{dataset_id}/internal/object",
             requests_command=requests.post,
         )
+
+    def delete(self, route: str):
+        return self._connection.delete(route)
+
+    def get(self, route: str):
+        return self._connection.get(route)
+
+    def post(self, payload: dict, route: str):
+        return self._connection.post(payload, route)
+
+    def put(self, payload: dict, route: str):
+        return self._connection.put(payload, route)
 
     # TODO: Fix return type, can be a list as well. Brings on a lot of mypy errors ...
     def make_request(

@@ -62,7 +62,7 @@ def test_slice_create_and_delete_and_list(dataset):
 
     dataset_slices = dataset.slices
     assert len(dataset_slices) == 1
-    assert slc.slice_id == dataset_slices[0]
+    assert slc.id == dataset_slices[0]
 
     response = slc.info()
     assert response["name"] == TEST_SLICE_NAME

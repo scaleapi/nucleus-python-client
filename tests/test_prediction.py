@@ -83,7 +83,7 @@ def model_run(CLIENT):
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
 
-    model = CLIENT.add_model(
+    model = CLIENT.create_model(
         name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
     )
 

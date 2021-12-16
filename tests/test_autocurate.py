@@ -32,7 +32,7 @@ def model_run(CLIENT):
 
     assert ERROR_PAYLOAD not in response.json()
 
-    model = CLIENT.add_model(
+    model = CLIENT.create_model(
         name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
     )
 

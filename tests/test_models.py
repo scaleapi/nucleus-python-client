@@ -27,6 +27,7 @@ from .helpers import (
     TEST_MODEL_RUN,
     TEST_PREDS,
     assert_box_prediction_matches_dict,
+    get_uuid,
 )
 
 
@@ -55,12 +56,12 @@ def test_reprs():
 
 
 def test_model_creation_and_listing(CLIENT, dataset):
-    models_before = CLIENT.models
-
     model_reference = "model_" + str(time.time())
     # Creation
-    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
-    m_run = model.create_run(TEST_MODEL_RUN, dataset, TEST_PREDS)
+    model_name = TEST_MODEL_NAME + get_uuid()
+    model = CLIENT.create_model(model_name, model_reference)
+    model_run = TEST_MODEL_RUN + get_uuid()
+    m_run = model.create_run(model_run, dataset, TEST_PREDS)
     m_run.commit()
 
     assert isinstance(model, Model)
@@ -74,20 +75,18 @@ def test_model_creation_and_listing(CLIENT, dataset):
     assert m == model
 
     assert model in ms
-    assert list(set(ms) - set(models_before))[0] == model
 
     # Delete the model
     CLIENT.delete_model(model.id)
     ms = CLIENT.models
 
     assert model not in ms
-    assert ms == models_before
 
 
 # Until we fully remove the other endpoints (and then migrate those tests) just quickly test the basics of the new ones since they are basically just simple wrappers around the old ones.
 def test_new_model_endpoints(CLIENT, dataset: Dataset):
     model_reference = "model_" + str(time.time())
-    model = CLIENT.add_model(TEST_MODEL_NAME, model_reference)
+    model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
     predictions = [BoxPrediction(**TEST_BOX_PREDICTIONS[0])]
 
     dataset.upload_predictions(model, predictions=predictions)
