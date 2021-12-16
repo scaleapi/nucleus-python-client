@@ -12,9 +12,17 @@ repos:
     hooks:
     - id: system
       name: flake8
-      entry: poetry run flake8 .
+      entry: poetry run flake8 nucleus tests
       pass_filenames: false
       language: system
+
+-   repo: local
+    hooks:
+      - id: system
+        name: isort
+        entry: poetry run isort .
+        pass_filenames: false
+        language: system
 
 -   repo: local
     hooks:
@@ -31,5 +39,3 @@ repos:
       entry: poetry run mypy --ignore-missing-imports nucleus
       pass_filenames: false
       language: system
-
-

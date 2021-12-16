@@ -1,4 +1,5 @@
 import urllib.request
+from functools import wraps
 
 
 def sanitize_field(field):
@@ -6,6 +7,9 @@ def sanitize_field(field):
 
 
 def sanitize_string_args(function):
+    """Helper decorator that ensures that all arguments passed are url-safe."""
+
+    @wraps(function)
     def sanitized_function(*args, **kwargs):
         sanitized_args = []
         sanitized_kwargs = {}

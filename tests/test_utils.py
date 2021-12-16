@@ -1,8 +1,8 @@
-import pytest
-from nucleus import DatasetItem
-from nucleus import utils
-
 import io
+
+import pytest
+
+from nucleus import DatasetItem, utils
 
 
 class TestNonSerializableObject:

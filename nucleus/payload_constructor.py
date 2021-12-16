@@ -1,31 +1,38 @@
-from typing import List, Optional, Dict, Union
-from .dataset_item import DatasetItem
-from .scene import LidarScene
+from typing import Dict, List, Optional, Union
+
 from .annotation import (
     BoxAnnotation,
+    CategoryAnnotation,
     CuboidAnnotation,
+    MultiCategoryAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
+from .constants import (
+    ANNOTATION_METADATA_SCHEMA_KEY,
+    ANNOTATION_UPDATE_KEY,
+    ANNOTATIONS_KEY,
+    ITEMS_KEY,
+    LABELS_KEY,
+    METADATA_KEY,
+    MODEL_ID_KEY,
+    NAME_KEY,
+    REFERENCE_ID_KEY,
+    SCENES_KEY,
+    SEGMENTATIONS_KEY,
+    TAXONOMY_NAME_KEY,
+    TYPE_KEY,
+    UPDATE_KEY,
+)
+from .dataset_item import DatasetItem
 from .prediction import (
     BoxPrediction,
+    CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
-from .constants import (
-    ANNOTATION_UPDATE_KEY,
-    NAME_KEY,
-    METADATA_KEY,
-    REFERENCE_ID_KEY,
-    ANNOTATIONS_KEY,
-    ITEMS_KEY,
-    SCENES_KEY,
-    UPDATE_KEY,
-    MODEL_ID_KEY,
-    ANNOTATION_METADATA_SCHEMA_KEY,
-    SEGMENTATIONS_KEY,
-)
+from .scene import LidarScene
 
 
 def construct_append_payload(
@@ -57,6 +64,8 @@ def construct_annotation_payload(
             BoxAnnotation,
             PolygonAnnotation,
             CuboidAnnotation,
+            CategoryAnnotation,
+            MultiCategoryAnnotation,
             SegmentationAnnotation,
         ]
     ],
@@ -84,7 +93,12 @@ def construct_segmentation_payload(
 
 def construct_box_predictions_payload(
     box_predictions: List[
-        Union[BoxPrediction, PolygonPrediction, CuboidPrediction]
+        Union[
+            BoxPrediction,
+            PolygonPrediction,
+            CuboidPrediction,
+            CategoryPrediction,
+        ]
     ],
     update: bool,
 ) -> dict:
@@ -125,4 +139,14 @@ def construct_model_run_creation_payload(
         REFERENCE_ID_KEY: reference_id,
         METADATA_KEY: metadata if metadata else {},
         ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
+    }
+
+
+def construct_taxonomy_payload(
+    taxonomy_name: str, taxonomy_type: str, labels: List[str]
+) -> dict:
+    return {
+        TAXONOMY_NAME_KEY: taxonomy_name,
+        TYPE_KEY: taxonomy_type,
+        LABELS_KEY: labels,
     }

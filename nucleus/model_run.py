@@ -1,17 +1,33 @@
-from typing import Dict, List, Optional, Type, Union
+"""
+Model Runs are deprecated and will be removed in a future version of the python client.
+It is now possible to upload model predictions without a need for creating a model run
+
+For example::
+
+    import nucleus
+    client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+    prediction_1 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="1", confidence=0.9, class_pdf={'label': 0.9, 'other_label': 0.1})
+    prediction_2 = nucleus.BoxPrediction(label="label", x=0, y=0, width=10, height=10, reference_id="2", confidence=0.2, class_pdf={'label': 0.2, 'other_label': 0.8})
+    model = client.add_model(name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"})
+    response = dataset.upload_predictions(model, [prediction_1, prediction_2])
+"""
+
+
+from typing import List, Optional, Union
+
 import requests
+
 from nucleus.annotation import check_all_mask_paths_remote
 from nucleus.job import AsyncJob
-from nucleus.utils import serialize_and_write_to_presigned_url
+from nucleus.utils import (
+    format_prediction_response,
+    serialize_and_write_to_presigned_url,
+)
 
 from .constants import (
     ANNOTATIONS_KEY,
-    BOX_TYPE,
-    CUBOID_TYPE,
     DEFAULT_ANNOTATION_UPDATE_MODE,
-    POLYGON_TYPE,
     REQUEST_ID_KEY,
-    SEGMENTATION_TYPE,
     UPDATE_KEY,
 )
 from .prediction import (
@@ -19,22 +35,22 @@ from .prediction import (
     CuboidPrediction,
     PolygonPrediction,
     SegmentationPrediction,
+    from_json,
 )
 
 
 class ModelRun:
     """
-    Model runs represent detections of a specific model on your dataset.
-    Having an open model run is a prerequisite for uploading predictions to your dataset.
+    This class is deprecated and will be removed from the python client.
     """
 
     def __init__(self, model_run_id: str, dataset_id: str, client):
         self.model_run_id = model_run_id
         self._client = client
-        self._dataset_id = dataset_id
+        self.dataset_id = dataset_id
 
     def __repr__(self):
-        return f"ModelRun(model_run_id='{self.model_run_id}', dataset_id='{self._dataset_id}', client={self._client})"
+        return f"ModelRun(model_run_id='{self.model_run_id}', dataset_id='{self.dataset_id}', client={self._client})"
 
     def __eq__(self, other):
         if self.model_run_id == other.model_run_id:
@@ -115,7 +131,7 @@ class ModelRun:
             check_all_mask_paths_remote(annotations)
 
             request_id = serialize_and_write_to_presigned_url(
-                annotations, self._dataset_id, self._client
+                annotations, self.dataset_id, self._client
             )
             response = self._client.make_request(
                 payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
@@ -123,7 +139,11 @@ class ModelRun:
             )
             return AsyncJob.from_json(response, self._client)
         else:
-            return self._client.predict(self.model_run_id, annotations, update)
+            return self._client.predict(
+                model_run_id=self.model_run_id,
+                annotations=annotations,
+                update=update,
+            )
 
     def iloc(self, i: int):
         """
@@ -133,7 +153,7 @@ class ModelRun:
         }
         """
         response = self._client.predictions_iloc(self.model_run_id, i)
-        return self._format_prediction_response(response)
+        return format_prediction_response(response)
 
     def refloc(self, reference_id: str):
         """
@@ -141,10 +161,10 @@ class ModelRun:
         :param reference_id: reference_id of a dataset item.
         :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
         """
-        response = self._client.predictions_ref_id(
-            self.model_run_id, reference_id
+        response = self._client.get(
+            f"modelRun/{self.model_run_id}/refloc/{reference_id}"
         )
-        return self._format_prediction_response(response)
+        return format_prediction_response(response)
 
     def loc(self, dataset_item_id: str):
         """
@@ -158,7 +178,24 @@ class ModelRun:
         response = self._client.predictions_loc(
             self.model_run_id, dataset_item_id
         )
-        return self._format_prediction_response(response)
+        return format_prediction_response(response)
+
+    def prediction_loc(self, reference_id: str, annotation_id: str):
+        """
+        Returns info for single Prediction by its reference id and annotation id.
+        :param reference_id: the user specified id for the image
+        :param annotation_id: the user specified id for the prediction, or if one was not provided, the Scale internally generated id for the prediction
+        :return:
+         BoxPrediction | PolygonPrediction | CuboidPrediction
+        """
+
+        response = self._client.make_request(
+            {},
+            f"modelRun/{self.model_run_id}/prediction/loc/{reference_id}/{annotation_id}",
+            requests.get,
+        )
+
+        return from_json(response)
 
     def ungrouped_export(self):
         json_response = self._client.make_request(
@@ -166,46 +203,4 @@ class ModelRun:
             route=f"modelRun/{self.model_run_id}/ungrouped",
             requests_command=requests.get,
         )
-        return self._format_prediction_response(
-            {ANNOTATIONS_KEY: json_response}
-        )
-
-    def _format_prediction_response(
-        self, response: dict
-    ) -> Union[
-        dict,
-        List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
-            ]
-        ],
-    ]:
-        annotation_payload = response.get(ANNOTATIONS_KEY, None)
-        if not annotation_payload:
-            # An error occurred
-            return response
-        annotation_response = {}
-        type_key_to_class: Dict[
-            str,
-            Union[
-                Type[BoxPrediction],
-                Type[PolygonPrediction],
-                Type[CuboidPrediction],
-                Type[SegmentationPrediction],
-            ],
-        ] = {
-            BOX_TYPE: BoxPrediction,
-            POLYGON_TYPE: PolygonPrediction,
-            CUBOID_TYPE: CuboidPrediction,
-            SEGMENTATION_TYPE: SegmentationPrediction,
-        }
-        for type_key in annotation_payload:
-            type_class = type_key_to_class[type_key]
-            annotation_response[type_key] = [
-                type_class.from_json(annotation)
-                for annotation in annotation_payload[type_key]
-            ]
-        return annotation_response
+        return format_prediction_response({ANNOTATIONS_KEY: json_response})

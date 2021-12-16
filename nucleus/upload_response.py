@@ -1,14 +1,15 @@
 from typing import Set
-from .dataset_item import DatasetItem
+
 from .constants import (
+    DATASET_ID_KEY,
+    ERROR_CODES,
+    ERROR_ITEMS,
+    ERROR_PAYLOAD,
+    IGNORED_ITEMS,
     NEW_ITEMS,
     UPDATED_ITEMS,
-    IGNORED_ITEMS,
-    ERROR_ITEMS,
-    ERROR_CODES,
-    ERROR_PAYLOAD,
-    DATASET_ID_KEY,
 )
+from .dataset_item import DatasetItem
 
 
 def json_list_to_dataset_item(item_list):
@@ -16,9 +17,19 @@ def json_list_to_dataset_item(item_list):
 
 
 class UploadResponse:
-    """
-    Response for long upload job
-    # TODO refactor
+    """Response for long upload job. For internal use only!
+
+    Parameters:
+        json: Payload from which to construct the UploadResponse.
+
+    Attributes:
+        dataset_id: The scale-generated id for the dataset that was uploaded to
+        new_items: How many items are new in the upload
+        updated_items: How many items were updated
+        ignored_items: How many items were ignored
+        upload_errors: A list of errors encountered during upload
+        error_codes: A set of all the error codes encountered during upload
+        error_payload: The detailed error payload returned from the endpoint.
     """
 
     def __init__(self, json: dict):

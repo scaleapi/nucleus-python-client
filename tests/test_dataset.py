@@ -3,6 +3,7 @@ import math
 import os
 
 import pytest
+
 from nucleus import (
     Dataset,
     DatasetItem,
@@ -12,68 +13,71 @@ from nucleus import (
 )
 from nucleus.annotation import (
     BoxAnnotation,
+    CategoryAnnotation,
+    MultiCategoryAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
 from nucleus.constants import (
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
+    CATEGORY_TYPE,
     DATASET_ID_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     IGNORED_ITEMS,
+    ITEM_KEY,
+    MULTICATEGORY_TYPE,
     NEW_ITEMS,
     POLYGON_TYPE,
     SEGMENTATION_TYPE,
     UPDATED_ITEMS,
-    ITEM_KEY,
-    ANNOTATIONS_KEY,
-    BOX_TYPE,
 )
 from nucleus.job import AsyncJob, JobError
+from nucleus.model import Model
+from nucleus.prediction import BoxPrediction
 
 from .helpers import (
     LOCAL_FILENAME,
     TEST_BOX_ANNOTATIONS,
+    TEST_CATEGORY_ANNOTATIONS,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
+    TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     reference_id_from_url,
 )
 
-TEST_AUTOTAG_DATASET = "ds_bz43jm2jwm70060b3890"
-
-
-def test_reprs():
-    # Have to define here in order to have access to all relevant objects
-    def test_repr(test_object: any):
-        assert eval(str(test_object)) == test_object
-
-    test_repr(
-        DatasetItem(
-            image_location="test_url",
-            reference_id="test_reference_id",
-            metadata={
-                "made_with_pytest": True,
-                "example_int": 0,
-                "example_str": "hello",
-                "example_float": 0.5,
-                "example_dict": {
-                    "nested": True,
-                },
-                "example_list": ["hello", 1, False],
-            },
-        )
-    )
-    test_repr(Dataset("test_dataset", NucleusClient(api_key="fake_key")))
-
 
 @pytest.fixture()
 def dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
+
+    response = ds.add_taxonomy(
+        "[Pytest] Category Taxonomy 1",
+        "category",
+        [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
+    )
+
+    response = ds.add_taxonomy(
+        "[Pytest] MultiCategory Taxonomy 1",
+        "multicategory",
+        [
+            f"[Pytest] MultiCategory Label ${i}"
+            for i in range((len(TEST_IMG_URLS) + 1))
+        ],
+    )
+
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
     assert response == {"message": "Beginning dataset deletion..."}
+
+
+@pytest.fixture()
+def dataset_scene(CLIENT):
+    CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=True)
 
 
 def make_dataset_items():
@@ -98,11 +102,28 @@ def make_dataset_items():
     return ds_items_with_metadata
 
 
-def test_dataset_create_and_delete(CLIENT):
+def test_dataset_create_and_delete_no_scene(CLIENT):
     # Creation
     ds = CLIENT.create_dataset(TEST_DATASET_NAME)
     assert isinstance(ds, Dataset)
     assert ds.name == TEST_DATASET_NAME
+    assert not ds.is_scene
+    assert ds.model_runs == []
+    assert ds.slices == []
+    assert ds.size == 0
+    assert ds.items == []
+
+    # Deletion
+    response = CLIENT.delete_dataset(ds.id)
+    assert response == {"message": "Beginning dataset deletion..."}
+
+
+def test_dataset_create_and_delete_scene(CLIENT):
+    # Creation
+    ds = CLIENT.create_dataset(name=TEST_DATASET_NAME, is_scene=True)
+    assert isinstance(ds, Dataset)
+    assert ds.name == TEST_DATASET_NAME
+    assert ds.is_scene
     assert ds.model_runs == []
     assert ds.slices == []
     assert ds.size == 0
@@ -176,8 +197,17 @@ def test_dataset_append(dataset):
 
     # Plain image upload
     ds_items_plain = []
-    for url in TEST_IMG_URLS:
-        ds_items_plain.append(DatasetItem(image_location=url))
+    for i, url in enumerate(TEST_IMG_URLS):
+        # Upload just the first item in privacy mode
+        upload_to_scale = i == 0
+        ds_items_plain.append(
+            DatasetItem(
+                image_location=url,
+                upload_to_scale=upload_to_scale,
+                reference_id=url.split("/")[-1] + "_plain",
+            )
+        )
+
     response = dataset.append(ds_items_plain)
     check_is_expected_response(response)
 
@@ -187,9 +217,57 @@ def test_dataset_append(dataset):
     check_is_expected_response(response)
 
 
+def test_scene_dataset_append(dataset_scene):
+    # Plain image upload
+    ds_items_plain = []
+    for i, url in enumerate(TEST_IMG_URLS):
+        # Upload just the first item in privacy mode
+        upload_to_scale = i == 0
+        ds_items_plain.append(
+            DatasetItem(
+                image_location=url,
+                upload_to_scale=upload_to_scale,
+                reference_id=url.split("/")[-1] + "_plain",
+            )
+        )
+
+    with pytest.raises(Exception):
+        dataset_scene.append(ds_items_plain)
+
+
+def test_dataset_name_access(CLIENT, dataset):
+    assert dataset.name == TEST_DATASET_NAME
+
+
+def test_dataset_size_access(CLIENT, dataset):
+    assert dataset.size == 0
+    items = make_dataset_items()
+    dataset.append(items)
+    assert dataset.size == len(items)
+
+
+def test_dataset_model_runs_access(CLIENT, dataset):
+    # TODO: Change to Models
+    assert len(dataset.model_runs) == 0
+
+
+def test_dataset_slices(CLIENT, dataset):
+    assert len(dataset.slices) == 0
+    items = make_dataset_items()
+    dataset.append(items)
+    dataset.create_slice("test_slice", [item.reference_id for item in items])
+    slices = dataset.slices
+    assert len(slices) == 1
+    # TODO(gunnar): Test slice items -> Split up info!
+
+
 def test_dataset_append_local(CLIENT, dataset):
     ds_items_local_error = [
-        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": math.nan})
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": math.nan},
+            reference_id="bad",
+        )
     ]
     with pytest.raises(ValueError) as e:
         dataset.append(ds_items_local_error)
@@ -197,7 +275,11 @@ def test_dataset_append_local(CLIENT, dataset):
             e.value
         )
     ds_items_local = [
-        DatasetItem(image_location=LOCAL_FILENAME, metadata={"test": 0})
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": 0},
+            reference_id=LOCAL_FILENAME.split("/")[-1],
+        )
     ]
 
     response = dataset.append(ds_items_local)
@@ -226,7 +308,16 @@ def test_dataset_append_async(dataset: Dataset):
             "PayloadUrl": "",
             "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
         },
+        "job_progress": "1.00",
+        "completed_steps": 5,
+        "total_steps": 5,
     }
 
 
@@ -253,9 +344,23 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
         "status": "Errored",
         "message": {
             "PayloadUrl": "",
+            "final_error": (
+                "One or more of the images you attempted to upload did not process"
+                " correctly. Please see the status for an overview and the errors (job.errors()) for "
+                "more detailed messages."
+            ),
             "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
             "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
+        "job_progress": "0.80",
+        "completed_steps": 4,
+        "total_steps": 5,
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (
@@ -287,35 +392,19 @@ def test_raises_error_for_duplicate():
     )
 
 
-def test_dataset_export_autotag_scores(CLIENT):
-    # This test can only run for the test user who has an indexed dataset.
-    # TODO: if/when we can create autotags via api, create one instead.
-    if os.environ.get("HAS_ACCESS_TO_TEST_DATA", False):
-        dataset = CLIENT.get_dataset(TEST_AUTOTAG_DATASET)
-
-        with pytest.raises(NucleusAPIError) as api_error:
-            dataset.autotag_scores(autotag_name="NONSENSE_GARBAGE")
-        assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {TEST_AUTOTAG_DATASET}"
-            in str(api_error.value)
-        )
-
-        scores = dataset.autotag_scores(autotag_name="TestTag")
-
-        for column in ["dataset_item_ids", "ref_ids", "scores"]:
-            assert column in scores
-            assert len(scores[column]) > 0
-
-
 @pytest.mark.integration
 def test_annotate_async(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    multicategory = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
 
     job: AsyncJob = dataset.annotate(
-        annotations=[semseg, polygon, bbox],
+        annotations=[semseg, polygon, bbox, category, multicategory],
         asynchronous=True,
     )
     job.sleep_until_complete()
@@ -325,11 +414,11 @@ def test_annotate_async(dataset: Dataset):
         "message": {
             "annotation_upload": {
                 "epoch": 1,
-                "total": 2,
+                "total": 4,
                 "errored": 0,
                 "ignored": 0,
                 "datasetId": dataset.id,
-                "processed": 2,
+                "processed": 4,
             },
             "segmentation_upload": {
                 "ignored": 0,
@@ -337,6 +426,9 @@ def test_annotate_async(dataset: Dataset):
                 "processed": 1,
             },
         },
+        "job_progress": "1.00",
+        "completed_steps": 5,
+        "total_steps": 5,
     }
 
 
@@ -345,11 +437,15 @@ def test_annotate_async_with_error(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
+    category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
+    multicategory = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     bbox.reference_id = "fake_garbage"
 
     job: AsyncJob = dataset.annotate(
-        annotations=[semseg, polygon, bbox],
+        annotations=[semseg, polygon, bbox, category, multicategory],
         asynchronous=True,
     )
     job.sleep_until_complete()
@@ -360,11 +456,11 @@ def test_annotate_async_with_error(dataset: Dataset):
         "message": {
             "annotation_upload": {
                 "epoch": 1,
-                "total": 2,
+                "total": 4,
                 "errored": 1,
                 "ignored": 0,
                 "datasetId": dataset.id,
-                "processed": 1,
+                "processed": 3,
             },
             "segmentation_upload": {
                 "ignored": 0,
@@ -372,6 +468,9 @@ def test_annotate_async_with_error(dataset: Dataset):
                 "processed": 1,
             },
         },
+        "job_progress": "1.00",
+        "completed_steps": 5,
+        "total_steps": 5,
     }
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
@@ -401,6 +500,12 @@ def test_append_and_export(dataset):
     polygon_annotation = PolygonAnnotation.from_json(
         TEST_POLYGON_ANNOTATIONS[0]
     )
+    category_annotation = CategoryAnnotation.from_json(
+        TEST_CATEGORY_ANNOTATIONS[0]
+    )
+    multicategory_annotation = MultiCategoryAnnotation.from_json(
+        TEST_MULTICATEGORY_ANNOTATIONS[0]
+    )
 
     ds_items = [
         DatasetItem(
@@ -417,13 +522,14 @@ def test_append_and_export(dataset):
             box_annotation,
             polygon_annotation,
             segmentation_annotation,
+            category_annotation,
+            multicategory_annotation,
         ]
     )
+    # We don't export everything on segmentation annotations in order to speed up export.
 
-    # We don't export everything on the annotations in order to speed up export.
     def clear_fields(annotation):
         cleared_annotation = copy.deepcopy(annotation)
-        cleared_annotation.annotation_id = None
         cleared_annotation.metadata = {}
         return cleared_annotation
 
@@ -434,12 +540,19 @@ def test_append_and_export(dataset):
 
     exported = dataset.items_and_annotations()
     assert exported[0][ITEM_KEY] == ds_items[0]
-    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == clear_fields(
-        box_annotation
-    )
+    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == box_annotation
     assert sort_labelmap(
         exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
     ) == sort_labelmap(clear_fields(segmentation_annotation))
-    assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == clear_fields(
-        polygon_annotation
+    assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
+    assert (
+        exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
+    )
+    exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels = set(
+        exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels
+    )
+    multicategory_annotation.labels = set(multicategory_annotation.labels)
+    assert (
+        exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0]
+        == multicategory_annotation
     )

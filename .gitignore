@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/api/
 
 # PyBuilder
 target/
@@ -137,3 +138,9 @@ dmypy.json
 
 # Poetry lockfile (no need for deploys, best practice is to not check this in)
 poetry.lock
+
+# vscode
+.vscode/
+
+# JetBrains
+.idea/
