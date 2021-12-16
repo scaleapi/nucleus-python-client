@@ -54,7 +54,12 @@ def test_unit_test_evaluation(
 )
 @pytest.mark.skip
 def test_unit_test_evaluation_no_prediction_for_last_item(
-    CLIENT, modelci_dataset, unit_test, annotations
+    # TODO(gunnar): Remove this slow integration tests after this is confirmed and tested on the evaluation side.
+    #  there's no reason doing unit testing for evaluation here.
+    CLIENT,
+    modelci_dataset,
+    unit_test,
+    annotations,
 ):
     uuid = get_uuid()
     model = CLIENT.create_model(
