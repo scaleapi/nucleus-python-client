@@ -21,6 +21,7 @@ from .helpers import (
     TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
     TEST_MULTICATEGORY_ANNOTATIONS,
+    TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
@@ -160,6 +161,20 @@ def test_default_category_gt_upload(dataset):
     assert_category_annotation_matches_dict(
         response_annotation, TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
     )
+
+
+def test_category_non_existent_taxonomy_gt_upload(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 0
+    assert response["errors"] == [
+        "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
+    ]
 
 
 def test_multicategory_gt_upload(dataset):

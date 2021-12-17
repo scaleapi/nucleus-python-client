@@ -24,6 +24,7 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
+    TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
     TEST_POLYGON_PREDICTIONS,
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
@@ -119,7 +120,7 @@ def test_polygon_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_ignored"] == 0
+    assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["polygon"]
@@ -134,7 +135,7 @@ def test_category_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_ignored"] == 0
+    assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["category"]
@@ -151,7 +152,7 @@ def test_default_category_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_ignored"] == 0
+    assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["category"]
@@ -159,6 +160,19 @@ def test_default_category_pred_upload(model_run):
     assert_category_prediction_matches_dict(
         response[0], TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
     )
+
+
+def test_category_non_existent_taxonomy_gt_upload(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 0
+    assert response["errors"] == [
+        "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
+    ]
 
 
 def test_segmentation_pred_upload(model_run):
