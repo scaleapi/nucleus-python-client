@@ -35,7 +35,6 @@ __all__ = [
 ]
 
 import os
-import time
 import warnings
 from typing import Dict, List, Optional, Sequence, Union
 
@@ -102,6 +101,7 @@ from .errors import (
     DatasetItemRetrievalError,
     ModelCreationError,
     ModelRunCreationError,
+    NoAPIKey,
     NotFoundError,
     NucleusAPIError,
 )
@@ -150,11 +150,11 @@ class NucleusClient:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: Optional[str] = None,
         use_notebook: bool = False,
         endpoint: str = None,
     ):
-        self.api_key = api_key
+        self.api_key = self._set_api_key(api_key)
         self.tqdm_bar = tqdm.tqdm
         if endpoint is None:
             self.endpoint = os.environ.get(
@@ -166,7 +166,6 @@ class NucleusClient:
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
         self._connection = Connection(self.api_key, self.endpoint)
-
         self.modelci = ModelCI(self.api_key, self.endpoint)
 
     def __repr__(self):
@@ -936,3 +935,13 @@ class NucleusClient:
         self._connection.handle_bad_response(
             endpoint, requests_command, requests_response, aiohttp_response
         )
+
+    def _set_api_key(self, api_key):
+        """Fetch API key from environment variable NUCLEUS_API_KEY if not set"""
+        api_key = (
+            api_key if api_key else os.environ.get("NUCLEUS_API_KEY", None)
+        )
+        if api_key is None:
+            raise NoAPIKey()
+
+        return api_key
