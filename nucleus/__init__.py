@@ -741,8 +741,9 @@ class NucleusClient:
         """
         return Slice(slice_id, self)
 
+    @deprecated("Prefer calling Slice.info instead.")
     def slice_info(self, slice_id: str) -> dict:
-        # TODO: migrate to Slice method and deprecate
+        # TODO: deprecate in favor of Slice.info
         response = self.make_request(
             {},
             f"slice/{slice_id}",

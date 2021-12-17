@@ -7,7 +7,11 @@ from nucleus.annotation import Annotation
 from nucleus.constants import EXPORTED_ROWS
 from nucleus.dataset_item import DatasetItem
 from nucleus.job import AsyncJob
-from nucleus.utils import convert_export_payload, format_dataset_item_response
+from nucleus.utils import (
+    KeyErrorDict,
+    convert_export_payload,
+    format_dataset_item_response,
+)
 
 
 class Slice:
@@ -41,6 +45,7 @@ class Slice:
         self.id = slice_id
         self._slice_id = slice_id
         self._client = client
+        self._name = None
         self._dataset_id = None
 
     def __repr__(self):
@@ -52,23 +57,8 @@ class Slice:
                 return True
         return False
 
-    @property
-    def slice_id(self):
-        warnings.warn(
-            "Using Slice.slice_id is deprecated. Prefer using Slice.id",
-            DeprecationWarning,
-        )
-        return self._slice_id
-
-    @property
-    def dataset_id(self):
-        """The ID of the Dataset to which the Slice belongs."""
-        if self._dataset_id is None:
-            self.info()
-        return self._dataset_id
-
-    def info(self) -> dict:
-        """Retrieves info and items of the Slice.
+    def _fetch_all(self) -> dict:
+        """Retrieves info and all items of the Slice.
 
         Returns:
             A dict mapping keys to the corresponding info retrieved.
@@ -76,6 +66,7 @@ class Slice:
 
                 {
                     "name": Union[str, int],
+                    "slice_id": str,
                     "dataset_id": str,
                     "dataset_items": List[{
                         "id": str,
@@ -85,8 +76,58 @@ class Slice:
                     }]
                 }
         """
-        info = self._client.slice_info(self.id)
-        self._dataset_id = info["dataset_id"]
+        response = self._client.make_request(
+            {}, f"slice/{self.id}", requests_command=requests.get
+        )
+        return response
+
+    @property
+    def slice_id(self):
+        warnings.warn(
+            "Using Slice.slice_id is deprecated. Prefer using Slice.id",
+            DeprecationWarning,
+        )
+        return self._slice_id
+
+    @property
+    def name(self):
+        """The name of the Slice."""
+        if self._name is None:
+            self._name = self.info()["name"]
+        return self._name
+
+    @property
+    def dataset_id(self):
+        """The ID of the Dataset to which the Slice belongs."""
+        if self._dataset_id is None:
+            self._dataset_id = self.info()["dataset_id"]
+        return self._dataset_id
+
+    @property
+    def items(self):
+        """All DatasetItems contained in the Slice."""
+        return self._fetch_all()["dataset_items"]
+
+    def info(self) -> dict:
+        """Retrieves the name, slice_id, and dataset_id of the Slice.
+
+        Returns:
+            A dict mapping keys to the corresponding info retrieved.
+            ::
+
+                {
+                    "name": Union[str, int],
+                    "slice_id": str,
+                    "dataset_id": str,
+                }
+        """
+        info = KeyErrorDict(
+            items="The 'items' key is now deprecated for Slice.info. Use Slice.items instead."
+        )
+        res = self._client.make_request(
+            {}, f"slice/{self.id}/info", requests_command=requests.get
+        )
+        info.update(res)
         return info
 
     def append(
@@ -137,11 +178,10 @@ class Slice:
                     }
                 }]
         """
-        info = self.info()
-        for item_metadata in info["dataset_items"]:
+        for item_metadata in self.items:
             yield format_dataset_item_response(
                 self._client.dataitem_loc(
-                    dataset_id=info["dataset_id"],
+                    dataset_id=self.dataset_id,
                     dataset_item_id=item_metadata["id"],
                 )
             )
@@ -259,14 +299,12 @@ def check_annotations_are_in_slice(
         1. True if all Annotations are in the Slice, False otherwise;
         2. List of reference IDs not in the Slice.
     """
-    info = slice_to_check.info()
-
     reference_ids_not_found_in_slice = {
         annotation.reference_id
         for annotation in annotations
         if annotation.reference_id is not None
     }.difference(
-        {item_metadata["ref_id"] for item_metadata in info["dataset_items"]}
+        {item_metadata["ref_id"] for item_metadata in slice_to_check.items}
     )
     if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False
