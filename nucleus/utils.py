@@ -218,6 +218,10 @@ def serialize_and_write(
     upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
     file_pointer,
 ):
+    if len(upload_units) == 0:
+        raise ValueError(
+            "Expecting at least one object when serializing objects to upload, but got zero.  Please try again."
+        )
     for unit in upload_units:
         try:
             if isinstance(unit, (DatasetItem, Annotation, LidarScene)):
