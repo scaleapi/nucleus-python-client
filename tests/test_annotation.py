@@ -11,7 +11,7 @@ from nucleus import (
     SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
-from nucleus.job import AsyncJob
+from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,
@@ -163,7 +163,7 @@ def test_default_category_gt_upload(dataset):
     )
 
 
-def test_category_non_existent_taxonomy_gt_upload(dataset):
+def test_non_existent_taxonomy_category_gt_upload(dataset):
     annotation = CategoryAnnotation.from_json(
         TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]
     )
@@ -758,5 +758,37 @@ def test_default_category_gt_upload_async(dataset):
         },
         "job_progress": "1.00",
         "completed_steps": 1,
+        "total_steps": 1,
+    }
+
+
+@pytest.mark.integration
+def test_non_existent_taxonomy_category_gt_upload_async(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]
+    )
+
+    try:
+        job: AsyncJob = dataset.annotate(
+            annotations=[
+                annotation,
+            ],
+            asynchronous=True,
+        )
+        job.sleep_until_complete()
+    except JobError:
+        assert (
+            "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
+            in job.errors()
+        )
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Errored",
+        "message": {
+            "status_log": "No additional information can be provided at this time."
+        },
+        "job_progress": "0.00",
+        "completed_steps": 0,
         "total_steps": 1,
     }

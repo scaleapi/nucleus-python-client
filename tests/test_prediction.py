@@ -14,7 +14,7 @@ from nucleus import (
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
-from nucleus.job import AsyncJob
+from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_PREDICTIONS,
@@ -162,7 +162,7 @@ def test_default_category_pred_upload(model_run):
     )
 
 
-def test_category_non_existent_taxonomy_gt_upload(model_run):
+def test_non_existent_taxonomy_category_gt_upload(model_run):
     prediction = CategoryPrediction.from_json(
         TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
     )
@@ -588,5 +588,36 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
         },
         "job_progress": "1.00",
         "completed_steps": 1,
+        "total_steps": 1,
+    }
+
+
+@pytest.mark.integration
+def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
+    prediction = CategoryPrediction.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
+    )
+    try:
+        job: AsyncJob = model_run.predict(
+            annotations=[
+                prediction,
+            ],
+            asynchronous=True,
+        )
+        job.sleep_until_complete()
+    except JobError:
+        assert (
+            "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
+            in job.errors()
+        )
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Errored",
+        "message": {
+            "status_log": "No additional information can be provided at this time."
+        },
+        "job_progress": "0.00",
+        "completed_steps": 0,
         "total_steps": 1,
     }
