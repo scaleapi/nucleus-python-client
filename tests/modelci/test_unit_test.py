@@ -9,6 +9,7 @@ from tests.helpers import (
 )
 
 
+@pytest.mark.skip("Assigned slice has no 2D annotations")
 def test_unit_test_metric_creation(CLIENT, unit_test):
     # create some dataset_items for the unit test to reference
     iou = CLIENT.modelci.eval_functions.bbox_iou
