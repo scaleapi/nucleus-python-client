@@ -12,7 +12,7 @@ from nucleus.dataset import Dataset
 from nucleus.dataset_item import DatasetItemType, DatasetItem
 
 # TODO temporary endpoint, will be replaced with some https://api.scale.com/hostedinference/<sub-route>
-HOSTED_INFERENCE_ENDPOINT = "http://hostedinference.ml-internal.scale.com:5000"  # TODO this isn't https
+HOSTED_INFERENCE_ENDPOINT = "https://api.scale.com/hosted_inference"  # TODO this isn't https
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
 logger = logging.getLogger(__name__)
@@ -83,6 +83,7 @@ class ModelEndpointAsyncJob:
         """
         # TODO it seems weird to pass in a Dataset again, since this AsyncJob knows about the dataset items themselves
         # TODO untested
+        # TODO do we even want to have client-side upload?
 
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
@@ -249,39 +250,35 @@ def add_model_bundle(
     model_name: str, model: Any, load_predict_fn: Any, reference_id: str
 ):
     """
-    Uploads to s3 (for now, will upload to s3 signed url later) a model bundle, i.e. a dictionary
+    Grabs a s3 signed url and uploads a model bundle, i.e. a dictionary
     {
         "model": model
         "load_predict_fn": load_predict_fn
     }
     """
+    # TODO test this function
     # TODO: types of model and load_predict_fn
-    # (Temporary) For now we do some s3 string manipulation, later on get an s3URL from some
-    # getPresignedURL endpoint
-    model_bundle_name = f"{model_name}_{reference_id}"
-    s3_path = f"s3://scale-ml/hosted-model-inference/bundles/{model_bundle_name}.pkl"
-    # this might be an invalid url but this is temporary anyways
-    kwargs = {
-        "transport_params": {"session": Session(profile_name="ml-worker")}
-    }
 
-    with smart_open.open(s3_path, "wb", **kwargs) as bundle_pkl:
-        bundle = dict(model=model, load_predict_fn=load_predict_fn)
-        # TODO does this produce a performance bottleneck
-        # This might be a bit slow, the "correct" thing to do is probably to
-        # dump the pickle locally, zip it, and upload the corresponding zip to s3
-        # In any case, this is temporary.
-        cloudpickle.dump(bundle, bundle_pkl)
+    # Grab a signed url to make upload to
+    model_bundle_s3_url = make_hosted_inference_request({}, "model_bundle_upload", requests_command=requests.post)
+    if "signed_url" not in model_bundle_s3_url:
+        raise Exception("Error in server request, no signedURL found")  # TODO code style broad exception
+    s3_path = model_bundle_s3_url["signed_url"]
+    raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
 
-        # TODO upload the file to a signed url
+    # Make bundle upload
+    bundle = dict(model=model, load_predict_fn=load_predict_fn)
+    serialized_bundle = cloudpickle.dumps(bundle)
+    requests.put(s3_path, data=serialized_bundle)
 
-    # Make request to hosted inference service
+    # Make request to hosted inference service to save entry in database
     make_hosted_inference_request(
-        dict(model_name=model_name, reference_id=reference_id),
-        route="model-bundle",
+        dict(id=model_name, location=raw_s3_url),
+        route="model_bundle",
+        requests_command=requests.post,
     )
 
-    return ModelBundle(model_bundle_name)
+    return ModelBundle(f"{model_name}_{reference_id}")  # TODO ModelBundleName is very wrong
 
 
 def create_model_endpoint(
