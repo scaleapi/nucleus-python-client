@@ -170,9 +170,10 @@ def test_non_existent_taxonomy_category_gt_upload(model_run):
     assert response["model_run_id"] == model_run.model_run_id
     assert response["predictions_processed"] == 0
     assert response["predictions_ignored"] == 0
-    assert response["errors"] == [
-        "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
-    ]
+    assert (
+        f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
+        in response["errors"][0]
+    )
 
 
 def test_segmentation_pred_upload(model_run):
@@ -607,8 +608,8 @@ def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
         job.sleep_until_complete()
     except JobError:
         assert (
-            "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
-            in job.errors()
+            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
+            in job.errors()[-1]
         )
 
     assert job.status() == {

@@ -172,9 +172,10 @@ def test_non_existent_taxonomy_category_gt_upload(dataset):
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 0
     assert response["annotations_ignored"] == 0
-    assert response["errors"] == [
-        "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
-    ]
+    assert (
+        f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]} does not exist in dataset {dataset.id}'
+        in response["errors"][0]
+    )
 
 
 def test_multicategory_gt_upload(dataset):
@@ -778,8 +779,8 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
         job.sleep_until_complete()
     except JobError:
         assert (
-            "Input validation failed: Taxonomy does not exist, or given label does not exist in the taxonomy."
-            in job.errors()
+            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]} does not exist in dataset {dataset.id}'
+            in job.errors()[-1]
         )
 
     assert job.status() == {
