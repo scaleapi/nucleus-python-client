@@ -23,6 +23,7 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
     assert unit_test_metric in criteria
 
 
+@pytest.mark.skip("Assigned slice has no 2D annotations")
 def test_list_unit_test(CLIENT, test_slice):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
 

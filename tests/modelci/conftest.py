@@ -64,6 +64,7 @@ def predictions(model, modelci_dataset, annotations):
     yield predictions
 
 
+@pytest.mark.skip("Assigned slice has no 2D annotations")
 @pytest.fixture(scope="module")
 @pytest.mark.usefixtures(
     "annotations"
