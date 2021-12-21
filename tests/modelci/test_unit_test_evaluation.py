@@ -9,6 +9,7 @@ from tests.helpers import EVAL_FUNCTION_THRESHOLD, get_uuid
 from tests.modelci.helpers import create_predictions
 
 
+@pytest.mark.skip("Assigned slice has no 2D annotations")
 @pytest.mark.integration
 def test_unit_test_evaluation(
     CLIENT, modelci_dataset, model, unit_test, annotations, predictions
