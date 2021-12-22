@@ -1,10 +1,9 @@
-import logging
 import time
 import os
 
-import nucleus
-from nucleus.experimental.model_bundle import *
+from nucleus.experimental.DEPRECATED_model_bundle import *
 # TODO Don't include this file in final pr
+from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
 
 
 def create_endpoint():
@@ -33,7 +32,7 @@ def create_endpoint():
     }
 
     model_endpoint = create_model_endpoint(**args)
-    print(model_endpoint.endpoint_url, model_endpoint.endpoint_name)
+    print(model_endpoint.endpoint_url, model_endpoint.endpoint_id)
 
 
 def make_task_call(endpoint_name: str, dataset_id: str, upload_to_nucleus = True):

@@ -2,7 +2,8 @@ import pytest
 import torch
 
 from nucleus import Dataset
-from nucleus.experimental.model_bundle import add_model_bundle, _nucleus_ds_to_s3url_list
+from nucleus.experimental.DEPRECATED_model_bundle import add_model_bundle
+from nucleus.experimental.utils import _nucleus_ds_to_s3url_list
 from tests.helpers import TEST_DATASET_ITEMS, TEST_DATASET_NAME
 
 
