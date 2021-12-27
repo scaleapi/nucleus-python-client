@@ -4,7 +4,7 @@ import os
 from nucleus.experimental.DEPRECATED_model_bundle import *
 # TODO Don't include this file in final pr
 from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
-
+from nucleus.experimental.hosted_inference_client import HostedInference
 
 def create_endpoint():
     env_params = {
@@ -79,10 +79,13 @@ def temp_clone_pandaset():
 #temp_clone_pandaset()
 
 if __name__ == "__main__":
-    make_task_call(
-        endpoint_name="yi-tf-test",
-        #dataset_id="ds_c4wht080x81g060m0nfg",
-        dataset_id="ds_c4x8s3m6n260060cngs0",
-        upload_to_nucleus=True
-    )
+    # make_task_call(
+    #     endpoint_name="yi-tf-test",
+    #     #dataset_id="ds_c4wht080x81g060m0nfg",
+    #     dataset_id="ds_c4x8s3m6n260060cngs0",
+    #     upload_to_nucleus=True
+    # )
     #temp_clone_pandaset()
+
+    hmi_client = HostedInference(api_key="")
+    print(hmi_client.connection.post({}, "model_bundle_upload"))

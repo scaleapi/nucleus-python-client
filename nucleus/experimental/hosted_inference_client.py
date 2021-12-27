@@ -17,7 +17,7 @@ logging.basicConfig()
 class HostedInference:
     """HostedInference Python Client extension."""
 
-    def __init__(self, api_key: str, endpoint: str):
+    def __init__(self, api_key: str, endpoint: str=HOSTED_INFERENCE_ENDPOINT):
         self.connection = Connection(api_key, endpoint)
 
     def __repr__(self):
@@ -78,4 +78,4 @@ class HostedInference:
         )
         resp = self.connection.post(payload, "endpoints")
         endpoint_id = resp["endpoint_id"]
-        return ModelEndpoint(endpoint_id=endpoint_id)
+        return ModelEndpoint(endpoint_id=endpoint_id, client=self)
