@@ -64,15 +64,21 @@ def test_slice_create_and_delete_and_list(dataset):
     assert len(dataset_slices) == 1
     assert slc.id == dataset_slices[0]
 
-    response = slc.info()
-    assert response["name"] == TEST_SLICE_NAME
-    assert response["dataset_id"] == dataset.id
-    assert len(response["dataset_items"]) == 2
+    assert slc.name == TEST_SLICE_NAME
+    assert slc.dataset_id == dataset.id
+
+    items = slc.items
+    assert len(items) == 2
     for item in ds_items[:2]:
         assert (
-            item.reference_id == response["dataset_items"][0]["ref_id"]
-            or item.reference_id == response["dataset_items"][1]["ref_id"]
+            item.reference_id == items[0]["ref_id"]
+            or item.reference_id == items[1]["ref_id"]
         )
+
+    response = slc.info()
+    assert response["name"] == TEST_SLICE_NAME
+    assert response["slice_id"] == slc.slice_id
+    assert response["dataset_id"] == dataset.id
 
 
 def test_slice_create_and_export(dataset):
@@ -132,13 +138,13 @@ def test_slice_append(dataset):
     # Insert duplicate first item
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
 
-    response = slc.info()
-    assert len(response["dataset_items"]) == 3
+    items = slc.items
+    assert len(items) == 3
     for item in ds_items[:3]:
         assert (
-            item.reference_id == response["dataset_items"][0]["ref_id"]
-            or item.reference_id == response["dataset_items"][1]["ref_id"]
-            or item.reference_id == response["dataset_items"][2]["ref_id"]
+            item.reference_id == items[0]["ref_id"]
+            or item.reference_id == items[1]["ref_id"]
+            or item.reference_id == items[2]["ref_id"]
         )
 
     all_stored_items = [_[ITEM_KEY] for _ in slc.items_and_annotations()]
@@ -178,8 +184,8 @@ def test_slice_send_to_labeling(dataset):
         reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
     )
 
-    response = slc.info()
-    assert len(response["dataset_items"]) == 2
+    items = slc.items
+    assert len(items) == 2
 
     response = slc.send_to_labeling(TEST_PROJECT_ID)
     assert isinstance(response, AsyncJob)

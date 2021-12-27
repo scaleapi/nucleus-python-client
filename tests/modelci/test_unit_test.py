@@ -5,12 +5,11 @@ from nucleus.modelci.unit_test import UnitTest
 from tests.helpers import (
     EVAL_FUNCTION_COMPARISON,
     EVAL_FUNCTION_THRESHOLD,
-    TEST_SLICE_NAME,
     get_uuid,
 )
-from tests.test_dataset import make_dataset_items
 
 
+@pytest.mark.skip("Assigned slice has no 2D annotations")
 def test_unit_test_metric_creation(CLIENT, unit_test):
     # create some dataset_items for the unit test to reference
     iou = CLIENT.modelci.eval_functions.bbox_iou
@@ -25,6 +24,7 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
     assert unit_test_metric in criteria
 
 
+@pytest.mark.skip("Assigned slice has no 2D annotations")
 def test_list_unit_test(CLIENT, test_slice):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
 
@@ -42,23 +42,16 @@ def test_list_unit_test(CLIENT, test_slice):
     CLIENT.modelci.delete_unit_test(unit_test.id)
 
 
-def test_unit_test_items(CLIENT, dataset):
-    # create some dataset_items for the unit test to reference
-    items = make_dataset_items()
-    dataset.append(items)
+def test_unit_test_items(CLIENT, test_slice, slice_items, annotations):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
-    slc = dataset.create_slice(
-        name=TEST_SLICE_NAME,
-        reference_ids=[item.reference_id for item in items],
-    )
 
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,
-        slice_id=slc.id,
+        slice_id=test_slice.id,
         evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_iou() > 0.5],
     )
 
-    expected_items_locations = [item.image_location for item in items]
+    expected_items_locations = [item.image_location for item in slice_items]
     actual_items_locations = [
         item.image_location for item in unit_test.get_items()
     ]

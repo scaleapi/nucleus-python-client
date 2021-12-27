@@ -4,6 +4,29 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.2) - 2021-12-16
+
+### Added
+- `Slice.name` property that fetches the Slice's user-defined name.
+  - The Slice's items are no longer fetched unnecessarily; this used to cause considerable latency.
+- `Slice.items` property that fetches all items contained in the Slice.
+
+### Changed
+- `Slice.info()` now only retrieves the Slice's `name`, `slice_id`, and `dataset_id`.
+  - The Slice's items are no longer fetched unnecessarily; this used to cause considerable latency.
+  - This method issues a warning to use `Slice.items` when attempting to `items`.
+
+[###](###) Deprecated
+- `NucleusClient.slice_info(..)` is deprecated in favor of `Slice.info()`.
+
+## [0.4.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.1) - 2021-12-13
+
+### Changed
+- Datasets in Nucleus now fall under two categories: scene or item.
+  - Scene Datasets can only have scenes uploaded to them.
+  - Item Datasets can only have items uploaded to them.
+- `NucleusClient.create_dataset` now requires a boolean parameter `is_scene` to immutably set whether the Dataset is a scene or item Dataset.
+
 ## [0.4.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.0) - 2021-08-12
 
 ### Added

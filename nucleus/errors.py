@@ -62,3 +62,12 @@ class NucleusAPIError(Exception):
             message += "\n This likely indicates temporary downtime of the API, please try again in a minute or two"
 
         super().__init__(message)
+
+
+class NoAPIKey(Exception):
+    def __init__(
+        self,
+        message="You need to pass an API key to the NucleusClient or set the environment variable NUCLEUS_API_KEY",
+    ):
+        self.message = message
+        super().__init__(self.message)

@@ -48,6 +48,40 @@ STRING_REPLACEMENTS = {
 }
 
 
+class KeyErrorDict(dict):
+    """Wrapper for response dicts with deprecated keys.
+
+    Parameters:
+        **kwargs: Mapping from the deprecated key to a warning message.
+    """
+
+    def __init__(self, **kwargs):
+        self._deprecated = {}
+
+        for key, msg in kwargs.items():
+            if not isinstance(key, str):
+                raise TypeError(
+                    f"All keys must be strings! Received non-string '{key}'"
+                )
+            if not isinstance(msg, str):
+                raise TypeError(
+                    f"All warning messages must be strings! Received non-string '{msg}'"
+                )
+
+            self._deprecated[key] = msg
+
+        super().__init__()
+
+    def __missing__(self, key):
+        """Raises KeyError for deprecated keys, otherwise uses base dict logic."""
+        if key in self._deprecated:
+            raise KeyError(self._deprecated[key])
+        try:
+            super().__missing__(key)
+        except AttributeError as e:
+            raise KeyError(key) from e
+
+
 def format_prediction_response(
     response: dict,
 ) -> Union[
@@ -184,6 +218,10 @@ def serialize_and_write(
     upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
     file_pointer,
 ):
+    if len(upload_units) == 0:
+        raise ValueError(
+            "Expecting at least one object when serializing objects to upload, but got zero.  Please try again."
+        )
     for unit in upload_units:
         try:
             if isinstance(unit, (DatasetItem, Annotation, LidarScene)):
