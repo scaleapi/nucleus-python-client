@@ -88,4 +88,5 @@ if __name__ == "__main__":
     #temp_clone_pandaset()
 
     hmi_client = HostedInference(api_key="")
-    print(hmi_client.connection.post({}, "model_bundle_upload"))
+    # print(hmi_client.connection.post({}, "model_bundle_upload"))
+    print(hmi_client.connection.get("endpoints"))

@@ -8,7 +8,7 @@ from typing import Dict
 from nucleus.connection import Connection
 from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
 
-HOSTED_INFERENCE_ENDPOINT = "https://api.scale.com/hosted_inference"
+HOSTED_INFERENCE_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
 logger = logging.getLogger(__name__)
