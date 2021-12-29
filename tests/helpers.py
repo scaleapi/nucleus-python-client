@@ -180,6 +180,14 @@ TEST_DEFAULT_CATEGORY_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION = [
+    {
+        "label": "[Pytest] Category Label 0",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[0]),
+        "taxonomy_name": "[Pytest] Category Taxonomy Nonexistent",
+    }
+]
+
 TEST_MULTICATEGORY_ANNOTATIONS = [
     {
         "labels": [
@@ -288,6 +296,15 @@ TEST_DEFAULT_CATEGORY_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_DEFAULT_CATEGORY_ANNOTATIONS))
+]
+
+TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION = [
+    {
+        "label": "[Pytest] Category Label 0",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[0]),
+        "taxonomy_name": "[Pytest] Category Taxonomy Nonexistent",
+        "confidence": 0.10,
+    }
 ]
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"

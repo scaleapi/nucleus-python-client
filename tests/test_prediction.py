@@ -14,7 +14,7 @@ from nucleus import (
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
-from nucleus.job import AsyncJob
+from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_PREDICTIONS,
@@ -24,6 +24,7 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
+    TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
     TEST_POLYGON_PREDICTIONS,
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
@@ -119,7 +120,7 @@ def test_polygon_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_ignored"] == 0
+    assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["polygon"]
@@ -134,7 +135,7 @@ def test_category_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_ignored"] == 0
+    assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["category"]
@@ -151,13 +152,27 @@ def test_default_category_pred_upload(model_run):
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_ignored"] == 0
+    assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
     response = model_run.refloc(prediction.reference_id)["category"]
     assert len(response) == 1
     assert_category_prediction_matches_dict(
         response[0], TEST_DEFAULT_CATEGORY_PREDICTIONS[0]
+    )
+
+
+def test_non_existent_taxonomy_category_gt_upload(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 0
+    assert (
+        f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
+        in response["errors"][0]
     )
 
 
@@ -574,5 +589,36 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
         },
         "job_progress": "1.00",
         "completed_steps": 1,
+        "total_steps": 1,
+    }
+
+
+@pytest.mark.integration
+def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
+    prediction = CategoryPrediction.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
+    )
+    try:
+        job: AsyncJob = model_run.predict(
+            annotations=[
+                prediction,
+            ],
+            asynchronous=True,
+        )
+        job.sleep_until_complete()
+    except JobError:
+        assert (
+            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
+            in job.errors()[-1]
+        )
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Errored",
+        "message": {
+            "status_log": "No additional information can be provided at this time."
+        },
+        "job_progress": "0.00",
+        "completed_steps": 0,
         "total_steps": 1,
     }
