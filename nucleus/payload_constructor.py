@@ -143,10 +143,11 @@ def construct_model_run_creation_payload(
 
 
 def construct_taxonomy_payload(
-    taxonomy_name: str, taxonomy_type: str, labels: List[str]
+    taxonomy_name: str, taxonomy_type: str, labels: List[str], update: bool
 ) -> dict:
     return {
         TAXONOMY_NAME_KEY: taxonomy_name,
         TYPE_KEY: taxonomy_type,
         LABELS_KEY: labels,
+        UPDATE_KEY: update,
     }
