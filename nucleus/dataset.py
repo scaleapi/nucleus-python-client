@@ -918,6 +918,7 @@ class Dataset:
         taxonomy_name: str,
         taxonomy_type: str,
         labels: List[str],
+        update: bool = False,
     ):
         """Creates a new taxonomy.
         ::
@@ -929,7 +930,8 @@ class Dataset:
             response = dataset.add_taxonomy(
                 taxonomy_name="clothing_type",
                 taxonomy_type="category",
-                labels=["shirt", "trousers", "dress"]
+                labels=["shirt", "trousers", "dress"],
+                update=False
             )
 
         Parameters:
@@ -938,13 +940,15 @@ class Dataset:
             taxonomy_type: The type of this taxonomy as a string literal.
               Currently, the only supported taxonomy type is "category".
             labels: The list of possible labels for the taxonomy.
+            update: Whether or not to update taxonomy labels on taxonomy name collision. Default is False. Note that taxonomy labels will not be deleted on update, they can only be appended.
 
         Returns:
-            Returns a response with dataset_id, taxonomy_name and type for the
-            new taxonomy.
+            Returns a response with dataset_id, taxonomy_name and status of the add taxonomy operation.
         """
         return self._client.make_request(
-            construct_taxonomy_payload(taxonomy_name, taxonomy_type, labels),
+            construct_taxonomy_payload(
+                taxonomy_name, taxonomy_type, labels, update
+            ),
             f"dataset/{self.id}/add_taxonomy",
             requests_command=requests.post,
         )
