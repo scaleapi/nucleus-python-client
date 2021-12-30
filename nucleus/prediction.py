@@ -3,7 +3,7 @@ All of the prediction types supported. In general, prediction types are the same
 as annotation types, but come with additional, optional data that can be attached
 such as confidence or probability distributions.
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from .annotation import (
     BoxAnnotation,
@@ -399,3 +399,8 @@ class CategoryPrediction(CategoryAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
         )
+
+
+Prediction = Union[
+    BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction
+]
