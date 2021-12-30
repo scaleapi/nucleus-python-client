@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 import cloudpickle
 import logging
@@ -78,5 +78,27 @@ class HostedInference:
             requirements=requirements,
         )
         resp = self.connection.post(payload, "endpoints")
+        # TODO check error codes
         endpoint_id = resp["endpoint_id"]
         return ModelEndpoint(endpoint_id=endpoint_id, client=self)
+
+    # Relatively small wrappers around http requests
+
+    def get_bundles(self) -> List[ModelBundle]:
+        raise NotImplementedError
+
+    def get_model_endpoints(self) -> List[ModelEndpoint]:
+        raise NotImplementedError
+
+    def edit_model_endpoint(self):
+        # TODO args
+        raise NotImplementedError
+
+    def sync_request(self, s3url: str):
+        raise NotImplementedError
+
+    def async_request(self, s3url: str):
+        raise NotImplementedError
+
+    def get_async_response(self, async_task_id: str):
+        raise NotImplementedError

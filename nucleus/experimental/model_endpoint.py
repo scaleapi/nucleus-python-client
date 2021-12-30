@@ -54,6 +54,10 @@ class ModelEndpoint:
         # Makes call to model status endpoint
         raise NotImplementedError
 
+    def sync_request(self, s3url: str):
+        # Makes a single request to the synchronous endpoint
+        return self.client.sync_request(s3url)
+
 
 class ModelEndpointAsyncJob:
     """
