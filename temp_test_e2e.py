@@ -1,12 +1,12 @@
 import time
 import os
 
-from nucleus.experimental.DEPRECATED_model_bundle import *
+# from nucleus.experimental.DEPRECATED_model_bundle import *
 # TODO Don't include this file in final pr
 from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
 from nucleus.experimental.hosted_inference_client import HostedInference
 
-def create_endpoint():
+def create_endpoint(hmi_client):
     env_params = {
         "framework_type": "pytorch",
         "pytorch_version": "1.7.0",
@@ -31,8 +31,8 @@ def create_endpoint():
         "requirements": [],
     }
 
-    model_endpoint = create_model_endpoint(**args)
-    print(model_endpoint.endpoint_url, model_endpoint.endpoint_id)
+    model_endpoint = hmi_client.create_model_endpoint(**args)
+    print(model_endpoint.endpoint_id)
 
 
 def make_task_call(endpoint_name: str, dataset_id: str, upload_to_nucleus = True):
@@ -41,7 +41,8 @@ def make_task_call(endpoint_name: str, dataset_id: str, upload_to_nucleus = True
 
     dataset = client.get_dataset(dataset_id)
 
-    model_endpoint = ModelEndpoint(endpoint_name=endpoint_name, endpoint_url="idk")
+    model_endpoint = ModelEndpoint(endpoint_id=endpoint_name, client=hmi_client)
+
     model_endpoint_async_job = model_endpoint.create_run_job(dataset=dataset)
 
     while not model_endpoint_async_job.is_done(poll=True):
@@ -74,7 +75,7 @@ def temp_clone_pandaset():
     cloned_dataset.append(cloned_dataset_items)
 
 
-# create_endpoint()
+
 
 #temp_clone_pandaset()
 
@@ -88,5 +89,6 @@ if __name__ == "__main__":
     #temp_clone_pandaset()
 
     hmi_client = HostedInference(api_key="")
+    # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
     print(hmi_client.connection.get("endpoints"))

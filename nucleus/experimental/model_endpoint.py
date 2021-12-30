@@ -48,7 +48,7 @@ class ModelEndpoint:
             request_ids[s3url] = inference_request['task_id']
             # make the request to the endpoint (in parallel or something)
 
-        return ModelEndpointAsyncJob(self.client, request_ids=request_ids, model_endpoint=self, s3url_to_dataset_map=s3url_to_dataset_map)
+        return ModelEndpointAsyncJob(self.client, request_ids=request_ids, s3url_to_dataset_map=s3url_to_dataset_map)
 
     def status(self):
         # Makes call to model status endpoint
@@ -61,16 +61,15 @@ class ModelEndpointAsyncJob:
 
     Invariant: set keys for self.request_ids and self.responses are equal
 
+    idk about this abstraction tbh, could use a redesign maybe?
+
     """
-    def __init__(self, client, request_ids: Dict[str, str], s3url_to_dataset_map: Dict[str, DatasetItem], model_endpoint: "ModelEndpoint"):
-        # TODO is it weird for ModelEndpointAsyncJob to know about ModelEndpoint?
-        # probably not, but we might not need model_endpoint anyways heh, depending on
-        # the format of the Get Task Result url
+    def __init__(self, client, request_ids: Dict[str, str], s3url_to_dataset_map: Dict[str, DatasetItem]):
+
         self.client = client
         self.request_ids = request_ids.copy()  # s3url -> task_id
         self.responses = {s3url: None for s3url in request_ids.keys()}
         self.s3url_to_dataset_map = s3url_to_dataset_map
-        self.model_endpoint = model_endpoint  # TODO unused?
 
     def poll_endpoints(self):
         """

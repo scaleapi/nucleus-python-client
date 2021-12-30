@@ -14,10 +14,11 @@ DEFAULT_NETWORK_TIMEOUT_SEC = 120
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
+
 class HostedInference:
     """HostedInference Python Client extension."""
 
-    def __init__(self, api_key: str, endpoint: str=HOSTED_INFERENCE_ENDPOINT):
+    def __init__(self, api_key: str, endpoint: str = HOSTED_INFERENCE_ENDPOINT):
         self.connection = Connection(api_key, endpoint)
 
     def __repr__(self):
