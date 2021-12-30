@@ -47,7 +47,7 @@ class HostedInference:
         serialized_bundle = cloudpickle.dumps(bundle)
         requests.put(s3_path, data=serialized_bundle)
 
-        self.connection.post(payload=dict(id=model_bundle_name, location=raw_s3_url), route="model_bundle")
+        resp = self.connection.post(payload=dict(id=model_bundle_name, location=raw_s3_url), route="model_bundle")
         # TODO check that a model bundle was created and no name collisions happened
         return ModelBundle(model_bundle_name)
 

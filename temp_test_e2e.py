@@ -1,7 +1,6 @@
 import time
 import os
 
-# from nucleus.experimental.DEPRECATED_model_bundle import *
 # TODO Don't include this file in final pr
 from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
 from nucleus.experimental.hosted_inference_client import HostedInference
