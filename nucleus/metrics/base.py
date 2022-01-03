@@ -11,7 +11,7 @@ AnnotationOrPredictionList = Union[List[Annotation], List[Prediction]]
 
 @dataclass
 class MetricResult:
-    """An Metric Result contains the value of an evaluation, as well as its weight.
+    """A Metric Result contains the value of an evaluation, as well as its weight.
     The weight is useful when aggregating metrics where each dataset item may hold a
     different relative weight. For example, when calculating precision over a dataset,
     the denominator of the precision is the number of annotations, and therefore the weight
