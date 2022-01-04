@@ -4,6 +4,19 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.4) - 2021-01-04
+
+### Added
+- `Slice.export_raw_items()` method that fetches accessible (signed) URLs for all items in the Slice.
+
+## [0.4.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.3) - 2022-01-03
+
+### Added
+- Improved error messages for categorization
+
+### Changed
+- Category taxonomies are now updatable
+
 ## [0.4.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.2) - 2021-12-16
 
 ### Added
