@@ -37,9 +37,9 @@ class HostedInference:
         """
         # Grab a signed url to make upload to
         model_bundle_s3_url = self.connection.post({}, "model_bundle_upload")
-        if "signed_url" not in model_bundle_s3_url:
+        if "signedUrl" not in model_bundle_s3_url:
             raise Exception("Error in server request, no signedURL found")  # TODO code style broad exception
-        s3_path = model_bundle_s3_url["signed_url"]
+        s3_path = model_bundle_s3_url["signedUrl"]
         raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
 
         # Make bundle upload
@@ -91,7 +91,7 @@ class HostedInference:
         raise NotImplementedError
 
     def edit_model_endpoint(self):
-        # TODO args
+        # TODO args, corresponds to PUT model_endpoint
         raise NotImplementedError
 
     def sync_request(self, s3url: str):
