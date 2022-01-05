@@ -1,7 +1,7 @@
 import copy
-import requests
 
 import pytest
+import requests
 
 from nucleus import BoxAnnotation, Dataset, DatasetItem, NucleusClient, Slice
 from nucleus.constants import (
