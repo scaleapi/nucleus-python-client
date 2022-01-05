@@ -1,4 +1,5 @@
 import copy
+import requests
 
 import pytest
 
@@ -189,3 +190,31 @@ def test_slice_send_to_labeling(dataset):
 
     response = slc.send_to_labeling(TEST_PROJECT_ID)
     assert isinstance(response, AsyncJob)
+
+
+def test_slice_export_raw_items(dataset):
+    # Dataset upload
+    orig_url = TEST_IMG_URLS[0]
+    ds_items = [
+        DatasetItem(
+            image_location=orig_url,
+            reference_id=reference_id_from_url(orig_url),
+        )
+    ]
+    response = dataset.append(ds_items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    # Slice creation
+    slc = dataset.create_slice(
+        name=(TEST_SLICE_NAME + "-raw-export"),
+        reference_ids=[ds_items[0].reference_id],
+    )
+
+    # Export single raw item
+    res = slc.export_raw_items()
+    export_url = res["raw_dataset_items"][0]["scale_url"]
+
+    orig_bytes = requests.get(orig_url).content
+    export_bytes = requests.get(export_url).content
+
+    assert hash(orig_bytes) == hash(export_bytes)
