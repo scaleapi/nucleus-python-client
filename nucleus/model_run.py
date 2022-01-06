@@ -127,6 +127,13 @@ class ModelRun:
             "predictions_ignored": int,
         }
         """
+        # TEMP Workaround to avoid annotation_id conflicts across distinct model_runs
+        for pred in annotations:
+            if (
+                not isinstance(pred, SegmentationPrediction)
+                and pred.annotation_id is not None
+            ):
+                pred.annotation_id += f"-{self.model_run_id}"
         if asynchronous:
             check_all_mask_paths_remote(annotations)
 

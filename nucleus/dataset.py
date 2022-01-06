@@ -1228,6 +1228,13 @@ class Dataset:
                     "predictions_ignored": int,
                 }
         """
+        # TEMP Workaround to avoid annotation_id conflicts across distinct model_runs
+        for pred in predictions:
+            if (
+                not isinstance(pred, CategoryPrediction)
+                and pred.annotation_id is not None
+            ):
+                pred.annotation_id += f"-{model.id}"
         if asynchronous:
             check_all_mask_paths_remote(predictions)
 

@@ -323,6 +323,8 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
+        if not self.annotation_id:
+            self.annotation_id = f"{self.label}-{self.position.x}-{self.position.y}-{self.position.z}-{self.dimensions.x}-{self.dimensions.y}-{self.dimensions.y}-{self.reference_id}"
 
     @classmethod
     def from_json(cls, payload: dict):
