@@ -1,15 +1,16 @@
-import pytest
 from copy import deepcopy
+
+import pytest
 
 from nucleus.metrics import PolygonIOU, PolygonPrecision, PolygonRecall
 from nucleus.metrics.base import Metric, MetricResult
 from tests.metrics.helpers import (
     TEST_ANNOTATION_LIST,
-    TEST_PREDICTION_LIST,
     TEST_BOX_ANNOTATION_LIST,
     TEST_BOX_PREDICTION_LIST,
     TEST_CONVEX_POLYGON_ANNOTATION_LIST,
     TEST_CONVEX_POLYGON_PREDICTION_LIST,
+    TEST_PREDICTION_LIST,
     assert_metric_eq,
 )
 

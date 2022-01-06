@@ -1,6 +1,6 @@
 import pytest
 
-from nucleus.annotation import BoxAnnotation, PolygonAnnotation, AnnotationList
+from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
 from tests.helpers import TEST_BOX_ANNOTATIONS, TEST_CONVEX_POLYGON_ANNOTATIONS
 
