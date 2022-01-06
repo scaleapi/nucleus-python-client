@@ -9,7 +9,7 @@ from nucleus.experimental.hosted_inference_client import HostedInference
 def create_dummy_bundle(hmi_client):
     def returns_returns_1(x):
         def returns_1(y):
-            return y
+            return 1
         return returns_1
     model = None
     load_predict_func = returns_returns_1
