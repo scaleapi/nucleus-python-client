@@ -9,8 +9,7 @@ from tests.helpers import (
 )
 
 
-@pytest.mark.skip("Assigned slice has no 2D annotations")
-def test_unit_test_metric_creation(CLIENT, unit_test):
+def test_unit_test_metric_creation(CLIENT, annotations, unit_test):
     # create some dataset_items for the unit test to reference
     iou = CLIENT.modelci.eval_functions.bbox_iou
     unit_test_metric = unit_test.add_criterion(iou() > EVAL_FUNCTION_THRESHOLD)
@@ -24,8 +23,7 @@ def test_unit_test_metric_creation(CLIENT, unit_test):
     assert unit_test_metric in criteria
 
 
-@pytest.mark.skip("Assigned slice has no 2D annotations")
-def test_list_unit_test(CLIENT, test_slice):
+def test_list_unit_test(CLIENT, test_slice, annotations):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
 
     e = CLIENT.modelci.eval_functions
@@ -59,7 +57,7 @@ def test_unit_test_items(CLIENT, test_slice, slice_items, annotations):
     CLIENT.modelci.delete_unit_test(unit_test.id)
 
 
-def test_no_criteria_raises_error(CLIENT, test_slice):
+def test_no_criteria_raises_error(CLIENT, test_slice, annotations):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
     with pytest.raises(CreateUnitTestError):
         CLIENT.modelci.create_unit_test(
