@@ -127,7 +127,7 @@ class ModelRun:
             "predictions_ignored": int,
         }
         """
-        # TEMP Workaround to avoid annotation_id conflicts across distinct model_runs
+        # TODO sh344540
         for pred in annotations:
             if (
                 not isinstance(pred, SegmentationPrediction)
