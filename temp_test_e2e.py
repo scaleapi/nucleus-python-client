@@ -5,6 +5,17 @@ import os
 from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
 from nucleus.experimental.hosted_inference_client import HostedInference
 
+
+def create_dummy_bundle(hmi_client):
+    def returns_returns_1(x):
+        def returns_1(y):
+            return y
+        return returns_1
+    model = None
+    load_predict_func = returns_returns_1
+    hmi_client.add_model_bundle("return1", model, load_predict_func)
+
+
 def create_endpoint(hmi_client):
     env_params = {
         "framework_type": "pytorch",
@@ -15,6 +26,7 @@ def create_endpoint(hmi_client):
 
     mb = ModelBundle("abc123")
 
+    # TODO out of date lol
     args = {
         "service_name": "seantest",
         "env_params": env_params,
@@ -90,4 +102,5 @@ if __name__ == "__main__":
     hmi_client = HostedInference(api_key="")
     # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
+    create_dummy_bundle(hmi_client)
     print(hmi_client.connection.get("endpoints"))
