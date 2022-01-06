@@ -1,12 +1,10 @@
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, List, Union
+from typing import Iterable
 
-from nucleus.annotation import Annotation
-from nucleus.prediction import Prediction
-
-AnnotationOrPredictionList = Union[List[Annotation], List[Prediction]]
+from nucleus.annotation import AnnotationList
+from nucleus.prediction import PredictionList
 
 
 @dataclass
@@ -25,47 +23,67 @@ class MetricResult:
     value: float
     weight: float = 1
 
-    @classmethod
-    def aggregate(cls, results: Iterable["MetricResult"]) -> "MetricResult":
+    @staticmethod
+    def aggregate(results: Iterable["MetricResult"]) -> "MetricResult":
         """Aggregates results using a weighted average."""
         results = list(filter(lambda x: x.weight != 0, results))
         total_weight = sum([result.weight for result in results])
         total_value = sum([result.value * result.weight for result in results])
         value = total_value / max(total_weight, sys.float_info.epsilon)
-        return cls(value, total_weight)
+        return MetricResult(value, total_weight)
 
 
 class Metric(ABC):
-    """Abstract class to define a Metric."""
+    """Abstract class for defining a metric, which takes a list of annotations
+    and predictions and returns a scalar.
+
+    To create a new concrete Metric, override the `__call__` function
+    with logic to define a metric between annotations and predictions. ::
+
+        from nucleus import BoxAnnotation, CuboidPrediction, Point3D
+        from nucleus.annotation import AnnotationList
+        from nucleus.prediction import PredictionList
+        from nucleus.metrics import Metric, MetricResult
+        from nucleus.metrics.polygon_utils import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
+
+        class MyMetric(Metric):
+            def __call__(
+                self, annotations: AnnotationList, predictions: PredictionList
+            ) -> MetricResult:
+                value = (len(annotations) - len(predictions)) ** 2
+                weight = len(annotations)
+                return MetricResult(value, weight)
+
+        box = BoxAnnotation(
+            label="car",
+            x=0,
+            y=0,
+            width=10,
+            height=10,
+            reference_id="image_1",
+            annotation_id="image_1_car_box_1",
+            metadata={"vehicle_color": "red"}
+        )
+
+        cuboid = CuboidPrediction(
+            label="car",
+            position=Point3D(100, 100, 10),
+            dimensions=Point3D(5, 10, 5),
+            yaw=0,
+            reference_id="pointcloud_1",
+            confidence=0.8,
+            annotation_id="pointcloud_1_car_cuboid_1",
+            metadata={"vehicle_color": "green"}
+        )
+
+        metric = MyMetric()
+        annotations = AnnotationList(box_annotations=[box])
+        predictions = PredictionList(cuboid_predictions=[cuboid])
+        metric(annotations, predictions)
+    """
 
     @abstractmethod
     def __call__(
-        self, annotations: List[Annotation], predictions: List[Prediction]
+        self, annotations: AnnotationList, predictions: PredictionList
     ) -> MetricResult:
         """A metric must override this method and return a metric result, given annotations and predictions."""
-
-
-class Filter(ABC):
-    """Abstract class to define an Filter"""
-
-    @abstractmethod
-    def __call__(
-        self, annotations: AnnotationOrPredictionList
-    ) -> AnnotationOrPredictionList:
-        """A Filter must override this method."""
-
-
-class AnnotationFilter(ABC):
-    """Abstract class to define an Filter"""
-
-    @abstractmethod
-    def __call__(self, annotations: List[Annotation]) -> List[Annotation]:
-        """An Annotation Filter must override this method."""
-
-
-class PredictionFilter(ABC):
-    """Abstract class to define an Prediction Filter"""
-
-    @abstractmethod
-    def __call__(self, predictions: List[Prediction]) -> List[Prediction]:
-        """An Prediction Filter must override this method."""

@@ -18,7 +18,7 @@ BoxOrPolygonAnnotation = Union[
 ]
 
 
-def _polygon_annotation_to_shape(
+def polygon_annotation_to_shape(
     annotation: BoxOrPolygonAnnotation,
 ) -> Polygon:
     if isinstance(annotation, BoxAnnotation):
@@ -64,8 +64,8 @@ def _iou_assignments_for_same_reference_id(
     ), "Expected annotations and predictions to have same reference ID."
 
     # Convert annotation and predictions to shapely.geometry.Polygon objects
-    polygon_annotations = list(map(_polygon_annotation_to_shape, annotations))
-    polygon_predictions = list(map(_polygon_annotation_to_shape, predictions))
+    polygon_annotations = list(map(polygon_annotation_to_shape, annotations))
+    polygon_predictions = list(map(polygon_annotation_to_shape, predictions))
 
     # Compute IoU matrix and set IoU values below the threshold to 0.
     iou_matrix = _iou_matrix(polygon_annotations, polygon_predictions)

@@ -2,11 +2,11 @@ import sys
 from abc import abstractmethod
 from typing import List
 
-from nucleus.annotation import Annotation, BoxAnnotation, PolygonAnnotation
-from nucleus.prediction import Prediction
+from nucleus.annotation import AnnotationList
+from nucleus.prediction import PredictionList
 
 from .base import Metric, MetricResult
-from .filters import ConfidenceFilter, TypeFilter
+from .filters import confidence_filter
 from .polygon_utils import (
     BoxOrPolygonAnnotation,
     BoxOrPolygonPrediction,
@@ -28,7 +28,7 @@ class PolygonMetric(Metric):
 
     To create a new concrete PolygonMetric, override the `eval` function
     with logic to define a metric between box/polygon annotations and predictions.
-    For example, ::
+    ::
 
         from nucleus import BoxAnnotation
         from nucleus.metrics import MetricResult, PolygonMetric
@@ -70,14 +70,9 @@ class PolygonMetric(Metric):
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Default False
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
         """
-        self.polygon_filter = TypeFilter((BoxAnnotation, PolygonAnnotation))
         self.enforce_label_match = enforce_label_match
-        self.confidence_filter = None
-        assert (
-            0 <= confidence_threshold <= 1
-        ), "Confidence threshold must be between 0 and 1."
-        if confidence_threshold > 0:
-            self.confidence_filter = ConfidenceFilter(confidence_threshold)
+        assert 0 <= confidence_threshold <= 1
+        self.confidence_threshold = confidence_threshold
 
     @abstractmethod
     def eval(
@@ -89,12 +84,18 @@ class PolygonMetric(Metric):
         pass
 
     def __call__(
-        self, annotations: List[Annotation], predictions: List[Prediction]
+        self, annotations: AnnotationList, predictions: PredictionList
     ) -> MetricResult:
-        if self.confidence_filter:
-            predictions = self.confidence_filter(predictions)
-        polygon_annotations = self.polygon_filter(annotations)
-        polygon_predictions = self.polygon_filter(predictions)
+        if self.confidence_threshold > 0:
+            predictions = confidence_filter(
+                predictions, self.confidence_threshold
+            )
+        polygon_annotations: List[BoxOrPolygonAnnotation] = []
+        polygon_annotations.extend(annotations.box_annotations)
+        polygon_annotations.extend(annotations.polygon_annotations)
+        polygon_predictions: List[BoxOrPolygonAnnotation] = []
+        polygon_predictions.extend(predictions.box_predictions)
+        polygon_predictions.extend(predictions.polygon_predictions)
 
         eval_fn = label_match_wrapper(self.eval)
         result = eval_fn(
