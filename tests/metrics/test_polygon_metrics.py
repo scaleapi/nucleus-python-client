@@ -14,15 +14,32 @@ from tests.metrics.helpers import (
 )
 
 
-@pytest.mark.parametrize("test_annotations,test_predictions,metric_fn", [
-    (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonIOU),
-    (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonPrecision),
-    (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonRecall),
-    (TEST_CONVEX_POLYGON_ANNOTATION_LIST, TEST_CONVEX_POLYGON_PREDICTION_LIST, PolygonIOU),
-    (TEST_CONVEX_POLYGON_ANNOTATION_LIST, TEST_CONVEX_POLYGON_PREDICTION_LIST, PolygonPrecision),
-    (TEST_CONVEX_POLYGON_ANNOTATION_LIST, TEST_CONVEX_POLYGON_PREDICTION_LIST, PolygonRecall),
-])
-def test_perfect_match_polygon_metrics(test_annotations, test_predictions, metric_fn):
+@pytest.mark.parametrize(
+    "test_annotations,test_predictions,metric_fn",
+    [
+        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonIOU),
+        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonPrecision),
+        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonRecall),
+        (
+            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
+            TEST_CONVEX_POLYGON_PREDICTION_LIST,
+            PolygonIOU,
+        ),
+        (
+            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
+            TEST_CONVEX_POLYGON_PREDICTION_LIST,
+            PolygonPrecision,
+        ),
+        (
+            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
+            TEST_CONVEX_POLYGON_PREDICTION_LIST,
+            PolygonRecall,
+        ),
+    ],
+)
+def test_perfect_match_polygon_metrics(
+    test_annotations, test_predictions, metric_fn
+):
     # Test metrics on where annotations = predictions perfectly
     metric = metric_fn(enforce_label_match=False)
     result = metric(test_annotations, test_predictions)
@@ -33,15 +50,32 @@ def test_perfect_match_polygon_metrics(test_annotations, test_predictions, metri
     assert_metric_eq(result, MetricResult(1, len(test_annotations)))
 
 
-@pytest.mark.parametrize("test_annotations,test_predictions,metric_fn", [
-    (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonIOU),
-    (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonPrecision),
-    (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonRecall),
-    (TEST_CONVEX_POLYGON_ANNOTATION_LIST, TEST_CONVEX_POLYGON_PREDICTION_LIST, PolygonIOU),
-    (TEST_CONVEX_POLYGON_ANNOTATION_LIST, TEST_CONVEX_POLYGON_PREDICTION_LIST, PolygonPrecision),
-    (TEST_CONVEX_POLYGON_ANNOTATION_LIST, TEST_CONVEX_POLYGON_PREDICTION_LIST, PolygonRecall),
-])
-def test_perfect_unmatched_polygon_metrics(test_annotations, test_predictions, metric_fn):
+@pytest.mark.parametrize(
+    "test_annotations,test_predictions,metric_fn",
+    [
+        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonIOU),
+        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonPrecision),
+        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonRecall),
+        (
+            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
+            TEST_CONVEX_POLYGON_PREDICTION_LIST,
+            PolygonIOU,
+        ),
+        (
+            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
+            TEST_CONVEX_POLYGON_PREDICTION_LIST,
+            PolygonPrecision,
+        ),
+        (
+            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
+            TEST_CONVEX_POLYGON_PREDICTION_LIST,
+            PolygonRecall,
+        ),
+    ],
+)
+def test_perfect_unmatched_polygon_metrics(
+    test_annotations, test_predictions, metric_fn
+):
     # Test metrics on where annotations and predictions do not have matching reference IDs.
     test_predictions_unmatch = deepcopy(test_predictions)
     for box in test_predictions_unmatch.box_predictions:
@@ -57,12 +91,32 @@ def test_perfect_unmatched_polygon_metrics(test_annotations, test_predictions, m
     assert_metric_eq(result, MetricResult(0, len(test_annotations)))
 
 
-@pytest.mark.parametrize("test_annotations,test_predictions,metric_fn,expected", [
-    (TEST_ANNOTATION_LIST, TEST_PREDICTION_LIST, PolygonIOU, MetricResult(0.545, 2)),
-    (TEST_ANNOTATION_LIST, TEST_PREDICTION_LIST, PolygonPrecision, MetricResult(0.5, 2)),
-    (TEST_ANNOTATION_LIST, TEST_PREDICTION_LIST, PolygonRecall, MetricResult(0.5, 2)),
-])
-def test_simple_2_boxes(test_annotations, test_predictions, metric_fn, expected):
+@pytest.mark.parametrize(
+    "test_annotations,test_predictions,metric_fn,expected",
+    [
+        (
+            TEST_ANNOTATION_LIST,
+            TEST_PREDICTION_LIST,
+            PolygonIOU,
+            MetricResult(0.545, 2),
+        ),
+        (
+            TEST_ANNOTATION_LIST,
+            TEST_PREDICTION_LIST,
+            PolygonPrecision,
+            MetricResult(0.5, 2),
+        ),
+        (
+            TEST_ANNOTATION_LIST,
+            TEST_PREDICTION_LIST,
+            PolygonRecall,
+            MetricResult(0.5, 2),
+        ),
+    ],
+)
+def test_simple_2_boxes(
+    test_annotations, test_predictions, metric_fn, expected
+):
     # Test metrics on where annotations = predictions perfectly
     metric = metric_fn()
     result = metric(test_annotations, test_predictions)

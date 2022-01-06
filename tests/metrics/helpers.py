@@ -51,7 +51,7 @@ TEST_ANNOTATION_LIST = AnnotationList(
             height=3,
             reference_id="image_1",
             annotation_id="image_1_car_box_1",
-        )
+        ),
     ]
 )
 
@@ -76,9 +76,10 @@ TEST_PREDICTION_LIST = PredictionList(
             reference_id="image_1",
             confidence=0.9,
             annotation_id="image_1_car_box_1",
-        )
+        ),
     ]
 )
+
 
 def assert_metric_eq(actual, expected):
     assert expected.value == pytest.approx(actual.value)
