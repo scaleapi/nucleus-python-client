@@ -379,7 +379,6 @@ def test_scene_upload_and_update(dataset_scene):
     scenes = [
         LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
-    reference_ids = [s.reference_id for s in scenes]
     update = payload[UPDATE_KEY]
 
     job = dataset_scene.append(scenes, update=update, asynchronous=True)
