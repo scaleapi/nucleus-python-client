@@ -140,7 +140,7 @@ class Dataset:
         return response
 
     @property
-    def model_runs(self) -> Dict[Any, Any]:
+    def model_runs(self) -> List[str]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
         response = self._client.make_request(
@@ -149,7 +149,7 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> Dict[Any, Any]:
+    def slices(self) -> List[str]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
@@ -184,6 +184,15 @@ class Dataset:
         elif error:
             raise DatasetItemRetrievalError(message=error)
         return constructed_dataset_items
+
+    @property
+    def scenes(self) -> List[Dict[str, Any]]:
+        """List of ID, reference ID, type, and metadata for all scenes in the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/scenes_list", requests.get
+        )
+
+        return response.get("scenes", None)
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
