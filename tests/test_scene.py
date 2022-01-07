@@ -273,6 +273,9 @@ def test_scene_upload_sync(dataset_scene):
 
     assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
+    # TODO(drake) once this test is working again:
+    # assert len(dataset_scenes.scenes_list) == len(scenes)
+    # other validations such as correct reference_id, metadata propagation
 
 
 @pytest.mark.skip("Deactivated sync upload for scenes")
@@ -288,6 +291,9 @@ def test_scene_and_cuboid_upload_sync(dataset_scene):
 
     assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
+    # TODO(drake) once this test is working again:
+    # assert len(dataset_scenes.scenes_list) == len(scenes)
+    # other validations such as correct reference_id, metadata propagation
 
     lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
         REFERENCE_ID_KEY
@@ -340,6 +346,10 @@ def test_scene_upload_async(dataset_scene):
         "completed_steps": 1,
         "total_steps": 1,
     }
+
+    # TODO(drake) once this test is working again:
+    # assert len(dataset_scenes.scenes_list) == len(scenes)
+    # other validations such as correct reference_id, metadata propagation
 
 
 @pytest.mark.skip(reason="Temporarily skipped because failing 12/28/21")
