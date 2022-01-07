@@ -185,6 +185,15 @@ class Dataset:
             raise DatasetItemRetrievalError(message=error)
         return constructed_dataset_items
 
+    @property
+    def scenes_list(self) -> List[Dict[str, Any]]:
+        """List of ID, reference ID, type, and metadata for all scenes in the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/scenes_list", requests.get
+        )
+
+        return response.get("scenes", None)
+
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
         """Fetches the autotag's items above the score threshold, sorted by descending score.
