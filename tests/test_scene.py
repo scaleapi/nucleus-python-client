@@ -274,7 +274,7 @@ def test_scene_upload_sync(dataset_scene):
     assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
     # TODO(drake) once this test is working again:
-    # assert len(dataset_scenes.scenes_list) == len(scenes)
+    # assert len(dataset_scenes.scenes) == len(scenes)
     # other validations such as correct reference_id, metadata propagation
 
 
@@ -292,7 +292,7 @@ def test_scene_and_cuboid_upload_sync(dataset_scene):
     assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
     # TODO(drake) once this test is working again:
-    # assert len(dataset_scenes.scenes_list) == len(scenes)
+    # assert len(dataset_scenes.scenes) == len(scenes)
     # other validations such as correct reference_id, metadata propagation
 
     lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
@@ -348,7 +348,7 @@ def test_scene_upload_async(dataset_scene):
     }
 
     # TODO(drake) once this test is working again:
-    # assert len(dataset_scenes.scenes_list) == len(scenes)
+    # assert len(dataset_scenes.scenes) == len(scenes)
     # other validations such as correct reference_id, metadata propagation
 
 

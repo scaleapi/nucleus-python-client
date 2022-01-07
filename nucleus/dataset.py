@@ -186,7 +186,7 @@ class Dataset:
         return constructed_dataset_items
 
     @property
-    def scenes_list(self) -> List[Dict[str, Any]]:
+    def scenes(self) -> List[Dict[str, Any]]:
         """List of ID, reference ID, type, and metadata for all scenes in the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/scenes_list", requests.get
