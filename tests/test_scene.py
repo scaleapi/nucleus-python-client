@@ -273,9 +273,16 @@ def test_scene_upload_sync(dataset_scene):
 
     assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
-    # TODO(drake) once this test is working again:
-    # assert len(dataset_scenes.scenes) == len(scenes)
-    # other validations such as correct reference_id, metadata propagation
+
+    uploaded_scenes = dataset_scene.scenes
+    assert len(uploaded_scenes) == len(scenes)
+    assert all(
+        u["reference_id"] == o.reference_id
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+    assert all(
+        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+    )
 
 
 @pytest.mark.skip("Deactivated sync upload for scenes")
@@ -291,9 +298,16 @@ def test_scene_and_cuboid_upload_sync(dataset_scene):
 
     assert response["dataset_id"] == dataset_scene.id
     assert response["new_scenes"] == len(scenes)
-    # TODO(drake) once this test is working again:
-    # assert len(dataset_scenes.scenes) == len(scenes)
-    # other validations such as correct reference_id, metadata propagation
+
+    uploaded_scenes = dataset_scene.scenes
+    assert len(uploaded_scenes) == len(scenes)
+    assert all(
+        u["reference_id"] == o.reference_id
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+    assert all(
+        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+    )
 
     lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
         REFERENCE_ID_KEY
@@ -347,9 +361,15 @@ def test_scene_upload_async(dataset_scene):
         "total_steps": 1,
     }
 
-    # TODO(drake) once this test is working again:
-    # assert len(dataset_scenes.scenes) == len(scenes)
-    # other validations such as correct reference_id, metadata propagation
+    uploaded_scenes = dataset_scene.scenes
+    assert len(uploaded_scenes) == len(scenes)
+    assert all(
+        u["reference_id"] == o.reference_id
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+    assert all(
+        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+    )
 
 
 @pytest.mark.skip(reason="Temporarily skipped because failing 12/28/21")
@@ -384,10 +404,15 @@ def test_scene_upload_and_update(dataset_scene):
         "total_steps": 1,
     }
 
-    fetched_scenes = [
-        dataset_scene.get_scene(ref_id) for ref_id in reference_ids
-    ]
-    assert len(fetched_scenes) == len(scenes)
+    uploaded_scenes = dataset_scene.scenes
+    assert len(uploaded_scenes) == len(scenes)
+    assert all(
+        u["reference_id"] == o.reference_id
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+    assert all(
+        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+    )
 
     job2 = dataset_scene.append(scenes, update=True, asynchronous=True)
     job2.sleep_until_complete()
