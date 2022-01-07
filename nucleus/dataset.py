@@ -140,7 +140,7 @@ class Dataset:
         return response
 
     @property
-    def model_runs(self) -> Dict[Any, Any]:
+    def model_runs(self) -> List[str]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
         response = self._client.make_request(
@@ -149,7 +149,7 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> Dict[Any, Any]:
+    def slices(self) -> List[str]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
