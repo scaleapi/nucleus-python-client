@@ -1,6 +1,6 @@
 import sys
 from functools import wraps
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, TypeVar
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -12,10 +12,12 @@ from nucleus.prediction import BoxPrediction, PolygonPrediction
 from .base import MetricResult
 from .errors import PolygonAnnotationTypeError
 
-BoxOrPolygonPrediction = Union[BoxPrediction, PolygonPrediction]
-BoxOrPolygonAnnotation = Union[
-    BoxAnnotation, PolygonAnnotation, BoxOrPolygonPrediction
-]
+BoxOrPolygonPrediction = TypeVar(
+    "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
+)
+BoxOrPolygonAnnotation = TypeVar(
+    "BoxOrPolygonAnnotation", BoxAnnotation, PolygonAnnotation
+)
 
 
 def polygon_annotation_to_shape(

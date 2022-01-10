@@ -24,19 +24,8 @@ def confidence_filter(
         lambda prediction: not hasattr(prediction, "confidence")
         or prediction.confidence >= min_confidence
     )
-    predictions_copy.box_predictions = list(
-        filter(filter_fn, predictions.box_predictions)
-    )
-    predictions_copy.polygon_predictions = list(
-        filter(filter_fn, predictions.polygon_predictions)
-    )
-    predictions_copy.cuboid_predictions = list(
-        filter(filter_fn, predictions.cuboid_predictions)
-    )
-    predictions_copy.category_predictions = list(
-        filter(filter_fn, predictions.category_predictions)
-    )
-    predictions_copy.segmentation_predictions = list(
-        filter(filter_fn, predictions.segmentation_predictions)
-    )
+    for attr in predictions.__dict__:
+        predictions_copy.__dict__[attr] = list(
+            filter(filter_fn, predictions.__dict__[attr])
+        )
     return predictions_copy

@@ -21,7 +21,7 @@ class MetricResult:
     """
 
     value: float
-    weight: float = 1
+    weight: float = 1.0
 
     @staticmethod
     def aggregate(results: Iterable["MetricResult"]) -> "MetricResult":

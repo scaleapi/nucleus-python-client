@@ -1,9 +1,9 @@
 import sys
 from abc import abstractmethod
-from typing import List
+from typing import List, Union
 
-from nucleus.annotation import AnnotationList
-from nucleus.prediction import PredictionList
+from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
+from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
 
 from .base import Metric, MetricResult
 from .filters import confidence_filter
@@ -90,10 +90,10 @@ class PolygonMetric(Metric):
             predictions = confidence_filter(
                 predictions, self.confidence_threshold
             )
-        polygon_annotations: List[BoxOrPolygonAnnotation] = []
+        polygon_annotations: List[Union[BoxAnnotation, PolygonAnnotation]] = []
         polygon_annotations.extend(annotations.box_annotations)
         polygon_annotations.extend(annotations.polygon_annotations)
-        polygon_predictions: List[BoxOrPolygonAnnotation] = []
+        polygon_predictions: List[Union[BoxPrediction, PolygonPrediction]] = []
         polygon_predictions.extend(predictions.box_predictions)
         polygon_predictions.extend(predictions.polygon_predictions)
 
