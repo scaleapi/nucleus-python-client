@@ -109,6 +109,7 @@ class PolygonMetric(Metric):
 class PolygonIOU(PolygonMetric):
     """Calculates the average IOU between box or polygon annotations and predictions."""
 
+    # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
         enforce_label_match: bool = False,
@@ -144,6 +145,7 @@ class PolygonIOU(PolygonMetric):
 class PolygonPrecision(PolygonMetric):
     """Calculates the precision between box or polygon annotations and predictions."""
 
+    # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
         enforce_label_match: bool = False,
@@ -180,6 +182,7 @@ class PolygonPrecision(PolygonMetric):
 class PolygonRecall(PolygonMetric):
     """Calculates the recall between box or polygon annotations and predictions."""
 
+    # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
         enforce_label_match: bool = False,
