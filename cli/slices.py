@@ -1,7 +1,7 @@
 import click
 from rich.live import Live
 from rich.spinner import Spinner
-from rich.tree import Tree
+from rich.table import Column, Table
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
@@ -26,16 +26,21 @@ def list_slices():
     ) as live:
         client = init_client()
         datasets = client.datasets
-        tree = Tree(":cake: Slices")
+        table = Table(
+            "id",
+            "name",
+            "dataset_name",
+            Column("url", overflow="fold"),
+            title=":cake: Slices",
+            title_justify="left",
+        )
         for ds in datasets:
-            branch = tree.add(f"{ds.id}: {ds.name}")
             ds_slices = ds.slices
             if ds_slices:
                 for slc_id in ds_slices:
                     slice_url = nucleus_url(f"{ds.id}/{slc_id}")
                     slice_info = client.get_slice(slc_id).info()
-                    branch.add(f"{slc_id}: {slice_info['name']} ({slice_url})")
-                    live.update(tree)
-            else:
-                branch.add("No slices in this dataset ... :sleeping:")
-                live.update(tree)
+                    table.add_row(
+                        slc_id, slice_info["name"], ds.name, slice_url
+                    )
+                    live.update(table)
