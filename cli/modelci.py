@@ -15,19 +15,19 @@ from nucleus.modelci import (
 
 @click.group("modelci")
 def modelci():
-    """Interactions with Model CI"""
+    """Model CI allows you to deploy with confidence"""
     pass
 
 
 @modelci.group("unit-tests")
 def unit_tests():
-    """Model CI Unit Tests"""
+    """Unit Tests allow you to test your models before deploying"""
     pass
 
 
 @unit_tests.command("list")
 def list_unit_tests():
-    """View all your Unit Tests"""
+    """List all your Unit Tests"""
     console = Console()
     with console.status("Finding your unit tests", spinner="dots4"):
         client = init_client()

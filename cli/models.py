@@ -8,11 +8,16 @@ from cli.helpers.nucleus_url import nucleus_url
 
 @click.group("models")
 def models():
+    """Models help you store and access your ML model data
+
+    https://dashboard.scale.com/nucleus/models
+    """
     pass
 
 
 @models.command("list")
 def list_models():
+    """List your Models"""
     console = Console()
     with console.status("Finding your Models!", spinner="dots4"):
         client = init_client()

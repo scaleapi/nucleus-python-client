@@ -8,13 +8,16 @@ from cli.helpers.nucleus_url import nucleus_url
 
 @click.group("datasets")
 def datasets():
-    """Common operations for Datasets"""
+    """Datasets are the base collections of items in Nucleus
+
+    https://dashboard.scale.com/nucleus/datasets
+    """
     pass
 
 
 @datasets.command("list")
 def list_datasets():
-    """List all available datasets"""
+    """List all available Datasets"""
     console = Console()
     with console.status("Finding your Datasets!", spinner="dots4"):
         client = init_client()
@@ -34,7 +37,7 @@ def list_datasets():
 @datasets.command("delete")
 @click.option("--id", prompt=True)
 def delete_dataset(id):
-    """Delete a dataset"""
+    """Delete a Dataset"""
     console = Console()
     client = init_client()
     dataset = [ds for ds in client.datasets if ds.id == id][0]

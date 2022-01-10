@@ -9,12 +9,17 @@ from cli.helpers.nucleus_url import nucleus_url
 
 @click.group("slices")
 def slices():
+    """Slices are named subsets of Datasets"""
     pass
 
 
 @slices.command("list")
 def list_slices():
-    with Live(Spinner("dots4", text="Finding your Slices!")) as live:
+    """List all available Slices"""
+    with Live(
+        Spinner("dots4", text="Finding your Slices!"),
+        vertical_overflow="visible",
+    ) as live:
         client = init_client()
         datasets = client.datasets
         tree = Tree(":cake: Slices")

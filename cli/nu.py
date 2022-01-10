@@ -5,6 +5,8 @@ import click
 from shellingham import detect_shell
 
 from cli.datasets import datasets
+from cli.docs import docs
+from cli.jobs import jobs
 from cli.modelci import modelci
 from cli.models import models
 from cli.slices import slices
@@ -12,7 +14,18 @@ from cli.slices import slices
 
 @click.group("cli")
 def nu():
-    """Nucleus CLI or nu"""
+    """Nucleus CLI (nu)
+
+        \b
+    ███╗   ██╗██╗   ██╗ ██████╗██╗     ███████╗██╗   ██╗███████╗
+    ████╗  ██║██║   ██║██╔════╝██║     ██╔════╝██║   ██║██╔════╝
+    ██╔██╗ ██║██║   ██║██║     ██║     █████╗  ██║   ██║███████╗
+    ██║╚██╗██║██║   ██║██║     ██║     ██╔══╝  ██║   ██║╚════██║
+    ██║ ╚████║╚██████╔╝╚██████╗███████╗███████╗╚██████╔╝███████║
+    ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝
+
+        `nu` is a command line interface to interact with Scale Nucleus (https://dashboard.scale.com/nucleus)
+    """
     pass
 
 
@@ -48,6 +61,8 @@ nu.add_command(modelci)  # type: ignore
 nu.add_command(datasets)  # type: ignore
 nu.add_command(models)  # type: ignore
 nu.add_command(slices)  # type: ignore
+nu.add_command(docs)  # type: ignore
+nu.add_command(jobs)  # type: ignore
 
 if __name__ == "__main__":
     nu()
