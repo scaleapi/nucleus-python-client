@@ -5,12 +5,16 @@ from rich.tree import Tree
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
+from cli.helpers.web_helper import launch_web_or_invoke
 
 
-@click.group("slices")
-def slices():
+@click.group("slices", invoke_without_command=True)
+@click.option("--web", is_flag=True, help="Launch browser")
+@click.pass_context
+def slices(ctx, web):
     """Slices are named subsets of Datasets"""
-    pass
+    # TODO(gunnar): We don't have a natural landing for slices overview, until then we land on "/"
+    launch_web_or_invoke("", ctx, web, list_slices)
 
 
 @slices.command("list")

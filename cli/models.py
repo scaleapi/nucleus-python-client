@@ -4,10 +4,10 @@ from rich.table import Column, Table
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
-from cli.helpers.web_helper import launch_web_or_show_help
+from cli.helpers.web_helper import launch_web_or_invoke
 
 
-@click.group("models")
+@click.group("models", invoke_without_command=True)
 @click.option("--web", is_flag=True, help="Launch browser")
 @click.pass_context
 def models(ctx, web):
@@ -15,7 +15,7 @@ def models(ctx, web):
 
     https://dashboard.scale.com/nucleus/models
     """
-    launch_web_or_show_help("models", ctx, web)
+    launch_web_or_invoke("models", ctx, web, list_models)
 
 
 @models.command("list")

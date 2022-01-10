@@ -6,7 +6,7 @@ from rich.tree import Tree
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
-from cli.helpers.web_helper import launch_web_or_show_help
+from cli.helpers.web_helper import launch_web_or_invoke
 from nucleus.modelci import (
     AvailableEvalFunctions,
     ThresholdComparison,
@@ -14,7 +14,7 @@ from nucleus.modelci import (
 )
 
 
-@click.group("unit-tests")
+@click.group("unit-tests", invoke_without_command=True)
 @click.option("--web", is_flag=True, help="Launch browser")
 @click.pass_context
 def unit_tests(ctx, web):
@@ -22,7 +22,7 @@ def unit_tests(ctx, web):
 
     https://dashboard.scale.com/nucleus/unit-tests
     """
-    launch_web_or_show_help("unit-tests", ctx, web)
+    launch_web_or_invoke("unit-tests", ctx, web, list_unit_tests)
 
 
 @unit_tests.command("list")
@@ -82,7 +82,7 @@ def describe_unit_test(unit_test_id, all):
     else:
         with console.status("Fetching Unit Test information"):
             unit_test = [ut for ut in unit_tests if ut.id == unit_test_id][0]
-            tree = Tree(f":chart_with_upwards_trend: Unit Test")
+            tree = Tree(":chart_with_upwards_trend: Unit Test")
             build_unit_test_info_tree(client, unit_test, tree)
             console.print(tree)
 
@@ -95,7 +95,7 @@ def build_unit_test_info_tree(client, unit_test, tree):
     unit_test_url = nucleus_url(unit_test.id)
     info_branch.add(f"url: {unit_test_url}")
     slice_url = nucleus_url(f"{slc.dataset_id}/{slc.slice_id}")
-    slice_branch = tree.add(f":cake: Slice")
+    slice_branch = tree.add(":cake: Slice")
     slice_branch.add(f"id: '{slc.id}'")
     slice_info = slc.info()
     slice_branch.add(f"name: '{slice_info['name']}'")

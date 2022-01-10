@@ -4,15 +4,20 @@ from rich.table import Column, Table
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
+from cli.helpers.web_helper import launch_web_or_invoke
 
 
-@click.group("datasets")
-def datasets():
+@click.group("datasets", invoke_without_command=True)
+@click.option("--web", is_flag=True, help="Launch browser")
+@click.pass_context
+def datasets(ctx, web):
     """Datasets are the base collections of items in Nucleus
 
     https://dashboard.scale.com/nucleus/datasets
     """
-    pass
+    launch_web_or_invoke(
+        sub_url="datasets", ctx=ctx, launch_browser=web, command=list_datasets
+    )
 
 
 @datasets.command("list")
