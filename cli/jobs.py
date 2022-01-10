@@ -1,6 +1,7 @@
 import click
 from rich.live import Live
 from rich.spinner import Spinner
+from rich.table import Table
 
 from cli.client import init_client
 from cli.helpers.web_helper import launch_web_or_invoke
@@ -21,6 +22,21 @@ def jobs(ctx, web):
 def list_jobs():
     """List all of your Jobs"""
     client = init_client()
+    table = Table(
+        "id",
+        "status",
+        "type",
+        "created at",
+        title=":satellite: Jobs",
+        title_justify="left",
+    )
     with Live(Spinner("dots4", text="Finding your Jobs!")) as live:
         all_jobs = client.jobs
-        live.update(all_jobs)
+        for job in all_jobs:
+            table.add_row(
+                job.job_id,
+                job.job_last_known_status,
+                job.job_type,
+                job.job_creation_time,
+            )
+            live.update(table)
