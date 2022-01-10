@@ -6,6 +6,7 @@ from rich.tree import Tree
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
+from cli.helpers.web_helper import launch_web_or_show_help
 from nucleus.modelci import (
     AvailableEvalFunctions,
     ThresholdComparison,
@@ -13,16 +14,15 @@ from nucleus.modelci import (
 )
 
 
-@click.group("modelci")
-def modelci():
-    """Model CI allows you to deploy with confidence"""
-    pass
+@click.group("unit-tests")
+@click.option("--web", is_flag=True, help="Launch browser")
+@click.pass_context
+def unit_tests(ctx, web):
+    """Unit Tests allow you to test your Models
 
-
-@modelci.group("unit-tests")
-def unit_tests():
-    """Unit Tests allow you to test your models before deploying"""
-    pass
+    https://dashboard.scale.com/nucleus/unit-tests
+    """
+    launch_web_or_show_help("unit-tests", ctx, web)
 
 
 @unit_tests.command("list")
@@ -68,8 +68,9 @@ def format_criterion(
 )
 def describe_unit_test(unit_test_id, all):
     console = Console()
-    client = init_client()
     # unit_test = client.modelci.get_unit_test(unit_test_id)
+    assert unit_test_id or all, "Must pass a unit_test_id or --all"
+    client = init_client()
     unit_tests = client.modelci.list_unit_tests()
     if all:
         tree = Tree(":chart_with_upwards_trend: All Unit Tests")
@@ -80,7 +81,6 @@ def describe_unit_test(unit_test_id, all):
                 live.update(tree)
     else:
         with console.status("Fetching Unit Test information"):
-            assert unit_test_id, "Must pass a unit_test_id or --all"
             unit_test = [ut for ut in unit_tests if ut.id == unit_test_id][0]
             tree = Tree(f":chart_with_upwards_trend: Unit Test")
             build_unit_test_info_tree(client, unit_test, tree)

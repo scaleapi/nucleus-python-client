@@ -4,15 +4,18 @@ from rich.table import Column, Table
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
+from cli.helpers.web_helper import launch_web_or_show_help
 
 
 @click.group("models")
-def models():
+@click.option("--web", is_flag=True, help="Launch browser")
+@click.pass_context
+def models(ctx, web):
     """Models help you store and access your ML model data
 
     https://dashboard.scale.com/nucleus/models
     """
-    pass
+    launch_web_or_show_help("models", ctx, web)
 
 
 @models.command("list")

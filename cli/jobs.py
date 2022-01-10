@@ -3,23 +3,18 @@ from rich.live import Live
 from rich.spinner import Spinner
 
 from cli.client import init_client
-from cli.helpers.nucleus_url import nucleus_url
+from cli.helpers.web_helper import launch_web_or_show_help
 
 
 @click.group("jobs", invoke_without_command=True)
-@click.option("--web", is_flag=True, help="Launch browser to Job dashboard")
+@click.option("--web", is_flag=True, help="Launch browser")
 @click.pass_context
 def jobs(ctx, web):
     """Jobs are a wrapper around various long-running tasks withing Nucleus
 
     https://dashboard.scale.com/nucleus/jobs
     """
-    if not ctx.invoked_subcommand:
-        if web:
-            url = nucleus_url("jobs")
-            click.launch(url)
-        else:
-            click.echo(ctx.get_help())
+    launch_web_or_show_help("jobs", ctx, web)
 
 
 @jobs.command("list")
