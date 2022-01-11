@@ -85,20 +85,26 @@ class HostedInference:
     # Relatively small wrappers around http requests
 
     def get_bundles(self) -> List[ModelBundle]:
+        # TODO this route currently doesn't exist serverside
+        resp = self.connection.get("model_bundle")
         raise NotImplementedError
 
     def get_model_endpoints(self) -> List[ModelEndpoint]:
-        raise NotImplementedError
+        resp = self.connection.get("endpoints")
+        return [ModelEndpoint(endpoint_id=endpoint_id, client=self) for endpoint_id in resp]
 
     def edit_model_endpoint(self):
-        # TODO args, corresponds to PUT model_endpoint
+        # TODO args, corresponds to PUT model_endpoint, doesn't exist serverside
         raise NotImplementedError
 
-    def sync_request(self, s3url: str):
-        raise NotImplementedError
+    def sync_request(self, endpoint_id: str, s3url: str):
+        resp = self.connection.post(payload=dict(url=s3url), route=f"task/{endpoint_id}")
+        return resp["result_url"]
 
-    def async_request(self, s3url: str):
-        raise NotImplementedError
+    def async_request(self, endpoint_id: str, s3url: str):
+        resp = self.connection.post(payload=dict(url=s3url), route=f"task_async/{endpoint_id}")
+        return resp["task_id"]
 
     def get_async_response(self, async_task_id: str):
-        raise NotImplementedError
+        resp = self.connection.get(route=f"task/result/{async_task_id}")
+        return resp["result_url"]
