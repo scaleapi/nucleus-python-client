@@ -20,7 +20,7 @@ Nucleus is a new way—the right way—to develop ML models, helping us move awa
 
 ## CLI installation
 We recommend installing the CLI via `pipx` (https://pypa.github.io/pipx/installation/). This makes sure that
-the CLI does not interfere with you system packages.
+the CLI does not interfere with you system packages and is accessible from your favorite terminal.
 
 For MacOS:
 ```bash

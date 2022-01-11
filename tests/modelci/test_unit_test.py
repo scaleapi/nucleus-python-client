@@ -33,7 +33,7 @@ def test_list_unit_test(CLIENT, test_slice, annotations):
         evaluation_criteria=[e.bbox_iou() > 0.5],
     )
 
-    unit_tests = CLIENT.modelci.list_tests()
+    unit_tests = CLIENT.modelci.list_unit_tests()
     assert all(isinstance(unit_test, UnitTest) for unit_test in unit_tests)
     assert unit_test in unit_tests
 
