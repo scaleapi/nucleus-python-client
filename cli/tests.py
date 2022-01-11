@@ -62,7 +62,7 @@ def format_criterion(
 
 
 @tests.command("describe")
-@click.argument("unit-test-id", default=None)
+@click.argument("unit-test-id", default=None, required=False)
 @click.option(
     "--all", "-a", is_flag=True, help="View details about all unit tests"
 )
