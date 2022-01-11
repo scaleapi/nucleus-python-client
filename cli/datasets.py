@@ -41,7 +41,8 @@ def list_datasets():
 
 @datasets.command("delete")
 @click.option("--id", prompt=True)
-def delete_dataset(id):
+@click.pass_context
+def delete_dataset(ctx, id):
     """Delete a Dataset"""
     console = Console()
     client = init_client()
@@ -52,3 +53,8 @@ def delete_dataset(id):
     if delete_string == "DELETE":
         client.delete_dataset(dataset.id)
         console.print(f":fire: :anguished: Deleted {id}")
+    else:
+        console.print(
+            f":rotating_light: Refusing to delete {id}. Received '{delete_string}' instead of 'DELETE'"
+        )
+        ctx.abort()

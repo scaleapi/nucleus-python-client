@@ -16,6 +16,7 @@ def launch_web_or_show_help(
     else:
         if launch_browser:
             click.echo(click.style("--web does not work with sub-commands"))
+            ctx.abort()
 
 
 def launch_web_or_invoke(
