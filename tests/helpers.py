@@ -3,6 +3,7 @@ import os
 import uuid
 from pathlib import Path
 
+import conftest
 from nucleus import BoxPrediction, DatasetItem
 from nucleus.modelci import ThresholdComparison
 
@@ -407,12 +408,10 @@ def assert_segmentation_annotation_matches_dict(
         annotation_instance.annotation_id == annotation_dict["annotation_id"]
     )
     # Cannot guarantee segments are in same order
-    assert len(annotation_instance.annotations) == len(
-        annotation_dict["annotations"]
-    )
+    assert len(conftest.annotations) == len(annotation_dict["annotations"])
 
     for instance_segment, dict_segment in zip(
-        sorted(annotation_instance.annotations, key=lambda i: i.index),
+        sorted(conftest.annotations, key=lambda i: i.index),
         sorted(annotation_dict["annotations"], key=lambda i: i["index"]),
     ):
         assert instance_segment.index == dict_segment["index"]

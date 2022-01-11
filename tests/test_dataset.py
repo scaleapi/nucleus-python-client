@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+import conftest
 from nucleus import (
     Dataset,
     DatasetItem,
@@ -534,8 +535,8 @@ def test_append_and_export(dataset):
         return cleared_annotation
 
     def sort_labelmap(segmentation_annotation):
-        segmentation_annotation.annotations = sorted(
-            segmentation_annotation.annotations, key=lambda x: x.index
+        conftest.annotations = sorted(
+            conftest.annotations, key=lambda x: x.index
         )
 
     exported = dataset.items_and_annotations()

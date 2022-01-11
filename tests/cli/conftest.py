@@ -1,10 +1,16 @@
 import os
 
 import pytest
+from click.testing import CliRunner
 
 from tests.helpers import get_uuid
 
 os.environ["NUCLEUS_API_KEY"] = os.environ["NUCLEUS_PYTEST_API_KEY"]
+
+
+@pytest.fixture
+def runner():
+    yield CliRunner()
 
 
 @pytest.fixture(scope="module")
