@@ -99,7 +99,7 @@ def build_unit_test_info_tree(client, unit_test, tree):
     slice_branch.add(f"id: '{slc.id}'")
     slice_info = slc.info()
     slice_branch.add(f"name: '{slice_info['name']}'")
-    slice_branch.add(f"len: {len(slice_info['dataset_items'])}")
+    slice_branch.add(f"len: {len(slc.items)}")
     slice_branch.add(f"url: {slice_url}")
     criteria = unit_test.get_criteria()
     criteria_branch = tree.add(":crossed_flags: Criteria")

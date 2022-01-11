@@ -77,7 +77,7 @@ TEST_LIDAR_SCENES = {
                     },
                 },
             ],
-            "metadata": {},
+            "metadata": {"test_meta_field": "test_meta_value"},
         },
     ],
     "update": False,
