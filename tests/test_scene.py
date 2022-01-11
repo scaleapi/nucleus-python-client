@@ -281,7 +281,8 @@ def test_scene_upload_sync(dataset_scene):
         for u, o in zip(uploaded_scenes, scenes)
     )
     assert all(
-        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
+        for u, o in zip(uploaded_scenes, scenes)
     )
 
 
@@ -306,7 +307,8 @@ def test_scene_and_cuboid_upload_sync(dataset_scene):
         for u, o in zip(uploaded_scenes, scenes)
     )
     assert all(
-        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
+        for u, o in zip(uploaded_scenes, scenes)
     )
 
     lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
@@ -367,7 +369,8 @@ def test_scene_upload_async(dataset_scene):
         for u, o in zip(uploaded_scenes, scenes)
     )
     assert all(
-        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
+        for u, o in zip(uploaded_scenes, scenes)
     )
 
 
@@ -408,7 +411,8 @@ def test_scene_upload_and_update(dataset_scene):
         for u, o in zip(uploaded_scenes, scenes)
     )
     assert all(
-        u["metadata"] == o.metadata for u, o in zip(uploaded_scenes, scenes)
+        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
+        for u, o in zip(uploaded_scenes, scenes)
     )
 
     job2 = dataset_scene.append(scenes, update=True, asynchronous=True)
