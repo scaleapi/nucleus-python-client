@@ -41,6 +41,9 @@ nest-asyncio = "^1.5.1"
 Sphinx = "^4.2.0"
 pydantic = "^1.8.2"
 isort = "^5.10.1"
+numpy = "^1.19.5"
+scipy = "^1.5.4"
+Shapely = "^1.8.0"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
@@ -58,9 +61,7 @@ sphinx-autobuild = "^2021.3.14"
 furo = "^2021.10.9"
 sphinx-autoapi = "^1.8.4"
 pytest-xdist = "^2.5.0"
-Shapely = { version = "^1.8.0", python = ">=3.7,<3.11" }
-scipy = { version = "^1.7.3", python = ">=3.7,<3.11" }
-numpy = { version = "^1.21.5", python = ">=3.7,<3.11" }
+
 
 [tool.pytest.ini_options]
 markers = [
