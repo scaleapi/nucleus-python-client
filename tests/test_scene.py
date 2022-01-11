@@ -107,8 +107,11 @@ def test_scene_from_json():
     }
 
     expected_frames = [Frame(**expected_items_1), Frame(**expected_items_2)]
+    expected_metadata = {"test_meta_field": "test_meta_value"}
     expected_scene = LidarScene(
-        scene_json[REFERENCE_ID_KEY], expected_frames, metadata={}
+        scene_json[REFERENCE_ID_KEY],
+        expected_frames,
+        metadata=expected_metadata,
     )
 
     assert sorted(
