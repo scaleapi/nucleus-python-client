@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.4.5"
+version = "0.5"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -58,6 +58,9 @@ sphinx-autobuild = "^2021.3.14"
 furo = "^2021.10.9"
 sphinx-autoapi = "^1.8.4"
 pytest-xdist = "^2.5.0"
+Shapely = { version = "^1.8.0", python = ">=3.7,<3.11" }
+scipy = { version = "^1.7.3", python = ">=3.7,<3.11" }
+numpy = { version = "^1.21.5", python = ">=3.7,<3.11" }
 
 [tool.pytest.ini_options]
 markers = [

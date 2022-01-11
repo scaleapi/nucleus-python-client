@@ -3,7 +3,8 @@ All of the prediction types supported. In general, prediction types are the same
 as annotation types, but come with additional, optional data that can be attached
 such as confidence or probability distributions.
 """
-from typing import Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Union
 
 from .annotation import (
     BoxAnnotation,
@@ -398,4 +399,53 @@ class CategoryPrediction(CategoryAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+        )
+
+
+Prediction = Union[
+    BoxPrediction,
+    PolygonPrediction,
+    CuboidPrediction,
+    CategoryPrediction,
+    SegmentationPrediction,
+]
+
+
+@dataclass
+class PredictionList:
+    """Wrapper class separating a list of predictions by type."""
+
+    box_predictions: List[BoxPrediction] = field(default_factory=list)
+    polygon_predictions: List[PolygonPrediction] = field(default_factory=list)
+    cuboid_predictions: List[CuboidPrediction] = field(default_factory=list)
+    category_predictions: List[CategoryPrediction] = field(
+        default_factory=list
+    )
+    segmentation_predictions: List[SegmentationPrediction] = field(
+        default_factory=list
+    )
+
+    def add_predictions(self, predictions: List[Prediction]):
+        for prediction in predictions:
+            if isinstance(prediction, BoxPrediction):
+                self.box_predictions.append(prediction)
+            elif isinstance(prediction, PolygonPrediction):
+                self.polygon_predictions.append(prediction)
+            elif isinstance(prediction, CuboidPrediction):
+                self.cuboid_predictions.append(prediction)
+            elif isinstance(prediction, CategoryPrediction):
+                self.category_predictions.append(prediction)
+            else:
+                assert isinstance(
+                    prediction, SegmentationPrediction
+                ), f"Unexpected prediction type: {type(prediction)}"
+                self.segmentation_predictions.append(prediction)
+
+    def __len__(self):
+        return (
+            len(self.box_predictions)
+            + len(self.polygon_predictions)
+            + len(self.cuboid_predictions)
+            + len(self.category_predictions)
+            + len(self.segmentation_predictions)
         )
