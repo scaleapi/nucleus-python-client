@@ -7,6 +7,7 @@ from rich.tree import Tree
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 from cli.helpers.web_helper import launch_web_or_invoke
+from nucleus import NucleusAPIError
 from nucleus.modelci import (
     AvailableEvalFunctions,
     ThresholdComparison,
@@ -75,7 +76,10 @@ def describe_test(unit_test_id, all):
     unit_tests = client.modelci.list_unit_tests()
     if all:
         tree = Tree(":chart_with_upwards_trend: All Unit Tests")
-        with Live("Fetching description of all unit tests") as live:
+        with Live(
+            "Fetching description of all unit tests",
+            vertical_overflow="visible",
+        ) as live:
             for idx, ut in enumerate(unit_tests):
                 test_branch = tree.add(f"{idx}: Unit Test")
                 build_unit_test_info_tree(client, ut, test_branch)
@@ -89,23 +93,27 @@ def describe_test(unit_test_id, all):
 
 
 def build_unit_test_info_tree(client, unit_test, tree):
-    slc = client.get_slice(unit_test.slice_id)
-    info_branch = tree.add(":mag: Details")
-    info_branch.add(f"id: '{unit_test.id}'")
-    info_branch.add(f"name: '{unit_test.name}'")
-    unit_test_url = nucleus_url(unit_test.id)
-    info_branch.add(f"url: {unit_test_url}")
-    slice_url = nucleus_url(f"{slc.dataset_id}/{slc.slice_id}")
-    slice_branch = tree.add(":cake: Slice")
-    slice_branch.add(f"id: '{slc.id}'")
-    slice_info = slc.info()
-    slice_branch.add(f"name: '{slice_info['name']}'")
-    slice_branch.add(f"len: {len(slc.items)}")
-    slice_branch.add(f"url: {slice_url}")
-    criteria = unit_test.get_criteria()
-    criteria_branch = tree.add(":crossed_flags: Criteria")
-    for criterion in criteria:
-        pretty_criterion = format_criterion(
-            criterion, client.modelci.eval_functions
-        )
-        criteria_branch.add(pretty_criterion)
+    try:
+        slc = client.get_slice(unit_test.slice_id)
+        info_branch = tree.add(":mag: Details")
+        info_branch.add(f"id: '{unit_test.id}'")
+        info_branch.add(f"name: '{unit_test.name}'")
+        unit_test_url = nucleus_url(unit_test.id)
+        info_branch.add(f"url: {unit_test_url}")
+        slice_url = nucleus_url(f"{slc.dataset_id}/{slc.slice_id}")
+        slice_branch = tree.add(":cake: Slice")
+        slice_branch.add(f"id: '{slc.id}'")
+        slice_info = slc.info()
+        slice_branch.add(f"name: '{slice_info['name']}'")
+        slice_branch.add(f"len: {len(slc.items)}")
+        slice_branch.add(f"url: {slice_url}")
+        criteria = unit_test.get_criteria()
+        criteria_branch = tree.add(":crossed_flags: Criteria")
+        for criterion in criteria:
+            pretty_criterion = format_criterion(
+                criterion, client.modelci.eval_functions
+            )
+            criteria_branch.add(pretty_criterion)
+    except NucleusAPIError as e:
+        error_branch = tree.add(":x: Error")
+        error_branch.add(f"detail: {str(e)}")
