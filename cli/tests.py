@@ -28,9 +28,9 @@ def tests(ctx, web):
 
 @tests.command("list")
 def list_tests():
-    """List all your Unit Tests"""
+    """List all your Scenario Tests"""
     console = Console()
-    with console.status("Finding your unit tests", spinner="dots4"):
+    with console.status("Finding your Scenario Tests", spinner="dots4"):
         client = init_client()
         unit_tests = client.modelci.list_unit_tests()
         table = Table(
@@ -38,7 +38,7 @@ def list_tests():
             "Name",
             "slice_id",
             Column("url", overflow="fold"),
-            title=":chart_with_upwards_trend: Unit tests",
+            title=":chart_with_upwards_trend: Scenario Tests",
             title_justify="left",
         )
         for ut in unit_tests:
@@ -65,7 +65,7 @@ def format_criterion(
 @tests.command("describe")
 @click.argument("unit-test-id", default=None, required=False)
 @click.option(
-    "--all", "-a", is_flag=True, help="View details about all unit tests"
+    "--all", "-a", is_flag=True, help="View details about all Scenario Tests"
 )
 def describe_test(unit_test_id, all):
     """View detailed information about a test or all tests"""
@@ -75,9 +75,9 @@ def describe_test(unit_test_id, all):
     client = init_client()
     unit_tests = client.modelci.list_unit_tests()
     if all:
-        tree = Tree(":chart_with_upwards_trend: All Unit Tests")
+        tree = Tree(":chart_with_upwards_trend: All Scenario Tests")
         with Live(
-            "Fetching description of all unit tests",
+            "Fetching description of all Scenario Tests",
             vertical_overflow="visible",
         ) as live:
             for idx, ut in enumerate(unit_tests):
@@ -85,7 +85,7 @@ def describe_test(unit_test_id, all):
                 build_unit_test_info_tree(client, ut, test_branch)
                 live.update(tree)
     else:
-        with console.status("Fetching Unit Test information"):
+        with console.status("Fetching Scenario Test information"):
             unit_test = [ut for ut in unit_tests if ut.id == unit_test_id][0]
             tree = Tree(":chart_with_upwards_trend: Unit Test")
             build_unit_test_info_tree(client, unit_test, tree)
