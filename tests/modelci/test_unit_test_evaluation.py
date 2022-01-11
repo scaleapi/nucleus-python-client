@@ -5,8 +5,7 @@ from nucleus.modelci.unit_test_evaluation import (
     UnitTestEvaluation,
     UnitTestItemEvaluation,
 )
-from tests.helpers import EVAL_FUNCTION_THRESHOLD, get_uuid
-from tests.modelci.helpers import create_predictions
+from tests.helpers import EVAL_FUNCTION_THRESHOLD, create_predictions, get_uuid
 
 
 @pytest.mark.skip("Assigned slice has no 2D annotations")

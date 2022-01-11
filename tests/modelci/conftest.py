@@ -2,14 +2,13 @@ import time
 
 import pytest
 
-from nucleus import BoxAnnotation
 from tests.helpers import (
-    TEST_BOX_ANNOTATIONS,
     TEST_MODEL_NAME,
     TEST_SLICE_NAME,
+    create_box_annotations,
+    create_predictions,
     get_uuid,
 )
-from tests.modelci.helpers import create_box_annotations, create_predictions
 from tests.test_dataset import make_dataset_items
 
 

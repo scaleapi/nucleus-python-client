@@ -27,7 +27,7 @@ def list_slices():
         client = init_client()
         datasets = client.datasets
         table = Table(
-            "id",
+            Column("id", overflow="fold", min_width=24),
             "name",
             "dataset_name",
             Column("url", overflow="fold"),

@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 from click.testing import CliRunner
 
@@ -10,17 +12,15 @@ def cli_slices(test_slice):
 
 
 # TODO(gunnar): Add actual slice data through fixture
-def test_invoke_slices(cli_slices):
-    runner = CliRunner()
-    result = runner.invoke(slices)  # type: ignore
+def test_invoke_slices(runner):
+    # NOTE: The list_slices method is tested elsewhere, just testing control flow
+    with mock.patch("cli.slices.list_slices"):
+        result = runner.invoke(slices)  # type: ignore
     assert result.exit_code == 0
-    for slc in cli_slices:
-        assert slc.id in result.output
 
 
-def test_invoke_slices_list(cli_slices):
+def test_invoke_slices_list(runner, cli_slices):
     runner = CliRunner()
     result = runner.invoke(list_slices)  # type: ignore
     assert result.exit_code == 0
-    for slc in cli_slices:
-        assert slc.id in result.output
+    assert cli_slices[0].id in result.output
