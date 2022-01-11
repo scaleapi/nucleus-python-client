@@ -1,11 +1,14 @@
 import click
+from rich.console import Console
 from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Column, Table
+from rich.tree import Tree
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 from cli.helpers.web_helper import launch_web_or_invoke
+from nucleus import NucleusAPIError
 
 
 @click.group("slices", invoke_without_command=True)
@@ -34,13 +37,26 @@ def list_slices():
             title=":cake: Slices",
             title_justify="left",
         )
+        errors = {}
         for ds in datasets:
-            ds_slices = ds.slices
-            if ds_slices:
-                for slc_id in ds_slices:
-                    slice_url = nucleus_url(f"{ds.id}/{slc_id}")
-                    slice_info = client.get_slice(slc_id).info()
-                    table.add_row(
-                        slc_id, slice_info["name"], ds.name, slice_url
-                    )
-                    live.update(table)
+            try:
+                ds_slices = ds.slices
+                if ds_slices:
+                    for slc_id in ds_slices:
+                        slice_url = nucleus_url(f"{ds.id}/{slc_id}")
+                        slice_info = client.get_slice(slc_id).info()
+                        table.add_row(
+                            slc_id, slice_info["name"], ds.name, slice_url
+                        )
+                        live.update(table)
+            except NucleusAPIError as e:
+                errors[ds.id] = e
+
+        error_tree = Tree(
+            ":x: Encountered the following errors while fetching information"
+        )
+        for ds_id, error in errors.items():
+            dataset_branch = error_tree.add(f"Dataset: {ds_id}")
+            dataset_branch.add(f"Error: {error}")
+
+        Console().print(error_tree)
