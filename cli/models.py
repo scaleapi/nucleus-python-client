@@ -24,8 +24,12 @@ def list_models():
     console = Console()
     with console.status("Finding your Models!", spinner="dots4"):
         client = init_client()
-        table = Table("name", "id", Column("url", overflow="fold"))
+        table = Table(
+            Column("id", overflow="fold", min_width=24),
+            "name",
+            Column("url", overflow="fold"),
+        )
         models = client.models
         for m in models:
-            table.add_row(m.name, m.id, nucleus_url(m.id))
+            table.add_row(m.id, m.name, nucleus_url(m.id))
     console.print(table)

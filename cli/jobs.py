@@ -1,7 +1,7 @@
 import click
 from rich.live import Live
 from rich.spinner import Spinner
-from rich.table import Table
+from rich.table import Column, Table
 
 from cli.client import init_client
 from cli.helpers.web_helper import launch_web_or_invoke
@@ -23,7 +23,7 @@ def list_jobs():
     """List all of your Jobs"""
     client = init_client()
     table = Table(
-        "id",
+        Column("id", overflow="fold", min_width=24),
         "status",
         "type",
         "created at",

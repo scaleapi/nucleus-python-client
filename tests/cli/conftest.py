@@ -47,6 +47,11 @@ def populated_dataset(cli_datasets):
 
 
 @pytest.fixture(scope="module")
+def model(cli_models):
+    yield cli_models[0]
+
+
+@pytest.fixture(scope="module")
 def dataset_items(populated_dataset):
     items = make_dataset_items()
     populated_dataset.append(items)
@@ -84,7 +89,7 @@ def predictions(model, populated_dataset, annotations):
 @pytest.mark.usefixtures(
     "annotations"
 )  # Unit test needs to have annotations in the slice
-def unit_test(CLIENT, test_slice):
+def unit_test(CLIENT, test_slice, annotations, predictions):
     test_name = "unit_test_" + get_uuid()  # use uuid to make unique
     unit_test = CLIENT.modelci.create_unit_test(
         name=test_name,

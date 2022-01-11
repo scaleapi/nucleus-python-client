@@ -8,6 +8,7 @@ from cli.datasets import datasets, delete_dataset, list_datasets
 def test_invoke_dataset_outputs_list(cli_datasets):
     runner = CliRunner()
     result = runner.invoke(datasets)  # type: ignore
+    assert result.exception is None
     for dataset in cli_datasets:
         assert dataset.id in result.output
 
@@ -15,6 +16,7 @@ def test_invoke_dataset_outputs_list(cli_datasets):
 def test_invoke_dataset_list(cli_datasets):
     runner = CliRunner()
     result = runner.invoke(list_datasets)  # type: ignore
+    assert result.exception is None
     for dataset in cli_datasets:
         assert dataset.id in result.output
 
@@ -24,6 +26,7 @@ def test_invoke_dataset_delete(CLIENT, cli_datasets):
     dataset = CLIENT.create_dataset(dataset_name, is_scene=False)
     runner = CliRunner()
     result = runner.invoke(delete_dataset, ["--id", str(dataset.id)], input="DELETE")  # type: ignore
+    assert result.exception is None
     assert result.exit_code == 0
     # NOTE: Takes a bit of time to delete -> Sleep
     time.sleep(1)

@@ -14,34 +14,34 @@ from nucleus.modelci import (
 )
 
 
-@click.group("unit-tests", invoke_without_command=True)
+@click.group("tests", invoke_without_command=True)
 @click.option("--web", is_flag=True, help="Launch browser")
 @click.pass_context
-def unit_tests(ctx, web):
-    """Unit Tests allow you to test your Models
+def tests(ctx, web):
+    """Scenario Tests allow you to test your Models
 
     https://dashboard.scale.com/nucleus/unit-tests
     """
-    launch_web_or_invoke("unit-tests", ctx, web, list_unit_tests)
+    launch_web_or_invoke("unit-tests", ctx, web, list_tests)
 
 
-@unit_tests.command("list")
-def list_unit_tests():
+@tests.command("list")
+def list_tests():
     """List all your Unit Tests"""
     console = Console()
     with console.status("Finding your unit tests", spinner="dots4"):
         client = init_client()
         unit_tests = client.modelci.list_unit_tests()
         table = Table(
+            Column("id", overflow="fold", min_width=24),
             "Name",
-            "id",
             "slice_id",
             Column("url", overflow="fold"),
             title=":chart_with_upwards_trend: Unit tests",
             title_justify="left",
         )
         for ut in unit_tests:
-            table.add_row(ut.name, ut.id, ut.slice_id, nucleus_url(ut.id))
+            table.add_row(ut.id, ut.name, ut.slice_id, nucleus_url(ut.id))
     console.print(table)
 
 
@@ -61,12 +61,13 @@ def format_criterion(
     pass
 
 
-@unit_tests.command("describe")
-@click.option("--unit-test-id", "--id", default=None)
+@tests.command("describe")
+@click.argument("unit-test-id", default=None)
 @click.option(
     "--all", "-a", is_flag=True, help="View details about all unit tests"
 )
-def describe_unit_test(unit_test_id, all):
+def describe_test(unit_test_id, all):
+    """View detailed information about a test or all tests"""
     console = Console()
     # unit_test = client.modelci.get_unit_test(unit_test_id)
     assert unit_test_id or all, "Must pass a unit_test_id or --all"

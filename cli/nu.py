@@ -7,7 +7,7 @@ from cli.jobs import jobs
 from cli.models import models
 from cli.reference import reference
 from cli.slices import slices
-from cli.unit_tests import unit_tests
+from cli.tests import tests
 
 
 @click.group("cli", invoke_without_command=True)
@@ -35,7 +35,7 @@ nu.add_command(jobs)  # type: ignore
 nu.add_command(models)  # type: ignore
 nu.add_command(reference)  # type: ignore
 nu.add_command(slices)  # type: ignore
-nu.add_command(unit_tests)  # type: ignore
+nu.add_command(tests)  # type: ignore
 
 if __name__ == "__main__":
     """To debug, run this script followed by request command tree e.g. `cli/nu.py datasets list`"""
