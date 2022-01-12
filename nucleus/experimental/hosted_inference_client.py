@@ -52,6 +52,8 @@ class HostedInference:
         # TODO check that a model bundle was created and no name collisions happened
         return ModelBundle(model_bundle_name)
 
+    # TODO some function to get requirements
+
     def create_model_endpoint(self,
                               service_name: str,
                               model_bundle: ModelBundle,
@@ -62,13 +64,13 @@ class HostedInference:
                               min_workers: int,
                               max_workers: int,
                               per_worker: int,
-                              requirements: Dict[str, str],
+                              requirements: List[str],  # Dict[str, str],
                               env_params: Dict[str, str],
                               ):
         payload = dict(
             service_name=service_name,
             env_params=env_params,
-            bundle_id=model_bundle.name,
+            bundle_name=model_bundle.name,
             cpus=cpus,
             memory=memory,
             gpus=gpus,
@@ -79,7 +81,7 @@ class HostedInference:
             requirements=requirements,
         )
         resp = self.connection.post(payload, "endpoints")
-        endpoint_id = resp["data"]["endpoint_id"]
+        endpoint_id = resp["data"]["endpoint_id"]  # TODO this is very wrong
         return ModelEndpoint(endpoint_id=endpoint_id, client=self)
 
     # Relatively small wrappers around http requests

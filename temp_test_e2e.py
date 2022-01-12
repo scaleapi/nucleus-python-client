@@ -104,6 +104,26 @@ if __name__ == "__main__":
     # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
     # create_dummy_bundle(hmi_client)
+    env_params = {
+        "framework_type": "pytorch",
+        "pytorch_version": "1.7.0",
+        "cuda_version": "11.0",
+        "cudnn_version": "cudnn8-devel",
+    }
+    # me2 = hmi_client.create_model_endpoint(
+    #     service_name="seantest2",
+    #     env_params=env_params,
+    #     model_bundle=ModelBundle(name="return1"),
+    #     cpus=1,
+    #     memory="4Gi",
+    #     gpus=0,
+    #     gpu_type="Doesn't Matter",
+    #     min_workers=1,
+    #     max_workers=1,
+    #     per_worker=1,
+    #     requirements=[],
+    # )
+    # print(me2)
     mes = hmi_client.get_model_endpoints()
     for me in mes:
         print(me)
