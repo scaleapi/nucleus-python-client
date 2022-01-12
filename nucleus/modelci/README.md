@@ -1,10 +1,10 @@
 # Notes on defining Evaluation Criteria for a test
 
 To define the evaluation criteria for a scenario test we've created some syntactic sugar to make it look closer to an
-actual function call and we also hide away implementation details related to our data model that simply are not clear,
+actual function call, and we also hide away implementation details related to our data model that simply are not clear,
 UX-wise.
 
-Instead of defining critera like this:
+Instead of defining criteria like this:
 
 ```python
 from nucleus.modelci.data_transfer_objects.eval_function import (
@@ -37,9 +37,3 @@ details like internal IDs ("ef_....").
 The actual `EvaluationCriterion` is created by overloading the comparison operators for the base class of an evaluation
 function. Instead of the comparison returning a bool, we've made it create an `EvaluationCriterion` with the correct 
 signature to send over the wire to our API.
-
-## Pydantic Immutable models
-The `EvaluationCriterion` derives from a `pydantic.BaseModel` that has been configured to be immutable after creation
-similar to a frozen dataclass. Pydantic is a package that helps build robust API interfaces. Pydantic models work very 
-similar to dataclasses but have stricter schema validation and helpful error messages when the expected schema is broken. 
-
