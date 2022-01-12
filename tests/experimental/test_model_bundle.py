@@ -12,7 +12,9 @@ def test_add_model_bundle():
     # Tests both client and server functionality
     # TODO does it make sense to use an actual user to make the requests?
 
-    client = HostedInference(api_key="TODO")  # TODO set up nucleus pytest api key
+    client = HostedInference(
+        api_key="TODO"
+    )  # TODO set up nucleus pytest api key
 
     model_name = "TestModel"
     model = torch.nn.Linear(1, 1)  # probably should be something pytorch
@@ -44,9 +46,7 @@ def test_add_model_bundle():
         model=model,
         load_predict_fn=load_predict_fn,
     )
-    assert (
-        model_bundle.name == model_name
-    ), "Model bundle name is not correct"
+    assert model_bundle.name == model_name, "Model bundle name is not correct"
 
     # TODO more granular tests?
 
@@ -54,5 +54,9 @@ def test_add_model_bundle():
 def test_nucleus_ds_to_s3url_list(dataset):
     # This is a weird test, verification is roughly as hard as the actual code
     s3urls = _nucleus_ds_to_s3url_list(dataset)
-    assert len(s3urls) == len(dataset.items), "number of s3urls isn't number of dataset.items"
-    assert s3urls == [item.image_location for item in TEST_DATASET_ITEMS], "S3URLs are different from items' image_locations"
+    assert len(s3urls) == len(
+        dataset.items
+    ), "number of s3urls isn't number of dataset.items"
+    assert s3urls == [
+        item.image_location for item in TEST_DATASET_ITEMS
+    ], "S3URLs are different from items' image_locations"

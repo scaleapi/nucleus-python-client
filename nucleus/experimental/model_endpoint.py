@@ -1,7 +1,6 @@
-from typing import Sequence, Dict
+from typing import Dict, Sequence
 
 import cloudpickle
-import requests
 import smart_open
 from boto3 import Session
 
@@ -15,6 +14,7 @@ class ModelEndpoint:
     Represents an endpoint on Hosted Model Inference
     TODO remove all mentions of Nucleus objects, i.e. Dataset, DatasetItem, etc.
     """
+
     def __init__(self, endpoint_id, client):
         self.endpoint_id = endpoint_id
         self.client = client
@@ -33,7 +33,11 @@ class ModelEndpoint:
 
         # Try to upload resulting predictions to nucleus
 
-    def _infer(self, s3urls: Sequence[str], s3url_to_dataset_map: Dict[str, DatasetItem]):
+    def _infer(
+        self,
+        s3urls: Sequence[str],
+        s3url_to_dataset_map: Dict[str, DatasetItem],
+    ):
         # TODO for demo
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
@@ -42,17 +46,25 @@ class ModelEndpoint:
 
         request_ids = {}  # Dict of s3url -> request id
 
-        request_endpoint = f"task_async/{self.endpoint_id}"  # is endpoint_name correct?
+        request_endpoint = (
+            f"task_async/{self.endpoint_id}"  # is endpoint_name correct?
+        )
         for s3url in s3urls:
             # payload = dict(img_url=s3url)  # TODO format idk
             payload = s3url
             # TODO make these requests in parallel instead of making them serially
             # TODO client currently doesn't have a no-json option
-            inference_request = self.client.post(payload=payload, route=request_endpoint, use_json=False)  # Avoid using json because endpoint expects raw url
-            request_ids[s3url] = inference_request['task_id']
+            inference_request = self.client.post(
+                payload=payload, route=request_endpoint, use_json=False
+            )  # Avoid using json because endpoint expects raw url
+            request_ids[s3url] = inference_request["task_id"]
             # make the request to the endpoint (in parallel or something)
 
-        return ModelEndpointAsyncJob(self.client, request_ids=request_ids, s3url_to_dataset_map=s3url_to_dataset_map)
+        return ModelEndpointAsyncJob(
+            self.client,
+            request_ids=request_ids,
+            s3url_to_dataset_map=s3url_to_dataset_map,
+        )
 
     def status(self):
         # Makes call to model status endpoint,
@@ -72,7 +84,13 @@ class ModelEndpointAsyncJob:
     idk about this abstraction tbh, could use a redesign maybe?
 
     """
-    def __init__(self, client, request_ids: Dict[str, str], s3url_to_dataset_map: Dict[str, DatasetItem]):
+
+    def __init__(
+        self,
+        client,
+        request_ids: Dict[str, str],
+        s3url_to_dataset_map: Dict[str, DatasetItem],
+    ):
 
         self.client = client
         self.request_ids = request_ids.copy()  # s3url -> task_id
@@ -89,12 +107,15 @@ class ModelEndpointAsyncJob:
             current_response = self.responses[s3url]
             if current_response is None:
                 payload = {}
-                response = self.client.get(payload, f"task/result/{request_id}")
+                response = self.client.get(
+                    payload, f"task/result/{request_id}"
+                )
                 print(response)
-                if "result_url" not in response:  # TODO no idea what response looks like as of now
+                if (
+                    "result_url" not in response
+                ):  # TODO no idea what response looks like as of now
                     continue
-                else:
-                    self.responses[s3url] = response["result_url"]
+                self.responses[s3url] = response["result_url"]
 
     def is_done(self, poll=True):
         """
@@ -105,15 +126,24 @@ class ModelEndpointAsyncJob:
         # TODO: make some request to some endpoint
         if poll:
             self.poll_endpoints()
-        return all([resp is not None for resp in self.responses.values()])
+        return all(resp is not None for resp in self.responses.values())
 
     def get_responses(self):
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
 
-    def upload_responses_to_nucleus(self, nucleus_client: NucleusClient, dataset: Dataset, model_run_name: str, model=None, model_name=None, model_ref_id=None):
-        """
+    def upload_responses_to_nucleus(
+        self,
+        nucleus_client: NucleusClient,
+        dataset: Dataset,
+        model_run_name: str,
+        model=None,
+        model_name=None,
+        model_ref_id=None,
+    ):
+        """Upload model run responses to Nucleus.
+        TODO we probably want to not have this function
 
         """
         # TODO it seems weird to pass in a Dataset again, since this AsyncJob knows about the dataset items themselves
@@ -125,18 +155,26 @@ class ModelEndpointAsyncJob:
 
         # Create a Nucleus model if we don't have one
         if model is None:
-            assert model_name is not None and model_ref_id is not None, "If you don't pass a nucleus model you better pass a model name and reference id"
-            model = nucleus_client.add_model(name=model_name, reference_id=model_ref_id)
+            assert (
+                model_name is not None and model_ref_id is not None
+            ), "If you don't pass a nucleus model you better pass a model name and reference id"
+            model = nucleus_client.add_model(
+                name=model_name, reference_id=model_ref_id
+            )
 
         # Create a Nucleus model run
-        model_run = model.create_run(name=model_run_name, dataset=dataset, predictions=[])
+        model_run = model.create_run(
+            name=model_run_name, dataset=dataset, predictions=[]
+        )
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
             item_link = self.responses[s3url]
             print(f"item_link={item_link}")
             # e.g. s3://scale-ml/tmp/hosted-model-inference-outputs/a224499e-50ac-4b08-ad0c-c18e74c14184.pkl
             kwargs = {
-                "transport_params": {"session": Session(profile_name="ml-worker")}
+                "transport_params": {
+                    "session": Session(profile_name="ml-worker")
+                }
             }
 
             with smart_open.open(item_link, "rb", **kwargs) as bundle_pkl:
@@ -151,7 +189,7 @@ class ModelEndpointAsyncJob:
                         y=box["top"],
                         width=box["width"],
                         height=box["height"],
-                        reference_id=ref_id
+                        reference_id=ref_id,
                     )
                     prediction_items.append(pred_item)
 
