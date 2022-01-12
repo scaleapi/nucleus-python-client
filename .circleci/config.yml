@@ -7,7 +7,9 @@ orbs:
 jobs:
   build_test:
     docker:
-      - image: python:3.7-buster
+      # Important: Don't change this otherwise we will stop testing the earliest
+      # python version we have to support.
+      - image: python:3.6-buster
     resource_class: small
     parallelism: 6
     steps:
@@ -23,7 +25,7 @@ jobs:
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
           command: |
-            poetry run black --check -t py37 .
+            poetry run black --check -t py36 .
       - run:
           name: Flake8 Lint Check # Uses setup.cfg for configuration
           command: |
