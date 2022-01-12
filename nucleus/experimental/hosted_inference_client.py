@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 import cloudpickle
 import logging
@@ -13,6 +13,7 @@ DEFAULT_NETWORK_TIMEOUT_SEC = 120
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
+Model = TypeVar("Model")
 
 class HostedInference:
     """HostedInference Python Client extension."""
@@ -26,13 +27,17 @@ class HostedInference:
     def __eq__(self, other):
         return self.connection == other.connection
 
-    def add_model_bundle(self, model_bundle_name: str, model: Any, load_predict_fn: Any):
+    def add_model_bundle(self, model_bundle_name: str, model: Model, load_predict_fn: Callable[[Model], Callable[[Any], Any]]):
         """
-        Grabs a s3 signed url and uploads a model bundle, i.e. a dictionary
-        {
-            "model": model
-            "load_predict_fn": load_predict_fn
-        }
+        Grabs a s3 signed url and uploads a model bundle to Hosted Inference.
+        A model bundle consists of a "model" and a "load_predict_fn", such that
+        load_predict_fn(model) returns a function predict_fn that takes in model input and returns model output.
+        Pre/post-processing code can be included inside load_predict_fn/model.
+
+        Parameters:
+            model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            model: Typically a trained Neural Network, e.g. a Pytorch module
+            load_predict_fn: Function that when called with model, returns a function that carries out inference
         """
         # Grab a signed url to make upload to
         model_bundle_s3_url = self.connection.post({}, "model_bundle_upload")
@@ -95,6 +100,9 @@ class HostedInference:
         raise NotImplementedError
 
     def get_model_endpoints(self) -> List[ModelEndpoint]:
+        """
+        Gets all model endpoints that the user owns.
+        """
         resp = self.connection.get("endpoints")
         return [ModelEndpoint(endpoint_id=endpoint_id, client=self) for endpoint_id in resp]
 
@@ -103,14 +111,47 @@ class HostedInference:
         raise NotImplementedError
 
     def sync_request(self, endpoint_id: str, s3url: str):
+        """
+        Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
+
+        Parameters:
+            endpoint_id: The id of the endpoint to make the request to
+            s3url: A url that points to a file containing model input
+
+        Returns:
+            A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
+        """
         resp = self.connection.post(payload=dict(url=s3url), route=f"task/{endpoint_id}")
         return resp["data"]["result_url"]
 
     def async_request(self, endpoint_id: str, s3url: str):
+        """
+        Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
+        the result of inference at a later time.
+
+        Parameters:
+            endpoint_id: The id of the endpoint to make the request to
+            s3url: A url that points to a file containing model input
+
+        Returns:
+            An id/key that can be used to fetch inference results at a later time
+        """
         resp = self.connection.post(payload=dict(url=s3url), route=f"task_async/{endpoint_id}")
         return resp["data"]["task_id"]
 
     def get_async_response(self, async_task_id: str):
+        """
+        Gets inference results from a previously created task.
+
+        Parameters:
+            async_task_id: The id/key returned from a previous invocation of async_request.
+
+        Returns:
+            A dictionary that contains task status and optionally a result url if the task has completed.
+            Keys:
+                state: 'PENDING' or 'SUCCESS' or 'FAILURE'
+                result_url: a url pointing to inference results. This
+        """
 
         resp = self.connection.get(route=f"task/result/{async_task_id}")
         return resp["data"]
