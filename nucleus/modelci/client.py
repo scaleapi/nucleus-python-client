@@ -117,7 +117,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
-            success = client.modelci.create_unit_test(unit_test.id)
+            success = client.modelci.delete_unit_test(unit_test.id)
 
         Args:
             unit_test_id: unique ID of unit test
