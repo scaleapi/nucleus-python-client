@@ -13,6 +13,7 @@ from nucleus.experimental.utils import _nucleus_ds_to_s3url_list
 class ModelEndpoint:
     """
     Represents an endpoint on Hosted Model Inference
+    TODO remove all mentions of Nucleus objects, i.e. Dataset, DatasetItem, etc.
     """
     def __init__(self, endpoint_id, client):
         self.endpoint_id = endpoint_id

@@ -128,8 +128,8 @@ if __name__ == "__main__":
     for me in mes:
         print(me)
     m1 = mes[0]
-    print(hmi_client.sync_request("seantest", img_url))
-    async_task = hmi_client.async_request("seantest", img_url)
+    print(hmi_client.sync_request("seantest2", img_url))
+    async_task = hmi_client.async_request("seantest2", img_url)
     print(async_task)
     print(hmi_client.get_async_response(async_task))
     for i in range(10):

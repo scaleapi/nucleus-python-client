@@ -1,9 +1,8 @@
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
 import cloudpickle
 import logging
 import requests
-from typing import Dict
 
 from nucleus.connection import Connection
 from nucleus.experimental.model_endpoint import ModelEndpoint, ModelBundle
@@ -60,12 +59,12 @@ class HostedInference:
                               cpus: int,
                               memory: str,
                               gpus: int,
-                              gpu_type: str,
                               min_workers: int,
                               max_workers: int,
                               per_worker: int,
                               requirements: List[str],  # Dict[str, str],
                               env_params: Dict[str, str],
+                              gpu_type: Optional[str] = None,
                               ):
         payload = dict(
             service_name=service_name,
@@ -80,6 +79,10 @@ class HostedInference:
             per_worker=per_worker,
             requirements=requirements,
         )
+        if gpus == 0:
+            del payload['gpu_type']
+        elif gpus > 0 and gpu_type is None:
+            raise ValueError("If nonzero gpus, must provide gpu_type")
         resp = self.connection.post(payload, "endpoints")
         endpoint_id = resp["data"]["endpoint_id"]  # TODO this is very wrong
         return ModelEndpoint(endpoint_id=endpoint_id, client=self)
