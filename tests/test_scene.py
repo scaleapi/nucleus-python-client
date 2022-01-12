@@ -1,4 +1,5 @@
 import copy
+import time
 
 import pytest
 
@@ -436,6 +437,31 @@ def test_scene_upload_and_update(dataset_scene):
         "completed_steps": 1,
         "total_steps": 1,
     }
+
+
+@pytest.mark.integration
+def test_scene_deletion(dataset_scene):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+
+    uploaded_scenes = dataset_scene.scenes
+    assert len(uploaded_scenes) == len(scenes)
+    assert all(
+        u["reference_id"] == o.reference_id
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+
+    for scene in uploaded_scenes:
+        dataset_scene.delete_scene(scene.reference_id)
+    time.sleep(1)
+    scenes = dataset_scene.scenes
+    assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
 
 
 @pytest.mark.integration
