@@ -48,6 +48,7 @@ class HostedInference:
         requests.put(s3_path, data=serialized_bundle)
 
         resp = self.connection.post(payload=dict(id=model_bundle_name, location=raw_s3_url), route="model_bundle")
+        # resp["data"]["bundle_name"] should equal model_bundle_name
         # TODO check that a model bundle was created and no name collisions happened
         return ModelBundle(model_bundle_name)
 
@@ -78,8 +79,7 @@ class HostedInference:
             requirements=requirements,
         )
         resp = self.connection.post(payload, "endpoints")
-        # TODO check error codes
-        endpoint_id = resp["endpoint_id"]
+        endpoint_id = resp["data"]["endpoint_id"]
         return ModelEndpoint(endpoint_id=endpoint_id, client=self)
 
     # Relatively small wrappers around http requests
@@ -99,12 +99,13 @@ class HostedInference:
 
     def sync_request(self, endpoint_id: str, s3url: str):
         resp = self.connection.post(payload=dict(url=s3url), route=f"task/{endpoint_id}")
-        return resp["result_url"]
+        return resp["data"]["result_url"]
 
     def async_request(self, endpoint_id: str, s3url: str):
         resp = self.connection.post(payload=dict(url=s3url), route=f"task_async/{endpoint_id}")
-        return resp["task_id"]
+        return resp["data"]["task_id"]
 
     def get_async_response(self, async_task_id: str):
+
         resp = self.connection.get(route=f"task/result/{async_task_id}")
-        return resp["result_url"]
+        return resp["data"]

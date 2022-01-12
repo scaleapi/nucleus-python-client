@@ -18,6 +18,9 @@ class ModelEndpoint:
         self.endpoint_id = endpoint_id
         self.client = client
 
+    def __str__(self):
+        return f"ModelEndpoint <endpoint_id:{self.endpoint_id}>"
+
     def create_run_job(self, dataset: Dataset):
         # TODO: for demo
 
@@ -51,12 +54,12 @@ class ModelEndpoint:
         return ModelEndpointAsyncJob(self.client, request_ids=request_ids, s3url_to_dataset_map=s3url_to_dataset_map)
 
     def status(self):
-        # Makes call to model status endpoint
+        # Makes call to model status endpoint,
         raise NotImplementedError
 
     def sync_request(self, s3url: str):
         # Makes a single request to the synchronous endpoint
-        return self.client.sync_request(s3url)
+        return self.client.sync_request(self.endpoint_id, s3url)
 
 
 class ModelEndpointAsyncJob:

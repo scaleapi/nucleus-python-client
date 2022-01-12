@@ -99,8 +99,20 @@ if __name__ == "__main__":
     # )
     #temp_clone_pandaset()
 
-    hmi_client = HostedInference(api_key="")
+    hmi_client = HostedInference(api_key="", endpoint="http://localhost:3000/v1/hosted_inference")
+    img_url = "s3://scale-ml-hosted-model-inference/tmp/hosted-model-inference-outputs/c3f3b5ed-f182-4fa1-bfa5-9b2e017feb74.pkl"
     # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
-    create_dummy_bundle(hmi_client)
-    print(hmi_client.connection.get("endpoints"))
+    # create_dummy_bundle(hmi_client)
+    mes = hmi_client.get_model_endpoints()
+    for me in mes:
+        print(me)
+    m1 = mes[0]
+    print(hmi_client.sync_request("seantest", img_url))
+    async_task = hmi_client.async_request("seantest", img_url)
+    print(async_task)
+    print(hmi_client.get_async_response(async_task))
+    for i in range(10):
+        time.sleep(1)
+        print(hmi_client.get_async_response(async_task))
+    # print(hmi_client.get_bundles())
