@@ -67,8 +67,8 @@ class ModelCI:
         Args:
             name: unique name of test
             slice_id: id of (pre-defined) slice of items to evaluate test on.
-            evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functions.
-                See :class:`eval_functions`.
+            evaluation_criteria: :class:`EvaluationCriterion` defines a pass/fail criteria for the test. Created with a
+                comparison with an eval functions. See :class:`eval_functions`.
 
         Returns:
             Created UnitTest object.
