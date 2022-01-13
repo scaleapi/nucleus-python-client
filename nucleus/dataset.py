@@ -742,7 +742,14 @@ class Dataset:
 
     @sanitize_string_args
     def delete_scene(self, reference_id: str):
-        """ Deletes a Scene associated with the Dataset"""
+        """Deletes a Scene associated with the Dataset
+
+        All items, annotations and predictions associated with the scene will be
+        deleted as well.
+
+        Parameters:
+            reference_id: The user-defined reference ID of the item to delete.
+        """
         self._client.delete(f"dataset/{self.id}/scene/{reference_id}")
 
     def list_autotags(self):
