@@ -20,22 +20,17 @@ class ModelEndpoint:
         # TODO for demo
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
-
         # TODO batches once those are out
 
         request_ids = {}  # Dict of s3url -> request id
 
-        request_endpoint = (
-            f"task_async/{self.endpoint_id}"  # is endpoint_name correct?
-        )
         for s3url in s3urls:
-            # payload = dict(img_url=s3url)  # TODO format idk
-            payload = s3url
             # TODO make these requests in parallel instead of making them serially
             # TODO client currently doesn't have a no-json option
-            inference_request = self.client.post(
-                payload=payload, route=request_endpoint, use_json=False
-            )  # Avoid using json because endpoint expects raw url
+            inference_request = self.client.async_request(
+                endpoint_id=self.endpoint_id,
+                s3url=s3url,
+            )
             request_ids[s3url] = inference_request["task_id"]
             # make the request to the endpoint (in parallel or something)
 
@@ -81,18 +76,14 @@ class ModelEndpointAsyncJob:
         """
 
         # TODO: replace with batch endpoint, or make requests in parallel
-        # TODO use the low level HMI client please
         for s3url, request_id in self.request_ids.items():
             current_response = self.responses[s3url]
             if current_response is None:
-                payload = {}
-                response = self.client.get(
-                    payload, f"task/result/{request_id}"
-                )
+                response = self.client.get_async_response(request_id)
                 print(response)
                 if (
                     "result_url" not in response
-                ):  # TODO no idea what response looks like as of now
+                ):  # TODO this doesn't handle any task states other than Pending or Success
                     continue
                 self.responses[s3url] = response["result_url"]
 
