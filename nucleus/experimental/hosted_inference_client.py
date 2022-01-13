@@ -5,7 +5,8 @@ import cloudpickle
 import requests
 
 from nucleus.connection import Connection
-from nucleus.experimental.model_endpoint import ModelBundle, ModelEndpoint
+from nucleus.experimental.model_bundle import ModelBundle
+from nucleus.experimental.model_endpoint import ModelEndpoint
 
 HOSTED_INFERENCE_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
@@ -13,7 +14,7 @@ DEFAULT_NETWORK_TIMEOUT_SEC = 120
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
-Model = TypeVar("Model")
+HMIModel_T = TypeVar("HMIModel_T")
 
 
 class HostedInference:
@@ -33,8 +34,8 @@ class HostedInference:
     def add_model_bundle(
         self,
         model_bundle_name: str,
-        model: Model,
-        load_predict_fn: Callable[[Model], Callable[[Any], Any]],
+        model: HMIModel_T,
+        load_predict_fn: Callable[[HMIModel_T], Callable[[Any], Any]],
     ):
         """
         Grabs a s3 signed url and uploads a model bundle to Hosted Inference.

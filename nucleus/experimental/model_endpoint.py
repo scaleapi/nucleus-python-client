@@ -196,12 +196,3 @@ class ModelEndpointAsyncJob:
         job = model_run.predict(prediction_items, asynchronous=True)
         job.sleep_until_complete()
         job.errors()
-
-
-class ModelBundle:
-    """
-    Represents a ModelBundle
-    """
-
-    def __init__(self, name):
-        self.name = name

@@ -13,6 +13,7 @@ def _nucleus_ds_to_s3url_list(
 ) -> Tuple[List[str], Dict[str, DatasetItem]]:
     # TODO I'm not sure if dataset items are necessarily s3URLs. Does this matter?
     # TODO support lidar point clouds
+    # TODO just remove this tbh
     if len(dataset.items) == 0:
         logger.warning("Passed a dataset of length 0")
         return [], {}  # TODO return type?

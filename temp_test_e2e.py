@@ -2,9 +2,10 @@ import os
 import time
 
 from nucleus.experimental.hosted_inference_client import HostedInference
+from nucleus.experimental.model_bundle import ModelBundle
 
 # TODO Don't include this file in final pr
-from nucleus.experimental.model_endpoint import ModelBundle, ModelEndpoint
+from nucleus.experimental.model_endpoint import ModelEndpoint
 
 
 def create_dummy_bundle(hmi_client):
