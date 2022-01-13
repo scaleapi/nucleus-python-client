@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from nucleus.experimental.hosted_inference_client import HostedInference
-from nucleus.experimental.utils import _nucleus_ds_to_s3url_list
+from nucleus.experimental.nucleus_integration import _nucleus_ds_to_s3url_list
 from tests.helpers import TEST_DATASET_ITEMS
 
 

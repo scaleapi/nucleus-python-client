@@ -23,6 +23,13 @@ class HostedInference:
     def __init__(
         self, api_key: str, endpoint: str = HOSTED_INFERENCE_ENDPOINT
     ):
+        """
+        Initializes a HostedInference Client.
+
+        Parameters:
+            api_key: Your Scale API key
+            endpoint: The Scale Deploy Endpoint (this should not need to be changed)
+        """
         self.connection = Connection(api_key, endpoint)
 
     def __repr__(self):

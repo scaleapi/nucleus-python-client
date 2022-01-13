@@ -1,11 +1,15 @@
 import os
 import time
 
+import nucleus
 from nucleus.experimental.hosted_inference_client import HostedInference
 from nucleus.experimental.model_bundle import ModelBundle
 
 # TODO Don't include this file in final pr
 from nucleus.experimental.model_endpoint import ModelEndpoint
+from nucleus.experimental.nucleus_integration import (
+    create_nucleus_dataset_inference_run,
+)
 
 
 def create_dummy_bundle(hmi_client):
@@ -62,22 +66,22 @@ def make_task_call(
         endpoint_id=endpoint_name, client=hmi_client
     )
 
-    model_endpoint_async_job = model_endpoint.create_run_job(dataset=dataset)
+    inference_run = create_nucleus_dataset_inference_run(
+        model_endpoint, client, dataset
+    )
 
-    while not model_endpoint_async_job.is_done(poll=True):
+    while not inference_run.is_done(poll=True):
         print("Waiting for predictions to finish...")
         time.sleep(5)
 
     print("Predictions complete!")
-    predictions = model_endpoint_async_job.get_responses()
+    predictions = inference_run.hmi_async_job.get_responses()
     print(predictions)
 
     if upload_to_nucleus:
         ts = str(time.time())
-        model_endpoint_async_job.upload_responses_to_nucleus(
-            client,
-            dataset,
-            ts,
+        inference_run.upload_to_nucleus(
+            model_run_name=ts,
             model_name="Test HMI upload",
             model_ref_id=f"test_hmi_upload_{ts}",
         )
@@ -119,7 +123,7 @@ if __name__ == "__main__":
     # temp_clone_pandaset()
 
     hmi_client = HostedInference(
-        api_key="", endpoint="http://localhost:3000/v1/hosted_inference"
+        api_key="live_38aa469bc8ab436d89dce6e37e8d5258"
     )
     img_url = "s3://scale-ml-hosted-model-inference/tmp/hosted-model-inference-outputs/c3f3b5ed-f182-4fa1-bfa5-9b2e017feb74.pkl"
     # hmi_client.create_endpoint()
