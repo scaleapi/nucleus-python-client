@@ -89,7 +89,9 @@ class ModelEndpointAsyncJob:
         self,
         client,
         request_ids: Dict[str, str],
-        s3url_to_dataset_map: Dict[str, DatasetItem],
+        s3url_to_dataset_map: Dict[
+            str, DatasetItem
+        ],  # TODO remove dependence on this weird map thing
     ):
 
         self.client = client
