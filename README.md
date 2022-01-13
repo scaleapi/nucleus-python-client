@@ -141,7 +141,7 @@ requests.post("example/post_to", json=parsed_model.dict())
 
 ### Migrating to Pydantic
 - When migrating an interface from a dictionary use `nucleus.pydantic_base.DictCompatibleModel`. That allows you to get
-the benefits of Pydantic but maintaints backwards compatibility with a Python dictionary by delegating __getitem__ to 
+the benefits of Pydantic but maintaints backwards compatibility with a Python dictionary by delegating `__getitem__` to 
 fields.
 - When migrating a frozen dataclass use `nucleus.pydantic_base.ImmutableModel`. That is a base class set up to be 
 immutable after initialization.
