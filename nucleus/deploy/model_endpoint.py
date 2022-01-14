@@ -18,7 +18,7 @@ class ModelEndpoint:
     def __str__(self):
         return f"ModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def infer(
+    def predict(
         self,
         s3urls: Sequence[str],
     ) -> "ModelEndpointAsyncJob":

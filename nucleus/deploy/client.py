@@ -224,21 +224,6 @@ class DeployClient:
         resp = self.connection.get(route=f"task/result/{async_task_id}")
         return resp["data"]
 
-    def batch_request(self, endpoint_id, s3urls: List[str]):
-        """
-        Sends a batch inference request to the Model Endpoint at endpoint_id, blocks until inference is all done
-        TODO: not sure how much sense it makes to have a blocking batch_request, since it will probably take pretty long
-
-        Parameters:
-            endpoint_id: The id of the endpoint to make the request to
-            s3urls: A list of urls, each pointing to a file containing model input.
-                Must be accessible by Scale Deploy, hence urls need to either be public or signedURLs.
-
-        Returns:
-            An id/key that can be used to fetch inference results at a later time
-        """
-        raise NotImplementedError
-
     def batch_async_request(self, endpoint_id: str, s3urls: List[str]):
         """
         Sends a batch inference request to the Model Endpoint at endpoint_id, returns a key that can be used to retrieve
