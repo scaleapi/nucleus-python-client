@@ -27,7 +27,7 @@ TEST_CONVEX_POLYGON_ANNOTATION_LIST = AnnotationList(
 
 TEST_CONVEX_POLYGON_PREDICTION_LIST = PredictionList(
     polygon_predictions=[
-        PolygonPrediction.from_json(annotation | {"confidence": 0.5})
+        PolygonPrediction.from_json(dict(**annotation, confidence=0.5))
         for annotation in TEST_CONVEX_POLYGON_ANNOTATIONS
     ]
 )
