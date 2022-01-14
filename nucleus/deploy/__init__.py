@@ -28,7 +28,7 @@ infrastructure level details such as autoscaling and task queueing.
 Steps to deploy your model via Scale Deploy:
 
 1. First, you create and upload a `ModelBundle`. Pass your trained model as well as pre-/post-processing code to
-the Hosted Inference Python SDK, and we'll create a model bundle based on the code and store it in our Bundle Store.
+the Scale Deploy Python SDK, and we'll create a model bundle based on the code and store it in our Bundle Store.
 
 2. Then, you create a `ModelEndpoint`. Pass a `ModelBundle` as well as infrastructure settings such as #GPUs to our SDK.
 This provisions resources on Scale's cluster dedicated to your `ModelEndpoint`.
@@ -39,6 +39,6 @@ to Scale.
 TODO: link some example colab notebook
 """
 
-from .hosted_inference_client import DeployClient
+from .client import DeployClient
 from .model_bundle import ModelBundle
 from .model_endpoint import ModelEndpoint, ModelEndpointAsyncJob

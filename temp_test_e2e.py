@@ -2,12 +2,12 @@ import os
 import time
 
 import nucleus
-from nucleus.experimental.hosted_inference_client import DeployClient
-from nucleus.experimental.model_bundle import ModelBundle
+from nucleus.deploy.client import DeployClient
+from nucleus.deploy.model_bundle import ModelBundle
 
 # TODO Don't include this file in final pr
-from nucleus.experimental.model_endpoint import ModelEndpoint
-from nucleus.experimental.nucleus_integration import (
+from nucleus.deploy.model_endpoint import ModelEndpoint
+from nucleus.deploy.nucleus_integration import (
     create_nucleus_dataset_inference_run,
 )
 

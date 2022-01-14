@@ -9,10 +9,7 @@ from boto3 import Session
 import nucleus
 from nucleus import Dataset, DatasetItem
 from nucleus.dataset_item import DatasetItemType
-from nucleus.experimental.model_endpoint import (
-    ModelEndpoint,
-    ModelEndpointAsyncJob,
-)
+from nucleus.deploy.model_endpoint import ModelEndpoint, ModelEndpointAsyncJob
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()

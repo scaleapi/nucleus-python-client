@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from nucleus.experimental.hosted_inference_client import DeployClient
-from nucleus.experimental.nucleus_integration import _nucleus_ds_to_s3url_list
+from nucleus.deploy.client import DeployClient
+from nucleus.deploy.nucleus_integration import _nucleus_ds_to_s3url_list
 from tests.helpers import TEST_DATASET_ITEMS
 
 

@@ -5,8 +5,8 @@ import cloudpickle
 import requests
 
 from nucleus.connection import Connection
-from nucleus.experimental.model_bundle import ModelBundle
-from nucleus.experimental.model_endpoint import ModelEndpoint
+from nucleus.deploy.model_bundle import ModelBundle
+from nucleus.deploy.model_endpoint import ModelEndpoint
 
 SCALE_DEPLOY_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
