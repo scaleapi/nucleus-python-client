@@ -8,23 +8,21 @@ from nucleus.connection import Connection
 from nucleus.experimental.model_bundle import ModelBundle
 from nucleus.experimental.model_endpoint import ModelEndpoint
 
-HOSTED_INFERENCE_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
+SCALE_DEPLOY_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
 
-HMIModel_T = TypeVar("HMIModel_T")
+DeployModel_T = TypeVar("DeployModel_T")
 
 
-class HostedInference:
-    """HostedInference Python Client extension."""
+class DeployClient:
+    """Scale Deploy Python Client extension."""
 
-    def __init__(
-        self, api_key: str, endpoint: str = HOSTED_INFERENCE_ENDPOINT
-    ):
+    def __init__(self, api_key: str, endpoint: str = SCALE_DEPLOY_ENDPOINT):
         """
-        Initializes a HostedInference Client.
+        Initializes a Scale Deploy Client.
 
         Parameters:
             api_key: Your Scale API key
@@ -33,7 +31,7 @@ class HostedInference:
         self.connection = Connection(api_key, endpoint)
 
     def __repr__(self):
-        return f"HostedInference(connection='{self.connection}')"
+        return f"DeployClient(connection='{self.connection}')"
 
     def __eq__(self, other):
         return self.connection == other.connection
@@ -41,11 +39,11 @@ class HostedInference:
     def add_model_bundle(
         self,
         model_bundle_name: str,
-        model: HMIModel_T,
-        load_predict_fn: Callable[[HMIModel_T], Callable[[Any], Any]],
+        model: DeployModel_T,
+        load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
     ) -> ModelBundle:
         """
-        Grabs a s3 signed url and uploads a model bundle to Hosted Inference.
+        Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
         A model bundle consists of a "model" and a "load_predict_fn", such that
         load_predict_fn(model) returns a function predict_fn that takes in model input and returns model output.
         Pre/post-processing code can be included inside load_predict_fn/model.
@@ -177,7 +175,7 @@ class HostedInference:
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
             s3url: A url that points to a file containing model input.
-                Must be accessible by Hosted Inference, hence it needs to either be public or a signedURL.
+                Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
@@ -197,7 +195,7 @@ class HostedInference:
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
             s3url: A url that points to a file containing model input.
-                Must be accessible by Hosted Inference, hence it needs to either be public or a signedURL.
+                Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time
@@ -237,7 +235,7 @@ class HostedInference:
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
             s3urls: A list of urls, each pointing to a file containing model input.
-                Must be accessible by Hosted Inference, hence urls need to either be public or signedURLs.
+                Must be accessible by Scale Deploy, hence urls need to either be public or signedURLs.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time
@@ -252,7 +250,7 @@ class HostedInference:
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
             s3urls: A list of urls, each pointing to a file containing model input.
-                Must be accessible by Hosted Inference, hence urls need to either be public or signedURLs.
+                Must be accessible by Scale Deploy, hence urls need to either be public or signedURLs.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time

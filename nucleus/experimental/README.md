@@ -5,7 +5,7 @@ Currently, Scale Deploy is still being built out, so the contents of this librar
 Moving an ML model from experiment to production requires significant engineering lift. 
 Scale Deploy provides ML engineers a simple Python interface for turning a local code snippet into a production service.
 A ML engineer needs to call a few functions from Scale's SDK, which quickly spins up a production-ready service.
-The service efficiently utilizes compute resources and automatically scales according to traffic. 
+The service efficiently utilizes compute resources and automatically scales according to traffic.
 
 # Deploying your model via Scale Deploy
 

@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from nucleus.experimental.hosted_inference_client import HostedInference
+from nucleus.experimental.hosted_inference_client import DeployClient
 from nucleus.experimental.nucleus_integration import _nucleus_ds_to_s3url_list
 from tests.helpers import TEST_DATASET_ITEMS
 
@@ -12,9 +12,7 @@ def test_add_model_bundle():
     # Tests both client and server functionality
     # TODO does it make sense to use an actual user to make the requests?
 
-    client = HostedInference(
-        api_key="TODO"
-    )  # TODO set up nucleus pytest api key
+    client = DeployClient(api_key="TODO")  # TODO set up nucleus pytest api key
 
     model_name = "TestModel"
     model = torch.nn.Linear(1, 1)  # probably should be something pytorch

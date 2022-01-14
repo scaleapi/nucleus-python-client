@@ -2,7 +2,7 @@ import os
 import time
 
 import nucleus
-from nucleus.experimental.hosted_inference_client import HostedInference
+from nucleus.experimental.hosted_inference_client import DeployClient
 from nucleus.experimental.model_bundle import ModelBundle
 
 # TODO Don't include this file in final pr
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # )
     # temp_clone_pandaset()
 
-    hmi_client = HostedInference(api_key="")
+    hmi_client = DeployClient(api_key="")
     img_url = "s3://scale-ml-hosted-model-inference/tmp/hosted-model-inference-outputs/c3f3b5ed-f182-4fa1-bfa5-9b2e017feb74.pkl"
     # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
