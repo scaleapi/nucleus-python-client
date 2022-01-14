@@ -12,7 +12,8 @@ TEST_BOX_ANNOTATION_LIST = AnnotationList(
 
 TEST_BOX_PREDICTION_LIST = PredictionList(
     box_predictions=[
-        BoxPrediction(**annotation) for annotation in TEST_BOX_ANNOTATIONS
+        BoxPrediction(confidence=0.5, **annotation)
+        for annotation in TEST_BOX_ANNOTATIONS
     ]
 )
 
@@ -26,7 +27,7 @@ TEST_CONVEX_POLYGON_ANNOTATION_LIST = AnnotationList(
 
 TEST_CONVEX_POLYGON_PREDICTION_LIST = PredictionList(
     polygon_predictions=[
-        PolygonPrediction.from_json(annotation)
+        PolygonPrediction.from_json(annotation | {"confidence": 0.5})
         for annotation in TEST_CONVEX_POLYGON_ANNOTATIONS
     ]
 )
@@ -61,6 +62,16 @@ TEST_PREDICTION_LIST = PredictionList(
             label="car",
             x=0,
             y=0,
+            width=10,
+            height=10,
+            reference_id="image_1",
+            confidence=0.6,
+            annotation_id="image_1_car_box_1",
+        ),
+        BoxPrediction(
+            label="car",
+            x=5,
+            y=5,
             width=10,
             height=10,
             reference_id="image_1",
