@@ -22,9 +22,9 @@ Central to Scale Deploy are the notions of a `ModelBundle` and a `ModelEndpoint`
 A `ModelBundle` consists of a trained model as well as the surrounding preprocessing and postprocessing code.
 Specifically, a `ModelBundle` consists of two Python objects, a `model` and a `load_predict_fn`, such that
 
-```
+``
 load_predict_fn(model)
-```
+``
 
 returns a function `predict_fn` that takes in one argument representing model input,
 and outputs one argument representing model output.

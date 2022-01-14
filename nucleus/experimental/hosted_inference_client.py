@@ -43,7 +43,7 @@ class HostedInference:
         model_bundle_name: str,
         model: HMIModel_T,
         load_predict_fn: Callable[[HMIModel_T], Callable[[Any], Any]],
-    ):
+    ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Hosted Inference.
         A model bundle consists of a "model" and a "load_predict_fn", such that
@@ -92,7 +92,7 @@ class HostedInference:
         requirements: List[str],  # Dict[str, str],
         env_params: Dict[str, str],
         gpu_type: Optional[str] = None,
-    ):
+    ) -> ModelEndpoint:
         """
         Creates a Model Endpoint that is able to serve requests
 
@@ -170,7 +170,7 @@ class HostedInference:
         # TODO args, corresponds to PUT model_endpoint, doesn't exist serverside
         raise NotImplementedError
 
-    def sync_request(self, endpoint_id: str, s3url: str):
+    def sync_request(self, endpoint_id: str, s3url: str) -> str:
         """
         Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
 
@@ -182,14 +182,14 @@ class HostedInference:
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
             Example:
-                https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy
+                `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         resp = self.connection.post(
             payload=dict(url=s3url), route=f"task/{endpoint_id}"
         )
         return resp["data"]["result_url"]
 
-    def async_request(self, endpoint_id: str, s3url: str):
+    def async_request(self, endpoint_id: str, s3url: str) -> str:
         """
         Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
         the result of inference at a later time.
@@ -202,14 +202,14 @@ class HostedInference:
         Returns:
             An id/key that can be used to fetch inference results at a later time
             Example:
-                abcabcab-cabc-abca-bcabcabcabca
+                `abcabcab-cabc-abca-bcabcabcabca`
         """
         resp = self.connection.post(
             payload=dict(url=s3url), route=f"task_async/{endpoint_id}"
         )
         return resp["data"]["task_id"]
 
-    def get_async_response(self, async_task_id: str):
+    def get_async_response(self, async_task_id: str) -> str:
         """
         Gets inference results from a previously created task.
 
@@ -222,7 +222,7 @@ class HostedInference:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
             Example:
-                {'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}
+                `{'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}`
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
         """
 

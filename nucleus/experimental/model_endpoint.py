@@ -1,4 +1,4 @@
-from typing import Dict, Sequence
+from typing import Dict, Optional, Sequence
 
 
 class ModelEndpoint:
@@ -21,7 +21,7 @@ class ModelEndpoint:
     def infer(
         self,
         s3urls: Sequence[str],
-    ):
+    ) -> "ModelEndpointAsyncJob":
         """
         Runs inference on the data items specified by s3urls. Returns a ModelEndpointAsyncJob.
 
@@ -58,7 +58,7 @@ class ModelEndpoint:
         """
         raise NotImplementedError
 
-    def sync_request(self, s3url: str):
+    def sync_request(self, s3url: str) -> str:
         """Makes a single request to the endpoint
 
         Parameters:
@@ -68,11 +68,11 @@ class ModelEndpoint:
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
             Example:
-                https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy
+                `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         return self.client.sync_request(self.endpoint_id, s3url)
 
-    async def async_request(self, s3url: str):
+    async def async_request(self, s3url: str) -> str:
         """
         Makes an async request to the endpoint. Polls the endpoint under the hood, but provides async/await semantics
         on top.
@@ -84,7 +84,7 @@ class ModelEndpoint:
         Returns:
             An id/key that can be used to fetch inference results at a later time
             Example:
-                abcabcab-cabc-abca-bcabcabcabca
+                `abcabcab-cabc-abca-bcabcabcabca`
         """
         raise NotImplementedError
 
@@ -117,7 +117,9 @@ class ModelEndpointAsyncJob:
 
         self.client = client
         self.request_ids = request_ids.copy()  # s3url -> task_id
-        self.responses = {s3url: None for s3url in request_ids.keys()}
+        self.responses: Dict[str, Optional[str]] = {
+            s3url: None for s3url in request_ids.keys()
+        }
 
     def poll_endpoints(self):
         """
@@ -136,7 +138,7 @@ class ModelEndpointAsyncJob:
                     continue
                 self.responses[s3url] = response["result_url"]
 
-    def is_done(self, poll=True):
+    def is_done(self, poll=True) -> bool:
         """
         Checks if all the tasks from this round of requests are done, according to
         the internal state of this object.
@@ -147,7 +149,7 @@ class ModelEndpointAsyncJob:
             self.poll_endpoints()
         return all(resp is not None for resp in self.responses.values())
 
-    def get_responses(self):
+    def get_responses(self) -> Dict[str, Optional[str]]:
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
