@@ -51,3 +51,7 @@ to Scale.
 
 TODO: link some example colab notebook
 """
+
+from .hosted_inference_client import HostedInference
+from .model_bundle import ModelBundle
+from .model_endpoint import ModelEndpoint, ModelEndpointAsyncJob
