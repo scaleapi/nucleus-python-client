@@ -122,9 +122,7 @@ if __name__ == "__main__":
     # )
     # temp_clone_pandaset()
 
-    hmi_client = HostedInference(
-        api_key="live_38aa469bc8ab436d89dce6e37e8d5258"
-    )
+    hmi_client = HostedInference(api_key="")
     img_url = "s3://scale-ml-hosted-model-inference/tmp/hosted-model-inference-outputs/c3f3b5ed-f182-4fa1-bfa5-9b2e017feb74.pkl"
     # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
