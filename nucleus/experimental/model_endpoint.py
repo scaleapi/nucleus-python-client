@@ -19,6 +19,9 @@ class ModelEndpoint:
     ):
         """
         Runs inference on the data items specified by s3urls. Returns a ModelEndpointAsyncJob.
+
+        Parameters:
+            s3urls: The list of s3URLs that should have inference run on them.
         """
         # TODO for demo
         # Make inference requests to the endpoint,
@@ -61,7 +64,7 @@ class ModelEndpoint:
     def edit_endpoint(self):
         """
         TODO args
-        Changes some parameters of the Model Endpoint, e.g. autoscaling parameters.
+        Changes some parameters of the Model Endpoint, e.g. autoscaling parameters, without
         """
         raise NotImplementedError
 
@@ -110,7 +113,7 @@ class ModelEndpointAsyncJob:
         """
         Checks if all the tasks from this round of requests are done, according to
         the internal state of this object.
-        Optionally polls the endpoints
+        Optionally polls the endpoints to pick up new tasks that may have finished.
         """
         # TODO: make some request to some endpoint
         if poll:

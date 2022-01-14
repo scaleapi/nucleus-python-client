@@ -95,6 +95,7 @@ class HostedInference:
     ):
         """
         Creates a Model Endpoint that is able to serve requests
+
         Parameters:
             service_name: Name of model endpoint. Must be unique.
             model_bundle: The ModelBundle that you want your Model Endpoint to serve
@@ -103,7 +104,7 @@ class HostedInference:
             gpus: Number of gpus each worker should get, e.g. 0, 1, etc.
             min_workers: Minimum number of workers for model endpoint
             max_workers: Maximum number of workers for model endpoint
-            per_worker: An autoscaling parameter.Use this to make a tradeoff between latency and costs;
+            per_worker: An autoscaling parameter. Use this to make a tradeoff between latency and costs,
                 a lower per_worker will mean more workers are created for a given workload
             requirements: TODO we should automatically determine this. A list of python package requirements, e.g.
                 ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]
@@ -118,7 +119,8 @@ class HostedInference:
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
 
-
+        Returns:
+             A ModelEndpoint object that can be used to make requests to the endpoint.
 
         """
         payload = dict(
@@ -169,7 +171,8 @@ class HostedInference:
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3url: A url that points to a file containing model input
+            s3url: A url that points to a file containing model input.
+                Must be accessible by Hosted Inference, hence it needs to either be public or a signedURL.
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
@@ -186,7 +189,8 @@ class HostedInference:
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3url: A url that points to a file containing model input
+            s3url: A url that points to a file containing model input.
+                Must be accessible by Hosted Inference, hence it needs to either be public or a signedURL.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time
@@ -205,10 +209,9 @@ class HostedInference:
 
         Returns:
             A dictionary that contains task status and optionally a result url if the task has completed.
-            Keys:
-                state: 'PENDING' or 'SUCCESS' or 'FAILURE'
-                result_url: a url pointing to inference results. This url is accessible for 12 hours after the request
-                    has been made.
+            Dictionary's keys are as follows:
+            state: 'PENDING' or 'SUCCESS' or 'FAILURE'
+            result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
         """
 
@@ -222,7 +225,8 @@ class HostedInference:
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3urls: A list of urls, each pointing to a file containing model input
+            s3urls: A list of urls, each pointing to a file containing model input.
+                Must be accessible by Hosted Inference, hence urls need to either be public or signedURLs.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time
@@ -236,7 +240,8 @@ class HostedInference:
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3urls: A list of urls, each pointing to a file containing model input
+            s3urls: A list of urls, each pointing to a file containing model input.
+                Must be accessible by Hosted Inference, hence urls need to either be public or signedURLs.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time
@@ -245,13 +250,13 @@ class HostedInference:
 
     def get_batch_async_response(self, batch_async_task_id: str):
         """
-        TODO not sure about how the batch task returns an identifier for the batch
+        TODO not sure about how the batch task returns an identifier for the batch.
         Gets inference results from a previously created batch task.
 
         Parameters:
             batch_async_task_id: An id representing the batch task job
 
         Returns:
-            TODO
+            TODO Something similar to a list of signed s3URLs
         """
         raise NotImplementedError
