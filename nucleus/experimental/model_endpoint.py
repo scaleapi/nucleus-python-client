@@ -42,12 +42,28 @@ class ModelEndpoint:
         )
 
     def status(self):
-        # Makes call to model status endpoint,
+        """Gets the status of the ModelEndpoint.
+        TODO this functionality currently does not exist on the server.
+        """
         raise NotImplementedError
 
     def sync_request(self, s3url: str):
-        # Makes a single request to the synchronous endpoint
+        """Makes a single request to the endpoint"""
         return self.client.sync_request(self.endpoint_id, s3url)
+
+    async def async_request(self, s3url: str):
+        """
+        Makes an async request to the endpoint. Polls the endpoint under the hood, but provides async/await semantics
+        on top.
+        """
+        raise NotImplementedError
+
+    def edit_endpoint(self):
+        """
+        TODO args
+        Changes some parameters of the Model Endpoint, e.g. autoscaling parameters.
+        """
+        raise NotImplementedError
 
 
 class ModelEndpointAsyncJob:
