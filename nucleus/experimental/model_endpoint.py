@@ -3,7 +3,7 @@ from typing import Dict, Sequence
 
 class ModelEndpoint:
     """
-    Represents an endpoint on Hosted Model Inference
+    A higher level abstraction for a Model Endpoint.
     """
 
     def __init__(self, endpoint_id, client):
@@ -17,6 +17,9 @@ class ModelEndpoint:
         self,
         s3urls: Sequence[str],
     ):
+        """
+        Runs inference on the data items specified by s3urls. Returns a ModelEndpointAsyncJob.
+        """
         # TODO for demo
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
@@ -26,7 +29,6 @@ class ModelEndpoint:
 
         for s3url in s3urls:
             # TODO make these requests in parallel instead of making them serially
-            # TODO client currently doesn't have a no-json option
             inference_request = self.client.async_request(
                 endpoint_id=self.endpoint_id,
                 s3url=s3url,
@@ -50,7 +52,8 @@ class ModelEndpoint:
 
 class ModelEndpointAsyncJob:
     """
-    Currently represents a list of async inference requests to a specific endpoint
+    Currently represents a list of async inference requests to a specific endpoint. Keeps track of the requests made,
+    and gives a way to poll for their status.
 
     Invariant: set keys for self.request_ids and self.responses are equal
 

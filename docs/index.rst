@@ -32,6 +32,7 @@ Sections
 
    api/nucleus/index
    api/nucleus/modelci/index
+   api/nucleus/experimental/index
 
 
 Index

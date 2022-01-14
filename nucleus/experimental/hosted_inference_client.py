@@ -209,7 +209,49 @@ class HostedInference:
                 state: 'PENDING' or 'SUCCESS' or 'FAILURE'
                 result_url: a url pointing to inference results. This url is accessible for 12 hours after the request
                     has been made.
+        TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
         """
 
         resp = self.connection.get(route=f"task/result/{async_task_id}")
         return resp["data"]
+
+    def batch_request(self, endpoint_id, s3urls: List[str]):
+        """
+        Sends a batch inference request to the Model Endpoint at endpoint_id, blocks until inference is all done
+        TODO: not sure how much sense it makes to have a blocking batch_request, since it will probably take pretty long
+
+        Parameters:
+            endpoint_id: The id of the endpoint to make the request to
+            s3urls: A list of urls, each pointing to a file containing model input
+
+        Returns:
+            An id/key that can be used to fetch inference results at a later time
+        """
+        raise NotImplementedError
+
+    def batch_async_request(self, endpoint_id: str, s3urls: List[str]):
+        """
+        Sends a batch inference request to the Model Endpoint at endpoint_id, returns a key that can be used to retrieve
+        the results of inference at a later time.
+
+        Parameters:
+            endpoint_id: The id of the endpoint to make the request to
+            s3urls: A list of urls, each pointing to a file containing model input
+
+        Returns:
+            An id/key that can be used to fetch inference results at a later time
+        """
+        raise NotImplementedError
+
+    def get_batch_async_response(self, batch_async_task_id: str):
+        """
+        TODO not sure about how the batch task returns an identifier for the batch
+        Gets inference results from a previously created batch task.
+
+        Parameters:
+            batch_async_task_id: An id representing the batch task job
+
+        Returns:
+            TODO
+        """
+        raise NotImplementedError

@@ -1,4 +1,4 @@
-n.b. doesn't look like this readme gets copied into the sphinx docs
+n.b. doesn't look like this readme gets copied into the sphinx docs, and you instead need to look inside \_\_init\_\_.py
 
 # Scale Deploy
 
