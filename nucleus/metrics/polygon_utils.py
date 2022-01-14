@@ -9,7 +9,7 @@ from shapely.geometry import Polygon
 from nucleus.annotation import BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction
 
-from .base import MetricResult
+from .base import ScalarResult
 from .errors import PolygonAnnotationTypeError
 
 BoxOrPolygonPrediction = TypeVar(
@@ -211,7 +211,7 @@ def label_match_wrapper(metric_fn):
         *args,
         enforce_label_match: bool = False,
         **kwargs,
-    ) -> MetricResult:
+    ) -> ScalarResult:
         # Simply return the metric if we are not enforcing label matches.
         if not enforce_label_match:
             return metric_fn(annotations, predictions, *args, **kwargs)
@@ -227,6 +227,6 @@ def label_match_wrapper(metric_fn):
                 binned_annotations, binned_predictions, *args, **kwargs
             )
             metric_results.append(metric_result)
-        return MetricResult.aggregate(metric_results)
+        return ScalarResult.aggregate(metric_results)
 
     return wrapper

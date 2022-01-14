@@ -5,7 +5,7 @@ from typing import List, Union
 from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
 
-from .base import Metric, MetricResult
+from .base import Metric, ScalarResult
 from .filters import confidence_filter
 from .polygon_utils import (
     BoxOrPolygonAnnotation,
@@ -79,13 +79,13 @@ class PolygonMetric(Metric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         # Main evaluation function that subclasses must override.
         pass
 
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> MetricResult:
+    ) -> ScalarResult:
         if self.confidence_threshold > 0:
             predictions = confidence_filter(
                 predictions, self.confidence_threshold
@@ -133,13 +133,13 @@ class PolygonIOU(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         iou_assigns = iou_assignments(
             annotations, predictions, self.iou_threshold
         )
         weight = max(len(annotations), len(predictions))
         avg_iou = iou_assigns.sum() / max(weight, sys.float_info.epsilon)
-        return MetricResult(avg_iou, weight)
+        return ScalarResult(avg_iou, weight)
 
 
 class PolygonPrecision(PolygonMetric):
@@ -169,12 +169,12 @@ class PolygonPrecision(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         true_positives = num_true_positives(
             annotations, predictions, self.iou_threshold
         )
         weight = len(predictions)
-        return MetricResult(
+        return ScalarResult(
             true_positives / max(weight, sys.float_info.epsilon), weight
         )
 
@@ -206,11 +206,11 @@ class PolygonRecall(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         true_positives = num_true_positives(
             annotations, predictions, self.iou_threshold
         )
         weight = len(annotations) + sys.float_info.epsilon
-        return MetricResult(
+        return ScalarResult(
             true_positives / max(weight, sys.float_info.epsilon), weight
         )

@@ -7,8 +7,17 @@ from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
 
 
+class MetricResult(ABC):
+    """ Base MetricResult class"""
+
+    @staticmethod
+    @abstractmethod
+    def aggregate(results: Iterable["MetricResult"]) -> "MetricResult":
+        pass
+
+
 @dataclass
-class MetricResult:
+class ScalarResult(MetricResult):
     """A Metric Result contains the value of an evaluation, as well as its weight.
     The weight is useful when aggregating metrics where each dataset item may hold a
     different relative weight. For example, when calculating precision over a dataset,
@@ -24,13 +33,13 @@ class MetricResult:
     weight: float = 1.0
 
     @staticmethod
-    def aggregate(results: Iterable["MetricResult"]) -> "MetricResult":
+    def aggregate(results: Iterable["ScalarResult"]) -> "ScalarResult":
         """Aggregates results using a weighted average."""
         results = list(filter(lambda x: x.weight != 0, results))
         total_weight = sum([result.weight for result in results])
         total_value = sum([result.value * result.weight for result in results])
         value = total_value / max(total_weight, sys.float_info.epsilon)
-        return MetricResult(value, total_weight)
+        return ScalarResult(value, total_weight)
 
 
 class Metric(ABC):
@@ -85,5 +94,5 @@ class Metric(ABC):
     @abstractmethod
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> MetricResult:
+    ) -> ScalarResult:
         """A metric must override this method and return a metric result, given annotations and predictions."""

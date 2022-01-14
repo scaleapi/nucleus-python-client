@@ -15,29 +15,6 @@ from tests.metrics.helpers import (
 )
 
 
-@pytest.mark.parametrize(
-    "test_annotations,test_predictions,metric_fn",
-    [
-        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonIOU),
-        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonPrecision),
-        (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonRecall),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonIOU,
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonPrecision,
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonRecall,
-        ),
-    ],
-)
 def test_perfect_match_polygon_metrics(
     test_annotations, test_predictions, metric_fn
 ):
