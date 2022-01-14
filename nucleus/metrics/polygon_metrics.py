@@ -332,7 +332,7 @@ class PolygonRecall(PolygonMetric):
 
 
 class PolygonAveragePrecision(PolygonMetric):
-    """Calculates the mean average precision between box or polygon annotations and predictions.
+    """Calculates the average precision between box or polygon annotations and predictions.
     ::
 
         from nucleus import BoxAnnotation, Point, PolygonPrediction
