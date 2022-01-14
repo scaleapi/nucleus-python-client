@@ -6,7 +6,12 @@ class ModelEndpoint:
     A higher level abstraction for a Model Endpoint.
     """
 
-    def __init__(self, endpoint_id, client):
+    def __init__(self, endpoint_id: str, client):
+        """
+        Parameters:
+            endpoint_id: The unique name of the ModelEndpoint
+            client: A HostedInferenceClient object
+        """
         self.endpoint_id = endpoint_id
         self.client = client
 
@@ -22,6 +27,9 @@ class ModelEndpoint:
 
         Parameters:
             s3urls: The list of s3URLs that should have inference run on them.
+
+        Returns:
+            a ModelEndpointAsyncJob keeping track of the inference requests made
         """
         # TODO for demo
         # Make inference requests to the endpoint,
@@ -51,13 +59,32 @@ class ModelEndpoint:
         raise NotImplementedError
 
     def sync_request(self, s3url: str):
-        """Makes a single request to the endpoint"""
+        """Makes a single request to the endpoint
+
+        Parameters:
+            s3url: A url that points to a file containing model input.
+                Must be accessible by Hosted Inference, hence it needs to either be public or a signedURL.
+
+        Returns:
+            A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
+            Example:
+                https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy
+        """
         return self.client.sync_request(self.endpoint_id, s3url)
 
     async def async_request(self, s3url: str):
         """
         Makes an async request to the endpoint. Polls the endpoint under the hood, but provides async/await semantics
         on top.
+
+        Parameters:
+            s3url: A url that points to a file containing model input.
+                Must be accessible by Hosted Inference, hence it needs to either be public or a signedURL.
+
+        Returns:
+            An id/key that can be used to fetch inference results at a later time
+            Example:
+                abcabcab-cabc-abca-bcabcabcabca
         """
         raise NotImplementedError
 

@@ -147,13 +147,18 @@ class HostedInference:
     # Relatively small wrappers around http requests
 
     def get_bundles(self) -> List[ModelBundle]:
-        # TODO this route currently doesn't exist serverside
+        """
+        Returns a list of model bundles that the user owns.
+        TODO this route doesn't exist serverside
+        """
         # resp = self.connection.get("model_bundle")
         raise NotImplementedError
 
     def get_model_endpoints(self) -> List[ModelEndpoint]:
         """
         Gets all model endpoints that the user owns.
+        Returns:
+            A list of ModelEndpoint objects
         """
         resp = self.connection.get("endpoints")
         return [
@@ -176,6 +181,8 @@ class HostedInference:
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
+            Example:
+                https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy
         """
         resp = self.connection.post(
             payload=dict(url=s3url), route=f"task/{endpoint_id}"
@@ -194,6 +201,8 @@ class HostedInference:
 
         Returns:
             An id/key that can be used to fetch inference results at a later time
+            Example:
+                abcabcab-cabc-abca-bcabcabcabca
         """
         resp = self.connection.post(
             payload=dict(url=s3url), route=f"task_async/{endpoint_id}"
@@ -212,6 +221,8 @@ class HostedInference:
             Dictionary's keys are as follows:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
+            Example:
+                {'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
         """
 
