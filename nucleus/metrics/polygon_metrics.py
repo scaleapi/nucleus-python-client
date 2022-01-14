@@ -200,7 +200,7 @@ class PolygonPrecision(PolygonMetric):
         from nucleus import BoxAnnotation, Point, PolygonPrediction
         from nucleus.annotation import AnnotationList
         from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonIOU
+        from nucleus.metrics import PolygonPrecision
 
         box_anno = BoxAnnotation(
             label="car",
@@ -269,7 +269,7 @@ class PolygonRecall(PolygonMetric):
         from nucleus import BoxAnnotation, Point, PolygonPrediction
         from nucleus.annotation import AnnotationList
         from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonIOU
+        from nucleus.metrics import PolygonRecall
 
         box_anno = BoxAnnotation(
             label="car",
@@ -338,7 +338,7 @@ class PolygonAveragePrecision(PolygonMetric):
         from nucleus import BoxAnnotation, Point, PolygonPrediction
         from nucleus.annotation import AnnotationList
         from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonIOU
+        from nucleus.metrics import PolygonAveragePrecision
 
         box_anno = BoxAnnotation(
             label="car",
@@ -415,7 +415,7 @@ class PolygonMAP(PolygonMetric):
         from nucleus import BoxAnnotation, Point, PolygonPrediction
         from nucleus.annotation import AnnotationList
         from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonIOU
+        from nucleus.metrics import PolygonMAP
 
         box_anno = BoxAnnotation(
             label="car",
