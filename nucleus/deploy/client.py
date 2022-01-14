@@ -36,7 +36,7 @@ class DeployClient:
     def __eq__(self, other):
         return self.connection == other.connection
 
-    def add_model_bundle(
+    def create_model_bundle(
         self,
         model_bundle_name: str,
         model: DeployModel_T,
@@ -144,7 +144,7 @@ class DeployClient:
 
     # Relatively small wrappers around http requests
 
-    def get_bundles(self) -> List[ModelBundle]:
+    def list_bundles(self) -> List[ModelBundle]:
         """
         Returns a list of model bundles that the user owns.
         TODO this route doesn't exist serverside
@@ -152,9 +152,10 @@ class DeployClient:
         # resp = self.connection.get("model_bundle")
         raise NotImplementedError
 
-    def get_model_endpoints(self) -> List[ModelEndpoint]:
+    def list_model_endpoints(self) -> List[ModelEndpoint]:
         """
-        Gets all model endpoints that the user owns.
+        Lists all model endpoints that the user owns.
+        TODO: single get_model_endpoint(self)? route doesn't exist serverside I think
         Returns:
             A list of ModelEndpoint objects
         """
@@ -163,10 +164,6 @@ class DeployClient:
             ModelEndpoint(endpoint_id=endpoint_id, client=self)
             for endpoint_id in resp
         ]
-
-    def edit_model_endpoint(self):
-        # TODO args, corresponds to PUT model_endpoint, doesn't exist serverside
-        raise NotImplementedError
 
     def sync_request(self, endpoint_id: str, s3url: str) -> str:
         """

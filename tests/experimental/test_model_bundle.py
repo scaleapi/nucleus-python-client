@@ -39,7 +39,7 @@ def test_add_model_bundle():
 
         return predict
 
-    model_bundle = client.add_model_bundle(
+    model_bundle = client.create_model_bundle(
         model_bundle_name=model_name,
         model=model,
         load_predict_fn=load_predict_fn,

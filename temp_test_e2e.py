@@ -21,7 +21,7 @@ def create_dummy_bundle(hmi_client):
 
     model = None
     load_predict_func = returns_returns_1
-    hmi_client.add_model_bundle("return1", model, load_predict_func)
+    hmi_client.create_model_bundle("return1", model, load_predict_func)
 
 
 def create_endpoint(hmi_client):
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     #     requirements=[],
     # )
     # print(me2)
-    mes = hmi_client.get_model_endpoints()
+    mes = hmi_client.list_model_endpoints()
     for me in mes:
         print(me)
     m1 = mes[0]
