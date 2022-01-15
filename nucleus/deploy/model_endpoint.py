@@ -88,13 +88,6 @@ class ModelEndpoint:
         """
         raise NotImplementedError
 
-    def edit_endpoint(self):
-        """
-        TODO args
-        Changes some parameters of the Model Endpoint, e.g. autoscaling parameters, without
-        """
-        raise NotImplementedError
-
 
 class ModelEndpointAsyncJob:
     """

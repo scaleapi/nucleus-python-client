@@ -309,9 +309,8 @@ def find_packages_from_path(path: str):
     """
     Call this on another python file.
     """
-    print(f"{path=}")
     reqs, _ = seek_pip_packages(path)
-    print(reqs)
+    return reqs
 
 
 def find_packages_from_imports(globals_copy):
@@ -320,7 +319,7 @@ def find_packages_from_imports(globals_copy):
     """
     imports = _get_imports(globals_copy)
     reqs, _ = seek_pip_packages_from_imports(imports)
-    print(reqs)
+    return reqs
 
 
 def _get_imports(globals_copy):

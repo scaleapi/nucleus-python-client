@@ -5,6 +5,7 @@ import cloudpickle
 import requests
 
 from nucleus.connection import Connection
+from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
 from nucleus.deploy.model_endpoint import ModelEndpoint
 
@@ -87,8 +88,8 @@ class DeployClient:
         min_workers: int,
         max_workers: int,
         per_worker: int,
-        requirements: List[str],  # Dict[str, str],
         env_params: Dict[str, str],
+        requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
     ) -> ModelEndpoint:
         """
@@ -105,7 +106,8 @@ class DeployClient:
             per_worker: An autoscaling parameter. Use this to make a tradeoff between latency and costs,
                 a lower per_worker will mean more workers are created for a given workload
             requirements: TODO we should automatically determine this. A list of python package requirements, e.g.
-                ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]
+                ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
+                imported list of packages.
             env_params: TODO needs more explaining. A dictionary that dictates environment information e.g.
                 the use of pytorch or tensorflow, which cuda/cudnn versions to use.
                 Specifically, the dictionary should contain the following keys:
@@ -121,6 +123,18 @@ class DeployClient:
              A ModelEndpoint object that can be used to make requests to the endpoint.
 
         """
+        if requirements is None:
+            requirements_inferred = find_packages_from_imports(globals())
+            requirements = [
+                f"{key}=={value}"
+                for key, value in requirements_inferred.items()
+            ]
+            logger.info(
+                "Using \n%s\n for model endpoint %s",
+                requirements,
+                service_name,
+            )
+            # TODO test
         payload = dict(
             service_name=service_name,
             env_params=env_params,
