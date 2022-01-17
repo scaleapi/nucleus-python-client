@@ -24,5 +24,6 @@ except ModuleNotFoundError as e:
     else:
         platform_specific_msg = "GEOS package will need to be installed see (https://trac.osgeo.org/geos/)"
     raise ModuleNotFoundError(
-        f"Module 'shapely' not found. Install optionally with `scale-nucleus[metrics]`. {platform_specific_msg}"
+        f"Module 'shapely' not found. Install optionally with `scale-nucleus[metrics]` or when developing "
+        f"`poetry install -E metrics`. {platform_specific_msg}"
     ) from e
