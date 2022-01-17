@@ -1,9 +1,10 @@
 from copy import deepcopy
 
+import pkg_resources
 import pytest
 
 from nucleus.metrics import PolygonIOU, PolygonPrecision, PolygonRecall
-from nucleus.metrics.base import Metric, MetricResult
+from nucleus.metrics.base import MetricResult
 from tests.metrics.helpers import (
     TEST_ANNOTATION_LIST,
     TEST_BOX_ANNOTATION_LIST,
