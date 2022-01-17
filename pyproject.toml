@@ -43,7 +43,7 @@ pydantic = "^1.8.2"
 isort = "^5.10.1"
 numpy = "^1.19.5"
 scipy = "^1.5.4"
-Shapely = "^1.8.0"
+Shapely = { version = ">=1.8.0", optional = true }
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
@@ -61,6 +61,9 @@ sphinx-autobuild = "^2021.3.14"
 furo = "^2021.10.9"
 sphinx-autoapi = "^1.8.4"
 pytest-xdist = "^2.5.0"
+
+[tool.poetry.extras]
+metrics = ["Shapely"]
 
 
 [tool.pytest.ini_options]
