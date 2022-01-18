@@ -20,7 +20,7 @@ class NucleusDatasetInferenceRun:
     This class is temporary, long-term we want to move to Nucleus backend calling HMI directly
     """
 
-    # TODO shoot HMI endpoints might not be authorized for nucleus s3urls ugh
+    # For the demo, we will need our Nucleus Dataset to have `image_location`s in s3://scale-ml-hosted-model-inference
     def __init__(
         self,
         hmi_async_job: ModelEndpointAsyncJob,
@@ -42,10 +42,7 @@ class NucleusDatasetInferenceRun:
     def upload_to_nucleus(
         self, model_run_name, model=None, model_name=None, model_ref_id=None
     ):
-        """Upload model run responses to Nucleus.
-        TODO we probably want to not have this function
-
-        """
+        """Upload model run responses to Nucleus."""
         # TODO untested
         # TODO we eventually want to move away from client side upload
 
@@ -67,7 +64,7 @@ class NucleusDatasetInferenceRun:
         )
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
-            item_link = self.responses[s3url]
+            item_link = self.hmi_async_job.responses[s3url]
             print(f"item_link={item_link}")
             # e.g. s3://scale-ml/tmp/hosted-model-inference-outputs/a224499e-50ac-4b08-ad0c-c18e74c14184.pkl
             kwargs = {
@@ -81,6 +78,7 @@ class NucleusDatasetInferenceRun:
                 ref_id = dataset_item.reference_id
                 for box in inference_result:
                     # TODO assuming box is a list of (x, y, w, h, label). This is almost certainly not the case.
+                    # We will have to use a ModelEndpoint/ModelBundle that returns boxes in this format.
                     # Also, label is probably returned as an integer instead of a label that makes semantic sense
                     pred_item = nucleus.BoxPrediction(
                         label=box["label"],

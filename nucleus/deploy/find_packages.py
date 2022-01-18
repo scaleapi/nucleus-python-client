@@ -242,9 +242,7 @@ class DepSeekWork:
                     elif m.is_pkg:
                         self.seek_in_dir(os.path.join(m.path, m.name))
                     else:
-                        self.seek_in_file(
-                            os.path.join(m.path, "{}.py".format(m.name))
-                        )
+                        self.seek_in_file(os.path.join(m.path, f"{m.name}.py"))
                 else:
                     # check if the package has already been added to the list
                     if (
