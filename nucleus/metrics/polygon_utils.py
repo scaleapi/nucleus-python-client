@@ -227,6 +227,9 @@ def label_match_wrapper(metric_fn):
                 binned_annotations, binned_predictions, *args, **kwargs
             )
             metric_results.append(metric_result)
+        assert all(
+            isinstance(r, ScalarResult) for r in metric_results
+        ), "Expected every result to be a ScalarResult"
         return ScalarResult.aggregate(metric_results)
 
     return wrapper

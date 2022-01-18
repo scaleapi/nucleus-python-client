@@ -18,11 +18,8 @@ def test_perfect_match_f1_score():
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))
 
-    # TODO(gunnar): Should the aggregation be on the result class?
     assert results
-    # TODO(gunnar): This is ugly since it is a staticmethod on the result class. The evaluation funciton should
-    #  define the aggregate
-    aggregate_result = results[0].aggregate(results)
+    aggregate_result = metric.aggregate(results)
     assert aggregate_result.value == 1
 
 
@@ -39,11 +36,8 @@ def test_no_match_f1_score():
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))
 
-    # TODO(gunnar): Should the aggregation be on the result class?
     assert results
-    # TODO(gunnar): This is ugly since it is a staticmethod on the result class. The evaluation function should
-    #  define the aggregate
-    aggregate_result = results[0].aggregate(results)
+    aggregate_result = metric.aggregate(results)
     assert aggregate_result.value == 0
 
 
@@ -69,8 +63,6 @@ def test_simple_macro_f1():
         accuracy                           0.80         5
        macro avg       0.56      0.67      0.60         5
     weighted avg       0.67      0.80      0.72         5
-
-    macro_f1 =
     """
     gt = ["a", "b", "b", "c", "c"]
     pr = ["b", "b", "b", "c", "c"]
@@ -88,9 +80,5 @@ def test_simple_macro_f1():
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))
 
-    # TODO(gunnar): Should the aggregation be on the result class?
-    assert results
-    # TODO(gunnar): This is ugly since it is a staticmethod on the result class. The evaluation function should
-    #  define the aggregate
-    aggregate_result = results[0].aggregate(results)
+    aggregate_result = metric.aggregate(results)
     assert aggregate_result.value == macro_f1

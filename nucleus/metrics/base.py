@@ -1,19 +1,14 @@
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, List
 
 from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
 
 
 class MetricResult(ABC):
-    """ Base MetricResult class"""
-
-    @staticmethod
-    @abstractmethod
-    def aggregate(results: Iterable["MetricResult"]) -> "MetricResult":
-        pass
+    """Base MetricResult class"""
 
 
 @dataclass
@@ -96,3 +91,7 @@ class Metric(ABC):
         self, annotations: AnnotationList, predictions: PredictionList
     ) -> MetricResult:
         """A metric must override this method and return a metric result, given annotations and predictions."""
+
+    @abstractmethod
+    def aggregate(self, results: List[MetricResult]) -> ScalarResult:
+        """A metric must define how to aggregate results from single items to a single threshold."""
