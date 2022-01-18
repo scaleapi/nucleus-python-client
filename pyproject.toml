@@ -44,6 +44,7 @@ isort = "^5.10.1"
 numpy = "^1.19.5"
 scipy = "^1.5.4"
 Shapely = "^1.8.0"
+scikit-learn = ">=0.24"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"

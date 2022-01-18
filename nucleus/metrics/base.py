@@ -94,5 +94,5 @@ class Metric(ABC):
     @abstractmethod
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> ScalarResult:
+    ) -> MetricResult:
         """A metric must override this method and return a metric result, given annotations and predictions."""

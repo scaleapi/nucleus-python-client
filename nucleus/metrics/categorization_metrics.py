@@ -1,12 +1,49 @@
+import abc
 from abc import abstractmethod
-from typing import List
+from dataclasses import dataclass
+from typing import Iterable, List
+
+from sklearn.metrics import f1_score
 
 from nucleus.annotation import AnnotationList, CategoryAnnotation
 from nucleus.prediction import CategoryPrediction, PredictionList
 
-from .base import Metric, ScalarResult
+from .base import Metric, MetricResult, ScalarResult
 from .filters import confidence_filter
-from .polygon_utils import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
+
+
+@dataclass
+class CategorizationResult(MetricResult):
+    annotation: CategoryAnnotation
+    prediction: CategoryPrediction
+
+    @staticmethod
+    @abc.abstractmethod
+    def aggregate(results: Iterable["CategorizationResult"]) -> "ScalarResult":
+        """Aggregates results from all items into a ScalarResult"""
+
+
+class CategorizationF1Result(CategorizationResult):
+    annotation: CategoryAnnotation
+    prediction: CategoryPrediction
+
+    @property
+    def value(self):
+        # TODO: Change task.py interface such that we can return labels
+        return 1 if self.annotation.label == self.prediction.label else 0
+
+    @staticmethod
+    def aggregate(
+        results: Iterable["CategorizationF1Result"],
+    ) -> "ScalarResult":
+        gt = []
+        predicted = []
+        for result in results:
+            gt.append(result.annotation.label)
+            predicted.append(result.prediction.label)
+        # TODO(gunnar): Support choice of averaging method
+        value = f1_score(gt, predicted, average="macro")
+        return ScalarResult(value)
 
 
 class CategorizationMetric(Metric):
@@ -90,24 +127,19 @@ class CategorizationMetric(Metric):
 
 
 class CategorizationF1(CategorizationMetric):
-    """Calculates the average IOU between box or polygon annotations and predictions."""
-
-    # TODO: Remove defaults once these are surfaced more cleanly to users.
-    def __init__(
-        self,
-        confidence_threshold: float = 0.0,
-    ):
-        """Initializes PolygonIOU object.
-
-        Args:
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
-        """
-        super().__init__(confidence_threshold)
+    """Evaluation method that matches categories and returns a CategorizationF1Result that aggregates to the F1 score"""
 
     def eval(
         self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        # TODO
-        pass
+        annotations: List[CategoryAnnotation],
+        predictions: List[CategoryPrediction],
+    ) -> CategorizationResult:
+        assert (
+            len(annotations) == 1
+        ), f"Expected only one annotation, got {annotations}"
+        assert (
+            len(predictions) == 1
+        ), f"Expected only one prediction, got {predictions}"
+        return CategorizationF1Result(
+            annotation=annotations[0], prediction=predictions[0]
+        )
