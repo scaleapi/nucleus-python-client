@@ -3,6 +3,7 @@ import time
 
 import nucleus
 from nucleus.deploy.client import DeployClient
+from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
 
 # TODO Don't include this file in final pr
@@ -122,8 +123,15 @@ if __name__ == "__main__":
     # )
     # temp_clone_pandaset()
 
-    hmi_client = DeployClient(api_key="")
-    img_url = "s3://scale-ml-hosted-model-inference/tmp/hosted-model-inference-outputs/c3f3b5ed-f182-4fa1-bfa5-9b2e017feb74.pkl"
+    packages = find_packages_from_imports(globals())
+    print(packages)
+    packages = find_packages_from_imports(globals())
+    print(packages)
+
+    hmi_client = DeployClient(api_key=os.environ["NUCLEUS_API_KEY"])
+    img_url = (
+        "https://scale.com/_next/static/media/dashboard-hero.ab478d39.png"
+    )
     # hmi_client.create_endpoint()
     # print(hmi_client.connection.post({}, "model_bundle_upload"))
     # create_dummy_bundle(hmi_client)
@@ -147,6 +155,7 @@ if __name__ == "__main__":
     #     requirements=[],
     # )
     # print(me2)
+
     mes = hmi_client.list_model_endpoints()
     for me in mes:
         print(me)

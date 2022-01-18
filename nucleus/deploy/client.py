@@ -76,8 +76,6 @@ class DeployClient:
         # TODO check that a model bundle was created and no name collisions happened
         return ModelBundle(model_bundle_name)
 
-    # TODO some function to get requirements
-
     def create_model_endpoint(
         self,
         service_name: str,
@@ -105,10 +103,10 @@ class DeployClient:
             max_workers: Maximum number of workers for model endpoint
             per_worker: An autoscaling parameter. Use this to make a tradeoff between latency and costs,
                 a lower per_worker will mean more workers are created for a given workload
-            requirements: TODO we should automatically determine this. A list of python package requirements, e.g.
+            requirements: A list of python package requirements, e.g.
                 ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
                 imported list of packages.
-            env_params: TODO needs more explaining. A dictionary that dictates environment information e.g.
+            env_params: A dictionary that dictates environment information e.g.
                 the use of pytorch or tensorflow, which cuda/cudnn versions to use.
                 Specifically, the dictionary should contain the following keys:
                 "framework_type": either "tensorflow" or "pytorch".
@@ -153,8 +151,13 @@ class DeployClient:
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
         resp = self.connection.post(payload, "endpoints")
-        endpoint_id = resp["data"]["endpoint_id"]  # TODO this is very wrong
-        return ModelEndpoint(endpoint_id=endpoint_id, client=self)
+        endpoint_creation_task_id = resp["data"][
+            "endpoint_id"
+        ]  # Serverside needs updating
+        logger.info(
+            "Endpoint creation task id is %s", endpoint_creation_task_id
+        )
+        return ModelEndpoint(endpoint_id=service_name, client=self)
 
     # Relatively small wrappers around http requests
 

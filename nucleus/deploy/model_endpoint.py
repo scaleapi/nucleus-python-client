@@ -31,10 +31,9 @@ class ModelEndpoint:
         Returns:
             a ModelEndpointAsyncJob keeping track of the inference requests made
         """
-        # TODO for demo
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
-        # TODO batches once those are out
+        # TODO add batch support once those are out
 
         request_ids = {}  # Dict of s3url -> request id
 
@@ -82,9 +81,9 @@ class ModelEndpoint:
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
-            An id/key that can be used to fetch inference results at a later time
+            A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
             Example:
-                `abcabcab-cabc-abca-bcabcabcabca`
+                `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         raise NotImplementedError
 
