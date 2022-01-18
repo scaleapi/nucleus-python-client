@@ -1,7 +1,7 @@
 from sklearn.metrics import f1_score
 
 from nucleus import CategoryAnnotation, CategoryPrediction
-from nucleus.metrics.categorization_metrics import CategorizationF1
+from nucleus.metrics.categorization_metrics import CategorizationF1Metric
 from tests.helpers import TEST_CATEGORY_ANNOTATIONS
 
 
@@ -13,7 +13,7 @@ def test_perfect_match_f1_score():
         CategoryPrediction(label=ann.label, reference_id=ann.reference_id)
         for ann in annotations
     ]
-    metric = CategorizationF1()
+    metric = CategorizationF1Metric()
     results = []
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))
@@ -31,7 +31,7 @@ def test_no_match_f1_score():
         CategoryPrediction(label="sth_else", reference_id=ann.reference_id)
         for ann in annotations
     ]
-    metric = CategorizationF1()
+    metric = CategorizationF1Metric()
     results = []
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))
@@ -75,7 +75,7 @@ def test_simple_macro_f1():
         CategoryPrediction(label=pr[i], reference_id=f"id_{i}")
         for i in range(len(pr))
     ]
-    metric = CategorizationF1()
+    metric = CategorizationF1Metric()
     results = []
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))

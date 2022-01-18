@@ -33,6 +33,12 @@ class BoundingBoxPrecision(BaseEvalFunction):
         return "bbox_precision"
 
 
+class CategorizationF1(BaseEvalFunction):
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cat_f1"
+
+
 class CustomEvalFunction(BaseEvalFunction):
     @classmethod
     def expected_name(cls) -> str:
@@ -132,6 +138,9 @@ class AvailableEvalFunctions:
         )
         self.bbox_map = self._assign_eval_function_if_defined(
             BoundingBoxMeanAveragePrecision  # type: ignore
+        )
+        self.cat_f1 = self._assign_eval_function_if_defined(
+            CategorizationF1  # type: ignore
         )
 
         # Add public entries that have not been implemented as an attribute on this class

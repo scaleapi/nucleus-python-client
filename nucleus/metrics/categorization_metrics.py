@@ -73,7 +73,7 @@ class CategorizationMetric(Metric):
         return result
 
 
-class CategorizationF1(CategorizationMetric):
+class CategorizationF1Metric(CategorizationMetric):
     """Evaluation method that matches categories and returns a CategorizationF1Result that aggregates to the F1 score"""
 
     def eval(
