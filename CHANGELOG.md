@@ -4,6 +4,16 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.3) - 2021-01-19
+
+### Fixed
+- Added optional `scale-nucleus[metrics]` extra to install Validate metrics dependencies. 
+
+## [0.5.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.2) - 2021-01-19
+
+### Added
+- dataset.delete_scene allows for deletion of a single scene.
+
 ## [0.5.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.1) - 2021-01-11
 
 ### Fixed
