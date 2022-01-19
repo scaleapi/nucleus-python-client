@@ -66,7 +66,7 @@ class ModelEndpoint:
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
-            Example:
+            Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         return self.client.sync_request(self.endpoint_id, s3url)
@@ -82,7 +82,7 @@ class ModelEndpoint:
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
-            Example:
+            Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         raise NotImplementedError

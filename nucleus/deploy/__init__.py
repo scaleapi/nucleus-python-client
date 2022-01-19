@@ -2,23 +2,31 @@
 
 Moving an ML model from experiment to production requires significant engineering lift.
 Scale Deploy provides ML engineers a simple Python interface for turning a local code snippet into a production service.
-A ML engineer needs to call a few functions from Scale's SDK, which quickly spins up a production-ready service.
+A ML engineer simply needs to call a few functions from Scale's SDK, which quickly spins up a production-ready service.
 The service efficiently utilizes compute resources and automatically scales according to traffic.
 
 
 Central to Scale Deploy are the notions of a `ModelBundle` and a `ModelEndpoint`.
 
 A `ModelBundle` consists of a trained model as well as the surrounding preprocessing and postprocessing code.
-Specifically, a `ModelBundle` consists of two Python objects, a `model` and a `load_predict_fn`, such that
+Specifically, a `ModelBundle` consists of two Python objects, a (`model` or `load_model`), and a `load_predict_fn`; such that
 
-`load_predict_fn(model)`
+
+    load_predict_fn(model)
+
+
+or
+
+
+    load_predict_fn(load_model())
+
 
 returns a function `predict_fn` that takes in one argument representing model input,
 and outputs one argument representing model output.
 
-Typically, a `model` would be a Pytorch nn.Module or TODO tensorflow equivalent.
+Typically, a `model` would be a Pytorch nn.Module or Tensorflow Keras model.
 
-TODO should we include a specific example here? Also this doesn't touch on the load_model() function that also can be provided
+TODO should we include a specific example here?
 
 A `ModelEndpoint` is the compute layer that takes in a `ModelBundle`, and is able to carry out inference requests
 by using the `ModelBundle` to carry out predictions. The `ModelEndpoint` also knows infrastructure-level details,

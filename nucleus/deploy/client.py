@@ -173,6 +173,7 @@ class DeployClient:
         """
         Lists all model endpoints that the user owns.
         TODO: single get_model_endpoint(self)? route doesn't exist serverside I think
+
         Returns:
             A list of ModelEndpoint objects
         """
@@ -193,7 +194,7 @@ class DeployClient:
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
-            Example:
+            Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         resp = self.connection.post(
@@ -212,9 +213,9 @@ class DeployClient:
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
-            An id/key that can be used to fetch inference results at a later time
-            Example:
-                `abcabcab-cabc-abca-bcabcabcabca`
+            An id/key that can be used to fetch inference results at a later time.
+            Example output:
+                `abcabcab-cabc-abca-0123456789ab`
         """
         resp = self.connection.post(
             payload=dict(url=s3url), route=f"task_async/{endpoint_id}"
@@ -233,7 +234,7 @@ class DeployClient:
             Dictionary's keys are as follows:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
-            Example:
+            Example output:
                 `{'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}`
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
         """
