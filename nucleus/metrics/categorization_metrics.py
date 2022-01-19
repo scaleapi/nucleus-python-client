@@ -9,6 +9,8 @@ from nucleus.metrics.base import Metric, MetricResult, ScalarResult
 from nucleus.metrics.filters import confidence_filter
 from nucleus.prediction import CategoryPrediction, PredictionList
 
+F1_METHODS = {"micro", "macro", "samples", "weighted", "binary"}
+
 
 @dataclass
 class CategorizationResult(MetricResult):
@@ -49,9 +51,10 @@ class CategorizationMetric(Metric):
         ],  # TODO(gunnar): List to conform with other APIs or single instance?
         predictions: List[CategoryPrediction],
     ) -> CategorizationResult:
+        # Main evaluation function that subclasses must override.
         # TODO(gunnar): Allow passing multiple predictions and selecting highest confidence? Allows us to show next
         #  contender. Are top-5 scores something that we care about?
-        # Main evaluation function that subclasses must override.
+        # TODO(gunnar): How do we handle multi-head classification?
         pass
 
     @abstractmethod
@@ -76,11 +79,49 @@ class CategorizationMetric(Metric):
 class CategorizationF1Metric(CategorizationMetric):
     """Evaluation method that matches categories and returns a CategorizationF1Result that aggregates to the F1 score"""
 
+    def __init__(
+        self, confidence_threshold: float = 0.0, f1_method: str = "macro"
+    ):
+        """
+        Args:
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            f1_method: {'micro', 'macro', 'samples','weighted', 'binary'}, \
+                default='macro'
+            This parameter is required for multiclass/multilabel targets.
+            If ``None``, the scores for each class are returned. Otherwise, this
+            determines the type of averaging performed on the data:
+
+            ``'binary'``:
+                Only report results for the class specified by ``pos_label``.
+                This is applicable only if targets (``y_{true,pred}``) are binary.
+            ``'micro'``:
+                Calculate metrics globally by counting the total true positives,
+                false negatives and false positives.
+            ``'macro'``:
+                Calculate metrics for each label, and find their unweighted
+                mean.  This does not take label imbalance into account.
+            ``'weighted'``:
+                Calculate metrics for each label, and find their average weighted
+                by support (the number of true instances for each label). This
+                alters 'macro' to account for label imbalance; it can result in an
+                F-score that is not between precision and recall.
+            ``'samples'``:
+                Calculate metrics for each instance, and find their average (only
+                meaningful for multilabel classification where this differs from
+                :func:`accuracy_score`).
+        """
+        super().__init__(confidence_threshold)
+        assert (
+            f1_method in F1_METHODS
+        ), f"Invalid f1_method {f1_method}, expected one of {F1_METHODS}"
+        self.f1_method = f1_method
+
     def eval(
         self,
         annotations: List[CategoryAnnotation],
         predictions: List[CategoryPrediction],
     ) -> CategorizationResult:
+        # TODO(gunnar): Match taxonomy names!
         assert (
             len(annotations) == 1
         ), f"Expected only one annotation, got {annotations}"
@@ -98,5 +139,5 @@ class CategorizationF1Metric(CategorizationMetric):
             gt.append(result.annotation.label)
             predicted.append(result.prediction.label)
         # TODO(gunnar): Support choice of averaging method
-        value = f1_score(gt, predicted, average="macro")
+        value = f1_score(gt, predicted, average=self.f1_method)
         return ScalarResult(value)

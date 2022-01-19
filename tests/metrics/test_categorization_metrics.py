@@ -1,7 +1,9 @@
 from sklearn.metrics import f1_score
 
 from nucleus import CategoryAnnotation, CategoryPrediction
+from nucleus.annotation import AnnotationList
 from nucleus.metrics.categorization_metrics import CategorizationF1Metric
+from nucleus.prediction import PredictionList
 from tests.helpers import TEST_CATEGORY_ANNOTATIONS
 
 
@@ -16,7 +18,12 @@ def test_perfect_match_f1_score():
     metric = CategorizationF1Metric()
     results = []
     for ann, pred in zip(annotations, predictions):
-        results.append(metric.eval([ann], [pred]))
+        results.append(
+            metric(
+                AnnotationList(category_annotations=[ann]),
+                PredictionList(category_predictions=[pred]),
+            )
+        )
 
     assert results
     aggregate_result = metric.aggregate(results)
@@ -34,7 +41,12 @@ def test_no_match_f1_score():
     metric = CategorizationF1Metric()
     results = []
     for ann, pred in zip(annotations, predictions):
-        results.append(metric.eval([ann], [pred]))
+        results.append(
+            metric(
+                AnnotationList(category_annotations=[ann]),
+                PredictionList(category_predictions=[pred]),
+            )
+        )
 
     assert results
     aggregate_result = metric.aggregate(results)
