@@ -12,7 +12,7 @@ def test_add_model_bundle(DEPLOY_CLIENT):
     # Tests both client and server functionality
     # TODO does it make sense to use an actual user to make the requests?
 
-    client = DEPLOY_CLIENT  # TODO set up nucleus pytest api key
+    client = DEPLOY_CLIENT
 
     model_name = f"TestModel_{int(time.time())}"  # Unfortunately we don't have a way of deleting this from the database
     model = torch.nn.Linear(1, 1)  # probably should be something pytorch
