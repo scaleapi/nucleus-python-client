@@ -40,8 +40,9 @@ class DeployClient:
     def create_model_bundle(
         self,
         model_bundle_name: str,
-        model: DeployModel_T,
         load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
+        model: Optional[DeployModel_T] = None,
+        load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
@@ -52,8 +53,17 @@ class DeployClient:
         Parameters:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
             model: Typically a trained Neural Network, e.g. a Pytorch module
+            load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
         """
+
+        if (model is not None and load_model_fn is not None) or (
+            model is None and load_model_fn is None
+        ):
+            raise ValueError(
+                "Exactly one of model and load_model_fn should be non-None"
+            )
+
         # Grab a signed url to make upload to
         model_bundle_s3_url = self.connection.post({}, "model_bundle_upload")
         if "signedUrl" not in model_bundle_s3_url:
@@ -64,7 +74,12 @@ class DeployClient:
         raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
 
         # Make bundle upload
-        bundle = dict(model=model, load_predict_fn=load_predict_fn)
+        if model is not None:
+            bundle = dict(model=model, load_predict_fn=load_predict_fn)
+        else:
+            bundle = dict(
+                load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
+            )
         serialized_bundle = cloudpickle.dumps(bundle)
         requests.put(s3_path, data=serialized_bundle)
 
