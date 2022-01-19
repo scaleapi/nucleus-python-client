@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Union
 from urllib.parse import urlparse
@@ -593,6 +593,56 @@ class MultiCategoryAnnotation(Annotation):
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
         return payload
+
+
+@dataclass
+class AnnotationList:
+    """Wrapper class separating a list of annotations by type."""
+
+    box_annotations: List[BoxAnnotation] = field(default_factory=list)
+    polygon_annotations: List[PolygonAnnotation] = field(default_factory=list)
+    cuboid_annotations: List[CuboidAnnotation] = field(default_factory=list)
+    category_annotations: List[CategoryAnnotation] = field(
+        default_factory=list
+    )
+    multi_category_annotations: List[MultiCategoryAnnotation] = field(
+        default_factory=list
+    )
+    segmentation_annotations: List[SegmentationAnnotation] = field(
+        default_factory=list
+    )
+
+    def add_annotations(self, annotations: List[Annotation]):
+        for annotation in annotations:
+            assert isinstance(
+                annotation, Annotation
+            ), "Expected annotation to be of type 'Annotation"
+
+            if isinstance(annotation, BoxAnnotation):
+                self.box_annotations.append(annotation)
+            elif isinstance(annotation, PolygonAnnotation):
+                self.polygon_annotations.append(annotation)
+            elif isinstance(annotation, CuboidAnnotation):
+                self.cuboid_annotations.append(annotation)
+            elif isinstance(annotation, CategoryAnnotation):
+                self.category_annotations.append(annotation)
+            elif isinstance(annotation, MultiCategoryAnnotation):
+                self.multi_category_annotations.append(annotation)
+            else:
+                assert isinstance(
+                    annotation, SegmentationAnnotation
+                ), f"Unexpected annotation type: {type(annotation)}"
+                self.segmentation_annotations.append(annotation)
+
+    def __len__(self):
+        return (
+            len(self.box_annotations)
+            + len(self.polygon_annotations)
+            + len(self.cuboid_annotations)
+            + len(self.category_annotations)
+            + len(self.multi_category_annotations)
+            + len(self.segmentation_annotations)
+        )
 
 
 def is_local_path(path: str) -> bool:

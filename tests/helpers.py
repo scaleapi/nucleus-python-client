@@ -1,3 +1,4 @@
+import math
 import os
 import uuid
 from pathlib import Path
@@ -142,6 +143,24 @@ TEST_POLYGON_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_CONVEX_POLYGON_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Polygon Annotation ${i}",
+        "geometry": {
+            "vertices": [
+                {
+                    "x": 50 + i * 10 + math.cos(2 * j * math.pi / 3),
+                    "y": 60 + i * 10 + math.sin(2 * j * math.pi / 3),
+                }
+                for j in range(3)
+            ],
+        },
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_CUBOID_ANNOTATIONS = [
     {
         "label": f"[Pytest] Cuboid Annotation #{i}",
@@ -178,6 +197,14 @@ TEST_DEFAULT_CATEGORY_ANNOTATIONS = [
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
     }
     for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION = [
+    {
+        "label": "[Pytest] Category Label 0",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[0]),
+        "taxonomy_name": "[Pytest] Category Taxonomy Nonexistent",
+    }
 ]
 
 TEST_MULTICATEGORY_ANNOTATIONS = [
@@ -288,6 +315,15 @@ TEST_DEFAULT_CATEGORY_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_DEFAULT_CATEGORY_ANNOTATIONS))
+]
+
+TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION = [
+    {
+        "label": "[Pytest] Category Label 0",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[0]),
+        "taxonomy_name": "[Pytest] Category Taxonomy Nonexistent",
+        "confidence": 0.10,
+    }
 ]
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"

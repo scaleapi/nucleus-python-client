@@ -67,8 +67,8 @@ class ModelCI:
         Args:
             name: unique name of test
             slice_id: id of (pre-defined) slice of items to evaluate test on.
-            evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functions.
-                See :class:`eval_functions`.
+            evaluation_criteria: :class:`EvaluationCriterion` defines a pass/fail criteria for the test. Created with a
+                comparison with an eval functions. See :class:`eval_functions`.
 
         Returns:
             Created UnitTest object.
@@ -117,7 +117,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
-            success = client.modelci.create_unit_test(unit_test.id)
+            success = client.modelci.delete_unit_test(unit_test.id)
 
         Args:
             unit_test_id: unique ID of unit test

@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.4.2"
+version = "0.5.1"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -45,6 +45,9 @@ nest-asyncio = "^1.5.1"
 Sphinx = "^4.2.0"
 pydantic = "^1.8.2"
 isort = "^5.10.1"
+numpy = "^1.19.5"
+scipy = "^1.5.4"
+Shapely = "^1.8.0"
 cloudpickle = "^1.6.0"
 
 
@@ -67,6 +70,7 @@ pytest-xdist = "^2.5.0"
 torch = "1.7.1" # Test uploading model bundles only
 smart_open = "^1.9.0" # Temporarily for uploading model bundles directly to s3
 boto3 = "^1.12.32" # Temporarily for uploading model bundles directly to s3
+
 
 [tool.pytest.ini_options]
 markers = [

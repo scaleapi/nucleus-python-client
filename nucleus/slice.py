@@ -280,6 +280,29 @@ class Slice:
         )
         return api_payload
 
+    def export_raw_items(self) -> List[Dict[str, str]]:
+        """Fetches a list of accessible URLs for each item in the Slice.
+
+        Returns:
+            List where each element is a dict containing a DatasetItem and its
+            accessible (signed) Scale URL.
+            ::
+
+                List[{
+                    "id": str,
+                    "ref_id": str,
+                    "metadata": Dict[str, Union[str, int]],
+                    "original_url": str,
+                    "scale_url": str
+                }]
+        """
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.id}/exportRawItems",
+            requests_command=requests.get,
+        )
+        return api_payload
+
 
 def check_annotations_are_in_slice(
     annotations: List[Annotation], slice_to_check: Slice

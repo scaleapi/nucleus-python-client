@@ -140,7 +140,7 @@ class Dataset:
         return response
 
     @property
-    def model_runs(self) -> Dict[Any, Any]:
+    def model_runs(self) -> List[str]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
         response = self._client.make_request(
@@ -149,7 +149,7 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> Dict[Any, Any]:
+    def slices(self) -> List[str]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
@@ -184,6 +184,15 @@ class Dataset:
         elif error:
             raise DatasetItemRetrievalError(message=error)
         return constructed_dataset_items
+
+    @property
+    def scenes(self) -> List[Dict[str, Any]]:
+        """List of ID, reference ID, type, and metadata for all scenes in the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/scenes_list", requests.get
+        )
+
+        return response.get("scenes", None)
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
@@ -918,6 +927,7 @@ class Dataset:
         taxonomy_name: str,
         taxonomy_type: str,
         labels: List[str],
+        update: bool = False,
     ):
         """Creates a new taxonomy.
         ::
@@ -929,7 +939,8 @@ class Dataset:
             response = dataset.add_taxonomy(
                 taxonomy_name="clothing_type",
                 taxonomy_type="category",
-                labels=["shirt", "trousers", "dress"]
+                labels=["shirt", "trousers", "dress"],
+                update=False
             )
 
         Parameters:
@@ -938,13 +949,15 @@ class Dataset:
             taxonomy_type: The type of this taxonomy as a string literal.
               Currently, the only supported taxonomy type is "category".
             labels: The list of possible labels for the taxonomy.
+            update: Whether or not to update taxonomy labels on taxonomy name collision. Default is False. Note that taxonomy labels will not be deleted on update, they can only be appended.
 
         Returns:
-            Returns a response with dataset_id, taxonomy_name and type for the
-            new taxonomy.
+            Returns a response with dataset_id, taxonomy_name and status of the add taxonomy operation.
         """
         return self._client.make_request(
-            construct_taxonomy_payload(taxonomy_name, taxonomy_type, labels),
+            construct_taxonomy_payload(
+                taxonomy_name, taxonomy_type, labels, update
+            ),
             f"dataset/{self.id}/add_taxonomy",
             requests_command=requests.post,
         )

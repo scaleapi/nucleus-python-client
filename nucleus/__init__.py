@@ -468,6 +468,7 @@ class NucleusClient:
             DATASET_ID_KEY: dataset_id,
             ANNOTATIONS_PROCESSED_KEY: 0,
             ANNOTATIONS_IGNORED_KEY: 0,
+            ERRORS_KEY: [],
         }
 
         total_batches = len(batches) + len(semseg_batches)
@@ -490,6 +491,7 @@ class NucleusClient:
                     agg_response[ANNOTATIONS_IGNORED_KEY] += response[
                         ANNOTATIONS_IGNORED_KEY
                     ]
+                    agg_response[ERRORS_KEY] += response[ERRORS_KEY]
 
             for s_batch in semseg_batches:
                 payload = construct_segmentation_payload(s_batch, update)
@@ -628,6 +630,8 @@ class NucleusClient:
             else:
                 predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
                 predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
+                if ERRORS_KEY in response:
+                    errors += response[ERRORS_KEY]
 
         for s_batch in s_batches:
             payload = construct_segmentation_payload(s_batch, update)

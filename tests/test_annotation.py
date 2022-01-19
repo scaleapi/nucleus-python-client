@@ -11,7 +11,7 @@ from nucleus import (
     SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
-from nucleus.job import AsyncJob
+from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,
@@ -21,6 +21,7 @@ from .helpers import (
     TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
     TEST_MULTICATEGORY_ANNOTATIONS,
+    TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
@@ -159,6 +160,21 @@ def test_default_category_gt_upload(dataset):
 
     assert_category_annotation_matches_dict(
         response_annotation, TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_non_existent_taxonomy_category_gt_upload(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 0
+    assert (
+        f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]} does not exist in dataset {dataset.id}'
+        in response["errors"][0]
     )
 
 
@@ -743,5 +759,37 @@ def test_default_category_gt_upload_async(dataset):
         },
         "job_progress": "1.00",
         "completed_steps": 1,
+        "total_steps": 1,
+    }
+
+
+@pytest.mark.integration
+def test_non_existent_taxonomy_category_gt_upload_async(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]
+    )
+
+    try:
+        job: AsyncJob = dataset.annotate(
+            annotations=[
+                annotation,
+            ],
+            asynchronous=True,
+        )
+        job.sleep_until_complete()
+    except JobError:
+        assert (
+            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]} does not exist in dataset {dataset.id}'
+            in job.errors()[-1]
+        )
+
+    assert job.status() == {
+        "job_id": job.job_id,
+        "status": "Errored",
+        "message": {
+            "status_log": "No additional information can be provided at this time."
+        },
+        "job_progress": "0.00",
+        "completed_steps": 0,
         "total_steps": 1,
     }
