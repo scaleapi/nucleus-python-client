@@ -7,7 +7,7 @@ import requests
 from nucleus.connection import Connection
 from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
-from nucleus.deploy.model_endpoint import ModelEndpoint
+from nucleus.deploy.model_endpoint import AsyncModelEndpoint
 
 SCALE_DEPLOY_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
@@ -108,7 +108,7 @@ class DeployClient:
         env_params: Dict[str, str],
         requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
-    ) -> ModelEndpoint:
+    ) -> AsyncModelEndpoint:
         """
         Creates a Model Endpoint that is able to serve requests
 
@@ -176,7 +176,7 @@ class DeployClient:
         logger.info(
             "Endpoint creation task id is %s", endpoint_creation_task_id
         )
-        return ModelEndpoint(endpoint_id=service_name, client=self)
+        return AsyncModelEndpoint(endpoint_id=service_name, client=self)
 
     # Relatively small wrappers around http requests
 
@@ -188,7 +188,7 @@ class DeployClient:
         # resp = self.connection.get("model_bundle")
         raise NotImplementedError
 
-    def list_model_endpoints(self) -> List[ModelEndpoint]:
+    def list_model_endpoints(self) -> List[AsyncModelEndpoint]:
         """
         Lists all model endpoints that the user owns.
         TODO: single get_model_endpoint(self)? route doesn't exist serverside I think
@@ -198,7 +198,7 @@ class DeployClient:
         """
         resp = self.connection.get("endpoints")
         return [
-            ModelEndpoint(endpoint_id=endpoint_id, client=self)
+            AsyncModelEndpoint(endpoint_id=endpoint_id, client=self)
             for endpoint_id in resp
         ]
 

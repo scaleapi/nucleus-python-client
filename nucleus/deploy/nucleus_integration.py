@@ -9,7 +9,10 @@ from boto3 import Session
 import nucleus
 from nucleus import Dataset, DatasetItem
 from nucleus.dataset_item import DatasetItemType
-from nucleus.deploy.model_endpoint import ModelEndpoint, ModelEndpointAsyncJob
+from nucleus.deploy.model_endpoint import (
+    AsyncModelEndpoint,
+    AsyncModelEndpointResponse,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig()
@@ -23,7 +26,7 @@ class NucleusDatasetInferenceRun:
     # For the demo, we will need our Nucleus Dataset to have `image_location`s in s3://scale-ml-hosted-model-inference
     def __init__(
         self,
-        hmi_async_job: ModelEndpointAsyncJob,
+        hmi_async_job: AsyncModelEndpointResponse,
         nucleus_client,
         s3url_to_dataset_map,
         dataset,
@@ -96,7 +99,7 @@ class NucleusDatasetInferenceRun:
 
 
 def create_nucleus_dataset_inference_run(
-    hmi_endpoint: ModelEndpoint, nucleus_client, dataset: Dataset
+    hmi_endpoint: AsyncModelEndpoint, nucleus_client, dataset: Dataset
 ):
     """
     Returns a NucleusDatasetInferenceRun, client will need to periodically call poll on this in order to upload

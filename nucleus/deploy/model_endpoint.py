@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Sequence
 
 
-class ModelEndpoint:
+class AsyncModelEndpoint:
     """
     A higher level abstraction for a Model Endpoint.
     """
@@ -21,9 +21,9 @@ class ModelEndpoint:
     def predict(
         self,
         s3urls: Sequence[str],
-    ) -> "ModelEndpointAsyncJob":
+    ) -> "AsyncModelEndpointResponse":
         """
-        Runs inference on the data items specified by s3urls. Returns a ModelEndpointAsyncJob.
+        Runs inference on the data items specified by s3urls. Returns a AsyncModelEndpointResponse.
 
         Parameters:
             s3urls: The list of s3URLs that should have inference run on them.
@@ -46,7 +46,7 @@ class ModelEndpoint:
             request_ids[s3url] = inference_request["task_id"]
             # make the request to the endpoint (in parallel or something)
 
-        return ModelEndpointAsyncJob(
+        return AsyncModelEndpointResponse(
             self.client,
             request_ids=request_ids,
         )
@@ -56,20 +56,6 @@ class ModelEndpoint:
         TODO this functionality currently does not exist on the server.
         """
         raise NotImplementedError
-
-    def sync_request(self, s3url: str) -> str:
-        """Makes a single request to the endpoint
-
-        Parameters:
-            s3url: A url that points to a file containing model input.
-                Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
-
-        Returns:
-            A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
-            Example output:
-                `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
-        """
-        return self.client.sync_request(self.endpoint_id, s3url)
 
     async def async_request(self, s3url: str) -> str:
         """
@@ -85,10 +71,11 @@ class ModelEndpoint:
             Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
+        # TODO implement some lower level async stuff inside client library (some asyncio client)
         raise NotImplementedError
 
 
-class ModelEndpointAsyncJob:
+class AsyncModelEndpointResponse:
     """
     Currently represents a list of async inference requests to a specific endpoint. Keeps track of the requests made,
     and gives a way to poll for their status.
@@ -145,3 +132,9 @@ class ModelEndpointAsyncJob:
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
+
+    async def wait(self):
+        """
+        Waits for inference results to complete. Provides async/await semantics, but under the hood does polling.
+        """
+        raise NotImplementedError

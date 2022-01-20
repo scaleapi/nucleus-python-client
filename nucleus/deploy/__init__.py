@@ -52,4 +52,4 @@ TODO: link some example colab notebook
 
 from .client import DeployClient
 from .model_bundle import ModelBundle
-from .model_endpoint import ModelEndpoint, ModelEndpointAsyncJob
+from .model_endpoint import AsyncModelEndpoint, AsyncModelEndpointResponse

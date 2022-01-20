@@ -7,7 +7,7 @@ from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
 
 # TODO Don't include this file in final pr
-from nucleus.deploy.model_endpoint import ModelEndpoint
+from nucleus.deploy.model_endpoint import AsyncModelEndpoint
 from nucleus.deploy.nucleus_integration import (
     create_nucleus_dataset_inference_run,
 )
@@ -63,7 +63,7 @@ def make_task_call(
 
     dataset = client.get_dataset(dataset_id)
 
-    model_endpoint = ModelEndpoint(
+    model_endpoint = AsyncModelEndpoint(
         endpoint_id=endpoint_name, client=hmi_client
     )
 
