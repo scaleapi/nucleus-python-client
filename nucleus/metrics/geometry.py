@@ -63,7 +63,7 @@ Segment = Tuple[GeometryPoint, GeometryPoint]
 
 
 # alpha * a1 + (1 - alpha) * a2 = beta * b1 + (1 - beta) * b2
-def _segment_intersection(
+def segment_intersection(
     segment1: Segment, segment2: Segment
 ) -> Tuple[float, float, GeometryPoint]:
     a1, a2 = segment1
@@ -119,7 +119,7 @@ def convex_polygon_intersection_area(
         for j in range(nb):
             b1 = polygon_b[j - 1]
             b2 = polygon_b[j]
-            a, b, p = _segment_intersection((a1, a2), (b1, b2))
+            a, b, p = segment_intersection((a1, a2), (b1, b2))
             if 0 < a < 1 and 0 < b < 1:
                 ps.append(p)
 
