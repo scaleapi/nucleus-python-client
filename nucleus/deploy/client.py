@@ -46,8 +46,11 @@ class DeployClient:
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
-        A model bundle consists of a "model" and a "load_predict_fn", such that
-        load_predict_fn(model) returns a function predict_fn that takes in model input and returns model output.
+        A model bundle consists of a "load_predict_fn" and exactly one of "model" or "load_model_fn", such that
+        load_predict_fn(model)
+        or
+        load_predict_fn(load_model_fn())
+        returns a function predict_fn that takes in model input and returns model output.
         Pre/post-processing code can be included inside load_predict_fn/model.
 
         Parameters:
@@ -63,6 +66,7 @@ class DeployClient:
             raise ValueError(
                 "Exactly one of model and load_model_fn should be non-None"
             )
+        # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
         # Grab a signed url to make upload to
         model_bundle_s3_url = self.connection.post({}, "model_bundle_upload")
@@ -200,6 +204,7 @@ class DeployClient:
 
     def sync_request(self, endpoint_id: str, s3url: str) -> str:
         """
+        DEPRECATED
         Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
 
         Parameters:

@@ -9,7 +9,7 @@ The service efficiently utilizes compute resources and automatically scales acco
 Central to Scale Deploy are the notions of a `ModelBundle` and a `ModelEndpoint`.
 
 A `ModelBundle` consists of a trained model as well as the surrounding preprocessing and postprocessing code.
-Specifically, a `ModelBundle` consists of two Python objects, a (`model` or `load_model`), and a `load_predict_fn`; such that
+Specifically, a `ModelBundle` consists of two Python objects, a `load_predict_fn`, and either a `model` or `load_model_fn`; such that
 
 
     load_predict_fn(model)
@@ -18,7 +18,7 @@ Specifically, a `ModelBundle` consists of two Python objects, a (`model` or `loa
 or
 
 
-    load_predict_fn(load_model())
+    load_predict_fn(load_model_fn())
 
 
 returns a function `predict_fn` that takes in one argument representing model input,
@@ -31,7 +31,10 @@ TODO should we include a specific example here?
 A `ModelEndpoint` is the compute layer that takes in a `ModelBundle`, and is able to carry out inference requests
 by using the `ModelBundle` to carry out predictions. The `ModelEndpoint` also knows infrastructure-level details,
 such as how many GPUs are needed, what type they are, how much memory, etc. The `ModelEndpoint` automatically handles
-infrastructure level details such as autoscaling and task queueing.
+infrastructure level details such as autoscaling and task queueing. There are two types of `ModelEndpoint`s:
+`SyncModelEndpoint`s and `AsyncModelEndpoint`s; currently `AsyncModelEndpoint` is the only type implemented.
+
+TODO explain what a `SyncModelEndpoint` and `AsyncModelEndpoint` are.
 
 Steps to deploy your model via Scale Deploy:
 
