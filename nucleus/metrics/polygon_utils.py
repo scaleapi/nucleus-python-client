@@ -4,13 +4,13 @@ from typing import Dict, List, Tuple, TypeVar
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from .geometry import GeometryPoint, GeometryPolygon, polygon_intersection_area
 
 from nucleus.annotation import BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction
 
 from .base import MetricResult
 from .errors import PolygonAnnotationTypeError
+from .geometry import GeometryPoint, GeometryPolygon, polygon_intersection_area
 
 BoxOrPolygonPrediction = TypeVar(
     "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
@@ -28,19 +28,31 @@ def polygon_annotation_to_geometry(
         xmax = annotation.x + annotation.width / 2
         ymin = annotation.y - annotation.height / 2
         ymax = annotation.y + annotation.height / 2
-        points = list(map(GeometryPoint, [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)]))
-        return GeometryPolygon(
-            points
+        points = list(
+            map(
+                GeometryPoint,
+                [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)],
+            )
         )
+        return GeometryPolygon(points)
     elif isinstance(annotation, PolygonAnnotation):
-        return GeometryPolygon([GeometryPoint((point.x, point.y)) for point in annotation.vertices])
+        return GeometryPolygon(
+            [
+                GeometryPoint((point.x, point.y))
+                for point in annotation.vertices
+            ]
+        )
     else:
         raise PolygonAnnotationTypeError()
 
 
 def _iou(annotation: GeometryPolygon, prediction: GeometryPolygon) -> float:
     intersection = polygon_intersection_area(annotation, prediction)
-    union = np.abs(annotation.signed_area) + np.abs(prediction.signed_area) - intersection
+    union = (
+        np.abs(annotation.signed_area)
+        + np.abs(prediction.signed_area)
+        - intersection
+    )
     print(annotation, prediction, intersection, union)
     return intersection / max(union, sys.float_info.epsilon)
 
@@ -68,8 +80,12 @@ def _iou_assignments_for_same_reference_id(
     ), "Expected annotations and predictions to have same reference ID."
 
     # Convert annotation and predictions to GeometryPolygon objects
-    polygon_annotations = list(map(polygon_annotation_to_geometry, annotations))
-    polygon_predictions = list(map(polygon_annotation_to_geometry, predictions))
+    polygon_annotations = list(
+        map(polygon_annotation_to_geometry, annotations)
+    )
+    polygon_predictions = list(
+        map(polygon_annotation_to_geometry, predictions)
+    )
 
     # Compute IoU matrix and set IoU values below the threshold to 0.
     iou_matrix = _iou_matrix(polygon_annotations, polygon_predictions)

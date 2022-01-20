@@ -1,6 +1,6 @@
 from typing import List, Tuple, Union
-import numpy as np
 
+import numpy as np
 
 TOLERANCE = 1e-8
 
@@ -10,7 +10,7 @@ class GeometryPoint:
         self.xy = np.array(xy)
         self.x = xy[0]
         self.y = xy[1]
-    
+
     def __repr__(self) -> str:
         return f"GeometryPoint(xy=({self.xy[0]}, {self.xy[1]})"
 
@@ -64,7 +64,7 @@ Segment = Tuple[GeometryPoint, GeometryPoint]
 # alpha * a1 + (1 - alpha) * a2 = beta * b1 + (1 - beta) * b2
 def _segment_intersection(
     segment1: Segment, segment2: Segment
-) -> Tuple[float, float, float]:
+) -> Tuple[float, float, GeometryPoint]:
     a1, a2 = segment1
     b1, b2 = segment2
     x2_x2 = b2.x - a2.x
@@ -90,6 +90,7 @@ def _segment_intersection(
 def convex_polygon_intersection_area(
     polygon_a: GeometryPolygon, polygon_b: GeometryPolygon
 ) -> float:
+    # pylint: disable=R0912
     sa = polygon_a.signed_area
     sb = polygon_b.signed_area
     if sa * sb < 0:
@@ -137,7 +138,6 @@ def convex_polygon_intersection_area(
 
     def unique(ar):
         res = []
-        num = len(ar)
         for i, _ in enumerate(ar):
             if _.cmp(ar[i - 1]) > TOLERANCE:
                 res.append(_)
@@ -160,9 +160,7 @@ def convex_polygon_intersection_area(
             (x - tmp) @ GeometryPoint((0, 1)) / (x - tmp).length()
         ),
     )
-
-    for _ in ps:
-        res.append(_)
+    res.extend(ps)
 
     return GeometryPolygon(res).signed_area * sign
 
@@ -172,17 +170,11 @@ def polygon_intersection_area(
 ) -> float:
     na = len(polygon_a)
     nb = len(polygon_b)
-    res = 0
+    res = 0.0
     for i in range(1, na - 1):
-        sa = []
-        sa.append(polygon_a[0])
-        sa.append(polygon_a[i])
-        sa.append(polygon_a[i + 1])
+        sa = [polygon_a[0], polygon_a[i], polygon_a[i + 1]]
         for j in range(1, nb - 1):
-            sb = []
-            sb.append(polygon_b[0])
-            sb.append(polygon_b[j])
-            sb.append(polygon_b[j + 1])
+            sb = [polygon_b[0], polygon_b[j], polygon_b[j + 1]]
             tmp = convex_polygon_intersection_area(
                 GeometryPolygon(sa), GeometryPolygon(sb)
             )
