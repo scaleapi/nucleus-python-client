@@ -6,7 +6,7 @@ TOLERANCE = 1e-8
 
 
 class GeometryPoint:
-    def __init__(self, xy: Union[Tuple[int, int], np.ndarray]):
+    def __init__(self, xy: Union[Tuple[float, float], np.ndarray]):
         self.xy = np.array(xy)
         self.x = xy[0]
         self.y = xy[1]
@@ -46,6 +46,7 @@ class GeometryPolygon:
         self.signed_area = (
             points_x @ np.roll(points_y, 1) - points_x @ np.roll(points_y, -1)
         ) / 2
+        self.area = np.abs(self.signed_area)
 
     def __len__(self):
         return len(self.points)

@@ -28,12 +28,12 @@ def polygon_annotation_to_geometry(
         xmax = annotation.x + annotation.width / 2
         ymin = annotation.y - annotation.height / 2
         ymax = annotation.y + annotation.height / 2
-        points = list(
-            map(
-                GeometryPoint,
-                [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)],
-            )
-        )
+        points = [
+            GeometryPoint((xmin, ymin)),
+            GeometryPoint((xmax, ymin)),
+            GeometryPoint((xmax, ymax)),
+            GeometryPoint((xmin, ymax)),
+        ]
         return GeometryPolygon(points)
     elif isinstance(annotation, PolygonAnnotation):
         return GeometryPolygon(
@@ -48,12 +48,7 @@ def polygon_annotation_to_geometry(
 
 def _iou(annotation: GeometryPolygon, prediction: GeometryPolygon) -> float:
     intersection = polygon_intersection_area(annotation, prediction)
-    union = (
-        np.abs(annotation.signed_area)
-        + np.abs(prediction.signed_area)
-        - intersection
-    )
-    print(annotation, prediction, intersection, union)
+    union = annotation.area + prediction.area - intersection
     return intersection / max(union, sys.float_info.epsilon)
 
 
