@@ -70,10 +70,6 @@ class DeployClient:
 
         # Grab a signed url to make upload to
         model_bundle_s3_url = self.connection.post({}, "model_bundle_upload")
-        if "signedUrl" not in model_bundle_s3_url:
-            raise Exception(
-                "Error in server request, no signedURL found"
-            )  # TODO code style broad exception
         s3_path = model_bundle_s3_url["signedUrl"]
         raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
 
@@ -224,6 +220,7 @@ class DeployClient:
 
     def async_request(self, endpoint_id: str, s3url: str) -> str:
         """
+        Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
         the result of inference at a later time.
 
@@ -244,6 +241,7 @@ class DeployClient:
 
     def get_async_response(self, async_task_id: str) -> str:
         """
+        Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Gets inference results from a previously created task.
 
         Parameters:

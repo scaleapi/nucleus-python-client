@@ -29,7 +29,7 @@ class AsyncModelEndpoint:
             s3urls: The list of s3URLs that should have inference run on them.
 
         Returns:
-            a ModelEndpointAsyncJob keeping track of the inference requests made
+            an AsyncModelEndpointResponse keeping track of the inference requests made
         """
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
