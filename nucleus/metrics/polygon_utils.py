@@ -4,13 +4,13 @@ from typing import Dict, List, Tuple, TypeVar
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from shapely.geometry import Polygon
 
 from nucleus.annotation import BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction
 
 from .base import MetricResult
 from .errors import PolygonAnnotationTypeError
+from .geometry import GeometryPoint, GeometryPolygon, polygon_intersection_area
 
 BoxOrPolygonPrediction = TypeVar(
     "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
@@ -20,31 +20,40 @@ BoxOrPolygonAnnotation = TypeVar(
 )
 
 
-def polygon_annotation_to_shape(
+def polygon_annotation_to_geometry(
     annotation: BoxOrPolygonAnnotation,
-) -> Polygon:
+) -> GeometryPolygon:
     if isinstance(annotation, BoxAnnotation):
         xmin = annotation.x - annotation.width / 2
         xmax = annotation.x + annotation.width / 2
         ymin = annotation.y - annotation.height / 2
         ymax = annotation.y + annotation.height / 2
-        return Polygon(
-            [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)]
-        )
+        points = [
+            GeometryPoint((xmin, ymin)),
+            GeometryPoint((xmax, ymin)),
+            GeometryPoint((xmax, ymax)),
+            GeometryPoint((xmin, ymax)),
+        ]
+        return GeometryPolygon(points)
     elif isinstance(annotation, PolygonAnnotation):
-        return Polygon([(point.x, point.y) for point in annotation.vertices])
+        return GeometryPolygon(
+            [
+                GeometryPoint((point.x, point.y))
+                for point in annotation.vertices
+            ]
+        )
     else:
         raise PolygonAnnotationTypeError()
 
 
-def _iou(annotation: Polygon, prediction: Polygon) -> float:
-    intersection = annotation.intersection(prediction).area
+def _iou(annotation: GeometryPolygon, prediction: GeometryPolygon) -> float:
+    intersection = polygon_intersection_area(annotation, prediction)
     union = annotation.area + prediction.area - intersection
     return intersection / max(union, sys.float_info.epsilon)
 
 
 def _iou_matrix(
-    annotations: List[Polygon], predictions: List[Polygon]
+    annotations: List[GeometryPolygon], predictions: List[GeometryPolygon]
 ) -> np.ndarray:
     iou_matrix = np.empty((len(predictions), len(annotations)))
     for i, prediction in enumerate(predictions):
@@ -65,9 +74,13 @@ def _iou_assignments_for_same_reference_id(
         len(reference_ids) <= 1
     ), "Expected annotations and predictions to have same reference ID."
 
-    # Convert annotation and predictions to shapely.geometry.Polygon objects
-    polygon_annotations = list(map(polygon_annotation_to_shape, annotations))
-    polygon_predictions = list(map(polygon_annotation_to_shape, predictions))
+    # Convert annotation and predictions to GeometryPolygon objects
+    polygon_annotations = list(
+        map(polygon_annotation_to_geometry, annotations)
+    )
+    polygon_predictions = list(
+        map(polygon_annotation_to_geometry, predictions)
+    )
 
     # Compute IoU matrix and set IoU values below the threshold to 0.
     iou_matrix = _iou_matrix(polygon_annotations, polygon_predictions)
