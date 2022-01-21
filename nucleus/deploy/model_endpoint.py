@@ -43,7 +43,7 @@ class AsyncModelEndpoint:
                 endpoint_id=self.endpoint_id,
                 url=url,
             )
-            request_ids[url] = inference_request["task_id"]
+            request_ids[url] = inference_request
             # make the request to the endpoint (in parallel or something)
 
         return AsyncModelEndpointResponse(
