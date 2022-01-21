@@ -5,11 +5,18 @@ import cloudpickle
 import requests
 
 from nucleus.connection import Connection
+from nucleus.deploy.constants import (
+    ASYNC_TASK_PATH,
+    ASYNC_TASK_RESULT_PATH,
+    ENDPOINT_PATH,
+    MODEL_BUNDLE_SIGNED_URL_PATH,
+    SCALE_DEPLOY_ENDPOINT,
+    SYNC_TASK_PATH,
+)
 from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
 from nucleus.deploy.model_endpoint import AsyncModelEndpoint
 
-SCALE_DEPLOY_ENDPOINT = "https://api.scale.com/v1/hosted_inference"
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
 logger = logging.getLogger(__name__)
@@ -69,7 +76,9 @@ class DeployClient:
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
         # Grab a signed url to make upload to
-        model_bundle_s3_url = self.connection.post({}, "model_bundle_upload")
+        model_bundle_s3_url = self.connection.post(
+            {}, MODEL_BUNDLE_SIGNED_URL_PATH
+        )
         s3_path = model_bundle_s3_url["signedUrl"]
         raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
 
@@ -165,7 +174,7 @@ class DeployClient:
             del payload["gpu_type"]
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
-        resp = self.connection.post(payload, "endpoints")
+        resp = self.connection.post(payload, ENDPOINT_PATH)
         endpoint_creation_task_id = resp["data"][
             "endpoint_id"
         ]  # Serverside needs updating
@@ -192,7 +201,7 @@ class DeployClient:
         Returns:
             A list of ModelEndpoint objects
         """
-        resp = self.connection.get("endpoints")
+        resp = self.connection.get(ENDPOINT_PATH)
         return [
             AsyncModelEndpoint(endpoint_id=endpoint_id, client=self)
             for endpoint_id in resp
@@ -214,7 +223,7 @@ class DeployClient:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         resp = self.connection.post(
-            payload=dict(url=url), route=f"task/{endpoint_id}"
+            payload=dict(url=url), route=f"{SYNC_TASK_PATH}/{endpoint_id}"
         )
         return resp["data"]["result_url"]
 
@@ -235,7 +244,7 @@ class DeployClient:
                 `abcabcab-cabc-abca-0123456789ab`
         """
         resp = self.connection.post(
-            payload=dict(url=url), route=f"task_async/{endpoint_id}"
+            payload=dict(url=url), route=f"{ASYNC_TASK_PATH}/{endpoint_id}"
         )
         return resp["data"]["task_id"]
 
@@ -257,7 +266,9 @@ class DeployClient:
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
         """
 
-        resp = self.connection.get(route=f"task/result/{async_task_id}")
+        resp = self.connection.get(
+            route=f"{ASYNC_TASK_RESULT_PATH}/{async_task_id}"
+        )
         return resp["data"]
 
     def batch_async_request(self, endpoint_id: str, urls: List[str]):
