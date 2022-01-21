@@ -225,7 +225,7 @@ class DeployClient:
         resp = self.connection.post(
             payload=dict(url=url), route=f"{SYNC_TASK_PATH}/{endpoint_id}"
         )
-        return resp["data"]["result_url"]
+        return resp["result_url"]
 
     def async_request(self, endpoint_id: str, url: str) -> str:
         """
@@ -246,7 +246,7 @@ class DeployClient:
         resp = self.connection.post(
             payload=dict(url=url), route=f"{ASYNC_TASK_PATH}/{endpoint_id}"
         )
-        return resp["data"]["task_id"]
+        return resp["task_id"]
 
     def get_async_response(self, async_task_id: str) -> str:
         """
@@ -269,7 +269,7 @@ class DeployClient:
         resp = self.connection.get(
             route=f"{ASYNC_TASK_RESULT_PATH}/{async_task_id}"
         )
-        return resp["data"]
+        return resp
 
     def batch_async_request(self, endpoint_id: str, urls: List[str]):
         """
