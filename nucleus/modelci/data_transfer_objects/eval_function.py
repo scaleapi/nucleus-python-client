@@ -1,6 +1,11 @@
+import base64
 from typing import List, Optional
 
+import cloudpickle
+import dill
 from pydantic import validator
+
+from nucleus.metrics.base import Metric
 
 from ...pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
@@ -79,3 +84,32 @@ class GetEvalFunctions(ImmutableModel):
     """Expected format from GET modelci/eval_fn"""
 
     eval_functions: List[EvalFunctionEntry]
+
+
+class EvalFunctionInput(ImmutableModel):
+    """Expected format for POST modelci/eval_fn"""
+
+    name: str
+    serialized_fn: str
+    raw_source: str
+
+    @classmethod
+    def from_metric(cls, metric: Metric, name: str) -> "EvalFunctionInput":
+        assert isinstance(
+            metric, Metric
+        ), f"Expected metric to be an instance of Metric but got type {type(metric)}."
+
+        serialized_fn = base64.b64encode(cloudpickle.dumps(metric)).decode()
+        raw_source = dill.source.getsource(type(metric))
+        return EvalFunctionInput(
+            name=name, serialized_fn=serialized_fn, raw_source=raw_source
+        )
+
+    @validator("serialized_fn")
+    def valid_serialized_fn(cls, v):  # pylint: disable=no-self-argument
+        deserialized = cloudpickle.loads(base64.b64decode(v))
+        if not isinstance(deserialized, Metric):
+            raise ValueError(
+                f"Expected field to be an instance of Metric but got {deserialized}"
+            )
+        return v

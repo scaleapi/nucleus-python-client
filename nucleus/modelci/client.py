@@ -2,9 +2,11 @@ from typing import List
 
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
+from nucleus.metrics import Metric
 
 from .constants import UNIT_TEST_ID_KEY
 from .data_transfer_objects.eval_function import (
+    EvalFunctionInput,
     EvaluationCriterion,
     GetEvalFunctions,
 )
@@ -28,6 +30,35 @@ class ModelCI:
 
     def __eq__(self, other):
         return self.connection == other.connection
+
+    def upload_eval_function(
+        self, eval_function: Metric, name: str
+    ) -> AsyncJob:
+        """Uploads an evaluation function and validates the evaluation function.::
+
+        import nucleus
+        from nucleus.metric import Metric, MetricResult
+        from nucleus.annotation import AnnotationList
+        from nucleus.prediction import PredictionList
+
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+
+        class MyMetric(Metric):
+            def __call__(
+                self, annotations: AnnotationList, predictions: PredictionList
+            ) -> MetricResult:
+                value = (len(annotations) - len(predictions)) ** 2
+                weight = len(annotations)
+                return MetricResult(value, weight)
+
+        job = client.modelci.upload_eval_function(MyMetric(), "my_metric")
+        job.sleep_until_complete() # Not required. Will block and update on status of the job.
+        """
+        response = self.connection.post(
+            EvalFunctionInput.from_metric(eval_function, name).dict(),
+            "modelci/eval_fn",
+        )
+        return AsyncJob.from_json(response, self.connection)
 
     @property
     def eval_functions(self) -> AvailableEvalFunctions:
