@@ -26,6 +26,9 @@ and outputs one argument representing model output.
 
 Typically, a `model` would be a Pytorch nn.Module or Tensorflow Keras model.
 
+.. image:: /../docs/images/deploy/model_bundle.png
+    :width: 200px
+
 TODO should we include a specific example here?
 
 A `ModelEndpoint` is the compute layer that takes in a `ModelBundle`, and is able to carry out inference requests
@@ -33,6 +36,9 @@ by using the `ModelBundle` to carry out predictions. The `ModelEndpoint` also kn
 such as how many GPUs are needed, what type they are, how much memory, etc. The `ModelEndpoint` automatically handles
 infrastructure level details such as autoscaling and task queueing. There are two types of `ModelEndpoint`s:
 `SyncModelEndpoint`s and `AsyncModelEndpoint`s; currently `AsyncModelEndpoint` is the only type implemented.
+
+.. image:: /../docs/images/deploy/model_endpoint.png
+    :width: 400px
 
 TODO explain what a `SyncModelEndpoint` and `AsyncModelEndpoint` are.
 
