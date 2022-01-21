@@ -111,6 +111,17 @@ def create_nucleus_dataset_inference_run(
     )
 
 
+def _translate_https_to_s3(http_url: str):
+    # https://<bucket>.stuff/<key>
+    if not http_url.startswith("https:"):
+        return http_url
+    s = http_url
+    bucket = s.split(".")[0].split("//")[1]
+    key = "/".join(s.split("/")[3:])
+    path = f"s3://{bucket}/{key}"
+    return path
+
+
 def _nucleus_ds_to_s3url_list(
     dataset: Dataset,
 ) -> Tuple[List[str], Dict[str, DatasetItem]]:
@@ -128,23 +139,23 @@ def _nucleus_ds_to_s3url_list(
     # Do we need to keep track of nucleus ids?
     if dataset_item_type == DatasetItemType.IMAGE:
         s3Urls = [
-            data.image_location
+            _translate_https_to_s3(data.image_location)
             for data in dataset.items
             if data.image_location is not None
         ]
         s3url_to_dataset_map = {
-            data.image_location: data
+            _translate_https_to_s3(data.image_location): data
             for data in dataset.items
             if data.image_location is not None
         }
     elif dataset_item_type == DatasetItemType.POINTCLOUD:
         s3Urls = [
-            data.pointcloud_location
+            _translate_https_to_s3(data.pointcloud_location)
             for data in dataset.items
             if data.pointcloud_location is not None
         ]
         s3url_to_dataset_map = {
-            data.pointcloud_location: data
+            _translate_https_to_s3(data.pointcloud_location): data
             for data in dataset.items
             if data.pointcloud_location is not None
         }
