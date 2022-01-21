@@ -198,14 +198,14 @@ class DeployClient:
             for endpoint_id in resp
         ]
 
-    def sync_request(self, endpoint_id: str, s3url: str) -> str:
+    def sync_request(self, endpoint_id: str, url: str) -> str:
         """
         DEPRECATED
         Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3url: A url that points to a file containing model input.
+            url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
@@ -214,11 +214,11 @@ class DeployClient:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         resp = self.connection.post(
-            payload=dict(url=s3url), route=f"task/{endpoint_id}"
+            payload=dict(url=url), route=f"task/{endpoint_id}"
         )
         return resp["data"]["result_url"]
 
-    def async_request(self, endpoint_id: str, s3url: str) -> str:
+    def async_request(self, endpoint_id: str, url: str) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
@@ -226,7 +226,7 @@ class DeployClient:
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3url: A url that points to a file containing model input.
+            url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
@@ -235,7 +235,7 @@ class DeployClient:
                 `abcabcab-cabc-abca-0123456789ab`
         """
         resp = self.connection.post(
-            payload=dict(url=s3url), route=f"task_async/{endpoint_id}"
+            payload=dict(url=url), route=f"task_async/{endpoint_id}"
         )
         return resp["data"]["task_id"]
 
@@ -260,14 +260,14 @@ class DeployClient:
         resp = self.connection.get(route=f"task/result/{async_task_id}")
         return resp["data"]
 
-    def batch_async_request(self, endpoint_id: str, s3urls: List[str]):
+    def batch_async_request(self, endpoint_id: str, urls: List[str]):
         """
         Sends a batch inference request to the Model Endpoint at endpoint_id, returns a key that can be used to retrieve
         the results of inference at a later time.
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
-            s3urls: A list of urls, each pointing to a file containing model input.
+            urls: A list of urls, each pointing to a file containing model input.
                 Must be accessible by Scale Deploy, hence urls need to either be public or signedURLs.
 
         Returns:

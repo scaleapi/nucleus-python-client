@@ -20,13 +20,13 @@ class AsyncModelEndpoint:
 
     def predict(
         self,
-        s3urls: Sequence[str],
+        urls: Sequence[str],
     ) -> "AsyncModelEndpointResponse":
         """
-        Runs inference on the data items specified by s3urls. Returns a AsyncModelEndpointResponse.
+        Runs inference on the data items specified by urls. Returns a AsyncModelEndpointResponse.
 
         Parameters:
-            s3urls: The list of s3URLs that should have inference run on them.
+            urls: The list of URLs that should have inference run on them. Supported url formats are http(s)://, s3://.
 
         Returns:
             an AsyncModelEndpointResponse keeping track of the inference requests made
@@ -35,15 +35,15 @@ class AsyncModelEndpoint:
         # if batches are possible make this aware you can pass batches
         # TODO add batch support once those are out
 
-        request_ids = {}  # Dict of s3url -> request id
+        request_ids = {}  # Dict of url -> request id
 
-        for s3url in s3urls:
+        for url in urls:
             # TODO make these requests in parallel instead of making them serially
             inference_request = self.client.async_request(
                 endpoint_id=self.endpoint_id,
-                s3url=s3url,
+                url=url,
             )
-            request_ids[s3url] = inference_request["task_id"]
+            request_ids[url] = inference_request["task_id"]
             # make the request to the endpoint (in parallel or something)
 
         return AsyncModelEndpointResponse(
@@ -57,13 +57,13 @@ class AsyncModelEndpoint:
         """
         raise NotImplementedError
 
-    async def async_request(self, s3url: str) -> str:
+    async def async_request(self, url: str) -> str:
         """
         Makes an async request to the endpoint. Polls the endpoint under the hood, but provides async/await semantics
         on top.
 
         Parameters:
-            s3url: A url that points to a file containing model input.
+            url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
 
         Returns:
@@ -77,6 +77,7 @@ class AsyncModelEndpoint:
 
 class AsyncModelEndpointResponse:
     """
+
     Currently represents a list of async inference requests to a specific endpoint. Keeps track of the requests made,
     and gives a way to poll for their status.
 
@@ -95,9 +96,9 @@ class AsyncModelEndpointResponse:
     ):
 
         self.client = client
-        self.request_ids = request_ids.copy()  # s3url -> task_id
+        self.request_ids = request_ids.copy()  # url -> task_id
         self.responses: Dict[str, Optional[str]] = {
-            s3url: None for s3url in request_ids.keys()
+            url: None for url in request_ids.keys()
         }
 
     def poll_endpoints(self):
@@ -106,8 +107,8 @@ class AsyncModelEndpointResponse:
         """
 
         # TODO: replace with batch endpoint, or make requests in parallel
-        for s3url, request_id in self.request_ids.items():
-            current_response = self.responses[s3url]
+        for url, request_id in self.request_ids.items():
+            current_response = self.responses[url]
             if current_response is None:
                 response = self.client.get_async_response(request_id)
                 print(response)
@@ -115,7 +116,7 @@ class AsyncModelEndpointResponse:
                     "result_url" not in response
                 ):  # TODO this doesn't handle any task states other than Pending or Success
                     continue
-                self.responses[s3url] = response["result_url"]
+                self.responses[url] = response["result_url"]
 
     def is_done(self, poll=True) -> bool:
         """
@@ -136,5 +137,6 @@ class AsyncModelEndpointResponse:
     async def wait(self):
         """
         Waits for inference results to complete. Provides async/await semantics, but under the hood does polling.
+        TODO: we'd need to implement some lower level asyncio request code
         """
         raise NotImplementedError
