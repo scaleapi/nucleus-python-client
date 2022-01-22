@@ -83,6 +83,9 @@ class NucleusDatasetInferenceRun:
                     # TODO assuming box is a list of (x, y, w, h, label). This is almost certainly not the case.
                     # We will have to use a ModelEndpoint/ModelBundle that returns boxes in this format.
                     # Also, label is probably returned as an integer instead of a label that makes semantic sense
+                    kwargs = {}
+                    if "score" in box:
+                        kwargs["score"] = box["score"]
                     pred_item = nucleus.BoxPrediction(
                         label=box["label"],
                         x=box["left"],
@@ -90,6 +93,7 @@ class NucleusDatasetInferenceRun:
                         width=box["width"],
                         height=box["height"],
                         reference_id=ref_id,
+                        **kwargs,
                     )
                     prediction_items.append(pred_item)
 
