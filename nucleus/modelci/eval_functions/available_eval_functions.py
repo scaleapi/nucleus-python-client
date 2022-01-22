@@ -37,7 +37,7 @@ class CustomEvalFunction(BaseEvalFunction):
     @classmethod
     def expected_name(cls) -> str:
         raise NotImplementedError(
-            "Custm evaluation functions are coming soon"
+            "Custom evaluation functions are coming soon"
         )  # Placeholder: See super().eval_func_entry for actual name
 
 

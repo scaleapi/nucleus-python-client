@@ -3,16 +3,21 @@ from typing import List
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 from nucleus.metrics import Metric
+from nucleus.utils import replace_double_slashes
 
 from .constants import UNIT_TEST_ID_KEY
 from .data_transfer_objects.eval_function import (
+    EvalFunctionEntry,
     EvalFunctionInput,
     EvaluationCriterion,
     GetEvalFunctions,
 )
 from .data_transfer_objects.unit_test import CreateUnitTestRequest
-from .errors import CreateUnitTestError
-from .eval_functions.available_eval_functions import AvailableEvalFunctions
+from .errors import CreateUnitTestError, UploadEvalFunctionError
+from .eval_functions.available_eval_functions import (
+    AvailableEvalFunctions,
+    CustomEvalFunction,
+)
 from .unit_test import UnitTest
 
 SUCCESS_KEY = "success"
@@ -33,7 +38,7 @@ class ModelCI:
 
     def upload_eval_function(
         self, eval_function: Metric, name: str
-    ) -> AsyncJob:
+    ) -> CustomEvalFunction:
         """Uploads an evaluation function and validates the evaluation function.::
 
         import nucleus
@@ -51,14 +56,19 @@ class ModelCI:
                 weight = len(annotations)
                 return MetricResult(value, weight)
 
-        job = client.modelci.upload_eval_function(MyMetric(), "my_metric")
+        eval_func = client.modelci.upload_eval_function(MyMetric(), "my_metric")
         job.sleep_until_complete() # Not required. Will block and update on status of the job.
         """
         response = self.connection.post(
             EvalFunctionInput.from_metric(eval_function, name).dict(),
             "modelci/eval_fn",
         )
-        return AsyncJob.from_json(response, self.connection)
+        if response["eval_fn"] is None:
+            error_msg = replace_double_slashes(response["error"])
+            raise UploadEvalFunctionError(error_msg)
+
+        eval_fn = EvalFunctionEntry.parse_obj(response["eval_fn"])
+        return CustomEvalFunction(eval_fn)
 
     @property
     def eval_functions(self) -> AvailableEvalFunctions:
@@ -77,6 +87,16 @@ class ModelCI:
         )
         payload = GetEvalFunctions.parse_obj(response)
         return AvailableEvalFunctions(payload.eval_functions)
+
+    def delete_eval_function(self, eval_function_id: str):
+        """Deletes an evaluation function given its ID. ::
+
+        import nucleus
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+
+        client.delete_eval_function("EVAL_FUNCTION_ID")
+        """
+        self.connection.delete(f"modelci/eval_fn/{eval_function_id}")
 
     def create_unit_test(
         self,

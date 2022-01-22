@@ -4,3 +4,7 @@ class CreateUnitTestError(Exception):
 
 class EvalFunctionNotAvailableError(Exception):
     pass
+
+
+class UploadEvalFunctionError(Exception):
+    pass
