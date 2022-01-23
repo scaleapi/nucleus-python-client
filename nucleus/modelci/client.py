@@ -63,9 +63,11 @@ class ModelCI:
             EvalFunctionInput.from_metric(eval_function, name).dict(),
             "modelci/eval_fn",
         )
+        print(replace_double_slashes(response["logs"]))
         if response["eval_fn"] is None:
-            error_msg = replace_double_slashes(response["error"])
-            raise UploadEvalFunctionError(error_msg)
+            raise UploadEvalFunctionError(
+                "Eval function upload failed. See logs for traceback."
+            )
 
         eval_fn = EvalFunctionEntry.parse_obj(response["eval_fn"])
         return CustomEvalFunction(eval_fn)

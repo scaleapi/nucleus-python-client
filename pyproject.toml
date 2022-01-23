@@ -44,6 +44,7 @@ isort = "^5.10.1"
 numpy = "^1.19.5"
 scipy = "^1.5.4"
 cloudpickle = "^2.0.0"
+dill = "^0.3.4"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
