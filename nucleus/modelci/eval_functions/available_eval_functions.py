@@ -98,6 +98,9 @@ class AvailableEvalFunctions:
 
     The available evaluation functions are listed in the sample below::
 
+        import nucleus
+        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+
         e = client.modelci.eval_functions
         unit_test_criteria = [
             e.bbox_iou() > 5,
