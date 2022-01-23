@@ -20,8 +20,9 @@ from .eval_functions.available_eval_functions import (
 )
 from .unit_test import UnitTest
 
+LOGS_KEY = "logs"
 SUCCESS_KEY = "success"
-EVAL_FUNCTIONS_KEY = "eval_functions"
+EVAL_FUNCTION_KEY = "eval_fn"
 
 
 class ModelCI:
@@ -39,42 +40,51 @@ class ModelCI:
     def upload_eval_function(
         self, eval_function: Metric, name: str
     ) -> CustomEvalFunction:
-        """Uploads an evaluation function and validates the evaluation function.::
+        """Uploads an evaluation function and validates the evaluation function. ::
 
-        import nucleus
-        from nucleus.metric import Metric, MetricResult
-        from nucleus.annotation import AnnotationList
-        from nucleus.prediction import PredictionList
+            import nucleus
+            from nucleus.metrics import Metric, MetricResult
+            from nucleus.annotation import AnnotationList
+            from nucleus.prediction import PredictionList
 
-        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-        class MyMetric(Metric):
-            def __call__(
-                self, annotations: AnnotationList, predictions: PredictionList
-            ) -> MetricResult:
-                value = (len(annotations) - len(predictions)) ** 2
-                weight = len(annotations)
-                return MetricResult(value, weight)
+            class MyMetric(Metric):
+                def __call__(
+                    self, annotations: AnnotationList, predictions: PredictionList
+                ) -> MetricResult:
+                    value = (len(annotations) - len(predictions)) ** 2
+                    weight = len(annotations)
+                    return MetricResult(value, weight)
 
-        eval_func = client.modelci.upload_eval_function(MyMetric(), "my_metric")
-        job.sleep_until_complete() # Not required. Will block and update on status of the job.
+            eval_func = client.modelci.upload_eval_function(MyMetric(), "my_metric")
+
+        Args:
+            eval_function: an instance of the evaluation function - must be a
+                subclass of the :class:`Metric` class.
+            name: unique name of evaluation function
+        Returns:
+            :class:`CustomEvalFunction`: A container for the uploaded eval function.
         """
+        assert isinstance(
+            eval_function, Metric
+        ), f"Expected eval_function to be of type Metric but got {type(eval_function)}"
         response = self.connection.post(
             EvalFunctionInput.from_metric(eval_function, name).dict(),
             "modelci/eval_fn",
         )
-        print(replace_double_slashes(response["logs"]))
+        print(replace_double_slashes(response[LOGS_KEY]))
         if response["eval_fn"] is None:
             raise UploadEvalFunctionError(
                 "Eval function upload failed. See logs for traceback."
             )
 
-        eval_fn = EvalFunctionEntry.parse_obj(response["eval_fn"])
+        eval_fn = EvalFunctionEntry.parse_obj(response[EVAL_FUNCTION_KEY])
         return CustomEvalFunction(eval_fn)
 
     @property
     def eval_functions(self) -> AvailableEvalFunctions:
-        """List all available evaluation functions which can be used to set up evaluation criteria.::
+        """List all available evaluation functions which can be used to set up evaluation criteria. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -90,15 +100,27 @@ class ModelCI:
         payload = GetEvalFunctions.parse_obj(response)
         return AvailableEvalFunctions(payload.eval_functions)
 
-    def delete_eval_function(self, eval_function_id: str):
+    def delete_eval_function(self, eval_function_id: str) -> bool:
         """Deletes an evaluation function given its ID. ::
 
-        import nucleus
-        client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-        client.delete_eval_function("EVAL_FUNCTION_ID")
+            my_eval_functions = client.modelci.eval_functions.private_functions
+            if len(my_eval_functions) > 0:
+                eval_function = list(my_eval_functions.values())[0]
+                client.delete_eval_function(eval_function.id)
+
+        Args:
+            eval_function_id: unique ID of evaluation function
+
+        Returns:
+            Whether deletion was successful.
         """
-        self.connection.delete(f"modelci/eval_fn/{eval_function_id}")
+        response = self.connection.delete(
+            f"modelci/eval_fn/{eval_function_id}"
+        )
+        return response[SUCCESS_KEY]
 
     def create_unit_test(
         self,
@@ -168,9 +190,11 @@ class ModelCI:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            unit_test = client.modelci.list_unit_tests()[0]
 
-            success = client.modelci.delete_unit_test(unit_test.id)
+            unit_tests = client.modelci.list_unit_tests()
+            if len(unit_tests) > 0:
+                unit_test = unit_tests[0]
+                success = client.modelci.delete_unit_test(unit_test.id)
 
         Args:
             unit_test_id: unique ID of unit test
@@ -190,16 +214,19 @@ class ModelCI:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            model = client.list_models()[0]
-            unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "slc_bx86ea222a6g057x4380"
-            )
 
-            job = client.modelci.evaluate_model_on_unit_tests(
-                model_id=model.id,
-                unit_test_names=["sample_unit_test"],
-            )
-            job.sleep_until_complete() # Not required. Will block and update on status of the job.
+            models = client.list_models()
+            if len(models) > 0:
+                model = models[0]
+                unit_test = client.modelci.create_unit_test(
+                    "sample_unit_test", "slc_bx86ea222a6g057x4380"
+                )
+
+                job = client.modelci.evaluate_model_on_unit_tests(
+                    model_id=model.id,
+                    unit_test_names=["sample_unit_test"],
+                )
+                job.sleep_until_complete() # Not required. Will block and update on status of the job.
 
         Args:
             model_id: ID of model to evaluate

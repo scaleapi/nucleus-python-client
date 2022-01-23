@@ -100,7 +100,11 @@ class EvalFunctionInput(ImmutableModel):
         ), f"Expected metric to be an instance of Metric but got type {type(metric)}."
 
         serialized_fn = base64.b64encode(cloudpickle.dumps(metric)).decode()
-        raw_source = dill.source.getsource(type(metric))
+        try:
+            raw_source = dill.source.getsource(type(metric))
+        except OSError:
+            raw_source = f"class {type(metric)}"
+
         return EvalFunctionInput(
             name=name, serialized_fn=serialized_fn, raw_source=raw_source
         )
