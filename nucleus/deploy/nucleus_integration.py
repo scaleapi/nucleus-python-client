@@ -80,7 +80,7 @@ class NucleusDatasetInferenceRun:
                     if "score" in box:
                         kwargs["confidence"] = box["score"]
                     pred_item = nucleus.BoxPrediction(
-                        label=box["label"],
+                        label=str(box["label"]),
                         x=box["left"],
                         y=box["top"],
                         width=box["width"],
