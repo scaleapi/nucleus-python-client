@@ -4,7 +4,6 @@ from typing import Dict, List, Tuple
 
 import cloudpickle
 import smart_open
-from boto3 import Session
 
 import nucleus
 from nucleus import Dataset, DatasetItem
@@ -69,14 +68,8 @@ class NucleusDatasetInferenceRun:
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
             item_link = self.hmi_async_job.responses[s3url]
             print(f"item_link={item_link}")
-            # e.g. s3://scale-ml/tmp/hosted-model-inference-outputs/a224499e-50ac-4b08-ad0c-c18e74c14184.pkl
-            kwargs = {
-                "transport_params": {
-                    "session": Session(profile_name="ml-worker")
-                }
-            }
 
-            with smart_open.open(item_link, "rb", **kwargs) as bundle_pkl:
+            with smart_open.open(item_link, "rb") as bundle_pkl:
                 inference_result = cloudpickle.load(bundle_pkl)
                 ref_id = dataset_item.reference_id
                 for box in inference_result:
