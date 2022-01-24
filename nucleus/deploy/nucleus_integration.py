@@ -78,7 +78,7 @@ class NucleusDatasetInferenceRun:
                     # Also, label is probably returned as an integer instead of a label that makes semantic sense
                     kwargs = {}
                     if "score" in box:
-                        kwargs["score"] = box["score"]
+                        kwargs["confidence"] = box["score"]
                     pred_item = nucleus.BoxPrediction(
                         label=box["label"],
                         x=box["left"],
