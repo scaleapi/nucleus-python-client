@@ -1,5 +1,9 @@
 from typing import Dict, Optional, Sequence
 
+TASK_PENDING_STATE = "PENDING"
+TASK_SUCCESS_STATE = "SUCCESS"
+TASK_FAILURE_STATE = "FAILURE"
+
 
 class AsyncModelEndpoint:
     """
@@ -100,6 +104,10 @@ class AsyncModelEndpointResponse:
         self.responses: Dict[str, Optional[str]] = {
             url: None for url in request_ids.keys()
         }
+        # celery task statuses
+        self.statuses: Dict[str, Optional[str]] = {
+            url: TASK_PENDING_STATE for url in request_ids.keys()
+        }
 
     def poll_endpoints(self):
         """
@@ -108,15 +116,14 @@ class AsyncModelEndpointResponse:
 
         # TODO: replace with batch endpoint, or make requests in parallel
         for url, request_id in self.request_ids.items():
-            current_response = self.responses[url]
-            if current_response is None:
+            current_state = self.statuses[url]
+            if current_state == TASK_PENDING_STATE:
                 response = self.client.get_async_response(request_id)
                 print(response)
-                if (
-                    "result_url" not in response
-                ):  # TODO this doesn't handle any task states other than Pending or Success
-                    continue
-                self.responses[url] = response["result_url"]
+                if "state" in response:
+                    self.statuses[url] = response["state"]
+                if "result_url" in response:
+                    self.responses[url] = response["result_url"]
 
     def is_done(self, poll=True) -> bool:
         """
@@ -127,7 +134,9 @@ class AsyncModelEndpointResponse:
         # TODO: make some request to some endpoint
         if poll:
             self.poll_endpoints()
-        return all(resp is not None for resp in self.responses.values())
+        return all(
+            resp != TASK_PENDING_STATE for resp in self.responses.values()
+        )
 
     def get_responses(self) -> Dict[str, Optional[str]]:
         if not self.is_done(poll=False):

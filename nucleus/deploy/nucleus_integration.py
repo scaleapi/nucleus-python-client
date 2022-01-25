@@ -67,6 +67,9 @@ class NucleusDatasetInferenceRun:
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
             item_link = self.hmi_async_job.responses[s3url]
+            if item_link is None:
+                logger.warning("No item link received for %s", s3url)
+                continue
             print(f"item_link={item_link}")
 
             with smart_open.open(item_link, "rb") as bundle_pkl:
