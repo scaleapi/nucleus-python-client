@@ -1,3 +1,4 @@
+import concurrent.futures
 from typing import Dict, Optional, Sequence
 
 TASK_PENDING_STATE = "PENDING"
@@ -39,16 +40,27 @@ class AsyncModelEndpoint:
         # if batches are possible make this aware you can pass batches
         # TODO add batch support once those are out
 
-        request_ids = {}  # Dict of url -> request id
+        # request_ids = {}  # Dict of url -> request id
 
-        for url in urls:
-            # TODO make these requests in parallel instead of making them serially
-            inference_request = self.client.async_request(
+        def single_request(inner_url):
+            inner_inference_request = self.client.async_request(
                 endpoint_id=self.endpoint_id,
-                url=url,
+                url=inner_url,
             )
-            request_ids[url] = inference_request
-            # make the request to the endpoint (in parallel or something)
+            return inner_url, inner_inference_request
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            urls_to_requests = executor.map(single_request, urls)
+            request_ids = dict(urls_to_requests)
+
+        # for url in urls:
+        #     # TODO make these requests in parallel instead of making them serially
+        #     inference_request = self.client.async_request(
+        #         endpoint_id=self.endpoint_id,
+        #         url=url,
+        #     )
+        #     request_ids[url] = inference_request
+        #     # make the request to the endpoint (in parallel or something)
 
         return AsyncModelEndpointResponse(
             self.client,
@@ -115,15 +127,43 @@ class AsyncModelEndpointResponse:
         """
 
         # TODO: replace with batch endpoint, or make requests in parallel
-        for url, request_id in self.request_ids.items():
-            current_state = self.statuses[url]
-            if current_state == TASK_PENDING_STATE:
-                response = self.client.get_async_response(request_id)
-                print(response)
-                if "state" in response:
-                    self.statuses[url] = response["state"]
-                if "result_url" in response:
-                    self.responses[url] = response["result_url"]
+
+        def single_request(inner_url, inner_request_id):
+            if self.statuses[inner_url] != TASK_PENDING_STATE:
+                return None
+            inner_response = self.client.get_async_response(inner_request_id)
+            return (
+                inner_url,
+                inner_request_id,
+                inner_response.get("state", None),
+                inner_response.get("result_url", None),
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            responses = executor.map(
+                single_request,
+                self.request_ids.keys(),
+                self.request_ids.values(),
+            )
+
+        for response in responses:
+            if response is None:
+                continue
+            url, _, state, result_url = response
+            if state:
+                self.statuses[url] = state
+            if result_url:
+                self.responses[url] = result_url
+
+        # for url, request_id in self.request_ids.items():
+        #     current_state = self.statuses[url]
+        #     if current_state == TASK_PENDING_STATE:
+        #         response = self.client.get_async_response(request_id)
+        #         print(response)
+        #         if "state" in response:
+        #             self.statuses[url] = response["state"]
+        #         if "result_url" in response:
+        #             self.responses[url] = response["result_url"]
 
     def is_done(self, poll=True) -> bool:
         """
