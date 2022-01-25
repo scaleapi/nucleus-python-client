@@ -53,6 +53,9 @@ This provisions resources on Scale's cluster dedicated to your `ModelEndpoint`.
 3. Lastly, you make requests to the `ModelEndpoint`. You can make requests through the Python SDK, or make HTTP requests directly
 to Scale.
 
+.. image:: /../docs/images/deploy/request_lifecycle.png
+    :width: 400px
+
 TODO: link some example colab notebook
 """
 
