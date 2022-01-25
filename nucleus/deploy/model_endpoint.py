@@ -135,7 +135,7 @@ class AsyncModelEndpointResponse:
         if poll:
             self.poll_endpoints()
         return all(
-            resp != TASK_PENDING_STATE for resp in self.responses.values()
+            resp != TASK_PENDING_STATE for resp in self.statuses.values()
         )
 
     def get_responses(self) -> Dict[str, Optional[str]]:
