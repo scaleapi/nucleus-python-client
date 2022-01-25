@@ -1,4 +1,5 @@
 import concurrent.futures
+from collections import Counter
 from typing import Dict, Optional, Sequence
 
 TASK_PENDING_STATE = "PENDING"
@@ -182,6 +183,10 @@ class AsyncModelEndpointResponse:
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
+
+    def batch_status(self):
+        counter = Counter(self.statuses.values())
+        return dict(counter)
 
     async def wait(self):
         """
