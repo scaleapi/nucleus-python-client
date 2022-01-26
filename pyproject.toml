@@ -31,6 +31,10 @@ repository = "https://github.com/scaleapi/nucleus-python-client"
 documentation = "https://dashboard.scale.com/nucleus/docs/api"
 packages = [{include="nucleus"}]
 
+[[tool.poetry.source]]
+name = "pytorch-wheel-source"
+url = "https://vxlabs.com/pypi//simple/"
+
 [tool.poetry.dependencies]
 python = "^3.6.2"
 requests = "^2.23.0"
@@ -44,6 +48,8 @@ isort = "^5.10.1"
 numpy = "^1.19.5"
 scipy = "^1.5.4"
 Shapely = "^1.8.0"
+cloudpickle = "^1.6.0"
+
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
@@ -61,6 +67,7 @@ sphinx-autobuild = "^2021.3.14"
 furo = "^2021.10.9"
 sphinx-autoapi = "^1.8.4"
 pytest-xdist = "^2.5.0"
+smart_open = "^1.9.0" # For a temporary nucleus -> HMI integration
 
 
 [tool.pytest.ini_options]
