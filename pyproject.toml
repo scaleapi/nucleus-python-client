@@ -45,9 +45,9 @@ nest-asyncio = "^1.5.1"
 Sphinx = "^4.2.0"
 pydantic = "^1.8.2"
 isort = "^5.10.1"
-#numpy = "^1.19.5"
-#scipy = "^1.5.4"
-#Shapely = "^1.8.0"
+numpy = "^1.19.5"
+scipy = "^1.5.4"
+Shapely = "^1.8.0"
 cloudpickle = "^1.6.0"
 
 
