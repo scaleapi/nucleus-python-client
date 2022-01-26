@@ -4,11 +4,14 @@ from typing import List, Optional
 import cloudpickle
 import dill
 from pydantic import validator
+from pydantic.error_wrappers import ValidationError  # pylint: disable=E0611
 
 from nucleus.metrics.base import Metric
+from nucleus.utils import replace_double_slashes
 
 from ...pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
+from ..errors import UploadEvalFunctionError
 
 
 class EvaluationCriterion(ImmutableModel):
@@ -117,3 +120,24 @@ class EvalFunctionInput(ImmutableModel):
                 f"Expected field to be an instance of Metric but got {deserialized}"
             )
         return v
+
+
+class EvalFunctionUpload(ImmutableModel):
+    """Expected response from POST modelci/eval_fn"""
+
+    eval_fn: EvalFunctionEntry
+    logs: str
+
+    @classmethod
+    def parse_obj_with_logs(cls, v):
+        # Try to parse the object and print logs regardless of result.
+        try:
+            parsed = cls.parse_obj(v)
+        except ValidationError:
+            raise UploadEvalFunctionError(
+                "Eval function upload failed. See above logs for traceback."
+            ) from None
+        finally:
+            print(replace_double_slashes(v["logs"]))
+
+        return parsed

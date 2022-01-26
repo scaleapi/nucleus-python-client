@@ -3,24 +3,22 @@ from typing import List
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 from nucleus.metrics import Metric
-from nucleus.utils import replace_double_slashes
 
 from .constants import UNIT_TEST_ID_KEY
 from .data_transfer_objects.eval_function import (
-    EvalFunctionEntry,
     EvalFunctionInput,
+    EvalFunctionUpload,
     EvaluationCriterion,
     GetEvalFunctions,
 )
 from .data_transfer_objects.unit_test import CreateUnitTestRequest
-from .errors import CreateUnitTestError, UploadEvalFunctionError
+from .errors import CreateUnitTestError
 from .eval_functions.available_eval_functions import (
     AvailableEvalFunctions,
     CustomEvalFunction,
 )
 from .unit_test import UnitTest
 
-LOGS_KEY = "logs"
 SUCCESS_KEY = "success"
 EVAL_FUNCTION_KEY = "eval_fn"
 
@@ -73,14 +71,8 @@ class ModelCI:
             EvalFunctionInput.from_metric(eval_function, name).dict(),
             "modelci/eval_fn",
         )
-        print(replace_double_slashes(response[LOGS_KEY]))
-        if response["eval_fn"] is None:
-            raise UploadEvalFunctionError(
-                "Eval function upload failed. See logs for traceback."
-            )
-
-        eval_fn = EvalFunctionEntry.parse_obj(response[EVAL_FUNCTION_KEY])
-        return CustomEvalFunction(eval_fn)
+        payload = EvalFunctionUpload.parse_obj_with_logs(response)
+        return payload.eval_fn
 
     @property
     def eval_functions(self) -> AvailableEvalFunctions:

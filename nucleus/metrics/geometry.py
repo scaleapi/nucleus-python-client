@@ -146,20 +146,20 @@ def area(box):
     return (box[2] - box[0]) * (box[3] - box[1])
 
 
-def iou(boxA, boxB):
-    boxC = intersection(boxA, boxB)
-    return area(boxC) / (area(boxA) + area(boxB) - area(boxC))
+def iou(box_a, box_b):
+    box_c = intersection(box_a, box_b)
+    return area(box_c) / (area(box_a) + area(box_b) - area(box_c))
 
 
-def intersection(boxA, boxB):
+def intersection(box_a, box_b):
     """boxes are left, top, right, bottom where left < right and top < bottom"""
-    boxC = [
-        max(boxA[0], boxB[0]),
-        max(boxA[1], boxB[1]),
-        min(boxA[2], boxB[2]),
-        min(boxA[3], boxB[3]),
+    box_c = [
+        max(box_a[0], box_b[0]),
+        max(box_a[1], box_b[1]),
+        min(box_a[2], box_b[2]),
+        min(box_a[3], box_b[3]),
     ]
-    return boxC
+    return box_c
 
 
 def rectangle_intersection_area(
