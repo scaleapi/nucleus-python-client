@@ -185,13 +185,18 @@ class DeployClient:
 
     # Relatively small wrappers around http requests
 
-    def list_bundles(self) -> List[ModelBundle]:
+    def list_model_bundles(self) -> List[ModelBundle]:
         """
         Returns a list of model bundles that the user owns.
-        TODO this route doesn't exist serverside
+
+        Returns:
+            A list of ModelBundle objects
         """
-        # resp = self.connection.get("model_bundle")
-        raise NotImplementedError
+        resp = self.connection.get("model_bundle")
+        model_bundles = [
+            ModelBundle(name=item["bundle_name"]) for item in resp
+        ]
+        return model_bundles
 
     def list_model_endpoints(self) -> List[AsyncModelEndpoint]:
         """
