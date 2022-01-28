@@ -320,6 +320,10 @@ def test_dataset_append_async(dataset: Dataset):
         "total_steps": 5,
     }
 
+    # test get_job reconstruction
+    fetched_job = dataset._client.get_job(job.job_id)
+    assert fetched_job.status() == status
+
 
 def test_dataset_append_async_with_local_path(dataset: Dataset):
     ds_items = make_dataset_items()
