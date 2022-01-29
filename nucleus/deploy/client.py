@@ -175,9 +175,9 @@ class DeployClient:
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
         resp = self.connection.post(payload, ENDPOINT_PATH)
-        endpoint_creation_task_id = resp[
-            "endpoint_id"
-        ]  # Serverside needs updating
+        endpoint_creation_task_id = resp.get(
+            "endpoint_creation_task_id", None
+        )  # TODO probably throw on None
         logger.info(
             "Endpoint creation task id is %s", endpoint_creation_task_id
         )
