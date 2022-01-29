@@ -194,7 +194,7 @@ class DeployClient:
         """
         resp = self.connection.get("model_bundle")
         model_bundles = [
-            ModelBundle(name=item["bundle_name"]) for item in resp
+            ModelBundle(name=item["bundle_name"]) for item in resp["bundles"]
         ]
         return model_bundles
 
@@ -209,7 +209,7 @@ class DeployClient:
         resp = self.connection.get(ENDPOINT_PATH)
         return [
             AsyncModelEndpoint(endpoint_id=endpoint_id, client=self)
-            for endpoint_id in resp
+            for endpoint_id in resp["endpoints"]
         ]
 
     def sync_request(self, endpoint_id: str, url: str) -> str:
