@@ -2,6 +2,7 @@ import os
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
+from nucleus.metadata_handler import MetadataManager
 
 from nucleus.job import AsyncJob
 from nucleus.prediction import (
@@ -1372,3 +1373,6 @@ class Dataset:
 
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)
+
+    def metadata_manager(self):
+        return MetadataManager(self.id, self._client)
