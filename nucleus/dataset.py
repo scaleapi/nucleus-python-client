@@ -953,6 +953,24 @@ class Dataset:
             requests_command=requests.post,
         )
 
+    def delete_taxonomy(
+        self,
+        taxonomy_name: str,
+    ):
+        """Deletes the given taxonomy.
+
+        Parameters:
+            taxonomy_name: The name of the taxonomy.
+
+        Returns:
+            Returns a response with dataset_id, taxonomy_name and status of the delete taxonomy operation.
+        """
+        return self._client.make_request(
+            {},
+            f"dataset/{self.id}/taxonomy/{taxonomy_name}/delete_taxonomy",
+            requests.delete,
+        )
+
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
