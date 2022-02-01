@@ -31,6 +31,7 @@ Sections
    :maxdepth: 4
 
    api/nucleus/index
+   api/nucleus/metrics/index
    api/nucleus/modelci/index
 
 

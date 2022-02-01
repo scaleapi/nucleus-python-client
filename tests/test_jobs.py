@@ -23,8 +23,15 @@ def test_reprs():
     )
 
 
-def test_job_creation_and_listing(CLIENT):
+def test_job_creation_and_listing_and_retrieval(CLIENT):
     jobs = CLIENT.list_jobs()
+
+    if not jobs:
+        return
 
     for job in jobs:
         assert eval(str(job)) == job
+
+    fetch_id = jobs[0].job_id
+    fetched_job = CLIENT.get_job(fetch_id)
+    assert fetched_job.status() == jobs[0].status()

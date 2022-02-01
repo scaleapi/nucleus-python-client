@@ -50,6 +50,7 @@ from .constants import (
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
+from .data_transfer_object.scenes_list import ScenesList, ScenesListEntry
 from .dataset_item import (
     DatasetItem,
     check_all_paths_remote,
@@ -140,7 +141,7 @@ class Dataset:
         return response
 
     @property
-    def model_runs(self) -> Dict[Any, Any]:
+    def model_runs(self) -> List[str]:
         """List of all model runs associated with the Dataset."""
         # TODO: model_runs -> models
         response = self._client.make_request(
@@ -149,7 +150,7 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> Dict[Any, Any]:
+    def slices(self) -> List[str]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
@@ -184,6 +185,16 @@ class Dataset:
         elif error:
             raise DatasetItemRetrievalError(message=error)
         return constructed_dataset_items
+
+    @property
+    def scenes(self) -> List[ScenesListEntry]:
+        """List of ID, reference ID, type, and metadata for all scenes in the Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/scenes_list", requests.get
+        )
+
+        scenes_list = ScenesList.parse_obj(response)
+        return scenes_list.scenes
 
     @sanitize_string_args
     def autotag_items(self, autotag_name, for_scores_greater_than=0):
@@ -728,6 +739,18 @@ class Dataset:
             f"dataset/{self.id}/refloc/{reference_id}",
             requests.delete,
         )
+
+    @sanitize_string_args
+    def delete_scene(self, reference_id: str):
+        """Deletes a Scene associated with the Dataset
+
+        All items, annotations and predictions associated with the scene will be
+        deleted as well.
+
+        Parameters:
+            reference_id: The user-defined reference ID of the item to delete.
+        """
+        self._client.delete(f"dataset/{self.id}/scene/{reference_id}")
 
     def list_autotags(self):
         """Fetches all autotags of the dataset.

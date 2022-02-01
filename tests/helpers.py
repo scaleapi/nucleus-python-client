@@ -1,3 +1,4 @@
+import math
 import os
 import uuid
 from pathlib import Path
@@ -132,6 +133,24 @@ TEST_POLYGON_ANNOTATIONS = [
                 {
                     "x": 50 + i * 10 + j,
                     "y": 60 + i * 10 + j,
+                }
+                for j in range(3)
+            ],
+        },
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_CONVEX_POLYGON_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Polygon Annotation ${i}",
+        "geometry": {
+            "vertices": [
+                {
+                    "x": 50 + i * 10 + math.cos(2 * j * math.pi / 3),
+                    "y": 60 + i * 10 + math.sin(2 * j * math.pi / 3),
                 }
                 for j in range(3)
             ],

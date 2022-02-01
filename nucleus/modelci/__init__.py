@@ -3,6 +3,7 @@
 __all__ = [
     "ModelCI",
     "UnitTest",
+    "EvaluationCriterion",
 ]
 
 from .client import ModelCI
