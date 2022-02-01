@@ -12,7 +12,11 @@ def test_perfect_match_f1_score():
         CategoryAnnotation.from_json(p) for p in TEST_CATEGORY_ANNOTATIONS
     ]
     predictions = [
-        CategoryPrediction(label=ann.label, reference_id=ann.reference_id)
+        CategoryPrediction(
+            label=ann.label,
+            reference_id=ann.reference_id,
+            taxonomy_name=ann.taxonomy_name,
+        )
         for ann in annotations
     ]
     metric = CategorizationF1()
@@ -35,7 +39,11 @@ def test_no_match_f1_score():
         CategoryAnnotation.from_json(p) for p in TEST_CATEGORY_ANNOTATIONS
     ]
     predictions = [
-        CategoryPrediction(label="sth_else", reference_id=ann.reference_id)
+        CategoryPrediction(
+            label="sth_else",
+            reference_id=ann.reference_id,
+            taxonomy_name=ann.taxonomy_name,
+        )
         for ann in annotations
     ]
     metric = CategorizationF1()
@@ -90,7 +98,12 @@ def test_simple_macro_f1():
     metric = CategorizationF1()
     results = []
     for ann, pred in zip(annotations, predictions):
-        results.append(metric.eval([ann], [pred]))
+        results.append(
+            metric(
+                AnnotationList(category_annotations=[ann]),
+                PredictionList(category_predictions=[pred]),
+            )
+        )
 
     aggregate_result = metric.aggregate_score(results)
     assert aggregate_result.value == macro_f1
