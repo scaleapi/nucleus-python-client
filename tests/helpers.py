@@ -47,7 +47,7 @@ TEST_LIDAR_SCENES = {
                     "lidar": {
                         "pointcloud_url": TEST_POINTCLOUD_URLS[0],
                         "reference_id": "lidar_frame_1",
-                        "metadata": {},
+                        "metadata": {'frame': 1},
                     },
                     "camera": {
                         "image_url": TEST_IMG_URLS[0],
@@ -73,11 +73,11 @@ TEST_LIDAR_SCENES = {
                     "lidar": {
                         "pointcloud_url": TEST_POINTCLOUD_URLS[0],
                         "reference_id": "lidar_frame_2",
-                        "metadata": {},
+                        "metadata": {'frame': 2},
                     },
                 },
             ],
-            "metadata": {},
+            "metadata": {"meta_int": 123, "meta_str": "foo"},
         },
     ],
     "update": False,
