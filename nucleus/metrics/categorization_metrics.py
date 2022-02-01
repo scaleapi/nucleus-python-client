@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Set, Union
 
 from sklearn.metrics import f1_score
 
@@ -12,15 +12,34 @@ from nucleus.prediction import CategoryPrediction, PredictionList
 F1_METHODS = {"micro", "macro", "samples", "weighted", "binary"}
 
 
+def to_taxonomy_labels(
+    anns_or_preds: Union[List[CategoryAnnotation], List[CategoryPrediction]]
+) -> Set[str]:
+    """ Transforms annotation or prediction lists to taxonomy labels by joining them with a seperator (->)"""
+    labels = set()
+    for item in anns_or_preds:
+        taxonomy_label = (
+            f"{item.taxonomy_name}->{item.label}"
+            if item.taxonomy_name
+            else item.label
+        )
+        labels.add(taxonomy_label)
+    return labels
+
+
 @dataclass
 class CategorizationResult(MetricResult):
-    annotation: CategoryAnnotation
-    prediction: CategoryPrediction
+    annotations: List[CategoryAnnotation]
+    predictions: List[CategoryPrediction]
 
     @property
     def value(self):
-        # TODO: Change task.py interface such that we can return labels
-        return 1 if self.annotation.label == self.prediction.label else 0
+        annotation_labels = to_taxonomy_labels(self.annotations)
+        prediction_labels = to_taxonomy_labels(self.predictions)
+
+        # TODO: Change task.py interface such that we can return label matching
+        # NOTE: Returning 1 if all taxonomy labels match else 0
+        return 1 if annotation_labels.difference(prediction_labels) == 0 else 0
 
 
 class CategorizationMetric(Metric):
@@ -58,7 +77,7 @@ class CategorizationMetric(Metric):
         pass
 
     @abstractmethod
-    def aggregate(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
+    def aggregate_score(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
         pass
 
     def __call__(
@@ -76,7 +95,7 @@ class CategorizationMetric(Metric):
         return result
 
 
-class CategorizationF1Metric(CategorizationMetric):
+class CategorizationF1(CategorizationMetric):
     """Evaluation method that matches categories and returns a CategorizationF1Result that aggregates to the F1 score"""
 
     def __init__(
@@ -121,23 +140,19 @@ class CategorizationF1Metric(CategorizationMetric):
         annotations: List[CategoryAnnotation],
         predictions: List[CategoryPrediction],
     ) -> CategorizationResult:
-        # TODO(gunnar): Match taxonomy names!
-        assert (
-            len(annotations) == 1
-        ), f"Expected only one annotation, got {annotations}"
-        assert (
-            len(predictions) == 1
-        ), f"Expected only one prediction, got {predictions}"
+        """
+        Notes: This is a little weird eval function. It essentially only does matching of annotation to label and
+        the actual metric computation happens in the aggregate step since F1 score only makes sense on a collection.
+        """
         return CategorizationResult(
-            annotation=annotations[0], prediction=predictions[0]
+            annotations=annotations, predictions=predictions
         )
 
-    def aggregate(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
+    def aggregate_score(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
         gt = []
         predicted = []
         for result in results:
-            gt.append(result.annotation.label)
-            predicted.append(result.prediction.label)
-        # TODO(gunnar): Support choice of averaging method
+            gt.extend(list(to_taxonomy_labels(result.annotations)))
+            predicted.extend(list(to_taxonomy_labels(result.predictions)))
         value = f1_score(gt, predicted, average=self.f1_method)
         return ScalarResult(value)

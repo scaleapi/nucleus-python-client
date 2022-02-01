@@ -83,7 +83,7 @@ class PolygonMetric(Metric):
         # Main evaluation function that subclasses must override.
         pass
 
-    def aggregate(self, results: List[ScalarResult]) -> ScalarResult:  # type: ignore[override]
+    def aggregate_score(self, results: List[ScalarResult]) -> ScalarResult:  # type: ignore[override]
         return ScalarResult.aggregate(results)
 
     def __call__(

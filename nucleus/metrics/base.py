@@ -93,5 +93,5 @@ class Metric(ABC):
         """A metric must override this method and return a metric result, given annotations and predictions."""
 
     @abstractmethod
-    def aggregate(self, results: List[MetricResult]) -> ScalarResult:
-        """A metric must define how to aggregate results from single items to a single threshold."""
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        """A metric must define how to aggregate results from single items to a single ScalarResult."""

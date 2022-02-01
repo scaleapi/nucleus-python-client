@@ -2,7 +2,7 @@ from sklearn.metrics import f1_score
 
 from nucleus import CategoryAnnotation, CategoryPrediction
 from nucleus.annotation import AnnotationList
-from nucleus.metrics.categorization_metrics import CategorizationF1Metric
+from nucleus.metrics.categorization_metrics import CategorizationF1
 from nucleus.prediction import PredictionList
 from tests.helpers import TEST_CATEGORY_ANNOTATIONS
 
@@ -15,7 +15,7 @@ def test_perfect_match_f1_score():
         CategoryPrediction(label=ann.label, reference_id=ann.reference_id)
         for ann in annotations
     ]
-    metric = CategorizationF1Metric()
+    metric = CategorizationF1()
     results = []
     for ann, pred in zip(annotations, predictions):
         results.append(
@@ -26,7 +26,7 @@ def test_perfect_match_f1_score():
         )
 
     assert results
-    aggregate_result = metric.aggregate(results)
+    aggregate_result = metric.aggregate_score(results)
     assert aggregate_result.value == 1
 
 
@@ -38,7 +38,7 @@ def test_no_match_f1_score():
         CategoryPrediction(label="sth_else", reference_id=ann.reference_id)
         for ann in annotations
     ]
-    metric = CategorizationF1Metric()
+    metric = CategorizationF1()
     results = []
     for ann, pred in zip(annotations, predictions):
         results.append(
@@ -49,7 +49,7 @@ def test_no_match_f1_score():
         )
 
     assert results
-    aggregate_result = metric.aggregate(results)
+    aggregate_result = metric.aggregate_score(results)
     assert aggregate_result.value == 0
 
 
@@ -87,10 +87,10 @@ def test_simple_macro_f1():
         CategoryPrediction(label=pr[i], reference_id=f"id_{i}")
         for i in range(len(pr))
     ]
-    metric = CategorizationF1Metric()
+    metric = CategorizationF1()
     results = []
     for ann, pred in zip(annotations, predictions):
         results.append(metric.eval([ann], [pred]))
 
-    aggregate_result = metric.aggregate(results)
+    aggregate_result = metric.aggregate_score(results)
     assert aggregate_result.value == macro_f1
