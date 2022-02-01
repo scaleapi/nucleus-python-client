@@ -2,7 +2,7 @@ import os
 from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
-from nucleus.metadata_handler import MetadataManager
+from nucleus.metadata_manager import MetadataManager
 
 from nucleus.job import AsyncJob
 from nucleus.prediction import (

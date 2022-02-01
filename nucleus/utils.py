@@ -4,7 +4,7 @@ import io
 import json
 import uuid
 from collections import defaultdict
-from typing import IO, Dict, List, Sequence, Type, Union
+from typing import Any, IO, Dict, List, Optional, Sequence, Type, Union
 
 import requests
 from requests.models import HTTPError
@@ -46,6 +46,9 @@ STRING_REPLACEMENTS = {
     "\\\\t": "\t",
     '\\\\"': '"',
 }
+
+ListOrStringOrNone = Optional[Union[List[Any], str, None]]
+
 
 
 class KeyErrorDict(dict):
@@ -277,3 +280,11 @@ def replace_double_slashes(s: str) -> str:
     for key, val in STRING_REPLACEMENTS.items():
         s = s.replace(key, val)
     return s
+
+
+def enforce_list(items: ListOrStringOrNone):
+    if items is None:
+        return []
+    if isinstance(items, str):
+        return [items]
+    return items

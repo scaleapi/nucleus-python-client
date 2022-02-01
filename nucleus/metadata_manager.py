@@ -1,16 +1,17 @@
 from copy import deepcopy
 from enum import Enum
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import List, TYPE_CHECKING, Union
 
 import requests
 
 from nucleus.pydantic_base import DictCompatibleModel
+from .utils import ListOrStringOrNone, enforce_list
 
 if TYPE_CHECKING:
     from . import NucleusClient
 
 
-
+# Wording set to match with backend enum
 class ExportMetadataType(Enum):
     SCENES = "scene"
     DATASET_ITEMS = "item"
@@ -53,24 +54,14 @@ class SceneMetadata(DictCompatibleModel):
 
 
 SceneOrItemMetadataList = Union[List[SceneMetadata], List[DatasetItemMetadata]]
-ListOrString = Optional[Union[List[str], str]]
-
 
 def validate_scene_items(new_items: SceneOrItemMetadataList, old_items_map: dict):
-    # If user deletes a key, and does not set overwrite=True, throw error
+    # If user deletes a key, print warning message
     for item in new_items:
         same_keys(item.metadata, old_items_map[item.reference_id])
         if isinstance(item, SceneMetadata):
             for dataset_item in item.dataset_items:
                 same_keys(dataset_item.metadata, old_items_map[dataset_item.reference_id])
-
-
-def enforce_list(items: ListOrString):
-    if items is None:
-        return []
-    if isinstance(items, str):
-        return [items]
-    return items
 
 
 class MetadataManager:
@@ -90,24 +81,24 @@ class MetadataManager:
                 for dataset_item in item.dataset_items:
                     self._raw_items_flat_map[dataset_item.reference_id] = dataset_item.metadata
 
-    def load_scenes(self, scene_ref_ids: ListOrString = None, with_items: bool = False) -> List[SceneMetadata]:
+    def load_scenes(self, scene_ref_ids: ListOrStringOrNone, with_items: bool = False) -> List[SceneMetadata]:
         scene_ref_ids = enforce_list(scene_ref_ids)
 
-        payload = {'ref_ids': scene_ref_ids, 'with_items': with_items}
+        payload = {"ref_ids": scene_ref_ids, "with_items": with_items}
         resp = self._client.make_request(
             payload=payload,
             requests_command=requests.get,
             route=f"dataset/{self.dataset_id}/metadata_by_level/{ExportMetadataType.SCENES.value}",
         )
-        print(resp)
+
         scene_items = [SceneMetadata.parse_obj(resp_item) for resp_item in resp["scenes_metadata"]]
         self._populate_flat_map(scene_items)
         return scene_items
 
-    def load_dataset_items(self, item_ref_ids: ListOrString) -> List[DatasetItemMetadata]:
+    def load_dataset_items(self, item_ref_ids: ListOrStringOrNone) -> List[DatasetItemMetadata]:
         item_ref_ids = enforce_list(item_ref_ids)
 
-        payload = {'ref_ids': item_ref_ids}
+        payload = {"ref_ids": item_ref_ids}
         resp = self._client.make_request(
             payload=payload,
             requests_command=requests.get,
@@ -130,6 +121,4 @@ class MetadataManager:
         resp = self._client.make_request(payload=payload, route=f"dataset/{self.dataset_id}/metadata")
         return resp
 
-    def update_raw(self, from_dict: dict = None, from_json: str = None, overwrite: bool = False):
-        raise NotImplementedError
 
