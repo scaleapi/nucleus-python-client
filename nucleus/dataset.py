@@ -982,6 +982,8 @@ class Dataset:
     ):
         """Deletes the given taxonomy.
 
+        All annotations and predictions associated with the taxonomy will be deleted as well.
+
         Parameters:
             taxonomy_name: The name of the taxonomy.
 
