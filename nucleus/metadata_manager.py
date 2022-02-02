@@ -65,6 +65,7 @@ class MetadataManager:
         >>> # update the metadata fields as desired in the items object
         >>> mm.update(items)
     """
+
     def __init__(self, dataset_id: str, client: "NucleusClient"):
         self.dataset_id = dataset_id
         self._client = client

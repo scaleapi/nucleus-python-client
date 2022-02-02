@@ -133,9 +133,7 @@ def test_update_invalid_mixed_list(dataset_scene: Dataset):
     sceneItem = SceneMetadata(
         reference_id="a", metadata={"a": 1}, dataset_items=[]
     )
-    listItem = DatasetItemMetadata(
-        reference_id="a", metadata={"a": 1}
-    )
+    listItem = DatasetItemMetadata(reference_id="a", metadata={"a": 1})
 
     with pytest.raises(AssertionError):
         mm.update([sceneItem, listItem])

@@ -50,7 +50,6 @@ STRING_REPLACEMENTS = {
 ListOrStringOrNone = Optional[Union[List[Any], str, None]]
 
 
-
 class KeyErrorDict(dict):
     """Wrapper for response dicts with deprecated keys.
 
