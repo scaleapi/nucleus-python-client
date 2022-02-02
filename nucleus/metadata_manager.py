@@ -116,8 +116,10 @@ class MetadataManager:
             items = [items]
 
         dict_items = [item.to_dict() for item in items]
-        is_scene = isinstance(items[0], SceneMetadata)
-        payload = {"metadata": dict_items, "is_scene": is_scene}
+        level = ExportMetadataType.DATASET_ITEMS.value
+        if isinstance(items[0], SceneMetadata):
+            level = ExportMetadataType.SCENES.value
+        payload = {"metadata": dict_items, "level": level}
         resp = self._client.make_request(payload=payload, route=f"dataset/{self.dataset_id}/metadata")
         return resp
 
