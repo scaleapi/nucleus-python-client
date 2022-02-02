@@ -54,6 +54,17 @@ SceneOrItemMetadataList = Union[List[SceneMetadata], List[DatasetItemMetadata]]
 
 
 class MetadataManager:
+    """
+    Helper class for managing metadata updates on a scene or dataset item.
+    Please note, only updating of existing keys, or adding new keys is allowed at the moment.
+    It does not support metadata deletion.
+
+    Examples:
+        >>> mm = dataset.metadata_manager()
+        >>> items = mm.load_scenes('scene_1', with_items=True)
+        >>> # update the metadata fields as desired in the items object
+        >>> mm.update(items)
+    """
     def __init__(self, dataset_id: str, client: "NucleusClient"):
         self.dataset_id = dataset_id
         self._client = client
@@ -71,7 +82,7 @@ class MetadataManager:
                         dataset_item.reference_id
                     ] = dataset_item.metadata
 
-    def validate_scene_items(self, new_items: SceneOrItemMetadataList):
+    def _validate_scene_items(self, new_items: SceneOrItemMetadataList):
         # assert that all items are of the same type
         assert all(
             isinstance(item, SceneMetadata) for item in new_items
@@ -94,6 +105,14 @@ class MetadataManager:
     def load_scenes(
         self, scene_ref_ids: ListOrStringOrNone, with_items: bool = False
     ) -> List[SceneMetadata]:
+        """
+        Load scene metadata for all scenes with the given reference ids.
+        Args:
+            scene_ref_ids: Which scenes to fetch
+            with_items: If True, fetch all items belonging to this scene as well (note: can be slow on large scenes)
+
+        Returns: A list of SceneMetadata objects
+        """
         scene_ref_ids = enforce_list(scene_ref_ids)
 
         payload = {"ref_ids": scene_ref_ids, "with_items": with_items}
@@ -113,6 +132,14 @@ class MetadataManager:
     def load_dataset_items(
         self, item_ref_ids: ListOrStringOrNone
     ) -> List[DatasetItemMetadata]:
+        """
+        Load metadata for all dataset items with the given reference ids.
+
+        Args:
+            item_ref_ids: Which dataset items to fetch
+
+        Returns: A list of DatasetItemMetadata objects
+        """
         item_ref_ids = enforce_list(item_ref_ids)
 
         payload = {"ref_ids": item_ref_ids}
@@ -129,8 +156,19 @@ class MetadataManager:
         return dataset_items
 
     def update(self, items: SceneOrItemMetadataList):
+        """
+        Apply the metadata changes to the backend.
+
+        Args:
+            items: List of DatasetItemMetadata or SceneMetadata
+
+        Raises:
+            AssertionError: if items has mixed objects
+
+        Returns: message string describing whether the update was successful or not
+        """
         # TODO(Jean): Support overwrite/replace in the future
-        self.validate_scene_items(items)
+        self._validate_scene_items(items)
 
         if isinstance(items, (SceneMetadata, DatasetItemMetadata)):
             items = [items]
