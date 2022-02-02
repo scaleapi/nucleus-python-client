@@ -2,10 +2,12 @@ from copy import deepcopy
 from typing import List
 
 import pytest
+from nucleus.metadata_manager import DatasetItemMetadata, SceneMetadata
 
 from nucleus import Dataset, LidarScene
 from nucleus.constants import (
-    FRAMES_KEY, SCENES_KEY,
+    FRAMES_KEY,
+    SCENES_KEY,
     UPDATE_KEY,
 )
 from nucleus.data_transfer_object.scenes_list import ScenesListEntry
@@ -44,7 +46,9 @@ def uploaded_scenes(dataset_scene):
     yield uploaded_scenes
 
 
-def test_fetch_scene_metadata(dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]):
+def test_fetch_scene_metadata(
+    dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]
+):
     mm = dataset_scene.metadata_manager()
     assert len(uploaded_scenes) == 1
     scene_meta = mm.load_scenes(uploaded_scenes[0].reference_id)
@@ -54,7 +58,9 @@ def test_fetch_scene_metadata(dataset_scene: Dataset, uploaded_scenes: List[Scen
     assert scene_meta[0].metadata == uploaded_scenes[0].metadata
 
 
-def test_fetch_scene_metadata_with_item(dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]):
+def test_fetch_scene_metadata_with_item(
+    dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]
+):
     mm = dataset_scene.metadata_manager()
     assert len(uploaded_scenes) == 1
     scene_meta = mm.load_scenes(uploaded_scenes[0].reference_id, True)
@@ -67,15 +73,21 @@ def test_fetch_scene_metadata_with_item(dataset_scene: Dataset, uploaded_scenes:
         assert item.metadata == EXPECTED_DATASET_ITEMS_META[item.reference_id]
 
 
-def test_fetch_dataset_items(dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]):
+def test_fetch_dataset_items(
+    dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]
+):
     mm = dataset_scene.metadata_manager()
-    items_meta = mm.load_dataset_items(list(EXPECTED_DATASET_ITEMS_META.keys()))
+    items_meta = mm.load_dataset_items(
+        list(EXPECTED_DATASET_ITEMS_META.keys())
+    )
     assert len(items_meta) == len(EXPECTED_DATASET_ITEMS_META.keys())
     for item in items_meta:
         assert item.metadata == EXPECTED_DATASET_ITEMS_META[item.reference_id]
 
 
-def test_update_scene_metadata(dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]):
+def test_update_scene_metadata(
+    dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]
+):
     mm = dataset_scene.metadata_manager()
     scene_meta = mm.load_scenes(uploaded_scenes[0].reference_id, False)
 
@@ -85,13 +97,21 @@ def test_update_scene_metadata(dataset_scene: Dataset, uploaded_scenes: List[Sce
     mm.update(scene_meta)
 
     updated_scene_meta = mm.load_scenes(uploaded_scenes[0].reference_id, False)
-    expected_scene_metadata = {"new_meta_field": "123", "meta_int": 123, "meta_str": "foo"}
+    expected_scene_metadata = {
+        "new_meta_field": "123",
+        "meta_int": 123,
+        "meta_str": "foo",
+    }
     assert updated_scene_meta[0].metadata == expected_scene_metadata
 
 
-def test_update_items_metadata(dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]):
+def test_update_items_metadata(
+    dataset_scene: Dataset, uploaded_scenes: List[ScenesListEntry]
+):
     mm = dataset_scene.metadata_manager()
-    items_meta = mm.load_dataset_items(list(EXPECTED_DATASET_ITEMS_META.keys()))
+    items_meta = mm.load_dataset_items(
+        list(EXPECTED_DATASET_ITEMS_META.keys())
+    )
 
     expected_updated_items = {}
     for i, item in enumerate(items_meta):
@@ -101,9 +121,21 @@ def test_update_items_metadata(dataset_scene: Dataset, uploaded_scenes: List[Sce
 
     mm.update(items_meta)
 
-    updated_items = mm.load_dataset_items(list(EXPECTED_DATASET_ITEMS_META.keys()))
-
-    updated_items_meta = [item.metadata for item in updated_items]
+    updated_items = mm.load_dataset_items(
+        list(EXPECTED_DATASET_ITEMS_META.keys())
+    )
     for item in updated_items:
         assert item.metadata == expected_updated_items[item.reference_id]
 
+
+def test_update_invalid_mixed_list(dataset_scene: Dataset):
+    mm = dataset_scene.metadata_manager()
+    sceneItem = SceneMetadata(
+        reference_id="a", metadata={"a": 1}, dataset_items=[]
+    )
+    listItem = DatasetItemMetadata(
+        reference_id="a", metadata={"a": 1}
+    )
+
+    with pytest.raises(AssertionError):
+        mm.update([sceneItem, listItem])
