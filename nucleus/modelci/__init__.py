@@ -2,7 +2,7 @@
 
 __all__ = [
     "ModelCI",
-    "UnitTest",
+    "ScenarioTest",
     "EvaluationCriterion",
 ]
 
@@ -13,9 +13,12 @@ from .data_transfer_objects.eval_function import (
     EvaluationCriterion,
     GetEvalFunctions,
 )
-from .data_transfer_objects.unit_test import CreateUnitTestRequest
-from .errors import CreateUnitTestError
+from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
+from .errors import CreateScenarioTestError
 from .eval_functions.available_eval_functions import AvailableEvalFunctions
-from .unit_test import UnitTest
-from .unit_test_evaluation import UnitTestEvaluation, UnitTestItemEvaluation
-from .unit_test_metric import UnitTestMetric
+from .scenario_test import ScenarioTest
+from .scenario_test_evaluation import (
+    ScenarioTestEvaluation,
+    ScenarioTestItemEvaluation,
+)
+from .scenario_test_metric import ScenarioTestMetric
