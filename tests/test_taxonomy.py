@@ -71,4 +71,4 @@ def test_delete_taxonomy(dataset):
 
     assert response["dataset_id"] == dataset.id
     assert response["taxonomy_name"] == "[Pytest] taxonomy"
-    assert response["status"] == "Taxonomy deleted"
+    assert response["status"] == "Taxonomy successfully deleted"

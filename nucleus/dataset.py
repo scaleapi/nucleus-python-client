@@ -992,7 +992,7 @@ class Dataset:
         """
         return self._client.make_request(
             {},
-            f"dataset/{self.id}/taxonomy/{taxonomy_name}/delete_taxonomy",
+            f"dataset/{self.id}/taxonomy/{taxonomy_name}",
             requests.delete,
         )
 
