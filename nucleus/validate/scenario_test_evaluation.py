@@ -7,7 +7,7 @@ import requests
 
 from nucleus.connection import Connection
 from nucleus.constants import DATASET_ITEM_ID_KEY, MODEL_ID_KEY, STATUS_KEY
-from nucleus.modelci.constants import (
+from nucleus.validate.constants import (
     EVAL_FUNCTION_ID_KEY,
     EVALUATION_ID_KEY,
     PASS_KEY,
@@ -85,7 +85,7 @@ class ScenarioTestEvaluation:
         #  endpoint should rather return the necessary human-readable information
         response = connection.make_request(
             {},
-            f"modelci/eval/{self.id}/info",
+            f"validate/eval/{self.id}/info",
             requests_command=requests.get,
         )
         eval_response = response[SCENARIO_TEST_EVAL_KEY]

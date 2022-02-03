@@ -1,7 +1,7 @@
 import pytest
 
-from nucleus.modelci import CreateScenarioTestError
-from nucleus.modelci.scenario_test import ScenarioTest
+from nucleus.validate import CreateScenarioTestError
+from nucleus.validate.scenario_test import ScenarioTest
 from tests.helpers import (
     EVAL_FUNCTION_COMPARISON,
     EVAL_FUNCTION_THRESHOLD,
@@ -11,7 +11,7 @@ from tests.helpers import (
 
 def test_scenario_test_metric_creation(CLIENT, annotations, scenario_test):
     # create some dataset_items for the scenario test to reference
-    iou = CLIENT.modelci.eval_functions.bbox_iou
+    iou = CLIENT.validate.eval_functions.bbox_iou
     scenario_test_metric = scenario_test.add_criterion(
         iou() > EVAL_FUNCTION_THRESHOLD
     )
@@ -30,30 +30,30 @@ def test_scenario_test_metric_creation(CLIENT, annotations, scenario_test):
 def test_list_scenario_test(CLIENT, test_slice, annotations):
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
 
-    e = CLIENT.modelci.eval_functions
-    scenario_test = CLIENT.modelci.create_scenario_test(
+    e = CLIENT.validate.eval_functions
+    scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
         evaluation_criteria=[e.bbox_iou() > 0.5],
     )
 
-    scenario_tests = CLIENT.modelci.list_scenario_tests()
+    scenario_tests = CLIENT.validate.list_scenario_tests()
     assert all(
         isinstance(scenario_test, ScenarioTest)
         for scenario_test in scenario_tests
     )
     assert scenario_test in scenario_tests
 
-    CLIENT.modelci.delete_scenario_test(scenario_test.id)
+    CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 
 def test_scenario_test_items(CLIENT, test_slice, slice_items, annotations):
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
 
-    scenario_test = CLIENT.modelci.create_scenario_test(
+    scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_iou() > 0.5],
+        evaluation_criteria=[CLIENT.validate.eval_functions.bbox_iou() > 0.5],
     )
 
     expected_items_locations = [item.image_location for item in slice_items]
@@ -61,13 +61,13 @@ def test_scenario_test_items(CLIENT, test_slice, slice_items, annotations):
         item.image_location for item in scenario_test.get_items()
     ]
     assert expected_items_locations == actual_items_locations
-    CLIENT.modelci.delete_scenario_test(scenario_test.id)
+    CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 
 def test_no_criteria_raises_error(CLIENT, test_slice, annotations):
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
     with pytest.raises(CreateScenarioTestError):
-        CLIENT.modelci.create_scenario_test(
+        CLIENT.validate.create_scenario_test(
             name=test_name,
             slice_id=test_slice.id,
             evaluation_criteria=[],

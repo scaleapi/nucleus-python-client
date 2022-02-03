@@ -1,12 +1,12 @@
 """Model CI Python Library."""
 
 __all__ = [
-    "ModelCI",
+    "Validate",
     "ScenarioTest",
     "EvaluationCriterion",
 ]
 
-from .client import ModelCI
+from .client import Validate
 from .constants import ThresholdComparison
 from .data_transfer_objects.eval_function import (
     EvalFunctionEntry,

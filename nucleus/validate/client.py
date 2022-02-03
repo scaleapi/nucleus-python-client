@@ -17,14 +17,14 @@ SUCCESS_KEY = "success"
 EVAL_FUNCTIONS_KEY = "eval_functions"
 
 
-class ModelCI:
+class Validate:
     """Model CI Python Client extension."""
 
     def __init__(self, api_key: str, endpoint: str):
         self.connection = Connection(api_key, endpoint)
 
     def __repr__(self):
-        return f"ModelCI(connection='{self.connection}')"
+        return f"Validate(connection='{self.connection}')"
 
     def __eq__(self, other):
         return self.connection == other.connection
@@ -36,13 +36,13 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            scenario_test_criterion = client.modelci.eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
+            scenario_test_criterion = client.validate.eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
         """
         response = self.connection.get(
-            "modelci/eval_fn",
+            "validate/eval_fn",
         )
         payload = GetEvalFunctions.parse_obj(response)
         return AvailableEvalFunctions(payload.eval_functions)
@@ -58,10 +58,10 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            scenario_test = client.modelci.create_scenario_test(
+            scenario_test = client.validate.create_scenario_test(
                 name="sample_scenario_test",
                 slice_id="YOUR_SLICE_ID",
-                evaluation_criteria=[client.modelci.eval_functions.bbox_iou() > 0.5]
+                evaluation_criteria=[client.validate.eval_functions.bbox_iou() > 0.5]
             )
 
         Args:
@@ -76,7 +76,7 @@ class ModelCI:
         if not evaluation_criteria:
             raise CreateScenarioTestError(
                 "Must pass an evaluation_criteria to the scenario test! I.e. "
-                "evaluation_criteria = [client.modelci.eval_functions.bbox_iou() > 0.5]"
+                "evaluation_criteria = [client.validate.eval_functions.bbox_iou() > 0.5]"
             )
         response = self.connection.post(
             CreateScenarioTestRequest(
@@ -84,7 +84,7 @@ class ModelCI:
                 slice_id=slice_id,
                 evaluation_criteria=evaluation_criteria,
             ).dict(),
-            "modelci/scenario_test",
+            "validate/scenario_test",
         )
         return ScenarioTest(response[SCENARIO_TEST_ID_KEY], self.connection)
 
@@ -93,17 +93,17 @@ class ModelCI:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.modelci.create_scenario_test(
+            scenario_test = client.validate.create_scenario_test(
                 "sample_scenario_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.modelci.list_scenario_tests()
+            client.validate.list_scenario_tests()
 
         Returns:
             A list of ScenarioTest objects.
         """
         response = self.connection.get(
-            "modelci/scenario_test",
+            "validate/scenario_test",
         )
         return [
             ScenarioTest(test_id, self.connection)
@@ -115,9 +115,9 @@ class ModelCI:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.modelci.list_scenario_tests()[0]
+            scenario_test = client.validate.list_scenario_tests()[0]
 
-            success = client.modelci.delete_scenario_test(scenario_test.id)
+            success = client.validate.delete_scenario_test(scenario_test.id)
 
         Args:
             scenario_test_id: unique ID of scenario test
@@ -126,7 +126,7 @@ class ModelCI:
             Whether deletion was successful.
         """
         response = self.connection.delete(
-            f"modelci/scenario_test/{scenario_test_id}",
+            f"validate/scenario_test/{scenario_test_id}",
         )
         return response[SUCCESS_KEY]
 
@@ -138,11 +138,11 @@ class ModelCI:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
-            scenario_test = client.modelci.create_scenario_test(
+            scenario_test = client.validate.create_scenario_test(
                 "sample_scenario_test", "slc_bx86ea222a6g057x4380"
             )
 
-            job = client.modelci.evaluate_model_on_scenario_tests(
+            job = client.validate.evaluate_model_on_scenario_tests(
                 model_id=model.id,
                 scenario_test_names=["sample_scenario_test"],
             )
@@ -157,6 +157,6 @@ class ModelCI:
         """
         response = self.connection.post(
             {"test_names": scenario_test_names},
-            f"modelci/{model_id}/evaluate",
+            f"validate/{model_id}/evaluate",
         )
         return AsyncJob.from_json(response, self.connection)

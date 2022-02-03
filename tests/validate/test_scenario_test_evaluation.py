@@ -1,24 +1,24 @@
 import pytest
 
 from nucleus.job import AsyncJob
-from nucleus.modelci.scenario_test_evaluation import (
+from nucleus.validate.scenario_test_evaluation import (
     ScenarioTestEvaluation,
     ScenarioTestItemEvaluation,
 )
 from tests.helpers import EVAL_FUNCTION_THRESHOLD, get_uuid
-from tests.modelci.helpers import create_predictions
+from tests.validate.helpers import create_predictions
 
 
 @pytest.mark.skip("Assigned slice has no 2D annotations")
 @pytest.mark.integration
 def test_scenario_test_evaluation(
-    CLIENT, modelci_dataset, model, scenario_test, annotations, predictions
+    CLIENT, validate_dataset, model, scenario_test, annotations, predictions
 ):
-    iou = CLIENT.modelci.eval_functions.bbox_iou
+    iou = CLIENT.validate.eval_functions.bbox_iou
     # NOTE: Another criterion is defined in the scenario_test fixture
     scenario_test.add_criterion(iou() > EVAL_FUNCTION_THRESHOLD)
 
-    job: AsyncJob = CLIENT.modelci.evaluate_model_on_scenario_tests(
+    job: AsyncJob = CLIENT.validate.evaluate_model_on_scenario_tests(
         model.id, [scenario_test.name]
     )
     job.sleep_until_complete()
@@ -61,7 +61,7 @@ def test_scenario_test_evaluation_no_prediction_for_last_item(
     # TODO(gunnar): Remove this slow integration tests after this is confirmed and tested on the evaluation side.
     #  there's no reason doing scenario testing for evaluation here.
     CLIENT,
-    modelci_dataset,
+    validate_dataset,
     scenario_test,
     annotations,
 ):
@@ -69,12 +69,12 @@ def test_scenario_test_evaluation_no_prediction_for_last_item(
     model = CLIENT.create_model(
         f"[Model CI Test] {uuid}", reference_id=f"model_ci_{uuid}"
     )
-    create_predictions(modelci_dataset, model, annotations[:-1])
-    iou = CLIENT.modelci.eval_functions.bbox_iou
+    create_predictions(validate_dataset, model, annotations[:-1])
+    iou = CLIENT.validate.eval_functions.bbox_iou
     # NOTE: Another criterion is defined in the scenario_test fixture
     scenario_test.add_criterion(iou() > EVAL_FUNCTION_THRESHOLD)
 
-    job: AsyncJob = CLIENT.modelci.evaluate_model_on_scenario_tests(
+    job: AsyncJob = CLIENT.validate.evaluate_model_on_scenario_tests(
         model.id, [scenario_test.name]
     )
     job.sleep_until_complete()

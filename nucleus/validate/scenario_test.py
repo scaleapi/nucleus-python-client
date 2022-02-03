@@ -39,7 +39,7 @@ class ScenarioTest:
 
     def __post_init__(self):
         response = self.connection.get(
-            f"modelci/scenario_test/{self.id}/info",
+            f"validate/scenario_test/{self.id}/info",
         )
         self.name = response[NAME_KEY]
         self.slice_id = response[SLICE_ID_KEY]
@@ -83,7 +83,7 @@ class ScenarioTest:
                 threshold=evaluation_criterion.threshold,
                 threshold_comparison=evaluation_criterion.threshold_comparison,
             ).dict(),
-            "modelci/scenario_test_metric",
+            "validate/scenario_test_metric",
         )
         return ScenarioTestMetric(
             scenario_test_id=response["scenario_test_id"],
@@ -105,7 +105,7 @@ class ScenarioTest:
             A list of ScenarioTestMetric objects.
         """
         response = self.connection.get(
-            f"modelci/scenario_test/{self.id}/metrics",
+            f"validate/scenario_test/{self.id}/metrics",
         )
         return [
             ScenarioTestMetric(**metric)
@@ -125,7 +125,7 @@ class ScenarioTest:
             A list of :class:`ScenarioTestEvaluation` objects.
         """
         response = self.connection.get(
-            f"modelci/scenario_test/{self.id}/eval_history",
+            f"validate/scenario_test/{self.id}/eval_history",
         )
         eval_history = GetEvalHistory.parse_obj(response)
         return [
@@ -135,7 +135,7 @@ class ScenarioTest:
 
     def get_items(self) -> List[DatasetItem]:
         response = self.connection.get(
-            f"modelci/scenario_test/{self.id}/items",
+            f"validate/scenario_test/{self.id}/items",
         )
         return [
             DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
