@@ -943,6 +943,8 @@ class NucleusClient:
         """
         if payload is None:
             payload = {}
+        if requests_command is requests.get:
+            payload = None
         return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
     def handle_bad_response(
