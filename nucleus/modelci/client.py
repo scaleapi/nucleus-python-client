@@ -88,6 +88,12 @@ class ModelCI:
         )
         return UnitTest(response[UNIT_TEST_ID_KEY], self.connection)
 
+    def get_unit_test(self, unit_test_id: str) -> UnitTest:
+        response = self.connection.get(
+            f"modelci/unit_test/{unit_test_id}",
+        )
+        return UnitTest(response["id"], self.connection)
+
     def list_unit_tests(self) -> List[UnitTest]:
         """Lists all Unit Tests of the current user. ::
 
