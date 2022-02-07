@@ -7,7 +7,6 @@ from nucleus.constants import (
     MESSAGE_KEY,
     STATUS_KEY,
 )
-from nucleus.job import AsyncJob
 
 from .helpers import (
     TEST_DATASET_NAME,
