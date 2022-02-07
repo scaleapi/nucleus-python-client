@@ -275,6 +275,22 @@ class NucleusClient:
         """
         return Dataset(dataset_id, self)
 
+    def get_job(self, job_id: str) -> AsyncJob:
+        """Fetches a dataset by its ID.
+
+        Parameters:
+            job_id: The ID of the dataset to fetch.
+
+        Returns:
+            :class:`AsyncJob`: The Nucleus async job as an object.
+        """
+        payload = self.make_request(
+            payload={},
+            route=f"job/{job_id}/info",
+            requests_command=requests.get,
+        )
+        return AsyncJob.from_json(payload=payload, client=self)
+
     def get_model(self, model_id: str) -> Model:
         """Fetches a model by its ID.
 
@@ -927,6 +943,8 @@ class NucleusClient:
         """
         if payload is None:
             payload = {}
+        if requests_command is requests.get:
+            payload = None
         return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
     def handle_bad_response(

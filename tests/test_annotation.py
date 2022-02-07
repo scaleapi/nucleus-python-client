@@ -768,6 +768,7 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     annotation = CategoryAnnotation.from_json(
         TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]
     )
+    error_msg = f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]} does not exist in dataset {dataset.id}, or label {annotation.label} does not exist in the taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]}.'
 
     try:
         job: AsyncJob = dataset.annotate(
@@ -778,18 +779,15 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
         )
         job.sleep_until_complete()
     except JobError:
-        assert (
-            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION[0]["taxonomy_name"]} does not exist in dataset {dataset.id}'
-            in job.errors()[-1]
-        )
+        assert error_msg in job.errors()[-1]
 
     assert job.status() == {
         "job_id": job.job_id,
         "status": "Errored",
         "message": {
-            "status_log": "No additional information can be provided at this time."
+            "final_error": f"BadRequestError: {error_msg}",
         },
-        "job_progress": "0.00",
-        "completed_steps": 0,
+        "job_progress": "1.00",
+        "completed_steps": 1,
         "total_steps": 1,
     }

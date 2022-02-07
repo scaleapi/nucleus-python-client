@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.6.1"
+version = "0.6.0"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -43,7 +43,6 @@ pydantic = "^1.8.2"
 isort = "^5.10.1"
 numpy = "^1.19.5"
 scipy = "^1.5.4"
-Shapely = "^1.8.0"
 click = "^8.0.3"
 rich = "^10.15.2"
 shellingham = "^1.4.0"

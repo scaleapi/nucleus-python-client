@@ -9,22 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Nucleus CLI interface `nu`. Installation instructions are in the `README.md`.
 
-## [0.5.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.1) - 2021-01-11
+## [0.5.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.4) - 2022-01-28
+
+### Added
+- Add `NucleusClient.get_job` to retrieve `AsyncJob`s by job ID
+
+## [0.5.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.3) - 2022-01-25
+
+### Added
+- Add average precision to polygon metrics
+- Add mean average precision to polygon metrics
+
+## [0.5.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.2) - 2022-01-20
+
+### Added
+- Add `Dataset.delete_scene`
+
+### Fixed
+- Removed `Shapely` dependency
+
+## [0.5.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.1) - 2022-01-11
 
 ### Fixed
 - Updated dependencies for full Python 3.6 compatibility
 
-## [0.5.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.0) - 2021-01-10
+## [0.5.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.0) - 2022-01-10
 
 ### Added
 - `nucleus.metrics` module for computing metrics between Nucleus `Annotation` and `Prediction` objects.
 
-## [0.4.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.5) - 2021-01-07
+## [0.4.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.5) - 2022-01-07
 
 ### Added
 - `Dataset.scenes` property that fetches the Scale-generated ID, reference ID, type, and metadata of all scenes in the Dataset.
 
-## [0.4.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.4) - 2021-01-04
+## [0.4.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.4) - 2022-01-04
 
 ### Added
 - `Slice.export_raw_items()` method that fetches accessible (signed) URLs for all items in the Slice.
