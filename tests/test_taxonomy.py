@@ -5,7 +5,7 @@ from .helpers import TEST_DATASET_NAME
 
 @pytest.fixture()
 def taxonomy_dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
 
     ds.add_taxonomy(
         "[Pytest] taxonomy",
@@ -62,3 +62,13 @@ def test_duplicate_taxonomy_update(taxonomy_dataset):
     assert response["dataset_id"] == taxonomy_dataset.id
     assert response["taxonomy_name"] == "[Pytest] taxonomy"
     assert response["status"] == "Taxonomy updated"
+
+
+def test_delete_taxonomy(dataset):
+    response = dataset.delete_taxonomy(
+        "[Pytest] taxonomy",
+    )
+
+    assert response["dataset_id"] == dataset.id
+    assert response["taxonomy_name"] == "[Pytest] taxonomy"
+    assert response["status"] == "Taxonomy successfully deleted"

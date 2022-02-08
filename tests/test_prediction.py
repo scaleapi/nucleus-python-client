@@ -594,10 +594,11 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
 
 
 @pytest.mark.integration
-def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
+def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     prediction = CategoryPrediction.from_json(
         TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
     )
+    error_msg = f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset {model_run.dataset_id}, or label {prediction.label} does not exist in the taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]}.'
     try:
         job: AsyncJob = model_run.predict(
             annotations=[
@@ -606,19 +607,17 @@ def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
             asynchronous=True,
         )
         job.sleep_until_complete()
+
     except JobError:
-        assert (
-            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
-            in job.errors()[-1]
-        )
+        assert error_msg in job.errors()[-1]
 
     assert job.status() == {
         "job_id": job.job_id,
         "status": "Errored",
         "message": {
-            "status_log": "No additional information can be provided at this time."
+            "final_error": f"BadRequestError: {error_msg}",
         },
-        "job_progress": "0.00",
-        "completed_steps": 0,
+        "job_progress": "1.00",
+        "completed_steps": 1,
         "total_steps": 1,
     }

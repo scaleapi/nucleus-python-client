@@ -67,8 +67,8 @@ class ModelCI:
         Args:
             name: unique name of test
             slice_id: id of (pre-defined) slice of items to evaluate test on.
-            evaluation_criteria: Pass/fail criteria for the test. Created with a comparison with an eval functions.
-                See :class:`eval_functions`.
+            evaluation_criteria: :class:`EvaluationCriterion` defines a pass/fail criteria for the test. Created with a
+                comparison with an eval functions. See :class:`eval_functions`.
 
         Returns:
             Created UnitTest object.
@@ -87,6 +87,12 @@ class ModelCI:
             "modelci/unit_test",
         )
         return UnitTest(response[UNIT_TEST_ID_KEY], self.connection)
+
+    def get_unit_test(self, unit_test_id: str) -> UnitTest:
+        response = self.connection.get(
+            f"modelci/unit_test/{unit_test_id}",
+        )
+        return UnitTest(response["id"], self.connection)
 
     def list_unit_tests(self) -> List[UnitTest]:
         """Lists all Unit Tests of the current user. ::
@@ -117,7 +123,7 @@ class ModelCI:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             unit_test = client.modelci.list_unit_tests()[0]
 
-            success = client.modelci.create_unit_test(unit_test.id)
+            success = client.modelci.delete_unit_test(unit_test.id)
 
         Args:
             unit_test_id: unique ID of unit test
