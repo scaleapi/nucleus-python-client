@@ -98,7 +98,7 @@ class ScenarioTest:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.modelci.list_scenario_tests()[0]
+            scenario_test = client.validate.list_scenario_tests()[0]
 
             scenario_test.get_criteria()
 
