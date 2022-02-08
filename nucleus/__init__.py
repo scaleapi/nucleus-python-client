@@ -391,8 +391,8 @@ class NucleusClient:
         """
         warnings.warn(
             "The default create_dataset('dataset_name', ...) method without the is_scene parameter will be deprecated soon in favor of providing the is_scene parameter explicitly. "
-            "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=True, ...) to upload "
-            "DatasetItems or create_dataset('dataset_name', is_scene=False, ...) to upload "
+            "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=False, ...) to upload "
+            "DatasetItems or create_dataset('dataset_name', is_scene=True, ...) to upload "
             "LidarScenes.",
             DeprecationWarning,
         )
@@ -943,6 +943,8 @@ class NucleusClient:
         """
         if payload is None:
             payload = {}
+        if requests_command is requests.get:
+            payload = None
         return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
     def handle_bad_response(

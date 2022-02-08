@@ -38,6 +38,7 @@ class ScenarioTest:
     slice_id: str = field(init=False)
 
     def __post_init__(self):
+        # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
         response = self.connection.get(
             f"validate/scenario_test/{self.id}/info",
         )

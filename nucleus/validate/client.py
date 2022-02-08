@@ -88,7 +88,13 @@ class Validate:
         )
         return ScenarioTest(response[SCENARIO_TEST_ID_KEY], self.connection)
 
-    def list_scenario_tests(self) -> List[ScenarioTest]:
+    def get_scenario_test(self, scenario_test_id: str) -> ScenarioTest:
+        response = self.connection.get(
+            f"modelci/unit_test/{scenario_test_id}",
+        )
+        return ScenarioTest(response["id"], self.connection)
+
+    def list_unit_tests(self) -> List[ScenarioTest]:
         """Lists all Scenario Tests of the current user. ::
 
             import nucleus

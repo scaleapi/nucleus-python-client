@@ -1,3 +1,4 @@
+import itertools
 from typing import Callable, Dict, List, Type, Union
 
 from nucleus.logger import logger
@@ -189,3 +190,14 @@ class AvailableEvalFunctions:
             return eval_function
         else:
             return EvalFunctionNotAvailable(expected_name)
+
+    def from_id(self, eval_function_id: str):
+        for eval_func in itertools.chain(
+            self._public_to_function.values(),
+            self._custom_to_function.values(),
+        ):
+            if eval_func.id == eval_function_id:
+                return eval_func
+        raise EvalFunctionNotAvailableError(
+            f"Could not find Eval Function with id {eval_function_id}"
+        )

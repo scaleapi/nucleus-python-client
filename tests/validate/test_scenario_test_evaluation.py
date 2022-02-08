@@ -5,8 +5,7 @@ from nucleus.validate.scenario_test_evaluation import (
     ScenarioTestEvaluation,
     ScenarioTestItemEvaluation,
 )
-from tests.helpers import EVAL_FUNCTION_THRESHOLD, get_uuid
-from tests.validate.helpers import create_predictions
+from tests.helpers import EVAL_FUNCTION_THRESHOLD, create_predictions, get_uuid
 
 
 @pytest.mark.skip("Assigned slice has no 2D annotations")
