@@ -71,7 +71,7 @@ class EvalFunctionEntry(ImmutableModel):
     name: str
     is_public: bool
     user_id: str
-    serialized_fn: str
+    serialized_fn: Optional[str] = None
     raw_source: Optional[str] = None
 
 
