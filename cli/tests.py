@@ -8,10 +8,10 @@ from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 from cli.helpers.web_helper import launch_web_or_invoke
 from nucleus import NucleusAPIError
-from nucleus.modelci import (
+from nucleus.validate import (
     AvailableEvalFunctions,
+    ScenarioTestMetric,
     ThresholdComparison,
-    UnitTestMetric,
 )
 
 
@@ -21,9 +21,9 @@ from nucleus.modelci import (
 def tests(ctx, web):
     """Scenario Tests allow you to test your Models
 
-    https://dashboard.scale.com/nucleus/unit-tests
+    https://dashboard.scale.com/nucleus/scenario-tests
     """
-    launch_web_or_invoke("unit-tests", ctx, web, list_tests)
+    launch_web_or_invoke("scenario-tests", ctx, web, list_tests)
 
 
 @tests.command("list")
@@ -32,7 +32,7 @@ def list_tests():
     console = Console()
     with console.status("Finding your Scenario Tests", spinner="dots4"):
         client = init_client()
-        unit_tests = client.modelci.list_unit_tests()
+        scenario_tests = client.modelci.list_scenario_tests()
         table = Table(
             Column("id", overflow="fold", min_width=24),
             "Name",
@@ -41,13 +41,13 @@ def list_tests():
             title=":chart_with_upwards_trend: Scenario Tests",
             title_justify="left",
         )
-        for ut in unit_tests:
+        for ut in scenario_tests:
             table.add_row(ut.id, ut.name, ut.slice_id, nucleus_url(ut.id))
     console.print(table)
 
 
 def format_criterion(
-    criterion: UnitTestMetric, eval_functions: AvailableEvalFunctions
+    criterion: ScenarioTestMetric, eval_functions: AvailableEvalFunctions
 ):
     op_map = {
         ThresholdComparison.GREATER_THAN: ">",
@@ -63,43 +63,45 @@ def format_criterion(
 
 
 @tests.command("describe")
-@click.argument("unit-test-id", default=None, required=False)
+@click.argument("scenario-test-id", default=None, required=False)
 @click.option(
     "--all", "-a", is_flag=True, help="View details about all Scenario Tests"
 )
-def describe_test(unit_test_id, all):
+def describe_test(scenario_test_id, all):
     """View detailed information about a test or all tests"""
     console = Console()
-    # unit_test = client.modelci.get_unit_test(unit_test_id)
-    assert unit_test_id or all, "Must pass a unit_test_id or --all"
+    # scenario_test = client.modelci.get_scenario_test(scenario_test_id)
+    assert scenario_test_id or all, "Must pass a scenario_test_id or --all"
     client = init_client()
-    unit_tests = client.modelci.list_unit_tests()
+    scenario_tests = client.modelci.list_scenario_tests()
     if all:
         tree = Tree(":chart_with_upwards_trend: All Scenario Tests")
         with Live(
             "Fetching description of all Scenario Tests",
             vertical_overflow="visible",
         ) as live:
-            for idx, ut in enumerate(unit_tests):
-                test_branch = tree.add(f"{idx}: Unit Test")
-                build_unit_test_info_tree(client, ut, test_branch)
+            for idx, ut in enumerate(scenario_tests):
+                test_branch = tree.add(f"{idx}: Scenario Test")
+                build_scenario_test_info_tree(client, ut, test_branch)
                 live.update(tree)
     else:
         with console.status("Fetching Scenario Test information"):
-            unit_test = [ut for ut in unit_tests if ut.id == unit_test_id][0]
-            tree = Tree(":chart_with_upwards_trend: Unit Test")
-            build_unit_test_info_tree(client, unit_test, tree)
+            scenario_test = [
+                ut for ut in scenario_tests if ut.id == scenario_test_id
+            ][0]
+            tree = Tree(":chart_with_upwards_trend: Scenario Test")
+            build_scenario_test_info_tree(client, scenario_test, tree)
             console.print(tree)
 
 
-def build_unit_test_info_tree(client, unit_test, tree):
+def build_scenario_test_info_tree(client, scenario_test, tree):
     try:
-        slc = client.get_slice(unit_test.slice_id)
+        slc = client.get_slice(scenario_test.slice_id)
         info_branch = tree.add(":mag: Details")
-        info_branch.add(f"id: '{unit_test.id}'")
-        info_branch.add(f"name: '{unit_test.name}'")
-        unit_test_url = nucleus_url(unit_test.id)
-        info_branch.add(f"url: {unit_test_url}")
+        info_branch.add(f"id: '{scenario_test.id}'")
+        info_branch.add(f"name: '{scenario_test.name}'")
+        scenario_test_url = nucleus_url(scenario_test.id)
+        info_branch.add(f"url: {scenario_test_url}")
         slice_url = nucleus_url(f"{slc.dataset_id}/{slc.slice_id}")
         slice_branch = tree.add(":cake: Slice")
         slice_branch.add(f"id: '{slc.id}'")
@@ -107,7 +109,7 @@ def build_unit_test_info_tree(client, unit_test, tree):
         slice_branch.add(f"name: '{slice_info['name']}'")
         slice_branch.add(f"len: {len(slc.items)}")
         slice_branch.add(f"url: {slice_url}")
-        criteria = unit_test.get_criteria()
+        criteria = scenario_test.get_criteria()
         criteria_branch = tree.add(":crossed_flags: Criteria")
         for criterion in criteria:
             pretty_criterion = format_criterion(
