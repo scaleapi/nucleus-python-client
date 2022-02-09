@@ -22,7 +22,7 @@ DATASET_ITEMS_KEY = "dataset_items"
 @dataclass
 class ScenarioTest:
     """A Scenario Test combines a slice and at least one evaluation criterion. A :class:`ScenarioTest` is not created through
-    the default constructor but using the instructions shown in :class:`ModelCI`. This :class:`ScenarioTest` class only
+    the default constructor but using the instructions shown in :class:`Validate`. This :class:`ScenarioTest` class only
     simplifies the interaction with the scenario tests from this SDK.
 
     Attributes:
@@ -52,11 +52,11 @@ class ScenarioTest:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.modelci.create_scenario_test(
+            scenario_test = client.validate.create_scenario_test(
                 "sample_scenario_test", "slc_bx86ea222a6g057x4380"
             )
 
-            e = client.modelci.eval_functions
+            e = client.validate.eval_functions
             # Assuming a user would like to add all available public evaluation functions as criteria
             scenario_test.add_criterion(
                 e.bbox_iou() > 0.5
@@ -118,7 +118,7 @@ class ScenarioTest:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.modelci.list_scenario_tests()[0]
+            scenario_test = client.validate.list_scenario_tests()[0]
 
             scenario_test.get_eval_history()
 

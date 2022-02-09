@@ -32,7 +32,7 @@ Sections
 
    api/nucleus/index
    api/nucleus/metrics/index
-   api/nucleus/modelci/index
+   api/nucleus/validate/index
 
 
 Index

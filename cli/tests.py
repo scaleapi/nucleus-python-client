@@ -32,7 +32,7 @@ def list_tests():
     console = Console()
     with console.status("Finding your Scenario Tests", spinner="dots4"):
         client = init_client()
-        scenario_tests = client.modelci.list_scenario_tests()
+        scenario_tests = client.validate.list_scenario_tests()
         table = Table(
             Column("id", overflow="fold", min_width=24),
             "Name",
@@ -70,10 +70,10 @@ def format_criterion(
 def describe_test(scenario_test_id, all):
     """View detailed information about a test or all tests"""
     console = Console()
-    # scenario_test = client.modelci.get_scenario_test(scenario_test_id)
+    # scenario_test = client.validate.get_scenario_test(scenario_test_id)
     assert scenario_test_id or all, "Must pass a scenario_test_id or --all"
     client = init_client()
-    scenario_tests = client.modelci.list_scenario_tests()
+    scenario_tests = client.validate.list_scenario_tests()
     if all:
         tree = Tree(":chart_with_upwards_trend: All Scenario Tests")
         with Live(
@@ -113,7 +113,7 @@ def build_scenario_test_info_tree(client, scenario_test, tree):
         criteria_branch = tree.add(":crossed_flags: Criteria")
         for criterion in criteria:
             pretty_criterion = format_criterion(
-                criterion, client.modelci.eval_functions
+                criterion, client.validate.eval_functions
             )
             criteria_branch.add(pretty_criterion)
     except NucleusAPIError as e:

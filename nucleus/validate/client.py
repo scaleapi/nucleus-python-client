@@ -90,7 +90,7 @@ class Validate:
 
     def get_scenario_test(self, scenario_test_id: str) -> ScenarioTest:
         response = self.connection.get(
-            f"modelci/scenario_test/{scenario_test_id}",
+            f"validate/scenario_test/{scenario_test_id}",
         )
         return ScenarioTest(response["id"], self.connection)
 

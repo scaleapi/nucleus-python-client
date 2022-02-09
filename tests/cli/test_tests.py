@@ -17,21 +17,21 @@ def test_invoke_tests_web(runner):
     assert result.exit_code == 0
 
 
-def test_invoke_list_tests(runner, unit_test):
+def test_invoke_list_tests(runner, scenario_test):
     result = runner.invoke(list_tests)
     assert result.exception is None
     assert result.exit_code == 0
-    assert unit_test.id in result.output
+    assert scenario_test.id in result.output
 
 
-def test_invoke_describe_test(runner, unit_test):
-    result = runner.invoke(describe_test, [unit_test.id])
+def test_invoke_describe_test(runner, scenario_test):
+    result = runner.invoke(describe_test, [scenario_test.id])
     assert result.exception is None
     assert result.exit_code == 0
-    assert unit_test.id in result.output
+    assert scenario_test.id in result.output
 
 
-def test_invoke_describe_test_all(runner, unit_test):
+def test_invoke_describe_test_all(runner, scenario_test):
     result = runner.invoke(describe_test, ["--all"])
     assert result.exception is None
     assert result.exit_code == 0
