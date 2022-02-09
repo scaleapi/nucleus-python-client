@@ -89,13 +89,13 @@ def predictions(model, populated_dataset, annotations):
 @pytest.mark.usefixtures(
     "annotations"
 )  # Unit test needs to have annotations in the slice
-def unit_test(CLIENT, test_slice, annotations, predictions):
-    test_name = "unit_test_" + get_uuid()  # use uuid to make unique
-    unit_test = CLIENT.modelci.create_unit_test(
+def scenario_test(CLIENT, test_slice, annotations, predictions):
+    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+    scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_recall > 0.5],
+        evaluation_criteria=[CLIENT.validate.eval_functions.bbox_recall > 0.5],
     )
-    yield unit_test
+    yield scenario_test
 
-    CLIENT.modelci.delete_unit_test(unit_test.id)
+    CLIENT.validate.delete_scenario_test(scenario_test.id)
