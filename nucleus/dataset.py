@@ -1394,7 +1394,7 @@ class Dataset:
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)
 
-    def update_scenes_metadata(self, mapping: Dict[str, dict]):
+    def update_scene_metadata(self, mapping: Dict[str, dict]):
         """
         Update (merge) scene metadata for each reference_id given in the mapping.
         The backed will join the specified mapping metadata to the exisiting metadata.
@@ -1405,7 +1405,7 @@ class Dataset:
 
         Examples:
             >>> mapping = {"scene_ref_1": {"new_key": "foo"}, "scene_ref_2": {"some_value": 123}}
-            >>> dataset.update_scenes_metadata(mapping)
+            >>> dataset.update_scene_metadata(mapping)
 
         Returns:
             A dictionary outlining success or failures.
@@ -1415,7 +1415,7 @@ class Dataset:
         )
         return mm.update()
 
-    def update_items_metadata(self, mapping: Dict[str, dict]):
+    def update_item_metadata(self, mapping: Dict[str, dict]):
         """
         Update (merge) dataset item metadata for each reference_id given in the mapping.
         The backed will join the specified mapping metadata to the exisiting metadata.
@@ -1426,7 +1426,7 @@ class Dataset:
 
         Examples:
             >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123}}
-            >>> dataset.update_items_metadata(mapping)
+            >>> dataset.update_item_metadata(mapping)
 
         Returns:
             A dictionary outlining success or failures.

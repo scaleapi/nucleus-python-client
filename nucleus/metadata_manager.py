@@ -14,7 +14,7 @@ class ExportMetadataType(Enum):
 class MetadataManager:
     """
     Helper class for managing metadata updates on a scene or dataset item.
-    Do not call directly, use the dataset class methods: `update_scenes_metadata` or `update_items_metadata`
+    Do not call directly, use the dataset class methods: `update_scene_metadata` or `update_item_metadata`
     """
 
     def __init__(
