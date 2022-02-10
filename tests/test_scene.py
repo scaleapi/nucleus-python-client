@@ -477,3 +477,25 @@ def test_scene_upload_async_item_dataset(dataset_item):
 
     with pytest.raises(Exception):
         dataset_item.append(scenes, update=update, asynchronous=True)
+
+
+@pytest.mark.integration
+def test_scene_metadata_update(dataset_scene):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+
+    scene_ref_id = scenes[0].reference_id
+    additional_metadata = {"some_new_key": 123}
+    dataset_scene.update_scene_metadata({scene_ref_id: additional_metadata})
+
+    expected_new_metadata = {**scenes[0].metadata, **additional_metadata}
+
+    updated_scene = dataset_scene.get_scene(scene_ref_id)
+    actual_metadata = updated_scene.metadata
+    assert expected_new_metadata == actual_metadata
