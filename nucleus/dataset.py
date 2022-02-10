@@ -59,6 +59,7 @@ from .dataset_item import (
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
 from .errors import DatasetItemRetrievalError
+from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
@@ -1392,3 +1393,11 @@ class Dataset:
 
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)
+
+    def update_scenes_metadata(self, mapping: Dict[str, dict]):
+        mm = MetadataManager(self.id, self._client, mapping, ExportMetadataType.SCENES)
+        return mm.update()
+
+    def update_items_metadata(self, mapping: Dict[str, dict]):
+        mm = MetadataManager(self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS)
+        return mm.update()
