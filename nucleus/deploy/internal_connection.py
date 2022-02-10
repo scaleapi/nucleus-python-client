@@ -3,6 +3,11 @@ import time
 
 import requests
 
+from ..constants import DEFAULT_NETWORK_TIMEOUT_SEC
+from ..errors import NucleusAPIError
+from ..logger import logger
+from ..retry_strategy import RetryStrategy
+
 
 class InternalConnection:
     """Wrapper of HTTP requests to an internal Scale Deploy endpoint.
@@ -37,8 +42,29 @@ class InternalConnection:
     def make_request(
         self, payload: dict, route: str, requests_command=requests.post
     ) -> dict:
+        endpoint = f"{self.endpoint}/{route}"
 
-        raise NotImplementedError
+        logger.info("Make request to %s", endpoint)
+
+        for retry_wait_time in RetryStrategy.sleep_times:
+            response = requests_command(
+                endpoint,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                auth=(self.user_id, ""),  # the only thing that differs hmm
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+            )
+            logger.info(
+                "API request has response code %s", response.status_code
+            )
+            if response.status_code not in RetryStrategy.statuses:
+                break
+            time.sleep(retry_wait_time)
+
+        if not response.ok:
+            self.handle_bad_response(endpoint, requests_command, response)
+
+        return response.json()
 
     def handle_bad_response(
         self,
@@ -47,4 +73,6 @@ class InternalConnection:
         requests_response=None,
         aiohttp_response=None,
     ):
-        raise NotImplementedError
+        raise NucleusAPIError(
+            endpoint, requests_command, requests_response, aiohttp_response
+        )

@@ -28,15 +28,22 @@ DeployModel_T = TypeVar("DeployModel_T")
 class DeployClient:
     """Scale Deploy Python Client extension."""
 
-    def __init__(self, api_key: str, endpoint: str = SCALE_DEPLOY_ENDPOINT):
+    def __init__(
+        self,
+        api_key: str,
+        endpoint: str = SCALE_DEPLOY_ENDPOINT,
+        is_internal: bool = False,
+    ):
         """
         Initializes a Scale Deploy Client.
 
         Parameters:
             api_key: Your Scale API key
             endpoint: The Scale Deploy Endpoint (this should not need to be changed)
+            is_internal: True iff you are connecting to a self-hosted Scale Deploy
         """
         self.connection = Connection(api_key, endpoint)
+        self.is_internal = is_internal
 
     def __repr__(self):
         return f"DeployClient(connection='{self.connection}')"
@@ -113,9 +120,13 @@ class DeployClient:
         env_params: Dict[str, str],
         requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
+        aws_role: Optional[str] = None,
+        results_s3_bucket: Optional[str] = None,
+        overwrite_existing_endpoint: bool = False,
     ) -> AsyncModelEndpoint:
         """
-        Creates a Model Endpoint that is able to serve requests
+        Creates a Model Endpoint that is able to serve requests.
+        Corresponds to POST/PUT endpoints
 
         Parameters:
             service_name: Name of model endpoint. Must be unique.
@@ -140,6 +151,10 @@ class DeployClient:
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
+            aws_role: Only used if client is set as "internal". K8s service account to use for the deployment
+            results_s3_bucket: Only used if client is set as "internal". S3 bucket to use for storing pickled results
+                Must be accessible from the aws_role set.
+            overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
 
         Returns:
              A ModelEndpoint object that can be used to make requests to the endpoint.
@@ -170,11 +185,18 @@ class DeployClient:
             per_worker=per_worker,
             requirements=requirements,
         )
+        if self.is_internal:
+            payload.update(
+                aws_role=aws_role, results_s3_bucket=results_s3_bucket
+            )
         if gpus == 0:
             del payload["gpu_type"]
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
-        resp = self.connection.post(payload, ENDPOINT_PATH)
+        if overwrite_existing_endpoint:
+            resp = self.connection.put(payload, ENDPOINT_PATH)
+        else:
+            resp = self.connection.post(payload, ENDPOINT_PATH)
         endpoint_creation_task_id = resp.get(
             "endpoint_creation_task_id", None
         )  # TODO probably throw on None
@@ -211,6 +233,24 @@ class DeployClient:
             AsyncModelEndpoint(endpoint_id=endpoint_id, client=self)
             for endpoint_id in resp["endpoints"]
         ]
+
+    def delete_model_bundle(self, model_bundle: ModelBundle):
+        """
+        Deletes the model bundle on the server.
+        TODO test
+        """
+        route = f"model_bundle/{model_bundle.name}"
+        resp = self.connection.delete(route)
+        return resp["deleted"]
+
+    def delete_model_endpoint(self, model_endpoint: AsyncModelEndpoint):
+        """
+        Deletes a model endpoint.
+        TODO test
+        """
+        route = f"{ENDPOINT_PATH}/{model_endpoint.endpoint_id}"
+        resp = self.connection.delete(route)
+        return resp["deleted"]
 
     def sync_request(self, endpoint_id: str, url: str) -> str:
         """
