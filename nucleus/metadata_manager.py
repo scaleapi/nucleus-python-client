@@ -1,10 +1,5 @@
-from copy import deepcopy
-from dataclasses import dataclass
 from enum import Enum
-from typing import List, TYPE_CHECKING, Union
-
-
-from nucleus.pydantic_base import DictCompatibleModel
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from . import NucleusClient
