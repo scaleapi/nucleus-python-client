@@ -1,13 +1,11 @@
 import copy
 import math
-import os
 
 import pytest
 
 from nucleus import (
     Dataset,
     DatasetItem,
-    NucleusAPIError,
     NucleusClient,
     UploadResponse,
 )
@@ -34,8 +32,6 @@ from nucleus.constants import (
     UPDATED_ITEMS,
 )
 from nucleus.job import AsyncJob, JobError
-from nucleus.model import Model
-from nucleus.prediction import BoxPrediction
 
 from .helpers import (
     LOCAL_FILENAME,
@@ -556,3 +552,22 @@ def test_append_and_export(dataset):
         exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0]
         == multicategory_annotation
     )
+
+
+def test_dataset_item_metadata_update(dataset):
+    items = make_dataset_items()
+    dataset.append(items)
+
+    expected_metadata = {}
+    new_metadata = {}
+    for item in dataset.items:
+        data = {"a_new_key": 123}
+        new_metadata[item.reference_id] = data
+        expected_metadata[item.reference_id] = {**item.metadata, **data}
+
+    dataset.update_item_metadata(new_metadata)
+    actual_metadata = {
+        item.reference_id: item.metadata for item in dataset.items
+    }
+
+    assert actual_metadata == expected_metadata
