@@ -1422,7 +1422,7 @@ class Dataset:
         If there is a key-collision, the value given in the mapping will take precedence.
 
         Args:
-            mapping: key-value pair of <reference_id> to <metadata>
+            mapping: key-value pair of <reference_id>: <metadata>
 
         Examples:
             >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123}}
