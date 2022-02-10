@@ -1395,9 +1395,13 @@ class Dataset:
         return populator.upload(dataset_items, batch_size, update)
 
     def update_scenes_metadata(self, mapping: Dict[str, dict]):
-        mm = MetadataManager(self.id, self._client, mapping, ExportMetadataType.SCENES)
+        mm = MetadataManager(
+            self.id, self._client, mapping, ExportMetadataType.SCENES
+        )
         return mm.update()
 
     def update_items_metadata(self, mapping: Dict[str, dict]):
-        mm = MetadataManager(self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS)
+        mm = MetadataManager(
+            self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS
+        )
         return mm.update()

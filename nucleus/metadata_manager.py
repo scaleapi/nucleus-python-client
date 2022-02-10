@@ -16,31 +16,19 @@ class ExportMetadataType(Enum):
     DATASET_ITEMS = "item"
 
 
-class DatasetItemMetadata(DictCompatibleModel):
-    reference_id: str
-    metadata: dict
-
-    def to_dict(self):
-        return {"reference_id": self.reference_id, "metadata": self.metadata}
-
-@dataclass
-class MetadataPayload:
-    reference_id: str
-    metadata: dict
-
-    def to_dict(self):
-        return {
-            "reference_id": self.reference_id,
-            "metadata": self.metadata,
-        }
-
 class MetadataManager:
     """
     Helper class for managing metadata updates on a scene or dataset item.
-    Please note, only updating of existing keys, or adding new keys is allowed at the moment.
-    It does not support metadata deletion.
+    Do not call directly, use the dataset class methods: `update_scenes_metadata` or `update_items_metadata`
     """
-    def __init__(self, dataset_id: str, client: "NucleusClient", raw_mappings: dict[str, dict], level: ExportMetadataType ):
+
+    def __init__(
+        self,
+        dataset_id: str,
+        client: "NucleusClient",
+        raw_mappings: dict[str, dict],
+        level: ExportMetadataType,
+    ):
         self.dataset_id = dataset_id
         self._client = client
         self.raw_mappings = raw_mappings
@@ -51,7 +39,7 @@ class MetadataManager:
     def _format_mappings(self):
         payload = []
         for ref_id, meta in self.raw_mappings.items():
-            payload.append({"reference_id": ref_id, "metadata":meta})
+            payload.append({"reference_id": ref_id, "metadata": meta})
         return payload
 
     def update(self):
