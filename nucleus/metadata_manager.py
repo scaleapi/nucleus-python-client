@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from . import NucleusClient
@@ -21,7 +21,7 @@ class MetadataManager:
         self,
         dataset_id: str,
         client: "NucleusClient",
-        raw_mappings: dict[str, dict],
+        raw_mappings: Dict[str, dict],
         level: ExportMetadataType,
     ):
         self.dataset_id = dataset_id
