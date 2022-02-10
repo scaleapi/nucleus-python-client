@@ -187,10 +187,8 @@ def polygon_intersection_area(
     nb = len(polygon_b)
     res = 0.0
     for i in range(1, na - 1):
-        # sa = [polygon_a[0], polygon_a[i], polygon_a[i + 1]]
         sa = polygon_a[[0, i, i + 1]]
         for j in range(1, nb - 1):
-            # sb = [polygon_b[0], polygon_b[j], polygon_b[j + 1]]
             sb = polygon_b[[0, j, j + 1]]
             tmp = convex_polygon_intersection_area(
                 GeometryPolygon(sa), GeometryPolygon(sb)
