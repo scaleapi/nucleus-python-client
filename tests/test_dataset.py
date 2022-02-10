@@ -3,12 +3,7 @@ import math
 
 import pytest
 
-from nucleus import (
-    Dataset,
-    DatasetItem,
-    NucleusClient,
-    UploadResponse,
-)
+from nucleus import Dataset, DatasetItem, NucleusClient, UploadResponse
 from nucleus.annotation import (
     BoxAnnotation,
     CategoryAnnotation,
