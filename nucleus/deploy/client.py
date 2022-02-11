@@ -44,6 +44,7 @@ class DeployClient:
         """
         self.connection = Connection(api_key, endpoint)
         self.is_internal = is_internal
+        self.upload_bundle_fn: Optional[Callable[[str, str], None]] = None
 
     def __repr__(self):
         return f"DeployClient(connection='{self.connection}')"
@@ -51,12 +52,29 @@ class DeployClient:
     def __eq__(self, other):
         return self.connection == other.connection
 
+    def register_upload_bundle_fn(
+        self, upload_bundle_fn: Callable[[str, str], None]
+    ):
+        """
+        For internal mode only. Registers a function that handles model bundle upload. This function is called as
+
+        upload_bundle_fn(serialized_bundle, bundle_url)
+
+        This function should directly write the contents of serialized_bundle as a binary string into bundle_url.
+
+        Parameters:
+            upload_bundle_fn: Function that takes in a serialized bundle, and uploads that bundle to an appropriate
+                location. Only needed for internal mode.
+        """
+        self.upload_bundle_fn = upload_bundle_fn
+
     def create_model_bundle(
         self,
         model_bundle_name: str,
         load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
         model: Optional[DeployModel_T] = None,
         load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
+        bundle_url: Optional[str] = None,
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
@@ -72,6 +90,7 @@ class DeployClient:
             model: Typically a trained Neural Network, e.g. a Pytorch module
             load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
+            bundle_url: Only for internal mode. Desired location of bundle.
         """
 
         if (model is not None and load_model_fn is not None) or (
@@ -82,14 +101,7 @@ class DeployClient:
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
-        # Grab a signed url to make upload to
-        model_bundle_s3_url = self.connection.post(
-            {}, MODEL_BUNDLE_SIGNED_URL_PATH
-        )
-        s3_path = model_bundle_s3_url["signedUrl"]
-        raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
-
-        # Make bundle upload
+        # Create bundle
         if model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
         else:
@@ -97,10 +109,28 @@ class DeployClient:
                 load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
             )
         serialized_bundle = cloudpickle.dumps(bundle)
-        requests.put(s3_path, data=serialized_bundle)
+
+        if self.is_internal:
+            if self.upload_bundle_fn is None:
+                raise ValueError("Upload_bundle_fn should be registered")
+            if bundle_url is None:
+                raise ValueError("bundle_url is None")
+            self.upload_bundle_fn(serialized_bundle, bundle_url)
+            raw_bundle_url = bundle_url
+        else:
+            # Grab a signed url to make upload to
+            model_bundle_s3_url = self.connection.post(
+                {}, MODEL_BUNDLE_SIGNED_URL_PATH
+            )
+            s3_path = model_bundle_s3_url["signedUrl"]
+            raw_bundle_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
+
+            # Make bundle upload
+
+            requests.put(s3_path, data=serialized_bundle)
 
         self.connection.post(
-            payload=dict(id=model_bundle_name, location=raw_s3_url),
+            payload=dict(id=model_bundle_name, location=raw_bundle_url),
             route="model_bundle",
         )  # TODO use return value somehow
         # resp["data"]["bundle_name"] should equal model_bundle_name
