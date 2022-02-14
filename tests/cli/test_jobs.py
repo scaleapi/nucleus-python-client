@@ -19,3 +19,4 @@ def test_list_jobs(CLIENT, runner):
     time.sleep(0.5)
     assert result.exception is None
     assert result.exit_code == 0
+    CLIENT.delete_dataset(dataset.id)
