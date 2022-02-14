@@ -10,7 +10,7 @@ from nucleus.prediction import BoxPrediction, PolygonPrediction
 
 from .base import MetricResult
 from .errors import PolygonAnnotationTypeError
-from .geometry import GeometryPoint, GeometryPolygon, polygon_intersection_area
+from .geometry import GeometryPolygon, polygon_intersection_area
 
 BoxOrPolygonPrediction = TypeVar(
     "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
@@ -35,19 +35,12 @@ def polygon_annotation_to_geometry(
         xmax = annotation.x + annotation.width / 2
         ymin = annotation.y - annotation.height / 2
         ymax = annotation.y + annotation.height / 2
-        points = [
-            GeometryPoint((xmin, ymin)),
-            GeometryPoint((xmax, ymin)),
-            GeometryPoint((xmax, ymax)),
-            GeometryPoint((xmin, ymax)),
-        ]
-        return GeometryPolygon(points)
+        points = [(xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax)]
+        return GeometryPolygon(points=points, is_rectangle=True)
     elif isinstance(annotation, PolygonAnnotation):
         return GeometryPolygon(
-            [
-                GeometryPoint((point.x, point.y))
-                for point in annotation.vertices
-            ]
+            points=[(point.x, point.y) for point in annotation.vertices],
+            is_rectangle=False,
         )
     else:
         raise PolygonAnnotationTypeError()
