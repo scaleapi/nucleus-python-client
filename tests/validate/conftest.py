@@ -13,7 +13,7 @@ from tests.test_dataset import make_dataset_items
 
 
 @pytest.fixture(scope="module")
-def modelci_dataset(CLIENT):
+def validate_dataset(CLIENT):
     """SHOULD NOT BE MUTATED IN TESTS. This dataset lives for the whole test module scope."""
     ds = CLIENT.create_dataset("[Test Model CI] Dataset", is_scene=False)
     yield ds
@@ -22,9 +22,9 @@ def modelci_dataset(CLIENT):
 
 
 @pytest.fixture(scope="module")
-def dataset_items(modelci_dataset):
+def dataset_items(validate_dataset):
     items = make_dataset_items()
-    modelci_dataset.append(items)
+    validate_dataset.append(items)
     yield items
 
 
@@ -34,8 +34,8 @@ def slice_items(dataset_items):
 
 
 @pytest.fixture(scope="module")
-def test_slice(modelci_dataset, slice_items):
-    slc = modelci_dataset.create_slice(
+def test_slice(validate_dataset, slice_items):
+    slc = validate_dataset.create_slice(
         name=TEST_SLICE_NAME,
         reference_ids=[item.reference_id for item in slice_items],
     )
@@ -52,28 +52,28 @@ def model(CLIENT):
 
 
 @pytest.fixture(scope="module")
-def annotations(modelci_dataset, slice_items):
-    annotations = create_box_annotations(modelci_dataset, slice_items)
+def annotations(validate_dataset, slice_items):
+    annotations = create_box_annotations(validate_dataset, slice_items)
     yield annotations
 
 
 @pytest.fixture(scope="module")
-def predictions(model, modelci_dataset, annotations):
-    predictions = create_predictions(modelci_dataset, model, annotations)
+def predictions(model, validate_dataset, annotations):
+    predictions = create_predictions(validate_dataset, model, annotations)
     yield predictions
 
 
 @pytest.fixture(scope="module")
 @pytest.mark.usefixtures(
     "annotations"
-)  # Unit test needs to have annotations in the slice
-def unit_test(CLIENT, test_slice):
-    test_name = "unit_test_" + get_uuid()  # use uuid to make unique
-    unit_test = CLIENT.modelci.create_unit_test(
+)  # Scenario test needs to have annotations in the slice
+def scenario_test(CLIENT, test_slice):
+    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+    scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[CLIENT.modelci.eval_functions.bbox_recall > 0.5],
+        evaluation_criteria=[CLIENT.validate.eval_functions.bbox_recall > 0.5],
     )
-    yield unit_test
+    yield scenario_test
 
-    CLIENT.modelci.delete_unit_test(unit_test.id)
+    CLIENT.validate.delete_scenario_test(scenario_test.id)

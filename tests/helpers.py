@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 from nucleus import BoxAnnotation, BoxPrediction, Dataset, DatasetItem, Model
-from nucleus.modelci import ThresholdComparison
+from nucleus.validate import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 N_UUID_CHARACTERS = 10

@@ -2,7 +2,7 @@ import itertools
 from typing import Callable, Dict, List, Type, Union
 
 from nucleus.logger import logger
-from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
+from nucleus.validate.eval_functions.base_eval_function import BaseEvalFunction
 
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
@@ -105,7 +105,7 @@ class AvailableEvalFunctions:
 
     The available evaluation functions are listed in the sample below::
 
-        e = client.modelci.eval_functions
+        e = client.validate.eval_functions
         unit_test_criteria = [
             e.bbox_iou() > 5,
             e.bbox_map() > 0.95,

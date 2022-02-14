@@ -59,6 +59,7 @@ from .dataset_item import (
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
 from .errors import DatasetItemRetrievalError
+from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
@@ -1392,3 +1393,45 @@ class Dataset:
 
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)
+
+    def update_scene_metadata(self, mapping: Dict[str, dict]):
+        """
+        Update (merge) scene metadata for each reference_id given in the mapping.
+        The backed will join the specified mapping metadata to the exisiting metadata.
+        If there is a key-collision, the value given in the mapping will take precedence.
+
+        Args:
+            mapping: key-value pair of <reference_id>: <metadata>
+
+        Examples:
+            >>> mapping = {"scene_ref_1": {"new_key": "foo"}, "scene_ref_2": {"some_value": 123}}
+            >>> dataset.update_scene_metadata(mapping)
+
+        Returns:
+            A dictionary outlining success or failures.
+        """
+        mm = MetadataManager(
+            self.id, self._client, mapping, ExportMetadataType.SCENES
+        )
+        return mm.update()
+
+    def update_item_metadata(self, mapping: Dict[str, dict]):
+        """
+        Update (merge) dataset item metadata for each reference_id given in the mapping.
+        The backed will join the specified mapping metadata to the exisiting metadata.
+        If there is a key-collision, the value given in the mapping will take precedence.
+
+        Args:
+            mapping: key-value pair of <reference_id>: <metadata>
+
+        Examples:
+            >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123}}
+            >>> dataset.update_item_metadata(mapping)
+
+        Returns:
+            A dictionary outlining success or failures.
+        """
+        mm = MetadataManager(
+            self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS
+        )
+        return mm.update()
