@@ -2,7 +2,7 @@ import json
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from nucleus.constants import (
     FRAME_RATE_KEY,
@@ -13,6 +13,7 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
+    VIDEO_FRAME_LOCATION_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
 )
 
@@ -412,23 +413,6 @@ def flatten(t):
     return [item for sublist in t for item in sublist]
 
 
-def check_all_scene_paths_remote(scenes: List[LidarScene]):
-    for scene in scenes:
-        for item in scene.get_items():
-            pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
-            if pointcloud_location and is_local_path(pointcloud_location):
-                raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
-                    "local, or a remote URL type that is not supported."
-                )
-            image_location = getattr(item, IMAGE_LOCATION_KEY)
-            if image_location and is_local_path(image_location):
-                raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
-                    "local, or a remote URL type that is not supported."
-                )
-
-
 class VideoUploadType(Enum):
     IMAGE = "image"
     VIDEO = "video"
@@ -439,7 +423,7 @@ class VideoScene(ABC):
     reference_id: str
     frame_rate: int
     attachment_type: VideoUploadType
-    frames: List[DatasetItem] = field(default_factory=list)
+    items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -453,39 +437,47 @@ class VideoScene(ABC):
         return all(
             [
                 self.reference_id == other.reference_id,
-                self.frames == other.frames,
+                self.items == other.items,
                 self.metadata == other.metadata,
             ]
         )
 
     @property
     def length(self) -> int:
-        """Number of frames in the scene."""
-        return len(self.frames)
+        """Number of items in the scene."""
+        return len(self.items)
 
     def validate(self):
         # TODO: make private
         assert self.frame_rate > 0, "Frame rate must be at least 1"
         assert self.length > 0, "Must have at least 1 frame in a scene"
-        for frame in self.frames:
+        for item in self.items:
             assert isinstance(
-                frame, DatasetItem
-            ), "Each frame in a scene must be a DatasetItem object"
+                item, DatasetItem
+            ), "Each item in a scene must be a DatasetItem object"
 
-    def add_frame(self, frame: DatasetItem, index: Optional[int]) -> None:
-        """Adds DatasetItem to the specified frame as sensor data.
+    def add_item(
+        self, item: DatasetItem, index: int = None, update: bool = False
+    ) -> None:
+        """Adds DatasetItem to the specified index.
 
         Parameters:
-            index: Serial index of the frame to which to add the item.
-            item (:class:`DatasetItem`): Pointcloud or camera image item to add.
+            item (:class:`DatasetItem`): Video item to add.
+            index: Serial index at which to add the item.
+            update: Whether to overwrite the item at the specified index, if it
+              exists. Default is False.
         """
-        if index and index < len(self.frames):
-            self.frames[index] = frame
-        # TODO Handle case where index is bigger than len(self.frames)
+        if index is None:
+            index = len(self.items)
+        assert (
+            0 <= index <= len(self.items)
+        ), f"Video scenes must be contiguous so index must be at least 0 and at most {len(self.items)}."
+        if index < len(self.items) and update:
+            self.items[index] = item
         else:
-            self.frames.append(frame)
+            self.items.append(item)
 
-    def get_frame(self, index: int) -> DatasetItem:
+    def get_item(self, index: int) -> DatasetItem:
         """Fetches the DatasetItem at the specified index.
 
         Parameters:
@@ -493,19 +485,19 @@ class VideoScene(ABC):
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
-        if index < 0 or index > len(self.frames):
+        if index < 0 or index > len(self.items):
             raise ValueError(
-                f"This scene does not have a frame at index {index}"
+                f"This scene does not have an item at index {index}"
             )
-        return self.frames[index]
+        return self.items[index]
 
-    def get_frames(self) -> List[DatasetItem]:
+    def get_items(self) -> List[DatasetItem]:
         """Fetches a sorted list of DatasetItems of the scene.
 
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
-        return self.frames
+        return self.items
 
     def info(self):
         """Fetches information about the scene.
@@ -528,27 +520,25 @@ class VideoScene(ABC):
     @classmethod
     def from_json(cls, payload: dict):
         """Instantiates scene object from schematized JSON dict payload."""
-        frames_payload = payload.get(FRAMES_KEY, [])
-        frames = [DatasetItem.from_json(frame) for frame in frames_payload]
+        items_payload = payload.get(FRAMES_KEY, [])
+        items = [DatasetItem.from_json(item) for item in items_payload]
         return cls(
             reference_id=payload[REFERENCE_ID_KEY],
             frame_rate=payload[FRAME_RATE_KEY],
             attachment_type=payload[VIDEO_UPLOAD_TYPE_KEY],
-            frames=frames,
+            items=items,
             metadata=payload.get(METADATA_KEY, {}),
         )
 
     def to_payload(self) -> dict:
         """Serializes scene object to schematized JSON dict."""
         self.validate()
-        frames_payload = [
-            frame.to_payload(is_scene=True) for frame in self.frames
-        ]
+        items_payload = [item.to_payload(is_scene=True) for item in self.items]
         payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
             VIDEO_UPLOAD_TYPE_KEY: self.attachment_type,
             FRAME_RATE_KEY: self.frame_rate,
-            FRAMES_KEY: frames_payload,
+            FRAMES_KEY: items_payload,
         }
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
@@ -557,3 +547,28 @@ class VideoScene(ABC):
     def to_json(self) -> str:
         """Serializes scene object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
+
+
+def check_all_scene_paths_remote(
+    scenes: Union[List[LidarScene], List[VideoScene]]
+):
+    for scene in scenes:
+        for item in scene.get_items():
+            pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
+            if pointcloud_location and is_local_path(pointcloud_location):
+                raise ValueError(
+                    f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                    "local, or a remote URL type that is not supported."
+                )
+            image_location = getattr(item, IMAGE_LOCATION_KEY)
+            if image_location and is_local_path(image_location):
+                raise ValueError(
+                    f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
+                    "local, or a remote URL type that is not supported."
+                )
+            video_frame_location = getattr(item, VIDEO_FRAME_LOCATION_KEY)
+            if video_frame_location and is_local_path(video_frame_location):
+                raise ValueError(
+                    f"All paths for DatasetItems in a Scene must be remote, but {item.video_frame_location} is either "
+                    "local, or a remote URL type that is not supported."
+                )

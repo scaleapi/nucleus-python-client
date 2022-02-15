@@ -522,9 +522,9 @@ class Dataset:
 
             return self._append_scenes(lidar_scenes, update, asynchronous)
         if video_scenes:
-            # assert (
-            #     asynchronous
-            # ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
+            assert (
+                asynchronous
+            ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
 
             return self._append_video_scenes(
                 video_scenes, update, asynchronous
@@ -629,17 +629,17 @@ class Dataset:
         for scene in scenes:
             scene.validate()
 
-        # if not asynchronous:
-        #     print(
-        #         "WARNING: Processing lidar pointclouds usually takes several seconds. As a result, sychronous scene upload"
-        #         "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
-        #         "to avoid HTTP timeouts. Please see"
-        #         "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
-        #         " for details."
-        #     )
+        if not asynchronous:
+            print(
+                "WARNING: Processing videos usually takes several seconds. As a result, synchronous video scene upload"
+                "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
+                "to avoid HTTP timeouts. Please see"
+                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+                " for details."
+            )
 
         if asynchronous:
-            # check_all_scene_paths_remote(scenes) TODO
+            # TODO check_all_scene_paths_remote(scenes)
             request_id = serialize_and_write_to_presigned_url(
                 scenes, self.id, self._client
             )
