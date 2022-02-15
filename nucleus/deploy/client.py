@@ -282,7 +282,9 @@ class DeployClient:
         resp = self.connection.delete(route)
         return resp["deleted"]
 
-    def sync_request(self, endpoint_id: str, url: str) -> str:
+    def sync_request(
+        self, endpoint_id: str, url: str, return_pickled: bool = True
+    ) -> str:
         """
         DEPRECATED
         Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
@@ -291,6 +293,7 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
@@ -298,11 +301,14 @@ class DeployClient:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         resp = self.connection.post(
-            payload=dict(url=url), route=f"{SYNC_TASK_PATH}/{endpoint_id}"
+            payload=dict(url=url, return_pickled=return_pickled),
+            route=f"{SYNC_TASK_PATH}/{endpoint_id}",
         )
         return resp["result_url"]
 
-    def async_request(self, endpoint_id: str, url: str) -> str:
+    def async_request(
+        self, endpoint_id: str, url: str, return_pickled: bool = True
+    ) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
@@ -312,6 +318,7 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time.
@@ -319,7 +326,8 @@ class DeployClient:
                 `abcabcab-cabc-abca-0123456789ab`
         """
         resp = self.connection.post(
-            payload=dict(url=url), route=f"{ASYNC_TASK_PATH}/{endpoint_id}"
+            payload=dict(url=url, return_pickled=return_pickled),
+            route=f"{ASYNC_TASK_PATH}/{endpoint_id}",
         )
         return resp["task_id"]
 
