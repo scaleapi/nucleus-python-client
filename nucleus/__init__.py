@@ -397,6 +397,7 @@ class NucleusClient:
                 "to upload DatasetItems or create_dataset('dataset_name', is_scene=True, ...) to upload LidarScenes.",
                 DeprecationWarning,
             )
+            is_scene = False
         response = self.make_request(
             {
                 NAME_KEY: name,
