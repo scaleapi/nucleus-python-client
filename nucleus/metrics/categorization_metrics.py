@@ -60,7 +60,7 @@ class CategorizationMetric(Metric):
         """Initializes CategorizationMetric abstract object.
 
         Args:
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions to be taken into account for evaluation. Must be in [0, 1]. Default 0.0
         """
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
@@ -143,7 +143,7 @@ class CategorizationF1(CategorizationMetric):
     ):
         """
         Args:
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions to be taken into account for evaluation. Must be in [0, 1]. Default 0.0
             f1_method: {'micro', 'macro', 'samples','weighted', 'binary'}, \
                 default='macro'
             This parameter is required for multiclass/multilabel targets.
