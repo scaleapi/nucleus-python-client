@@ -64,11 +64,11 @@ def test_duplicate_taxonomy_update(taxonomy_dataset):
     assert response["status"] == "Taxonomy updated"
 
 
-def test_delete_taxonomy(dataset):
-    response = dataset.delete_taxonomy(
+def test_delete_taxonomy(taxonomy_dataset):
+    response = taxonomy_dataset.delete_taxonomy(
         "[Pytest] taxonomy",
     )
 
-    assert response["dataset_id"] == dataset.id
+    assert response["dataset_id"] == taxonomy_dataset.id
     assert response["taxonomy_name"] == "[Pytest] taxonomy"
     assert response["status"] == "Taxonomy successfully deleted"
