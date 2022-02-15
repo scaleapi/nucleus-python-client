@@ -24,6 +24,7 @@ from .constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
+    CHUNK_SIZE,
     CUBOID_TYPE,
     ITEM_KEY,
     MULTICATEGORY_TYPE,
@@ -46,6 +47,12 @@ STRING_REPLACEMENTS = {
     "\\\\t": "\t",
     '\\\\"': '"',
 }
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]
 
 
 class KeyErrorDict(dict):
@@ -257,20 +264,31 @@ def serialize_and_write_to_presigned_url(
     upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
     dataset_id: str,
     client,
-):
+    can_shard: bool = False,
+) -> Union[Sequence[str], str]:
     """This helper function can be used to serialize a list of API objects to NDJSON."""
-    request_id = uuid.uuid4().hex
-    response = client.make_request(
-        payload={},
-        route=f"dataset/{dataset_id}/signedUrl/{request_id}",
-        requests_command=requests.get,
-    )
 
-    strio = io.StringIO()
-    serialize_and_write(upload_units, strio)
-    strio.seek(0)
-    upload_to_presigned_url(response["signed_url"], strio)
-    return request_id
+    def upload(items):
+        request_id = uuid.uuid4().hex
+        response = client.make_request(
+            payload={},
+            route=f"dataset/{dataset_id}/signedUrl/{request_id}",
+            requests_command=requests.get,
+        )
+
+        strio = io.StringIO()
+        serialize_and_write(items, strio)
+        strio.seek(0)
+        upload_to_presigned_url(response["signed_url"], strio)
+        return request_id
+
+    if can_shard:
+        request_ids = []
+        for chunk in list(chunks(upload_units, CHUNK_SIZE)):
+            request_ids.append(upload(chunk))
+        return request_ids
+    else:
+        return upload(upload_units)
 
 
 def replace_double_slashes(s: str) -> str:
