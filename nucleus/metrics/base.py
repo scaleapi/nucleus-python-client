@@ -13,7 +13,7 @@ class MetricResult(ABC):
 
 @dataclass
 class ScalarResult(MetricResult):
-    """A Metric Result contains the value of an evaluation, as well as its weight.
+    """A scalar result contains the value of an evaluation, as well as its weight.
     The weight is useful when aggregating metrics where each dataset item may hold a
     different relative weight. For example, when calculating precision over a dataset,
     the denominator of the precision is the number of annotations, and therefore the weight
@@ -94,4 +94,24 @@ class Metric(ABC):
 
     @abstractmethod
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        """A metric must define how to aggregate results from single items to a single ScalarResult."""
+        """A metric must define how to aggregate results from single items to a single ScalarResult.
+
+        E.g. to calculate a R2 score with sklearn you could define a custom metric class ::
+
+            class R2Result(MetricResult):
+                y_true: float
+                y_pred: float
+
+
+        And then define an aggregate_score ::
+
+            def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+                y_trues = []
+                y_preds = []
+                for result in results:
+                    y_true.append(result.y_true)
+                    y_preds.append(result.y_pred)
+                r2_score = sklearn.metrics.r2_score(y_trues, y_preds)
+                return ScalarResult(r2_score)
+
+        """
