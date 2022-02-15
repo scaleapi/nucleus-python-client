@@ -224,7 +224,9 @@ class DeployClient:
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
         if overwrite_existing_endpoint:
-            resp = self.connection.put(payload, ENDPOINT_PATH)
+            resp = self.connection.put(
+                payload, f"{ENDPOINT_PATH}/{service_name}"
+            )
         else:
             resp = self.connection.post(payload, ENDPOINT_PATH)
         endpoint_creation_task_id = resp.get(
