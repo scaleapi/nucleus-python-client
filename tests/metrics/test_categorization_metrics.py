@@ -107,3 +107,80 @@ def test_simple_macro_f1():
 
     aggregate_result = metric.aggregate_score(results)
     assert aggregate_result.value == macro_f1
+
+
+def test_multi_taxonomy_more_predictions_than_annotations():
+    annotations = [
+        CategoryAnnotation.from_json(p) for p in TEST_CATEGORY_ANNOTATIONS
+    ]
+    predictions = {
+        ann.reference_id: [
+            CategoryPrediction(
+                label=ann.label,
+                reference_id=ann.reference_id,
+                taxonomy_name=ann.taxonomy_name,
+            ),
+            CategoryPrediction(
+                label=ann.label,
+                reference_id=ann.reference_id,
+                taxonomy_name="some_random_taxonomy",
+            ),
+        ]
+        for ann in annotations
+    }
+
+    metric = CategorizationF1()
+    results = []
+    for ann in annotations:
+        results.append(
+            metric(
+                AnnotationList(category_annotations=[ann]),
+                PredictionList(
+                    category_predictions=predictions[ann.reference_id]
+                ),
+            )
+        )
+
+    assert results
+    aggregate_result = metric.aggregate_score(results)
+    assert aggregate_result.value == 1
+
+
+def test_multi_taxonomy_more_annotations_than_predictions():
+    annotations = [
+        CategoryAnnotation.from_json(p) for p in TEST_CATEGORY_ANNOTATIONS
+    ]
+    predictions = {
+        ann.reference_id: [
+            CategoryPrediction(
+                label=ann.label,
+                reference_id=ann.reference_id,
+                taxonomy_name=ann.taxonomy_name,
+            ),
+        ]
+        for ann in annotations
+    }
+    annotations.extend(
+        [
+            CategoryAnnotation(
+                ann.label, ann.reference_id, taxonomy_name="some_other_tax"
+            )
+            for ann in annotations
+        ]
+    )
+
+    metric = CategorizationF1()
+    results = []
+    for ann in annotations:
+        results.append(
+            metric(
+                AnnotationList(category_annotations=[ann]),
+                PredictionList(
+                    category_predictions=predictions[ann.reference_id]
+                ),
+            )
+        )
+
+    assert results
+    aggregate_result = metric.aggregate_score(results)
+    assert aggregate_result.value == 1

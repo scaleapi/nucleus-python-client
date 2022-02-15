@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Set, Union
+from typing import List, Set, Tuple, Union
 
 from sklearn.metrics import f1_score
 
@@ -15,7 +15,7 @@ F1_METHODS = {"micro", "macro", "samples", "weighted", "binary"}
 def to_taxonomy_labels(
     anns_or_preds: Union[List[CategoryAnnotation], List[CategoryPrediction]]
 ) -> Set[str]:
-    """ Transforms annotation or prediction lists to taxonomy labels by joining them with a seperator (->)"""
+    """Transforms annotation or prediction lists to taxonomy labels by joining them with a seperator (->)"""
     labels = set()
     for item in anns_or_preds:
         taxonomy_label = (
@@ -39,7 +39,10 @@ class CategorizationResult(MetricResult):
 
         # TODO: Change task.py interface such that we can return label matching
         # NOTE: Returning 1 if all taxonomy labels match else 0
-        return 1 if annotation_labels.difference(prediction_labels) == 0 else 0
+        value = f1_score(
+            annotation_labels, prediction_labels, average=self.f1_method
+        )
+        return value
 
 
 class CategorizationMetric(Metric):
@@ -88,11 +91,48 @@ class CategorizationMetric(Metric):
                 predictions, self.confidence_threshold
             )
 
+        cat_annotations, cat_predictions = self._filter_common_taxonomies(
+            annotations.category_annotations, predictions.category_predictions
+        )
+
         result = self.eval(
-            annotations.category_annotations,
-            predictions.category_predictions,
+            cat_annotations,
+            cat_predictions,
         )
         return result
+
+    def _filter_common_taxonomies(
+        self,
+        annotations: List[CategoryAnnotation],
+        predictions: List[CategoryPrediction],
+    ) -> Tuple[List[CategoryAnnotation], List[CategoryPrediction]]:
+        annotated_taxonomies = {ann.taxonomy_name for ann in annotations}
+        matching_predictions, matching_taxonomies = self._filter_in_taxonomies(
+            predictions, annotated_taxonomies
+        )
+        matching_annotations, _ = self._filter_in_taxonomies(
+            annotations, matching_taxonomies
+        )
+
+        return matching_annotations, matching_predictions  # type: ignore
+
+    def _filter_in_taxonomies(
+        self,
+        anns_or_preds: Union[
+            List[CategoryAnnotation], List[CategoryPrediction]
+        ],
+        filter_on_taxonomies: Set[Union[None, str]],
+    ) -> Tuple[
+        Union[List[CategoryAnnotation], List[CategoryPrediction]],
+        Set[Union[None, str]],
+    ]:
+        matching_predictions = []
+        matching_taxonomies = set()
+        for pred in anns_or_preds:
+            if pred.taxonomy_name in filter_on_taxonomies:
+                matching_predictions.append(pred)
+                matching_taxonomies.add(pred.taxonomy_name)
+        return matching_predictions, matching_taxonomies
 
 
 class CategorizationF1(CategorizationMetric):
@@ -144,6 +184,7 @@ class CategorizationF1(CategorizationMetric):
         Notes: This is a little weird eval function. It essentially only does matching of annotation to label and
         the actual metric computation happens in the aggregate step since F1 score only makes sense on a collection.
         """
+
         return CategorizationResult(
             annotations=annotations, predictions=predictions
         )
