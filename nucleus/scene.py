@@ -1,9 +1,11 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from nucleus.constants import (
+    FRAME_RATE_KEY,
     FRAMES_KEY,
     IMAGE_LOCATION_KEY,
     LENGTH_KEY,
@@ -11,6 +13,7 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
+    VIDEO_UPLOAD_TYPE_KEY,
 )
 
 from .annotation import is_local_path
@@ -424,3 +427,133 @@ def check_all_scene_paths_remote(scenes: List[LidarScene]):
                     f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
                     "local, or a remote URL type that is not supported."
                 )
+
+
+class VideoUploadType(Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+
+
+@dataclass
+class VideoScene(ABC):
+    reference_id: str
+    frame_rate: int
+    attachment_type: VideoUploadType
+    frames: List[DatasetItem] = field(default_factory=list)
+    metadata: Optional[dict] = field(default_factory=dict)
+
+    def __post_init__(self):
+        assert (
+            self.attachment_type != VideoUploadType.IMAGE
+        ), "Videos can currently only be uploaded frame by frame as an array of jpegs"
+        if self.metadata is None:
+            self.metadata = {}
+
+    def __eq__(self, other):
+        return all(
+            [
+                self.reference_id == other.reference_id,
+                self.frames == other.frames,
+                self.metadata == other.metadata,
+            ]
+        )
+
+    @property
+    def length(self) -> int:
+        """Number of frames in the scene."""
+        return len(self.frames)
+
+    def validate(self):
+        # TODO: make private
+        assert self.frame_rate > 0, "Frame rate must be at least 1"
+        assert self.length > 0, "Must have at least 1 frame in a scene"
+        for frame in self.frames:
+            assert isinstance(
+                frame, DatasetItem
+            ), "Each frame in a scene must be a DatasetItem object"
+
+    def add_frame(self, frame: DatasetItem, index: Optional[int]) -> None:
+        """Adds DatasetItem to the specified frame as sensor data.
+
+        Parameters:
+            index: Serial index of the frame to which to add the item.
+            item (:class:`DatasetItem`): Pointcloud or camera image item to add.
+        """
+        if index and index < len(self.frames):
+            self.frames[index] = frame
+        # TODO Handle case where index is bigger than len(self.frames)
+        else:
+            self.frames.append(frame)
+
+    def get_frame(self, index: int) -> DatasetItem:
+        """Fetches the DatasetItem at the specified index.
+
+        Parameters:
+            index: Serial index for which to retrieve the DatasetItem.
+
+        Return:
+            :class:`DatasetItem`: DatasetItem at the specified index."""
+        if index < 0 or index > len(self.frames):
+            raise ValueError(
+                f"This scene does not have a frame at index {index}"
+            )
+        return self.frames[index]
+
+    def get_frames(self) -> List[DatasetItem]:
+        """Fetches a sorted list of DatasetItems of the scene.
+
+        Returns:
+            List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
+        """
+        return self.frames
+
+    def info(self):
+        """Fetches information about the scene.
+
+        Returns:
+            Payload containing::
+
+                {
+                    "reference_id": str,
+                    "length": int,
+                    "num_sensors": int
+                }
+        """
+        return {
+            REFERENCE_ID_KEY: self.reference_id,
+            FRAME_RATE_KEY: self.frame_rate,
+            LENGTH_KEY: self.length,
+        }
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        """Instantiates scene object from schematized JSON dict payload."""
+        frames_payload = payload.get(FRAMES_KEY, [])
+        frames = [DatasetItem.from_json(frame) for frame in frames_payload]
+        return cls(
+            reference_id=payload[REFERENCE_ID_KEY],
+            frame_rate=payload[FRAME_RATE_KEY],
+            attachment_type=payload[VIDEO_UPLOAD_TYPE_KEY],
+            frames=frames,
+            metadata=payload.get(METADATA_KEY, {}),
+        )
+
+    def to_payload(self) -> dict:
+        """Serializes scene object to schematized JSON dict."""
+        self.validate()
+        frames_payload = [
+            frame.to_payload(is_scene=True) for frame in self.frames
+        ]
+        payload: Dict[str, Any] = {
+            REFERENCE_ID_KEY: self.reference_id,
+            VIDEO_UPLOAD_TYPE_KEY: self.attachment_type,
+            FRAME_RATE_KEY: self.frame_rate,
+            FRAMES_KEY: frames_payload,
+        }
+        if self.metadata:
+            payload[METADATA_KEY] = self.metadata
+        return payload
+
+    def to_json(self) -> str:
+        """Serializes scene object to schematized JSON string."""
+        return json.dumps(self.to_payload(), allow_nan=False)

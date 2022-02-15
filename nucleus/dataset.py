@@ -64,7 +64,7 @@ from .payload_constructor import (
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
-from .scene import LidarScene, Scene, check_all_scene_paths_remote
+from .scene import LidarScene, Scene, VideoScene, check_all_scene_paths_remote
 from .slice import Slice
 from .upload_response import UploadResponse
 
@@ -404,7 +404,9 @@ class Dataset:
 
     def append(
         self,
-        items: Union[Sequence[DatasetItem], Sequence[LidarScene]],
+        items: Union[
+            Sequence[DatasetItem], Sequence[LidarScene], Sequence[VideoScene]
+        ],
         update: bool = False,
         batch_size: int = 20,
         asynchronous: bool = False,
@@ -507,17 +509,26 @@ class Dataset:
         dataset_items = [
             item for item in items if isinstance(item, DatasetItem)
         ]
-        scenes = [item for item in items if isinstance(item, LidarScene)]
-        if dataset_items and scenes:
+        lidar_scenes = [item for item in items if isinstance(item, LidarScene)]
+        video_scenes = [item for item in items if isinstance(item, VideoScene)]
+        if dataset_items and (lidar_scenes or video_scenes):
             raise Exception(
                 "You must append either DatasetItems or Scenes to the dataset."
             )
-        if scenes:
+        if lidar_scenes:
             assert (
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
 
-            return self._append_scenes(scenes, update, asynchronous)
+            return self._append_scenes(lidar_scenes, update, asynchronous)
+        if video_scenes:
+            # assert (
+            #     asynchronous
+            # ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
+
+            return self._append_video_scenes(
+                video_scenes, update, asynchronous
+            )
 
         check_for_duplicate_reference_ids(dataset_items)
 
@@ -597,6 +608,51 @@ class Dataset:
         response = self._client.make_request(
             payload=payload,
             route=f"{self.id}/upload_scenes",
+        )
+        return response
+
+    def _append_video_scenes(
+        self,
+        scenes: List[VideoScene],
+        update: Optional[bool] = False,
+        asynchronous: Optional[bool] = False,
+    ) -> Union[dict, AsyncJob]:
+        # TODO: make private in favor of Dataset.append invocation
+        if not self.is_scene:
+            raise Exception(
+                "Your dataset is not a scene dataset but only supports single dataset items. "
+                "In order to be able to add scenes, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
+                "an existing scene dataset."
+            )
+
+        for scene in scenes:
+            scene.validate()
+
+        # if not asynchronous:
+        #     print(
+        #         "WARNING: Processing lidar pointclouds usually takes several seconds. As a result, sychronous scene upload"
+        #         "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
+        #         "to avoid HTTP timeouts. Please see"
+        #         "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+        #         " for details."
+        #     )
+
+        if asynchronous:
+            # check_all_scene_paths_remote(scenes) TODO
+            request_id = serialize_and_write_to_presigned_url(
+                scenes, self.id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"{self.id}/upload_video_scenes?async=1",
+            )
+            return AsyncJob.from_json(response, self._client)
+
+        payload = construct_append_scenes_payload(scenes, update)
+        response = self._client.make_request(
+            payload=payload,
+            route=f"{self.id}/upload_video_scenes",
         )
         return response
 

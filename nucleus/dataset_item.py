@@ -22,6 +22,7 @@ from .constants import (
     TYPE_KEY,
     UPLOAD_TO_SCALE_KEY,
     URL_KEY,
+    VIDEO_FRAME_URL_KEY,
     W_KEY,
     X_KEY,
     Y_KEY,
@@ -120,6 +121,7 @@ class CameraParams:
 class DatasetItemType(Enum):
     IMAGE = "image"
     POINTCLOUD = "pointcloud"
+    VIDEO = "video"
 
 
 @dataclass  # pylint: disable=R0902
@@ -202,13 +204,19 @@ class DatasetItem:  # pylint: disable=R0902
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     upload_to_scale: Optional[bool] = True
+    video_frame_location: Optional[str] = None
 
     def __post_init__(self):
         assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
-        assert bool(self.image_location) != bool(
-            self.pointcloud_location
-        ), "Must specify exactly one of the image_location, pointcloud_location parameters"
-        if self.pointcloud_location and not self.upload_to_scale:
+        assert (
+            bool(self.image_location)
+            + bool(self.pointcloud_location)
+            + bool(self.video_frame_location)
+            == 1
+        ), "Must specify exactly one of the image_location, pointcloud_location, video_frame_location parameters"
+        if (
+            self.pointcloud_location and not self.upload_to_scale
+        ):  # Maybe need to add video here?
             raise NotImplementedError(
                 "Skipping upload to Scale is not currently implemented for pointclouds."
             )
@@ -218,7 +226,11 @@ class DatasetItem:  # pylint: disable=R0902
         self.type = (
             DatasetItemType.IMAGE
             if self.image_location
-            else DatasetItemType.POINTCLOUD
+            else (
+                DatasetItemType.POINTCLOUD
+                if self.pointcloud_location
+                else DatasetItemType.VIDEO
+            )
         )
         camera_params = (
             self.metadata.get(CAMERA_PARAMS_KEY, None)
@@ -238,6 +250,7 @@ class DatasetItem:  # pylint: disable=R0902
         return cls(
             image_location=image_url,
             pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),
+            video_frame_location=payload.get(VIDEO_FRAME_URL_KEY, None),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
@@ -260,6 +273,8 @@ class DatasetItem:  # pylint: disable=R0902
                 payload[URL_KEY] = self.image_location
             elif self.pointcloud_location:
                 payload[URL_KEY] = self.pointcloud_location
+            elif self.video_frame_location:
+                payload[URL_KEY] = self.video_frame_location
             payload[TYPE_KEY] = self.type.value
             if self.camera_params:
                 payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
