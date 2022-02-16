@@ -133,23 +133,30 @@ class DatasetItem:  # pylint: disable=R0902
     3D annotations to any image within a scene.
 
     Args:
-        image_location (Optional[str]): Required if pointcloud_location not present: The
-          location containing the image for the given row of data. This can be a
-          local path, or a remote URL.  Remote formats supported include any URL
-          (``http://`` or ``https://``) or URIs for AWS S3, Azure, or GCS
-          (i.e. ``s3://``, ``gcs://``).
+        image_location (Optional[str]): Required if pointcloud_location and
+          video_frame_location are not present: The location containing the image for
+          the given row of data. This can be a local path, or a remote URL. Remote
+          formats supported include any URL (``http://`` or ``https://``) or URIs for
+          AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
 
-        pointcloud_location (Optional[str]): Required if image_location not
-          present: The remote URL containing the pointcloud JSON. Remote
-          formats supported include any URL (``http://`` or ``https://``) or
-          URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
+        pointcloud_location (Optional[str]): Required if image_location and
+          video_frame_location are not present: The remote URL containing the
+          pointcloud JSON. Remote formats supported include any URL (``http://``
+          or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``,
+          ``gcs://``).
+
+        video_frame_location (Optional[str]): Required if image_location and
+          pointcloud_location are not present: The remote URL containing the
+          video frame image. Remote formats supported include any URL (``http://``
+          or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``,
+          ``gcs://``).
 
         reference_id (Optional[str]): A user-specified identifier to reference the
           item.
 
         metadata (Optional[dict]): Extra information about the particular
           dataset item. ints, floats, string values will be made searchable in
-          the query bar by the key in this dict For example, ``{"animal":
+          the query bar by the key in this dict. For example, ``{"animal":
           "dog"}`` will become searchable via ``metadata.animal = "dog"``.
 
           Categorical data can be passed as a string and will be treated
@@ -192,9 +199,10 @@ class DatasetItem:  # pylint: disable=R0902
         upload_to_scale (Optional[bool]): Set this to false in order to use
           `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_.
 
-          Setting this to false means the actual data within the item (i.e. the
-          image or pointcloud) will not be uploaded to scale meaning that you can
-          send in links that are only accessible to certain users, and not to Scale.
+          Setting this to false means the actual data within the item will not be
+          uploaded to scale meaning that you can send in links that are only accessible
+          to certain users, and not to Scale. Skipping upload to Scale is currently only
+          implemented for images.
     """
 
     image_location: Optional[str] = None
@@ -215,10 +223,10 @@ class DatasetItem:  # pylint: disable=R0902
             == 1
         ), "Must specify exactly one of the image_location, pointcloud_location, video_frame_location parameters"
         if (
-            self.pointcloud_location and not self.upload_to_scale
-        ):  # Maybe need to add video here?
+            self.pointcloud_location or self.video_frame_location
+        ) and not self.upload_to_scale:
             raise NotImplementedError(
-                "Skipping upload to Scale is not currently implemented for pointclouds."
+                "Skipping upload to Scale is not currently implemented for pointclouds and videos."
             )
         self.local = (
             is_local_path(self.image_location) if self.image_location else None
@@ -281,7 +289,7 @@ class DatasetItem:  # pylint: disable=R0902
         else:
             assert (
                 self.image_location
-            ), "Must specify image_location for DatasetItems not in a LidarScene"
+            ), "Must specify image_location for DatasetItems not in a LidarScene or VideoScene"
             payload[IMAGE_URL_KEY] = self.image_location
             payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
 
