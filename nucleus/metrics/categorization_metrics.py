@@ -40,7 +40,7 @@ class CategorizationResult(MetricResult):
         # TODO: Change task.py interface such that we can return label matching
         # NOTE: Returning 1 if all taxonomy labels match else 0
         value = f1_score(
-            annotation_labels, prediction_labels, average=self.f1_method
+            list(annotation_labels), list(prediction_labels), average="macro"
         )
         return value
 
