@@ -60,7 +60,7 @@ class ScenarioTestEvaluation:
         id (str): The ID of this scenario test evaluation.
         scenario_test_id (str): The ID of the associated scenario test.
         eval_function_id (str): The ID of the associated evaluation function.
-        model_id (str): THe ID of the associated model.
+        model_id (str): The ID of the associated model.
         status (str): The status of the evaluation job.
         result (Optional[float]): The float result of the evaluation.
         passed (bool): Whether the scenario test was passed.
