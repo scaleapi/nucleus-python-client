@@ -774,7 +774,7 @@ class Dataset:
 
         Currently this endpoint does not try to skip already inferenced items,
         but this improvement is planned for the future. This means that for
-        now, you can only have one job running at time, so please await the
+        now, you can only have one job running at a time, so please await the
         result using job.sleep_until_complete() before launching another job.
 
         Parameters:
