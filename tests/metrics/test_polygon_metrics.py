@@ -9,7 +9,7 @@ from nucleus.metrics import (
     PolygonPrecision,
     PolygonRecall,
 )
-from nucleus.metrics.base import MetricResult
+from nucleus.metrics.base import Metric, ScalarResult
 from tests.metrics.helpers import (
     TEST_ANNOTATION_LIST,
     TEST_BOX_ANNOTATION_LIST,
@@ -111,7 +111,7 @@ def test_perfect_match_polygon_metrics(
     # Test metrics on where annotations = predictions perfectly
     metric = metric_fn(**kwargs)
     result = metric(test_annotations, test_predictions)
-    assert_metric_eq(result, MetricResult(1, len(test_annotations)))
+    assert_metric_eq(result, ScalarResult(1, len(test_annotations)))
 
 
 @pytest.mark.parametrize(
@@ -209,7 +209,7 @@ def test_perfect_unmatched_polygon_metrics(
         polygon.reference_id += "_bad"
     metric = metric_fn(**kwargs)
     result = metric(test_annotations, test_predictions_unmatch)
-    assert_metric_eq(result, MetricResult(0, len(test_annotations)))
+    assert_metric_eq(result, ScalarResult(0, len(test_annotations)))
 
 
 @pytest.mark.parametrize(
@@ -219,56 +219,56 @@ def test_perfect_unmatched_polygon_metrics(
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonIOU,
-            MetricResult(109.0 / 300, 3),
+            ScalarResult(109.0 / 300, 3),
             {"enforce_label_match": True},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonIOU,
-            MetricResult(109.0 / 300, 3),
+            ScalarResult(109.0 / 300, 3),
             {"enforce_label_match": False},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonPrecision,
-            MetricResult(1.0 / 3, 3),
+            ScalarResult(1.0 / 3, 3),
             {"enforce_label_match": True},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonPrecision,
-            MetricResult(1.0 / 3, 3),
+            ScalarResult(1.0 / 3, 3),
             {"enforce_label_match": False},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonRecall,
-            MetricResult(0.5, 2),
+            ScalarResult(0.5, 2),
             {"enforce_label_match": True},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonRecall,
-            MetricResult(0.5, 2),
+            ScalarResult(0.5, 2),
             {"enforce_label_match": False},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonAveragePrecision,
-            MetricResult(1.0 / 6, 1),
+            ScalarResult(1.0 / 6, 1),
             {"label": "car"},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonMAP,
-            MetricResult(1.0 / 6, 1),
+            ScalarResult(1.0 / 6, 1),
             {},
         ),
     ],

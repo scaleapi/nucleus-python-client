@@ -357,7 +357,7 @@ class NucleusClient:
     def create_dataset(
         self,
         name: str,
-        is_scene: bool = False,
+        is_scene: Optional[bool] = None,
         item_metadata_schema: Optional[Dict] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
@@ -389,13 +389,15 @@ class NucleusClient:
         Returns:
             :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
-        warnings.warn(
-            "The default create_dataset('dataset_name', ...) method without the is_scene parameter will be deprecated soon in favor of providing the is_scene parameter explicitly. "
-            "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=False, ...) to upload "
-            "DatasetItems or create_dataset('dataset_name', is_scene=True, ...) to upload "
-            "LidarScenes.",
-            DeprecationWarning,
-        )
+        if is_scene is None:
+            warnings.warn(
+                "The default create_dataset('dataset_name', ...) method without the is_scene parameter will be "
+                "deprecated soon in favor of providing the is_scene parameter explicitly. "
+                "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=False, ...) "
+                "to upload DatasetItems or create_dataset('dataset_name', is_scene=True, ...) to upload LidarScenes.",
+                DeprecationWarning,
+            )
+            is_scene = False
         response = self.make_request(
             {
                 NAME_KEY: name,

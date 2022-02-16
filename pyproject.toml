@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.6.2"
+version = "0.6.3"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -44,6 +44,7 @@ scipy = ">=1.4.1"  # NOTE: COLAB has 1.4.1 and has problems updating
 click = ">=7.1.2,<9.0"  # NOTE: COLAB has 7.1.2 and has problems updating
 rich = "^10.15.2"
 shellingham = "^1.4.0"
+scikit-learn = ">=0.24.0"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
