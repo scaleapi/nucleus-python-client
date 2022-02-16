@@ -429,7 +429,7 @@ class VideoScene(ABC):
     def __post_init__(self):
         assert (
             self.attachment_type != VideoUploadType.IMAGE
-        ), "Videos can currently only be uploaded frame by frame as an array of jpegs"
+        ), "Videos can currently only be uploaded from frames"
         if self.metadata is None:
             self.metadata = {}
 
@@ -450,7 +450,7 @@ class VideoScene(ABC):
     def validate(self):
         # TODO: make private
         assert self.frame_rate > 0, "Frame rate must be at least 1"
-        assert self.length > 0, "Must have at least 1 frame in a scene"
+        assert self.length > 0, "Must have at least 1 item in a scene"
         for item in self.items:
             assert isinstance(
                 item, DatasetItem

@@ -83,6 +83,32 @@ TEST_LIDAR_SCENES = {
     "update": False,
 }
 
+TEST_VIDEO_SCENES = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "video_upload_type": "image",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "video_frame_url": TEST_IMG_URLS[0],
+                    "type": "video",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "video_frame_url": TEST_IMG_URLS[1],
+                    "type": "video",
+                    "reference_id": "video_frame_1",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        }
+    ],
+    "update": False,
+}
+
 
 def reference_id_from_url(url):
     return Path(url).name
@@ -93,6 +119,33 @@ TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[1], reference_id_from_url(TEST_IMG_URLS[1])),
     DatasetItem(TEST_IMG_URLS[2], reference_id_from_url(TEST_IMG_URLS[2])),
     DatasetItem(TEST_IMG_URLS[3], reference_id_from_url(TEST_IMG_URLS[3])),
+]
+
+TEST_VIDEO_ITEMS = [
+    DatasetItem(
+        None,
+        reference_id_from_url(TEST_IMG_URLS[0]),
+        None,
+        None,
+        True,
+        TEST_IMG_URLS[0],
+    ),
+    DatasetItem(
+        None,
+        reference_id_from_url(TEST_IMG_URLS[1]),
+        None,
+        None,
+        True,
+        TEST_IMG_URLS[1],
+    ),
+    DatasetItem(
+        None,
+        reference_id_from_url(TEST_IMG_URLS[2]),
+        None,
+        None,
+        True,
+        TEST_IMG_URLS[2],
+    ),
 ]
 
 TEST_LIDAR_ITEMS = [
