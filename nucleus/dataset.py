@@ -754,6 +754,7 @@ class Dataset:
         self._client.delete(f"dataset/{self.id}/scene/{reference_id}")
 
     def list_autotags(self):
+        # TODO: prefer Dataset.autotags @property
         """Fetches all autotags of the dataset.
 
         Returns:
@@ -768,17 +769,18 @@ class Dataset:
         """
         return self._client.list_autotags(self.id)
 
-    def update_autotag(self, autotag_id):
-        """Will rerun inference on all dataset items in the dataset.
-        For now this endpoint does not try to skip already inferenced items, but this
-        improvement is planned for the future. This means that for now, you can only
-        have one job running at time, so please await the result using job.sleep_until_complete()
-        before launching another job.
+    def update_autotag(self, autotag_id: str) -> AsyncJob:
+        """Rerun autotag inference on all items in the dataset.
+
+        Currently this endpoint does not try to skip already inferenced items,
+        but this improvement is planned for the future. This means that for
+        now, you can only have one job running at a time, so please await the
+        result using job.sleep_until_complete() before launching another job.
 
         Parameters:
-            autotag_id: Id of the autotag to re-inference. You can figure out which
-            id you want by using dataset.list_autotags, or by looking at the URL in the
-            manage autotag page.
+            autotag_id: ID of the autotag to re-inference. You can retrieve the
+                ID you want with :meth:`list_autotags`, or from its URL in the
+                "Manage Autotags" page in the dashboard.
 
         Returns:
           :class:`AsyncJob`: Asynchronous job object to track processing status.
