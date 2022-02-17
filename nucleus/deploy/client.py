@@ -216,6 +216,10 @@ class DeployClient:
             requirements=requirements,
         )
         if self.is_internal:
+            if aws_role is None or results_s3_bucket is None:
+                raise ValueError(
+                    "aws_role and results_s3_bucket should be non-None in internal mode"
+                )
             payload.update(
                 aws_role=aws_role, results_s3_bucket=results_s3_bucket
             )
