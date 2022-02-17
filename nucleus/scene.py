@@ -420,8 +420,7 @@ class VideoUploadType(Enum):
 
 @dataclass
 class VideoScene(ABC):
-    """Sequence of lidar pointcloud and camera images over time.
-
+    """
     Nucleus video datasets are comprised of VideoScenes, which are in turn
     comprised of a sequence of :class:`DatasetItems <DatasetItem>` which are
     equivalent to frames.
@@ -430,7 +429,7 @@ class VideoScene(ABC):
     metadata. Each of :class:`DatasetItems <DatasetItem>` representing a frame
     also accepts metadata.
 
-    Note: Uploads with a different items will error out (only on scenes that
+    Note: Uploads with different items will error out (only on scenes that
     now differ). Existing video are expected to retain the same frames, and only
     metadata can be updated. If a video definition is changed (for example,
     additional frames added) the update operation will be ignored. If you would
@@ -439,12 +438,17 @@ class VideoScene(ABC):
 
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
-        frames (Optional[List[:class:`Frame`]]): List of frames to be a part of
-            the scene. A scene can be created before frames or items have been
-            added to it, but must be non-empty when uploading to a :class:`Dataset`.
+        frame_rate (int): Frame rate of the video.
+        attachment_type (VideoUploadType): The type of attachments being uploaded.
+            Currently, videos can only be uploaded as an array of frames, so the only
+            accept attachment_type is "image".
+        items (Optional[List[:class:`DatasetItem`]]): List of items to be a part of
+            the scene. A scene can be created before items have been added to it,
+            but must be non-empty when uploading to a :class:`Dataset`.
         metadata (Optional[Dict]): Optional metadata to include with the scene.
 
-    Refer to our `guide to uploading video data <TODO>`_ for more info!
+    Refer to our `guide to uploading video data
+    <https://nucleus.scale.com/docs/uploading-video-data>`_ for more info!
     """
 
     reference_id: str
