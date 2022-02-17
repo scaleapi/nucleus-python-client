@@ -484,8 +484,8 @@ class Dataset:
             update: Whether or not to overwrite metadata on reference ID collision.
               Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
-              return an :class:`AsyncJob` object). This is highly encouraged for
-              3D data to drastically increase throughput. Default is False.
+              return an :class:`AsyncJob` object). This is required when uploading
+              scenes. Default is False.
 
         Returns:
             For scenes
@@ -518,7 +518,7 @@ class Dataset:
         if lidar_scenes:
             assert (
                 asynchronous
-            ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
+            ), "In order to avoid timeouts, you must set asynchronous=True when uploading 3D scenes."
 
             return self._append_scenes(lidar_scenes, update, asynchronous)
         if video_scenes:
