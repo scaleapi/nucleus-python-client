@@ -441,7 +441,7 @@ class VideoScene(ABC):
         frame_rate (int): Frame rate of the video.
         attachment_type (str): The type of attachments being uploaded as a string literal.
             Currently, videos can only be uploaded as an array of frames, so the only
-            accept attachment_type is "image".
+            accepted attachment_type is "image".
         items (Optional[List[:class:`DatasetItem`]]): List of items to be a part of
             the scene. A scene can be created before items have been added to it,
             but must be non-empty when uploading to a :class:`Dataset`.
