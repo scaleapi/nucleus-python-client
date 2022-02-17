@@ -420,6 +420,33 @@ class VideoUploadType(Enum):
 
 @dataclass
 class VideoScene(ABC):
+    """Sequence of lidar pointcloud and camera images over time.
+
+    Nucleus video datasets are comprised of VideoScenes, which are in turn
+    comprised of a sequence of :class:`DatasetItems <DatasetItem>` which are
+    equivalent to frames.
+
+    VideoScenes are uploaded to a :class:`Dataset` with any accompanying
+    metadata. Each of :class:`DatasetItems <DatasetItem>` representing a frame
+    also accepts metadata.
+
+    Note: Uploads with a different items will error out (only on scenes that
+    now differ). Existing video are expected to retain the same frames, and only
+    metadata can be updated. If a video definition is changed (for example,
+    additional frames added) the update operation will be ignored. If you would
+    like to alter the structure of a video scene, please delete the scene and
+    re-upload.
+
+    Parameters:
+        reference_id (str): User-specified identifier to reference the scene.
+        frames (Optional[List[:class:`Frame`]]): List of frames to be a part of
+            the scene. A scene can be created before frames or items have been
+            added to it, but must be non-empty when uploading to a :class:`Dataset`.
+        metadata (Optional[Dict]): Optional metadata to include with the scene.
+
+    Refer to our `guide to uploading video data <TODO>`_ for more info!
+    """
+
     reference_id: str
     frame_rate: int
     attachment_type: VideoUploadType

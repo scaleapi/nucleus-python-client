@@ -414,8 +414,7 @@ class Dataset:
         """Appends items or scenes to a dataset.
 
         .. note::
-            Datasets can only accept one of :class:`DatasetItems <DatasetItem>`
-            or :class:`Scenes <LidarScene>`, never both.
+            Datasets can only accept one of DatasetItems or Scenes, never both.
 
             This behavior is set during Dataset :meth:`creation
             <NucleusClient.create_dataset>` with the ``is_scene`` flag.
@@ -479,6 +478,7 @@ class Dataset:
               Union[ \
                 Sequence[:class:`DatasetItem`], \
                 Sequence[:class:`LidarScene`] \
+                Sequence[:class:`VideoScene`]
               ]): List of items or scenes to upload.
             batch_size: Size of the batch for larger uploads. Default is 20.
             update: Whether or not to overwrite metadata on reference ID collision.
