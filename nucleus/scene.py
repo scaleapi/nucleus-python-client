@@ -413,7 +413,7 @@ def flatten(t):
     return [item for sublist in t for item in sublist]
 
 
-class VideoUploadType(Enum):
+class _VideoUploadType(Enum):
     IMAGE = "image"
     VIDEO = "video"
 
@@ -439,7 +439,7 @@ class VideoScene(ABC):
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
         frame_rate (int): Frame rate of the video.
-        attachment_type (VideoUploadType): The type of attachments being uploaded.
+        attachment_type (str): The type of attachments being uploaded as a string literal.
             Currently, videos can only be uploaded as an array of frames, so the only
             accept attachment_type is "image".
         items (Optional[List[:class:`DatasetItem`]]): List of items to be a part of
@@ -453,13 +453,13 @@ class VideoScene(ABC):
 
     reference_id: str
     frame_rate: int
-    attachment_type: VideoUploadType
+    attachment_type: _VideoUploadType
     items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
         assert (
-            self.attachment_type != VideoUploadType.IMAGE
+            self.attachment_type != _VideoUploadType.IMAGE
         ), "Videos can currently only be uploaded from frames"
         if self.metadata is None:
             self.metadata = {}
