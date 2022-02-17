@@ -7,7 +7,7 @@ import numpy as np
 from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
 
-from .base import Metric, MetricResult
+from .base import Metric, ScalarResult
 from .filters import confidence_filter, polygon_label_filter
 from .metric_utils import compute_average_precision
 from .polygon_utils import (
@@ -39,7 +39,7 @@ class PolygonMetric(Metric):
         from nucleus import BoxAnnotation, Point, PolygonPrediction
         from nucleus.annotation import AnnotationList
         from nucleus.prediction import PredictionList
-        from nucleus.metrics import MetricResult, PolygonMetric
+        from nucleus.metrics import ScalarResult, PolygonMetric
         from nucleus.metrics.polygon_utils import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
 
         class MyPolygonMetric(PolygonMetric):
@@ -47,10 +47,10 @@ class PolygonMetric(Metric):
                 self,
                 annotations: List[BoxOrPolygonAnnotation],
                 predictions: List[BoxOrPolygonPrediction],
-            ) -> MetricResult:
+            ) -> ScalarResult:
                 value = (len(annotations) - len(predictions)) ** 2
                 weight = len(annotations)
-                return MetricResult(value, weight)
+                return ScalarResult(value, weight)
 
         box_anno = BoxAnnotation(
             label="car",
@@ -98,13 +98,16 @@ class PolygonMetric(Metric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         # Main evaluation function that subclasses must override.
         pass
 
+    def aggregate_score(self, results: List[ScalarResult]) -> ScalarResult:  # type: ignore[override]
+        return ScalarResult.aggregate(results)
+
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> MetricResult:
+    ) -> ScalarResult:
         if self.confidence_threshold > 0:
             predictions = confidence_filter(
                 predictions, self.confidence_threshold
@@ -184,13 +187,13 @@ class PolygonIOU(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         iou_assigns = iou_assignments(
             annotations, predictions, self.iou_threshold
         )
         weight = max(len(annotations), len(predictions))
         avg_iou = iou_assigns.sum() / max(weight, sys.float_info.epsilon)
-        return MetricResult(avg_iou, weight)
+        return ScalarResult(avg_iou, weight)
 
 
 class PolygonPrecision(PolygonMetric):
@@ -252,12 +255,12 @@ class PolygonPrecision(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         true_positives = num_true_positives(
             annotations, predictions, self.iou_threshold
         )
         weight = len(predictions)
-        return MetricResult(
+        return ScalarResult(
             true_positives / max(weight, sys.float_info.epsilon), weight
         )
 
@@ -321,12 +324,12 @@ class PolygonRecall(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         true_positives = num_true_positives(
             annotations, predictions, self.iou_threshold
         )
         weight = len(annotations) + sys.float_info.epsilon
-        return MetricResult(
+        return ScalarResult(
             true_positives / max(weight, sys.float_info.epsilon), weight
         )
 
@@ -388,7 +391,7 @@ class PolygonAveragePrecision(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         annotations_filtered = polygon_label_filter(annotations, self.label)
         predictions_filtered = polygon_label_filter(predictions, self.label)
         (
@@ -405,7 +408,7 @@ class PolygonAveragePrecision(PolygonMetric):
         recalls = cumulative_true_positives / len(annotations)
         average_precision = compute_average_precision(precisions, recalls)
         weight = 1
-        return MetricResult(average_precision, weight)
+        return ScalarResult(average_precision, weight)
 
 
 class PolygonMAP(PolygonMetric):
@@ -463,15 +466,15 @@ class PolygonMAP(PolygonMetric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> MetricResult:
+    ) -> ScalarResult:
         grouped_inputs = group_boxes_or_polygons_by_label(
             annotations, predictions
         )
-        results: List[MetricResult] = []
+        results: List[ScalarResult] = []
         for label, group in grouped_inputs.items():
             annotations_group, predictions_group = group
             metric = PolygonAveragePrecision(label)
             result = metric.eval(annotations_group, predictions_group)
             results.append(result)
-        average_result = MetricResult.aggregate(results)
+        average_result = ScalarResult.aggregate(results)
         return average_result

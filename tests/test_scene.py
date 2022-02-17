@@ -119,8 +119,11 @@ def test_scene_from_json():
     }
 
     expected_frames = [Frame(**expected_items_1), Frame(**expected_items_2)]
+    expected_metadata = {"test_meta_field": "test_meta_value"}
     expected_scene = LidarScene(
-        scene_json[REFERENCE_ID_KEY], expected_frames, metadata={}
+        scene_json[REFERENCE_ID_KEY],
+        expected_frames,
+        metadata=expected_metadata,
     )
 
     assert sorted(
@@ -541,6 +544,28 @@ def test_scene_upload_async_item_dataset(dataset_item):
 
 
 @pytest.mark.integration
+def test_scene_metadata_update(dataset_scene):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+
+    scene_ref_id = scenes[0].reference_id
+    additional_metadata = {"some_new_key": 123}
+    dataset_scene.update_scene_metadata({scene_ref_id: additional_metadata})
+
+    expected_new_metadata = {**scenes[0].metadata, **additional_metadata}
+
+    updated_scene = dataset_scene.get_scene(scene_ref_id)
+    actual_metadata = updated_scene.metadata
+    assert expected_new_metadata == actual_metadata
+
+
+@pytest.mark.integration
 def test_video_scene_upload_async(dataset_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
@@ -669,3 +694,24 @@ def test_video_scene_deletion(dataset_scene):
     time.sleep(1)
     scenes = dataset_scene.scenes
     assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
+
+
+@pytest.mark.integration
+def test_video_scene_metadata_update(dataset_scene):
+    payload = TEST_VIDEO_SCENES
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+
+    scene_ref_id = scenes[0].reference_id
+    additional_metadata = {"some_new_key": 123}
+    dataset_scene.update_scene_metadata({scene_ref_id: additional_metadata})
+    expected_new_metadata = {**scenes[0].metadata, **additional_metadata}
+
+    updated_scene = dataset_scene.get_scene(scene_ref_id)
+    actual_metadata = updated_scene.metadata
+    assert expected_new_metadata == actual_metadata

@@ -47,6 +47,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
     UPDATE_KEY,
+    VIDEO_UPLOAD_TYPE_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -59,6 +60,7 @@ from .dataset_item import (
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
 from .errors import DatasetItemRetrievalError
+from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
     construct_model_run_creation_payload,
@@ -809,6 +811,7 @@ class Dataset:
         self._client.delete(f"dataset/{self.id}/scene/{reference_id}")
 
     def list_autotags(self):
+        # TODO: prefer Dataset.autotags @property
         """Fetches all autotags of the dataset.
 
         Returns:
@@ -823,17 +826,18 @@ class Dataset:
         """
         return self._client.list_autotags(self.id)
 
-    def update_autotag(self, autotag_id):
-        """Will rerun inference on all dataset items in the dataset.
-        For now this endpoint does not try to skip already inferenced items, but this
-        improvement is planned for the future. This means that for now, you can only
-        have one job running at time, so please await the result using job.sleep_until_complete()
-        before launching another job.
+    def update_autotag(self, autotag_id: str) -> AsyncJob:
+        """Rerun autotag inference on all items in the dataset.
+
+        Currently this endpoint does not try to skip already inferenced items,
+        but this improvement is planned for the future. This means that for
+        now, you can only have one job running at a time, so please await the
+        result using job.sleep_until_complete() before launching another job.
 
         Parameters:
-            autotag_id: Id of the autotag to re-inference. You can figure out which
-            id you want by using dataset.list_autotags, or by looking at the URL in the
-            manage autotag page.
+            autotag_id: ID of the autotag to re-inference. You can retrieve the
+                ID you want with :meth:`list_autotags`, or from its URL in the
+                "Manage Autotags" page in the dashboard.
 
         Returns:
           :class:`AsyncJob`: Asynchronous job object to track processing status.
@@ -1032,6 +1036,26 @@ class Dataset:
             requests_command=requests.post,
         )
 
+    def delete_taxonomy(
+        self,
+        taxonomy_name: str,
+    ):
+        """Deletes the given taxonomy.
+
+        All annotations and predictions associated with the taxonomy will be deleted as well.
+
+        Parameters:
+            taxonomy_name: The name of the taxonomy.
+
+        Returns:
+            Returns a response with dataset_id, taxonomy_name and status of the delete taxonomy operation.
+        """
+        return self._client.make_request(
+            {},
+            f"dataset/{self.id}/taxonomy/{taxonomy_name}",
+            requests.delete,
+        )
+
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
@@ -1115,13 +1139,14 @@ class Dataset:
             :class:`Scene<LidarScene>`: A scene object containing frames, which
             in turn contain pointcloud or image items.
         """
-        return LidarScene.from_json(
-            self._client.make_request(
-                payload=None,
-                route=f"dataset/{self.id}/scene/{reference_id}",
-                requests_command=requests.get,
-            )
+        response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/scene/{reference_id}",
+            requests_command=requests.get,
         )
+        if VIDEO_UPLOAD_TYPE_KEY in response:
+            return VideoScene.from_json(response)
+        return LidarScene.from_json(response)
 
     def export_predictions(self, model):
         """Fetches all predictions of a model that were uploaded to the dataset.
@@ -1428,3 +1453,45 @@ class Dataset:
 
         populator = DatasetItemUploader(self.id, self._client)
         return populator.upload(dataset_items, batch_size, update)
+
+    def update_scene_metadata(self, mapping: Dict[str, dict]):
+        """
+        Update (merge) scene metadata for each reference_id given in the mapping.
+        The backed will join the specified mapping metadata to the exisiting metadata.
+        If there is a key-collision, the value given in the mapping will take precedence.
+
+        Args:
+            mapping: key-value pair of <reference_id>: <metadata>
+
+        Examples:
+            >>> mapping = {"scene_ref_1": {"new_key": "foo"}, "scene_ref_2": {"some_value": 123}}
+            >>> dataset.update_scene_metadata(mapping)
+
+        Returns:
+            A dictionary outlining success or failures.
+        """
+        mm = MetadataManager(
+            self.id, self._client, mapping, ExportMetadataType.SCENES
+        )
+        return mm.update()
+
+    def update_item_metadata(self, mapping: Dict[str, dict]):
+        """
+        Update (merge) dataset item metadata for each reference_id given in the mapping.
+        The backed will join the specified mapping metadata to the exisiting metadata.
+        If there is a key-collision, the value given in the mapping will take precedence.
+
+        Args:
+            mapping: key-value pair of <reference_id>: <metadata>
+
+        Examples:
+            >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123}}
+            >>> dataset.update_item_metadata(mapping)
+
+        Returns:
+            A dictionary outlining success or failures.
+        """
+        mm = MetadataManager(
+            self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS
+        )
+        return mm.update()

@@ -108,7 +108,6 @@ from .job import AsyncJob
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
-from .modelci import ModelCI
 from .payload_constructor import (
     construct_annotation_payload,
     construct_append_payload,
@@ -127,6 +126,7 @@ from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
 from .upload_response import UploadResponse
+from .validate import Validate
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -165,7 +165,7 @@ class NucleusClient:
         if use_notebook:
             self.tqdm_bar = tqdm_notebook.tqdm
         self._connection = Connection(self.api_key, self.endpoint)
-        self.modelci = ModelCI(self.api_key, self.endpoint)
+        self.validate = Validate(self.api_key, self.endpoint)
 
     def __repr__(self):
         return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"
@@ -356,7 +356,7 @@ class NucleusClient:
     def create_dataset(
         self,
         name: str,
-        is_scene: bool = False,
+        is_scene: Optional[bool] = None,
         item_metadata_schema: Optional[Dict] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
@@ -388,13 +388,15 @@ class NucleusClient:
         Returns:
             :class:`Dataset`: The newly created Nucleus dataset as an object.
         """
-        warnings.warn(
-            "The default create_dataset('dataset_name', ...) method without the is_scene parameter will be deprecated soon in favor of providing the is_scene parameter explicitly. "
-            "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=True, ...) to upload "
-            "DatasetItems or create_dataset('dataset_name', is_scene=False, ...) to upload "
-            "LidarScenes.",
-            DeprecationWarning,
-        )
+        if is_scene is None:
+            warnings.warn(
+                "The default create_dataset('dataset_name', ...) method without the is_scene parameter will be "
+                "deprecated soon in favor of providing the is_scene parameter explicitly. "
+                "Please make sure to create a dataset with either create_dataset('dataset_name', is_scene=False, ...) "
+                "to upload DatasetItems or create_dataset('dataset_name', is_scene=True, ...) to upload LidarScenes.",
+                DeprecationWarning,
+            )
+            is_scene = False
         response = self.make_request(
             {
                 NAME_KEY: name,

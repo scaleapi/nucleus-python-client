@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.5.5"
+version = "0.6.5"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -29,7 +29,7 @@ readme = "README.md"
 homepage = "https://scale.com/nucleus"
 repository = "https://github.com/scaleapi/nucleus-python-client"
 documentation = "https://dashboard.scale.com/nucleus/docs/api"
-packages = [{include="nucleus"}]
+packages = [{include="nucleus"}, {include="cli"}]
 
 [tool.poetry.dependencies]
 python = "^3.6.2"
@@ -38,11 +38,13 @@ tqdm = "^4.41.0"
 dataclasses = { version = "^0.7", python = "^3.6.1, <3.7" }
 aiohttp = "^3.7.4"
 nest-asyncio = "^1.5.1"
-Sphinx = "^4.2.0"
 pydantic = "^1.8.2"
-isort = "^5.10.1"
 numpy = "^1.19.5"
-scipy = "^1.5.4"
+scipy = ">=1.4.1"  # NOTE: COLAB has 1.4.1 and has problems updating
+click = ">=7.1.2,<9.0"  # NOTE: COLAB has 7.1.2 and has problems updating
+rich = "^10.15.2"
+shellingham = "^1.4.0"
+scikit-learn = ">=0.24.0"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
@@ -54,6 +56,7 @@ mypy = "^0.812"
 coverage = "^5.5"
 pre-commit = "^2.12.1"
 jupyterlab = "^3.1.10"
+isort = "^5.10.1"
 absl-py = "^0.13.0"
 Sphinx = "^4.2.0"
 sphinx-autobuild = "^2021.3.14"
@@ -61,6 +64,8 @@ furo = "^2021.10.9"
 sphinx-autoapi = "^1.8.4"
 pytest-xdist = "^2.5.0"
 
+[tool.poetry.scripts]
+nu = "cli.nu:nu"
 
 [tool.pytest.ini_options]
 markers = [

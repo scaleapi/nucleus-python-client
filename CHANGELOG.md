@@ -4,6 +4,33 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.5) - 2021-02-16
+
+### Fixed
+- `Dataset.update_autotag` docstring formatting
+- `BoxPrediction` dataclass parameter typing
+- `validate.scenario_test_evaluation` typo
+
+## [0.6.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.4) - 2021-02-16
+
+### Fixes
+- Categorization metrics are patched to run properly on Validate evaluation service
+
+## [0.6.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.3) - 2021-02-15
+
+### Added
+- Add categorization f1 score to metrics
+ 
+## [0.6.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.1) - 2021-02-08
+
+### Added
+- Adapt scipy and click dependencies to allow Google COLAB usage without update
+ 
+## [0.6.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.0) - 2021-02-07
+
+### Added
+- Nucleus CLI interface `nu`. Installation instructions are in the `README.md`.
+
 ## [0.5.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.4) - 2022-01-28
 
 ### Added

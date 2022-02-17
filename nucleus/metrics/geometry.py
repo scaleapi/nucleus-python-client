@@ -5,48 +5,27 @@ import numpy as np
 TOLERANCE = 1e-8
 
 
-class GeometryPoint:
-    def __init__(self, xy: Union[Tuple[float, float], np.ndarray]):
-        self.xy = np.array(xy)
-        self.x = xy[0]
-        self.y = xy[1]
-
-    def __repr__(self) -> str:
-        return f"GeometryPoint(xy=({self.xy[0]}, {self.xy[1]})"
-
-    def __add__(self, p: "GeometryPoint") -> "GeometryPoint":
-        return GeometryPoint(self.xy + p.xy)
-
-    def __sub__(self, p: "GeometryPoint") -> "GeometryPoint":
-        return GeometryPoint(self.xy - p.xy)
-
-    def __rmul__(self, scalar: float) -> "GeometryPoint":
-        return GeometryPoint(self.xy * scalar)
-
-    def __mul__(self, scalar: float) -> "GeometryPoint":
-        return GeometryPoint(self.xy * scalar)
-
-    # Operator @
-    def __matmul__(self, p: "GeometryPoint") -> float:
-        return self.xy @ p.xy
-
-    def length(self) -> float:
-        return np.linalg.norm(self.xy)
-
-    def cmp(self, p: "GeometryPoint") -> float:
-        return np.abs(self.xy - p.xy).sum()
-
-
 class GeometryPolygon:
-    def __init__(self, points: List[GeometryPoint]):
-        self.points = points
-
-        points_x = np.array([point.x for point in points])
-        points_y = np.array([point.y for point in points])
-        self.signed_area = (
-            points_x @ np.roll(points_y, 1) - points_x @ np.roll(points_y, -1)
-        ) / 2
-        self.area = np.abs(self.signed_area)
+    def __init__(
+        self,
+        points: Union[np.ndarray, List[Tuple[float, float]]],
+        is_rectangle: bool = False,
+    ):
+        self.points = (
+            points if isinstance(points, np.ndarray) else np.array(points)
+        )
+        self.is_rectangle = is_rectangle
+        points_x = self.points[:, 0]
+        points_y = self.points[:, 1]
+        if is_rectangle:
+            self.signed_area = np.abs(self.points[2] - self.points[0]).prod()
+            self.area = self.signed_area
+        else:
+            self.signed_area = (
+                points_x @ np.roll(points_y, -1)
+                - points_x @ np.roll(points_y, 1)
+            ) / 2
+            self.area = np.abs(self.signed_area)
 
     def __len__(self):
         return len(self.points)
@@ -55,25 +34,22 @@ class GeometryPolygon:
         return self.points[idx]
 
     def __repr__(self) -> str:
-        points = ", ".join([str(point) for point in self.points])
-        return f"GeometryPolygon({points})"
-
-
-Segment = Tuple[GeometryPoint, GeometryPoint]
+        return f"GeometryPolygon({self.points})"
 
 
 # alpha * a1 + (1 - alpha) * a2 = beta * b1 + (1 - beta) * b2
 def segment_intersection(
-    segment1: Segment, segment2: Segment
-) -> Tuple[float, float, GeometryPoint]:
+    segment1: Tuple[np.ndarray, np.ndarray],
+    segment2: Tuple[np.ndarray, np.ndarray],
+) -> Tuple[float, float, np.ndarray]:
     a1, a2 = segment1
     b1, b2 = segment2
-    x2_x2 = b2.x - a2.x
-    y2_y2 = b2.y - a2.y
-    x1x2 = a1.x - a2.x
-    y1y2 = a1.y - a2.y
-    y1_y2_ = b1.y - b2.y
-    x1_x2_ = b1.x - b2.x
+    x2_x2 = b2[0] - a2[0]
+    y2_y2 = b2[1] - a2[1]
+    x1x2 = a1[0] - a2[0]
+    y1y2 = a1[1] - a2[1]
+    y1_y2_ = b1[1] - b2[1]
+    x1_x2_ = b1[0] - b2[0]
 
     if np.abs(y1_y2_ * x1x2 - x1_x2_ * y1y2) < TOLERANCE:
         beta = 1.0
@@ -139,13 +115,13 @@ def convex_polygon_intersection_area(
 
     def unique(ar):
         res = []
-        for i, _ in enumerate(ar):
-            if _.cmp(ar[i - 1]) > TOLERANCE:
-                res.append(_)
+        for i, a in enumerate(ar):
+            if np.abs(a - ar[i - 1]).sum() > TOLERANCE:
+                res.append(a)
 
         return res
 
-    ps = sorted(ps, key=lambda x: (x.x + TOLERANCE * x.y))
+    ps = sorted(ps, key=lambda x: (x[0] + TOLERANCE * x[1]))
     ps = unique(ps)
 
     if len(ps) == 0:
@@ -157,25 +133,63 @@ def convex_polygon_intersection_area(
     res.append(tmp)
     ps = sorted(
         ps[1:],
-        key=lambda x: -(
-            (x - tmp) @ GeometryPoint((0, 1)) / (x - tmp).length()
-        ),
+        key=lambda x: -((x - tmp) @ np.array((0, 1)) / len(x - tmp)),
     )
     res.extend(ps)
 
     return GeometryPolygon(res).signed_area * sign
 
 
+def area(box):
+    if box[2] <= box[0] or box[3] <= box[1]:
+        return 0
+    return (box[2] - box[0]) * (box[3] - box[1])
+
+
+def iou(box_a, box_b):
+    box_c = intersection(box_a, box_b)
+    return area(box_c) / (area(box_a) + area(box_b) - area(box_c))
+
+
+def intersection(box_a, box_b):
+    """boxes are left, top, right, bottom where left < right and top < bottom"""
+    box_c = [
+        max(box_a[0], box_b[0]),
+        max(box_a[1], box_b[1]),
+        min(box_a[2], box_b[2]),
+        min(box_a[3], box_b[3]),
+    ]
+    return box_c
+
+
+def rectangle_intersection_area(
+    polygon_a: GeometryPolygon, polygon_b: GeometryPolygon
+) -> float:
+    minx_a, miny_a = np.min(polygon_a.points, axis=0)
+    maxx_a, maxy_a = np.max(polygon_a.points, axis=0)
+    minx_b, miny_b = np.min(polygon_b.points, axis=0)
+    maxx_b, maxy_b = np.max(polygon_b.points, axis=0)
+
+    minx_c = max(minx_a, minx_b)
+    miny_c = max(miny_a, miny_b)
+    maxx_c = min(maxx_a, maxx_b)
+    maxy_c = min(maxy_a, maxy_b)
+    return max(maxx_c - minx_c, 0) * max(maxy_c - miny_c, 0)
+
+
 def polygon_intersection_area(
     polygon_a: GeometryPolygon, polygon_b: GeometryPolygon
 ) -> float:
+    if polygon_a.is_rectangle and polygon_b.is_rectangle:
+        return rectangle_intersection_area(polygon_a, polygon_b)
+
     na = len(polygon_a)
     nb = len(polygon_b)
     res = 0.0
     for i in range(1, na - 1):
-        sa = [polygon_a[0], polygon_a[i], polygon_a[i + 1]]
+        sa = polygon_a[[0, i, i + 1]]
         for j in range(1, nb - 1):
-            sb = [polygon_b[0], polygon_b[j], polygon_b[j + 1]]
+            sb = polygon_b[[0, j, j + 1]]
             tmp = convex_polygon_intersection_area(
                 GeometryPolygon(sa), GeometryPolygon(sb)
             )
