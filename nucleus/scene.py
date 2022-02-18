@@ -486,6 +486,9 @@ class VideoScene(ABC):
             assert isinstance(
                 item, DatasetItem
             ), "Each item in a scene must be a DatasetItem object"
+            assert (
+                item.video_frame_location is not None
+            ), "Each item in a scene must have a video_frame_location"
 
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
