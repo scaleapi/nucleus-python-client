@@ -32,7 +32,7 @@ class DeployClient:
         self,
         api_key: str,
         endpoint: str = SCALE_DEPLOY_ENDPOINT,
-        is_internal: bool = False,
+        is_self_hosted: bool = False,
     ):
         """
         Initializes a Scale Deploy Client.
@@ -40,11 +40,14 @@ class DeployClient:
         Parameters:
             api_key: Your Scale API key
             endpoint: The Scale Deploy Endpoint (this should not need to be changed)
-            is_internal: True iff you are connecting to a self-hosted Scale Deploy
+            is_self_hosted: True iff you are connecting to a self-hosted Scale Deploy
         """
         self.connection = Connection(api_key, endpoint)
-        self.is_internal = is_internal
+        self.is_self_hosted = is_self_hosted
         self.upload_bundle_fn: Optional[Callable[[str, str], None]] = None
+        self.endpoint_auth_decorator_fn: Callable[
+            [Dict[str, Any]], Dict[str, Any]
+        ] = lambda x: x
 
     def __repr__(self):
         return f"DeployClient(connection='{self.connection}')"
@@ -56,7 +59,7 @@ class DeployClient:
         self, upload_bundle_fn: Callable[[str, str], None]
     ):
         """
-        For internal mode only. Registers a function that handles model bundle upload. This function is called as
+        For self-hosted mode only. Registers a function that handles model bundle upload. This function is called as
 
         upload_bundle_fn(serialized_bundle, bundle_url)
 
@@ -64,9 +67,16 @@ class DeployClient:
 
         Parameters:
             upload_bundle_fn: Function that takes in a serialized bundle, and uploads that bundle to an appropriate
-                location. Only needed for internal mode.
+                location. Only needed for self-hosted mode.
         """
         self.upload_bundle_fn = upload_bundle_fn
+
+    def register_endpoint_auth_decorator(self, endpoint_auth_decorator_fn):
+        """
+        For self-hosted mode only. Registers a function that modifies the endpoint creation payload to include
+        required fields for self-hosting.
+        """
+        self.endpoint_auth_decorator_fn = endpoint_auth_decorator_fn
 
     def create_model_bundle(
         self,
@@ -90,7 +100,7 @@ class DeployClient:
             model: Typically a trained Neural Network, e.g. a Pytorch module
             load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
-            bundle_url: Only for internal mode. Desired location of bundle.
+            bundle_url: Only for self-hosted mode. Desired location of bundle.
         """
 
         if (model is not None and load_model_fn is not None) or (
@@ -110,7 +120,7 @@ class DeployClient:
             )
         serialized_bundle = cloudpickle.dumps(bundle)
 
-        if self.is_internal:
+        if self.is_self_hosted:
             if self.upload_bundle_fn is None:
                 raise ValueError("Upload_bundle_fn should be registered")
             if bundle_url is None:
@@ -150,8 +160,6 @@ class DeployClient:
         env_params: Dict[str, str],
         requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
-        aws_role: Optional[str] = None,
-        results_s3_bucket: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
     ) -> AsyncModelEndpoint:
         """
@@ -181,9 +189,6 @@ class DeployClient:
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
-            aws_role: Only used if client is set as "internal". K8s service account to use for the deployment
-            results_s3_bucket: Only used if client is set as "internal". S3 bucket to use for storing pickled results
-                Must be accessible from the aws_role set.
             overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
 
         Returns:
@@ -215,18 +220,11 @@ class DeployClient:
             per_worker=per_worker,
             requirements=requirements,
         )
-        if self.is_internal:
-            if aws_role is None or results_s3_bucket is None:
-                raise ValueError(
-                    "aws_role and results_s3_bucket should be non-None in internal mode"
-                )
-            payload.update(
-                aws_role=aws_role, results_s3_bucket=results_s3_bucket
-            )
         if gpus == 0:
             del payload["gpu_type"]
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
+        payload = self.endpoint_auth_decorator_fn(payload)
         if overwrite_existing_endpoint:
             resp = self.connection.put(
                 payload, f"{ENDPOINT_PATH}/{service_name}"
