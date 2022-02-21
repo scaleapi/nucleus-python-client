@@ -28,15 +28,26 @@ DeployModel_T = TypeVar("DeployModel_T")
 class DeployClient:
     """Scale Deploy Python Client extension."""
 
-    def __init__(self, api_key: str, endpoint: str = SCALE_DEPLOY_ENDPOINT):
+    def __init__(
+        self,
+        api_key: str,
+        endpoint: str = SCALE_DEPLOY_ENDPOINT,
+        is_self_hosted: bool = False,
+    ):
         """
         Initializes a Scale Deploy Client.
 
         Parameters:
             api_key: Your Scale API key
             endpoint: The Scale Deploy Endpoint (this should not need to be changed)
+            is_self_hosted: True iff you are connecting to a self-hosted Scale Deploy
         """
         self.connection = Connection(api_key, endpoint)
+        self.is_self_hosted = is_self_hosted
+        self.upload_bundle_fn: Optional[Callable[[str, str], None]] = None
+        self.endpoint_auth_decorator_fn: Callable[
+            [Dict[str, Any]], Dict[str, Any]
+        ] = lambda x: x
 
     def __repr__(self):
         return f"DeployClient(connection='{self.connection}')"
@@ -44,12 +55,36 @@ class DeployClient:
     def __eq__(self, other):
         return self.connection == other.connection
 
+    def register_upload_bundle_fn(
+        self, upload_bundle_fn: Callable[[str, str], None]
+    ):
+        """
+        For self-hosted mode only. Registers a function that handles model bundle upload. This function is called as
+
+        upload_bundle_fn(serialized_bundle, bundle_url)
+
+        This function should directly write the contents of serialized_bundle as a binary string into bundle_url.
+
+        Parameters:
+            upload_bundle_fn: Function that takes in a serialized bundle, and uploads that bundle to an appropriate
+                location. Only needed for self-hosted mode.
+        """
+        self.upload_bundle_fn = upload_bundle_fn
+
+    def register_endpoint_auth_decorator(self, endpoint_auth_decorator_fn):
+        """
+        For self-hosted mode only. Registers a function that modifies the endpoint creation payload to include
+        required fields for self-hosting.
+        """
+        self.endpoint_auth_decorator_fn = endpoint_auth_decorator_fn
+
     def create_model_bundle(
         self,
         model_bundle_name: str,
         load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
         model: Optional[DeployModel_T] = None,
         load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
+        bundle_url: Optional[str] = None,
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
@@ -65,6 +100,7 @@ class DeployClient:
             model: Typically a trained Neural Network, e.g. a Pytorch module
             load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
+            bundle_url: Only for self-hosted mode. Desired location of bundle.
         """
 
         if (model is not None and load_model_fn is not None) or (
@@ -75,14 +111,7 @@ class DeployClient:
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
-        # Grab a signed url to make upload to
-        model_bundle_s3_url = self.connection.post(
-            {}, MODEL_BUNDLE_SIGNED_URL_PATH
-        )
-        s3_path = model_bundle_s3_url["signedUrl"]
-        raw_s3_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
-
-        # Make bundle upload
+        # Create bundle
         if model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
         else:
@@ -90,10 +119,28 @@ class DeployClient:
                 load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
             )
         serialized_bundle = cloudpickle.dumps(bundle)
-        requests.put(s3_path, data=serialized_bundle)
+
+        if self.is_self_hosted:
+            if self.upload_bundle_fn is None:
+                raise ValueError("Upload_bundle_fn should be registered")
+            if bundle_url is None:
+                raise ValueError("bundle_url is None")
+            self.upload_bundle_fn(serialized_bundle, bundle_url)
+            raw_bundle_url = bundle_url
+        else:
+            # Grab a signed url to make upload to
+            model_bundle_s3_url = self.connection.post(
+                {}, MODEL_BUNDLE_SIGNED_URL_PATH
+            )
+            s3_path = model_bundle_s3_url["signedUrl"]
+            raw_bundle_url = f"s3://{model_bundle_s3_url['bucket']}/{model_bundle_s3_url['key']}"
+
+            # Make bundle upload
+
+            requests.put(s3_path, data=serialized_bundle)
 
         self.connection.post(
-            payload=dict(id=model_bundle_name, location=raw_s3_url),
+            payload=dict(id=model_bundle_name, location=raw_bundle_url),
             route="model_bundle",
         )  # TODO use return value somehow
         # resp["data"]["bundle_name"] should equal model_bundle_name
@@ -113,9 +160,11 @@ class DeployClient:
         env_params: Dict[str, str],
         requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
+        overwrite_existing_endpoint: bool = False,
     ) -> AsyncModelEndpoint:
         """
-        Creates a Model Endpoint that is able to serve requests
+        Creates a Model Endpoint that is able to serve requests.
+        Corresponds to POST/PUT endpoints
 
         Parameters:
             service_name: Name of model endpoint. Must be unique.
@@ -140,6 +189,7 @@ class DeployClient:
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
+            overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
 
         Returns:
              A ModelEndpoint object that can be used to make requests to the endpoint.
@@ -174,7 +224,13 @@ class DeployClient:
             del payload["gpu_type"]
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
-        resp = self.connection.post(payload, ENDPOINT_PATH)
+        payload = self.endpoint_auth_decorator_fn(payload)
+        if overwrite_existing_endpoint:
+            resp = self.connection.put(
+                payload, f"{ENDPOINT_PATH}/{service_name}"
+            )
+        else:
+            resp = self.connection.post(payload, ENDPOINT_PATH)
         endpoint_creation_task_id = resp.get(
             "endpoint_creation_task_id", None
         )  # TODO probably throw on None
@@ -212,7 +268,27 @@ class DeployClient:
             for endpoint_id in resp["endpoints"]
         ]
 
-    def sync_request(self, endpoint_id: str, url: str) -> str:
+    def delete_model_bundle(self, model_bundle: ModelBundle):
+        """
+        Deletes the model bundle on the server.
+        TODO test
+        """
+        route = f"model_bundle/{model_bundle.name}"
+        resp = self.connection.delete(route)
+        return resp["deleted"]
+
+    def delete_model_endpoint(self, model_endpoint: AsyncModelEndpoint):
+        """
+        Deletes a model endpoint.
+        TODO test
+        """
+        route = f"{ENDPOINT_PATH}/{model_endpoint.endpoint_id}"
+        resp = self.connection.delete(route)
+        return resp["deleted"]
+
+    def sync_request(
+        self, endpoint_id: str, url: str, return_pickled: bool = True
+    ) -> str:
         """
         DEPRECATED
         Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
@@ -221,6 +297,7 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
             A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
@@ -228,11 +305,14 @@ class DeployClient:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
         resp = self.connection.post(
-            payload=dict(url=url), route=f"{SYNC_TASK_PATH}/{endpoint_id}"
+            payload=dict(url=url, return_pickled=return_pickled),
+            route=f"{SYNC_TASK_PATH}/{endpoint_id}",
         )
         return resp["result_url"]
 
-    def async_request(self, endpoint_id: str, url: str) -> str:
+    def async_request(
+        self, endpoint_id: str, url: str, return_pickled: bool = True
+    ) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
@@ -242,6 +322,7 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
             An id/key that can be used to fetch inference results at a later time.
@@ -249,7 +330,8 @@ class DeployClient:
                 `abcabcab-cabc-abca-0123456789ab`
         """
         resp = self.connection.post(
-            payload=dict(url=url), route=f"{ASYNC_TASK_PATH}/{endpoint_id}"
+            payload=dict(url=url, return_pickled=return_pickled),
+            route=f"{ASYNC_TASK_PATH}/{endpoint_id}",
         )
         return resp["task_id"]
 
