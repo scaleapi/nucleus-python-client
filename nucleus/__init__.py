@@ -17,6 +17,8 @@ __all__ = [
     "Frame",
     "LidarScene",
     "LidarScene",
+    "LineAnnotation",
+    "LinePrediction",
     "Model",
     "ModelCreationError",
     # "MultiCategoryAnnotation", # coming soon!
@@ -50,6 +52,7 @@ from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    LineAnnotation,
     MultiCategoryAnnotation,
     Point,
     Point3D,
@@ -120,6 +123,7 @@ from .prediction import (
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
+    LinePrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
