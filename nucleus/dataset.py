@@ -47,6 +47,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
     UPDATE_KEY,
+    VIDEO_UPLOAD_TYPE_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -65,7 +66,7 @@ from .payload_constructor import (
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
-from .scene import LidarScene, Scene, check_all_scene_paths_remote
+from .scene import LidarScene, Scene, VideoScene, check_all_scene_paths_remote
 from .slice import Slice
 from .upload_response import UploadResponse
 
@@ -405,7 +406,9 @@ class Dataset:
 
     def append(
         self,
-        items: Union[Sequence[DatasetItem], Sequence[LidarScene]],
+        items: Union[
+            Sequence[DatasetItem], Sequence[LidarScene], Sequence[VideoScene]
+        ],
         update: bool = False,
         batch_size: int = 20,
         asynchronous: bool = False,
@@ -413,8 +416,7 @@ class Dataset:
         """Appends items or scenes to a dataset.
 
         .. note::
-            Datasets can only accept one of :class:`DatasetItems <DatasetItem>`
-            or :class:`Scenes <LidarScene>`, never both.
+            Datasets can only accept one of DatasetItems or Scenes, never both.
 
             This behavior is set during Dataset :meth:`creation
             <NucleusClient.create_dataset>` with the ``is_scene`` flag.
@@ -478,13 +480,14 @@ class Dataset:
               Union[ \
                 Sequence[:class:`DatasetItem`], \
                 Sequence[:class:`LidarScene`] \
+                Sequence[:class:`VideoScene`]
               ]): List of items or scenes to upload.
             batch_size: Size of the batch for larger uploads. Default is 20.
             update: Whether or not to overwrite metadata on reference ID collision.
               Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
-              return an :class:`AsyncJob` object). This is highly encouraged for
-              3D data to drastically increase throughput. Default is False.
+              return an :class:`AsyncJob` object). This is required when uploading
+              scenes. Default is False.
 
         Returns:
             For scenes
@@ -508,17 +511,26 @@ class Dataset:
         dataset_items = [
             item for item in items if isinstance(item, DatasetItem)
         ]
-        scenes = [item for item in items if isinstance(item, LidarScene)]
-        if dataset_items and scenes:
+        lidar_scenes = [item for item in items if isinstance(item, LidarScene)]
+        video_scenes = [item for item in items if isinstance(item, VideoScene)]
+        if dataset_items and (lidar_scenes or video_scenes):
             raise Exception(
                 "You must append either DatasetItems or Scenes to the dataset."
             )
-        if scenes:
+        if lidar_scenes:
             assert (
                 asynchronous
-            ), "In order to avoid timeouts, you must set asynchronous=True when uploading scenes."
+            ), "In order to avoid timeouts, you must set asynchronous=True when uploading 3D scenes."
 
-            return self._append_scenes(scenes, update, asynchronous)
+            return self._append_scenes(lidar_scenes, update, asynchronous)
+        if video_scenes:
+            assert (
+                asynchronous
+            ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
+
+            return self._append_video_scenes(
+                video_scenes, update, asynchronous
+            )
 
         check_for_duplicate_reference_ids(dataset_items)
 
@@ -598,6 +610,51 @@ class Dataset:
         response = self._client.make_request(
             payload=payload,
             route=f"{self.id}/upload_scenes",
+        )
+        return response
+
+    def _append_video_scenes(
+        self,
+        scenes: List[VideoScene],
+        update: Optional[bool] = False,
+        asynchronous: Optional[bool] = False,
+    ) -> Union[dict, AsyncJob]:
+        # TODO: make private in favor of Dataset.append invocation
+        if not self.is_scene:
+            raise Exception(
+                "Your dataset is not a scene dataset but only supports single dataset items. "
+                "In order to be able to add scenes, please create another dataset with "
+                "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
+                "an existing scene dataset."
+            )
+
+        for scene in scenes:
+            scene.validate()
+
+        if not asynchronous:
+            print(
+                "WARNING: Processing videos usually takes several seconds. As a result, synchronous video scene upload"
+                "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
+                "to avoid HTTP timeouts. Please see"
+                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
+                " for details."
+            )
+
+        if asynchronous:
+            # TODO check_all_scene_paths_remote(scenes)
+            request_id = serialize_and_write_to_presigned_url(
+                scenes, self.id, self._client
+            )
+            response = self._client.make_request(
+                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                route=f"{self.id}/upload_video_scenes?async=1",
+            )
+            return AsyncJob.from_json(response, self._client)
+
+        payload = construct_append_scenes_payload(scenes, update)
+        response = self._client.make_request(
+            payload=payload,
+            route=f"{self.id}/upload_video_scenes",
         )
         return response
 
@@ -1082,13 +1139,14 @@ class Dataset:
             :class:`Scene<LidarScene>`: A scene object containing frames, which
             in turn contain pointcloud or image items.
         """
-        return LidarScene.from_json(
-            self._client.make_request(
-                payload=None,
-                route=f"dataset/{self.id}/scene/{reference_id}",
-                requests_command=requests.get,
-            )
+        response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/scene/{reference_id}",
+            requests_command=requests.get,
         )
+        if VIDEO_UPLOAD_TYPE_KEY in response:
+            return VideoScene.from_json(response)
+        return LidarScene.from_json(response)
 
     def export_predictions(self, model):
         """Fetches all predictions of a model that were uploaded to the dataset.

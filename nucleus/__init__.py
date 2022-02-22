@@ -14,8 +14,6 @@ __all__ = [
     "DatasetItem",
     "DatasetItemRetrievalError",
     "Frame",
-    "Frame",
-    "LidarScene",
     "LidarScene",
     "LineAnnotation",
     "LinePrediction",
@@ -34,6 +32,7 @@ __all__ = [
     "SegmentationAnnotation",
     "SegmentationPrediction",
     "Slice",
+    "VideoScene",
 ]
 
 import os
@@ -128,7 +127,7 @@ from .prediction import (
     SegmentationPrediction,
 )
 from .retry_strategy import RetryStrategy
-from .scene import Frame, LidarScene
+from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
 from .upload_response import UploadResponse
 from .validate import Validate
