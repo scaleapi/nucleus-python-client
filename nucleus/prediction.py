@@ -4,12 +4,13 @@ as annotation types, but come with additional, optional data that can be attache
 such as confidence or probability distributions.
 """
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Type, Union
 
 from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    LineAnnotation,
     Point,
     Point3D,
     PolygonAnnotation,
@@ -28,6 +29,7 @@ from .constants import (
     GEOMETRY_KEY,
     HEIGHT_KEY,
     LABEL_KEY,
+    LINE_TYPE,
     MASK_URL_KEY,
     METADATA_KEY,
     POLYGON_TYPE,
@@ -45,16 +47,16 @@ from .constants import (
 
 def from_json(payload: dict):
     """Instantiates prediction object from schematized JSON dict payload."""
-    if payload.get(TYPE_KEY, None) == BOX_TYPE:
-        return BoxPrediction.from_json(payload)
-    elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
-        return PolygonPrediction.from_json(payload)
-    elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
-        return CuboidPrediction.from_json(payload)
-    elif payload.get(TYPE_KEY, None) == CATEGORY_TYPE:
-        return CategoryPrediction.from_json(payload)
-    else:
-        return SegmentationPrediction.from_json(payload)
+    type_key_to_type: Dict[str, Type[Prediction]] = {
+        BOX_TYPE: BoxPrediction,
+        LINE_TYPE: LinePrediction,
+        POLYGON_TYPE: PolygonPrediction,
+        CUBOID_TYPE: CuboidPrediction,
+        CATEGORY_TYPE: CategoryPrediction,
+    }
+    type_key = payload.get(TYPE_KEY, None)
+    PredictionCls = type_key_to_type.get(type_key, SegmentationPrediction)
+    return PredictionCls.from_json(payload)
 
 
 class SegmentationPrediction(SegmentationAnnotation):
@@ -195,6 +197,74 @@ class BoxPrediction(BoxAnnotation):
             y=geometry.get(Y_KEY, 0),
             width=geometry.get(WIDTH_KEY, 0),
             height=geometry.get(HEIGHT_KEY, 0),
+            reference_id=payload[REFERENCE_ID_KEY],
+            confidence=payload.get(CONFIDENCE_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, None),
+        )
+
+
+class LinePrediction(LineAnnotation):
+    """Prediction of a line.
+
+    Parameters:
+        label (str): The label for this prediction (e.g. car, pedestrian, bicycle).
+        vertices List[:class:`Point`]: The list of points making up the line.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        confidence: 0-1 indicating the confidence of the prediction.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies
+            this annotation within its target dataset item. Upon ingest, a matching
+            annotation id will be ignored by default, and updated if update=True
+            for dataset.annotate.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this prediction.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        class_pdf: An optional complete class probability distribution on this
+            annotation. Each value should be between 0 and 1 (inclusive), and sum up to
+            1 as a complete distribution. This can be useful for computing entropy to
+            surface places where the model is most uncertain.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        vertices: List[Point],
+        reference_id: str,
+        confidence: Optional[float] = None,
+        annotation_id: Optional[str] = None,
+        metadata: Optional[Dict] = None,
+        class_pdf: Optional[Dict] = None,
+    ):
+        super().__init__(
+            label=label,
+            vertices=vertices,
+            reference_id=reference_id,
+            annotation_id=annotation_id,
+            metadata=metadata,
+        )
+        self.confidence = confidence
+        self.class_pdf = class_pdf
+
+    def to_payload(self) -> dict:
+        payload = super().to_payload()
+        if self.confidence is not None:
+            payload[CONFIDENCE_KEY] = self.confidence
+        if self.class_pdf is not None:
+            payload[CLASS_PDF_KEY] = self.class_pdf
+
+        return payload
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        geometry = payload.get(GEOMETRY_KEY, {})
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            vertices=[
+                Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
+            ],
             reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
@@ -404,6 +474,7 @@ class CategoryPrediction(CategoryAnnotation):
 
 Prediction = Union[
     BoxPrediction,
+    LinePrediction,
     PolygonPrediction,
     CuboidPrediction,
     CategoryPrediction,
@@ -416,6 +487,7 @@ class PredictionList:
     """Wrapper class separating a list of predictions by type."""
 
     box_predictions: List[BoxPrediction] = field(default_factory=list)
+    line_predictions: List[LinePrediction] = field(default_factory=list)
     polygon_predictions: List[PolygonPrediction] = field(default_factory=list)
     cuboid_predictions: List[CuboidPrediction] = field(default_factory=list)
     category_predictions: List[CategoryPrediction] = field(
@@ -429,6 +501,8 @@ class PredictionList:
         for prediction in predictions:
             if isinstance(prediction, BoxPrediction):
                 self.box_predictions.append(prediction)
+            elif isinstance(prediction, LinePrediction):
+                self.line_predictions.append(prediction)
             elif isinstance(prediction, PolygonPrediction):
                 self.polygon_predictions.append(prediction)
             elif isinstance(prediction, CuboidPrediction):
@@ -444,6 +518,7 @@ class PredictionList:
     def __len__(self):
         return (
             len(self.box_predictions)
+            + len(self.line_predictions)
             + len(self.polygon_predictions)
             + len(self.cuboid_predictions)
             + len(self.category_predictions)

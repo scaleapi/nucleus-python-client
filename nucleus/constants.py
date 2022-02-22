@@ -5,6 +5,7 @@ ANNOTATION_ID_KEY = "annotation_id"
 ANNOTATION_METADATA_SCHEMA_KEY = "annotation_metadata_schema"
 BACKFILL_JOB_KEY = "backfill_job"
 BOX_TYPE = "box"
+LINE_TYPE = "line"
 POLYGON_TYPE = "polygon"
 MASK_TYPE = "mask"
 SEGMENTATION_TYPE = "segmentation"
@@ -13,6 +14,7 @@ CATEGORY_TYPE = "category"
 MULTICATEGORY_TYPE = "multicategory"
 ANNOTATION_TYPES = (
     BOX_TYPE,
+    LINE_TYPE,
     POLYGON_TYPE,
     SEGMENTATION_TYPE,
     CUBOID_TYPE,

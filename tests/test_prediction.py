@@ -7,6 +7,7 @@ from nucleus import (
     BoxPrediction,
     CategoryPrediction,
     DatasetItem,
+    LinePrediction,
     ModelRun,
     Point,
     PolygonPrediction,
@@ -22,6 +23,7 @@ from .helpers import (
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_PREDICTIONS,
     TEST_IMG_URLS,
+    TEST_LINE_PREDICTIONS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
@@ -29,6 +31,7 @@ from .helpers import (
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
+    assert_line_prediction_matches_dict,
     assert_polygon_prediction_matches_dict,
     assert_segmentation_annotation_matches_dict,
     reference_id_from_url,
@@ -45,6 +48,8 @@ def test_reprs():
     ]
 
     [test_repr(BoxPrediction.from_json(_)) for _ in TEST_BOX_PREDICTIONS]
+
+    [test_repr(LinePrediction.from_json(_)) for _ in TEST_LINE_PREDICTIONS]
 
     [
         test_repr(PolygonPrediction.from_json(_))
@@ -113,6 +118,19 @@ def test_box_pred_upload(model_run):
     assert response[0] == single_prediction
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
+
+
+def test_line_pred_upload(model_run):
+    prediction = LinePrediction.from_json(TEST_LINE_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["line"]
+    assert len(response) == 1
+    assert_line_prediction_matches_dict(response[0], TEST_LINE_PREDICTIONS[0])
 
 
 def test_polygon_pred_upload(model_run):
@@ -259,6 +277,59 @@ def test_box_pred_upload_ignore(model_run):
     response = model_run.refloc(prediction.reference_id)["box"]
     assert len(response) == 1
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
+
+
+def test_line_pred_upload_update(model_run):
+    prediction = LinePrediction.from_json(TEST_LINE_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["predictions_processed"] == 1
+
+    # Copy so we don't modify the original.
+    prediction_update_params = dict(TEST_LINE_PREDICTIONS[1])
+    prediction_update_params["annotation_id"] = TEST_LINE_PREDICTIONS[0][
+        "annotation_id"
+    ]
+    prediction_update_params["reference_id"] = TEST_LINE_PREDICTIONS[0][
+        "reference_id"
+    ]
+
+    prediction_update = LinePrediction.from_json(prediction_update_params)
+    response = model_run.predict(annotations=[prediction_update], update=True)
+
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["line"]
+    assert len(response) == 1
+    assert_line_prediction_matches_dict(response[0], prediction_update_params)
+
+
+def test_line_pred_upload_ignore(model_run):
+    prediction = LinePrediction.from_json(TEST_LINE_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["predictions_processed"] == 1
+
+    # Copy so we don't modify the original.
+    prediction_update_params = dict(TEST_LINE_PREDICTIONS[1])
+    prediction_update_params["annotation_id"] = TEST_LINE_PREDICTIONS[0][
+        "annotation_id"
+    ]
+    prediction_update_params["reference_id"] = TEST_LINE_PREDICTIONS[0][
+        "reference_id"
+    ]
+
+    prediction_update = LinePrediction.from_json(prediction_update_params)
+    # Default behavior is ignore.
+    response = model_run.predict(annotations=[prediction_update])
+
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 1
+
+    response = model_run.refloc(prediction.reference_id)["line"]
+    assert len(response) == 1
+    assert_line_prediction_matches_dict(response[0], TEST_LINE_PREDICTIONS[0])
 
 
 def test_polygon_pred_upload_update(model_run):
@@ -428,6 +499,7 @@ def test_mixed_pred_upload(model_run: ModelRun):
     prediction_semseg = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
     )
+    prediction_line = LinePrediction.from_json(TEST_LINE_PREDICTIONS[0])
     prediction_polygon = PolygonPrediction.from_json(
         TEST_POLYGON_PREDICTIONS[0]
     )
@@ -438,6 +510,7 @@ def test_mixed_pred_upload(model_run: ModelRun):
     response = model_run.predict(
         annotations=[
             prediction_semseg,
+            prediction_line,
             prediction_polygon,
             prediction_category,
             prediction_bbox,
@@ -445,12 +518,15 @@ def test_mixed_pred_upload(model_run: ModelRun):
     )
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_processed"] == 4
+    assert response["predictions_processed"] == 5
     assert response["predictions_ignored"] == 0
 
     all_predictions = model_run.ungrouped_export()
     assert_box_prediction_matches_dict(
         all_predictions["box"][0], TEST_BOX_PREDICTIONS[0]
+    )
+    assert_line_prediction_matches_dict(
+        all_predictions["line"][0], TEST_POLYGON_PREDICTIONS[0]
     )
     assert_polygon_prediction_matches_dict(
         all_predictions["polygon"][0], TEST_POLYGON_PREDICTIONS[0]
