@@ -162,7 +162,7 @@ class DeployClient:
         gpu_type: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
         endpoint_type: str = "async",
-    ) -> AsyncModelEndpoint:
+    ) -> Union[AsyncModelEndpoint, SyncModelEndpoint]:
         """
         Creates a Model Endpoint that is able to serve requests.
         Corresponds to POST/PUT endpoints
@@ -239,7 +239,14 @@ class DeployClient:
         logger.info(
             "Endpoint creation task id is %s", endpoint_creation_task_id
         )
-        return AsyncModelEndpoint(endpoint_id=service_name, client=self)
+        if endpoint_type == "async":
+            return AsyncModelEndpoint(endpoint_id=service_name, client=self)
+        elif endpoint_type == "sync":
+            return SyncModelEndpoint(endpoint_id=service_name, client=self)
+        else:
+            raise ValueError(
+                "Endpoint should be one of the types 'sync' or 'async'"
+            )
 
     # Relatively small wrappers around http requests
 
@@ -270,12 +277,12 @@ class DeployClient:
         async_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
             AsyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
             for endpoint in resp["endpoints"]
-            if endpoint["type"] == "async"
+            if endpoint["endpoint_type"] == "async"
         ]
         sync_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
             SyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
             for endpoint in resp["endpoints"]
-            if endpoint["type"] == "sync"
+            if endpoint["endpoint_type"] == "sync"
         ]
         return async_endpoints + sync_endpoints
 
@@ -287,7 +294,9 @@ class DeployClient:
         resp = self.connection.delete(route)
         return resp["deleted"]
 
-    def delete_model_endpoint(self, model_endpoint: AsyncModelEndpoint):
+    def delete_model_endpoint(
+        self, model_endpoint: Union[AsyncModelEndpoint, SyncModelEndpoint]
+    ):
         """
         Deletes a model endpoint.
         """
