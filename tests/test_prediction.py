@@ -526,7 +526,7 @@ def test_mixed_pred_upload(model_run: ModelRun):
         all_predictions["box"][0], TEST_BOX_PREDICTIONS[0]
     )
     assert_line_prediction_matches_dict(
-        all_predictions["line"][0], TEST_POLYGON_PREDICTIONS[0]
+        all_predictions["line"][0], TEST_LINE_PREDICTIONS[0]
     )
     assert_polygon_prediction_matches_dict(
         all_predictions["polygon"][0], TEST_POLYGON_PREDICTIONS[0]
