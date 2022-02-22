@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 import cloudpickle
 import requests
@@ -15,7 +15,7 @@ from nucleus.deploy.constants import (
 )
 from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
-from nucleus.deploy.model_endpoint import AsyncModelEndpoint
+from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
 
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
@@ -161,6 +161,7 @@ class DeployClient:
         requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
+        endpoint_type: str = "async",
     ) -> AsyncModelEndpoint:
         """
         Creates a Model Endpoint that is able to serve requests.
@@ -219,6 +220,7 @@ class DeployClient:
             max_workers=max_workers,
             per_worker=per_worker,
             requirements=requirements,
+            endpoint_type=endpoint_type,
         )
         if gpus == 0:
             del payload["gpu_type"]
@@ -254,7 +256,9 @@ class DeployClient:
         ]
         return model_bundles
 
-    def list_model_endpoints(self) -> List[AsyncModelEndpoint]:
+    def list_model_endpoints(
+        self,
+    ) -> List[Union[AsyncModelEndpoint, SyncModelEndpoint]]:
         """
         Lists all model endpoints that the user owns.
         TODO: single get_model_endpoint(self)? route doesn't exist serverside I think
@@ -263,15 +267,21 @@ class DeployClient:
             A list of ModelEndpoint objects
         """
         resp = self.connection.get(ENDPOINT_PATH)
-        return [
-            AsyncModelEndpoint(endpoint_id=endpoint_id, client=self)
-            for endpoint_id in resp["endpoints"]
+        async_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
+            AsyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
+            for endpoint in resp["endpoints"]
+            if endpoint["type"] == "async"
         ]
+        sync_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
+            SyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
+            for endpoint in resp["endpoints"]
+            if endpoint["type"] == "sync"
+        ]
+        return async_endpoints + sync_endpoints
 
     def delete_model_bundle(self, model_bundle: ModelBundle):
         """
         Deletes the model bundle on the server.
-        TODO test
         """
         route = f"model_bundle/{model_bundle.name}"
         resp = self.connection.delete(route)
@@ -280,7 +290,6 @@ class DeployClient:
     def delete_model_endpoint(self, model_endpoint: AsyncModelEndpoint):
         """
         Deletes a model endpoint.
-        TODO test
         """
         route = f"{ENDPOINT_PATH}/{model_endpoint.endpoint_id}"
         resp = self.connection.delete(route)
@@ -290,8 +299,9 @@ class DeployClient:
         self, endpoint_id: str, url: str, return_pickled: bool = True
     ) -> str:
         """
-        DEPRECATED
-        Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
+        Not recommended for use, instead use functions provided by SyncModelEndpoint
+        Makes a request to the Sync Model Endpoint at endpoint_id, and blocks until request completion or timeout.
+        Endpoint at endpoint_id must be a SyncModelEndpoint, otherwise this request will fail.
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
@@ -315,8 +325,9 @@ class DeployClient:
     ) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
-        Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
+        Makes a request to the Async Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
         the result of inference at a later time.
+        Endpoint
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
