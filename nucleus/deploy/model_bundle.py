@@ -9,6 +9,7 @@ class ModelBundle:
     Represents a ModelBundle.
     TODO fill this out with more than just a name potentially.
     """
+
     name: str
     func_or_class: Any = None
     code: str = ""
@@ -25,4 +26,5 @@ def create(name=None):
             code=inspect.getsource(func_or_class),
         )
         return func_or_class
+
     return decorator
