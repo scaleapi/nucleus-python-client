@@ -20,7 +20,7 @@ class ModelBundle:
 
 def create(name=None):
     def decorator(func_or_class):
-        func_or_class._bundle_object = ModelBundle(
+        func_or_class.bundle_object = ModelBundle(
             name=name or func_or_class.__name__,
             func_or_class=func_or_class,
             code=inspect.getsource(func_or_class),
