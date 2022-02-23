@@ -40,12 +40,10 @@ infrastructure level details such as autoscaling and task queueing. There are tw
 .. image:: /../docs/images/deploy/model_endpoint.png
     :width: 400px
 
-TODO explain what a `SyncModelEndpoint` and `AsyncModelEndpoint` are.
-
 A `SyncModelEndpoint` takes in requests and immediately returns the response in a blocking manner.
 The `SyncModelEndpoint` always consumes resources, and autoscales on the number of inflight requests.
 
-An `AsyncModelEndpoint` takes in requests and returns an asynchronous response token that the user can query to monitor
+An `AsyncModelEndpoint` takes in requests and returns an asynchronous response token. The user can later query to monitor
 the status of the request. We may later expose a callback mechanism. Asynchronous endpoints can scale up from zero,
 which make them a cost effective choice for services that are not latency sensitive.
 Asynchronous endpoints autoscale on the number of inflight requests.
@@ -58,7 +56,7 @@ Choosing between different types of inference:
 
 `SyncModelEndpoints` are good if:
 
-- You have strict latency requirements (e.g. on the order of seconds)
+- You have strict latency requirements (e.g. on the order of seconds or less)
 
 - You are willing to have resources continually allocated
 
@@ -68,9 +66,11 @@ Choosing between different types of inference:
 
 - Your inference code takes a long time to run
 
+- Your latency requirements are on the order of minutes.
+
 `BatchJobs` are good if:
 
-- You know there is a batch of inputs ahead of time
+- You know there is a large batch of inputs ahead of time
 
 - You want to process data in an offline fashion
 
