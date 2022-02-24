@@ -149,7 +149,7 @@ class DeployClient:
 
     def create_model_endpoint(
         self,
-        service_name: str,
+        endpoint_name: str,
         model_bundle: ModelBundle,
         cpus: int,
         memory: str,
@@ -168,7 +168,7 @@ class DeployClient:
         Corresponds to POST/PUT endpoints
 
         Parameters:
-            service_name: Name of model endpoint. Must be unique.
+            endpoint_name: Name of model endpoint. Must be unique.
             model_bundle: The ModelBundle that you want your Model Endpoint to serve
             cpus: Number of cpus each worker should get, e.g. 1, 2, etc.
             memory: Amount of memory each worker should get, e.g. "4Gi", "512Mi", etc.
@@ -191,6 +191,7 @@ class DeployClient:
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
             overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
+            endpoint_type: Either "sync" or "async". Type of endpoint we want to instantiate.
 
         Returns:
              A ModelEndpoint object that can be used to make requests to the endpoint.
@@ -205,11 +206,11 @@ class DeployClient:
             logger.info(
                 "Using \n%s\n for model endpoint %s",
                 requirements,
-                service_name,
+                endpoint_name,
             )
             # TODO test
         payload = dict(
-            service_name=service_name,
+            endpoint_name=endpoint_name,
             env_params=env_params,
             bundle_name=model_bundle.name,
             cpus=cpus,
@@ -229,7 +230,7 @@ class DeployClient:
         payload = self.endpoint_auth_decorator_fn(payload)
         if overwrite_existing_endpoint:
             resp = self.connection.put(
-                payload, f"{ENDPOINT_PATH}/{service_name}"
+                payload, f"{ENDPOINT_PATH}/{endpoint_name}"
             )
         else:
             resp = self.connection.post(payload, ENDPOINT_PATH)
@@ -240,9 +241,9 @@ class DeployClient:
             "Endpoint creation task id is %s", endpoint_creation_task_id
         )
         if endpoint_type == "async":
-            return AsyncModelEndpoint(endpoint_id=service_name, client=self)
+            return AsyncModelEndpoint(endpoint_id=endpoint_name, client=self)
         elif endpoint_type == "sync":
-            return SyncModelEndpoint(endpoint_id=service_name, client=self)
+            return SyncModelEndpoint(endpoint_id=endpoint_name, client=self)
         else:
             raise ValueError(
                 "Endpoint should be one of the types 'sync' or 'async'"
