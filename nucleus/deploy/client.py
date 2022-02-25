@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 import cloudpickle
 import requests
@@ -15,7 +15,7 @@ from nucleus.deploy.constants import (
 )
 from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
-from nucleus.deploy.model_endpoint import AsyncModelEndpoint
+from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
 
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
@@ -149,7 +149,7 @@ class DeployClient:
 
     def create_model_endpoint(
         self,
-        service_name: str,
+        endpoint_name: str,
         model_bundle: ModelBundle,
         cpus: int,
         memory: str,
@@ -161,13 +161,14 @@ class DeployClient:
         requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
-    ) -> AsyncModelEndpoint:
+        endpoint_type: str = "async",
+    ) -> Union[AsyncModelEndpoint, SyncModelEndpoint]:
         """
         Creates a Model Endpoint that is able to serve requests.
         Corresponds to POST/PUT endpoints
 
         Parameters:
-            service_name: Name of model endpoint. Must be unique.
+            endpoint_name: Name of model endpoint. Must be unique.
             model_bundle: The ModelBundle that you want your Model Endpoint to serve
             cpus: Number of cpus each worker should get, e.g. 1, 2, etc.
             memory: Amount of memory each worker should get, e.g. "4Gi", "512Mi", etc.
@@ -190,6 +191,7 @@ class DeployClient:
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
             overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
+            endpoint_type: Either "sync" or "async". Type of endpoint we want to instantiate.
 
         Returns:
              A ModelEndpoint object that can be used to make requests to the endpoint.
@@ -204,11 +206,11 @@ class DeployClient:
             logger.info(
                 "Using \n%s\n for model endpoint %s",
                 requirements,
-                service_name,
+                endpoint_name,
             )
             # TODO test
         payload = dict(
-            service_name=service_name,
+            endpoint_name=endpoint_name,
             env_params=env_params,
             bundle_name=model_bundle.name,
             cpus=cpus,
@@ -219,6 +221,7 @@ class DeployClient:
             max_workers=max_workers,
             per_worker=per_worker,
             requirements=requirements,
+            endpoint_type=endpoint_type,
         )
         if gpus == 0:
             del payload["gpu_type"]
@@ -227,7 +230,7 @@ class DeployClient:
         payload = self.endpoint_auth_decorator_fn(payload)
         if overwrite_existing_endpoint:
             resp = self.connection.put(
-                payload, f"{ENDPOINT_PATH}/{service_name}"
+                payload, f"{ENDPOINT_PATH}/{endpoint_name}"
             )
         else:
             resp = self.connection.post(payload, ENDPOINT_PATH)
@@ -237,7 +240,14 @@ class DeployClient:
         logger.info(
             "Endpoint creation task id is %s", endpoint_creation_task_id
         )
-        return AsyncModelEndpoint(endpoint_id=service_name, client=self)
+        if endpoint_type == "async":
+            return AsyncModelEndpoint(endpoint_id=endpoint_name, client=self)
+        elif endpoint_type == "sync":
+            return SyncModelEndpoint(endpoint_id=endpoint_name, client=self)
+        else:
+            raise ValueError(
+                "Endpoint should be one of the types 'sync' or 'async'"
+            )
 
     # Relatively small wrappers around http requests
 
@@ -254,7 +264,9 @@ class DeployClient:
         ]
         return model_bundles
 
-    def list_model_endpoints(self) -> List[AsyncModelEndpoint]:
+    def list_model_endpoints(
+        self,
+    ) -> List[Union[AsyncModelEndpoint, SyncModelEndpoint]]:
         """
         Lists all model endpoints that the user owns.
         TODO: single get_model_endpoint(self)? route doesn't exist serverside I think
@@ -263,24 +275,31 @@ class DeployClient:
             A list of ModelEndpoint objects
         """
         resp = self.connection.get(ENDPOINT_PATH)
-        return [
-            AsyncModelEndpoint(endpoint_id=endpoint_id, client=self)
-            for endpoint_id in resp["endpoints"]
+        async_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
+            AsyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
+            for endpoint in resp["endpoints"]
+            if endpoint["endpoint_type"] == "async"
         ]
+        sync_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
+            SyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
+            for endpoint in resp["endpoints"]
+            if endpoint["endpoint_type"] == "sync"
+        ]
+        return async_endpoints + sync_endpoints
 
     def delete_model_bundle(self, model_bundle: ModelBundle):
         """
         Deletes the model bundle on the server.
-        TODO test
         """
         route = f"model_bundle/{model_bundle.name}"
         resp = self.connection.delete(route)
         return resp["deleted"]
 
-    def delete_model_endpoint(self, model_endpoint: AsyncModelEndpoint):
+    def delete_model_endpoint(
+        self, model_endpoint: Union[AsyncModelEndpoint, SyncModelEndpoint]
+    ):
         """
         Deletes a model endpoint.
-        TODO test
         """
         route = f"{ENDPOINT_PATH}/{model_endpoint.endpoint_id}"
         resp = self.connection.delete(route)
@@ -290,8 +309,9 @@ class DeployClient:
         self, endpoint_id: str, url: str, return_pickled: bool = True
     ) -> str:
         """
-        DEPRECATED
-        Makes a request to the Model Endpoint at endpoint_id, and blocks until request completion or timeout.
+        Not recommended for use, instead use functions provided by SyncModelEndpoint
+        Makes a request to the Sync Model Endpoint at endpoint_id, and blocks until request completion or timeout.
+        Endpoint at endpoint_id must be a SyncModelEndpoint, otherwise this request will fail.
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to
@@ -315,8 +335,9 @@ class DeployClient:
     ) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
-        Makes a request to the Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
+        Makes a request to the Async Model Endpoint at endpoint_id, and immediately returns a key that can be used to retrieve
         the result of inference at a later time.
+        Endpoint
 
         Parameters:
             endpoint_id: The id of the endpoint to make the request to

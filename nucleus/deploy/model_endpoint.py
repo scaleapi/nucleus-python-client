@@ -7,6 +7,22 @@ TASK_SUCCESS_STATE = "SUCCESS"
 TASK_FAILURE_STATE = "FAILURE"
 
 
+class SyncModelEndpoint:
+    def __init__(self, endpoint_id: str, client):
+        self.endpoint_id = endpoint_id
+        self.client = client
+
+    def __str__(self):
+        return f"SyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
+
+    def predict(self, url):
+        return self.client.sync_request(self.endpoint_id, url)
+
+    def status(self):
+        # TODO this functionality doesn't exist serverside
+        raise NotImplementedError
+
+
 class AsyncModelEndpoint:
     """
     A higher level abstraction for a Model Endpoint.
@@ -22,9 +38,9 @@ class AsyncModelEndpoint:
         self.client = client
 
     def __str__(self):
-        return f"ModelEndpoint <endpoint_id:{self.endpoint_id}>"
+        return f"AsyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def predict(
+    def predict_batch(
         self,
         urls: Sequence[str],
     ) -> "AsyncModelEndpointResponse":

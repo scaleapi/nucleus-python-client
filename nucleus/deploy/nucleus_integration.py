@@ -105,7 +105,7 @@ def create_nucleus_dataset_inference_run(
     Returns a NucleusDatasetInferenceRun, client will need to periodically call poll on this in order to upload
     """
     s3urls, s3url_to_dataset_map = _nucleus_ds_to_s3url_list(dataset)
-    async_job = hmi_endpoint.predict(s3urls)
+    async_job = hmi_endpoint.predict_batch(s3urls)
     return NucleusDatasetInferenceRun(
         async_job, nucleus_client, s3url_to_dataset_map, dataset
     )

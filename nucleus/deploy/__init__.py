@@ -35,12 +35,44 @@ A `ModelEndpoint` is the compute layer that takes in a `ModelBundle`, and is abl
 by using the `ModelBundle` to carry out predictions. The `ModelEndpoint` also knows infrastructure-level details,
 such as how many GPUs are needed, what type they are, how much memory, etc. The `ModelEndpoint` automatically handles
 infrastructure level details such as autoscaling and task queueing. There are two types of `ModelEndpoint`s:
-`SyncModelEndpoint`s and `AsyncModelEndpoint`s; currently `AsyncModelEndpoint` is the only type implemented.
+`SyncModelEndpoint`s and `AsyncModelEndpoint`s.
 
 .. image:: /../docs/images/deploy/model_endpoint.png
     :width: 400px
 
-TODO explain what a `SyncModelEndpoint` and `AsyncModelEndpoint` are.
+A `SyncModelEndpoint` takes in requests and immediately returns the response in a blocking manner.
+The `SyncModelEndpoint` always consumes resources, and autoscales on the number of inflight requests.
+
+An `AsyncModelEndpoint` takes in requests and returns an asynchronous response token. The user can later query to monitor
+the status of the request. We may later expose a callback mechanism. Asynchronous endpoints can scale up from zero,
+which make them a cost effective choice for services that are not latency sensitive.
+Asynchronous endpoints autoscale on the number of inflight requests.
+
+In addition, we will expose another abstraction called a `BatchJob`, which takes in a `ModelBundle` and a list of inputs
+to predict on. Once a batch job completes, it cannot be restarted or accept additional requests.
+Deploy maintains metadata about batch jobs for users to query, even after batch jobs are complete.
+
+Choosing between different types of inference:
+
+`SyncModelEndpoints` are good if:
+
+- You have strict latency requirements (e.g. on the order of seconds or less)
+
+- You are willing to have resources continually allocated
+
+`AsyncModelEndpoints` are good if:
+
+- You want to save on compute costs
+
+- Your inference code takes a long time to run
+
+- Your latency requirements are on the order of minutes.
+
+`BatchJobs` are good if:
+
+- You know there is a large batch of inputs ahead of time
+
+- You want to process data in an offline fashion
 
 Steps to deploy your model via Scale Deploy:
 
