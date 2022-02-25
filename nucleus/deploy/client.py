@@ -1,4 +1,5 @@
 import logging
+import inspect
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 import cloudpickle
@@ -111,13 +112,17 @@ class DeployClient:
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
+        bundle_metadata = {}
         # Create bundle
         if model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
+            bundle_metadata["load_predict_fn"] = inspect.getsource(load_predict_fn)
         else:
             bundle = dict(
                 load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
             )
+            bundle_metadata["load_predict_fn"] = inspect.getsource(load_predict_fn)
+            bundle_metadata["load_model_fn"] = inspect.getsource(load_model_fn)
         serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
@@ -140,7 +145,11 @@ class DeployClient:
             requests.put(s3_path, data=serialized_bundle)
 
         self.connection.post(
-            payload=dict(id=model_bundle_name, location=raw_bundle_url),
+            payload=dict(
+                id=model_bundle_name,
+                location=raw_bundle_url,
+                bundle_metadata=bundle_metadata,
+            ),
             route="model_bundle",
         )  # TODO use return value somehow
         # resp["data"]["bundle_name"] should equal model_bundle_name
