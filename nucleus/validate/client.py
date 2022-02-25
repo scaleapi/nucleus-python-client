@@ -7,14 +7,16 @@ from .constants import SCENARIO_TEST_ID_KEY
 from .data_transfer_objects.eval_function import GetEvalFunctions
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
 from .errors import CreateScenarioTestError
-from .eval_functions.available_eval_functions import (
-    AvailableEvalFunctions,
-    EvalFunction,
-)
+from .eval_functions.available_eval_functions import AvailableEvalFunctions
+from .eval_functions.base_eval_function import BaseEvalFunction
 from .scenario_test import ScenarioTest
 
 SUCCESS_KEY = "success"
 EVAL_FUNCTIONS_KEY = "eval_functions"
+
+
+class InvalidEvaluationCriteria(Exception):
+    pass
 
 
 class Validate:
@@ -78,6 +80,30 @@ class Validate:
                 "Must pass an evaluation_function to the scenario test! I.e. "
                 "evaluation_functions=[client.validate.eval_functions.bbox_iou()]"
             )
+        incorrect_type = [
+            crit
+            for crit in evaluation_criteria
+            if not isinstance(crit, EvaluationCriterion)
+        ]
+        if incorrect_type:
+            # NOTE: We expect people to forget adding comparison to these calls so make an explicit error msg.
+            eval_funcs = [
+                incorrect
+                for incorrect in incorrect_type
+                if isinstance(incorrect, BaseEvalFunction)
+            ]
+            if eval_funcs:
+                example: BaseEvalFunction = eval_funcs[0]
+                example_call = f"{example.name}(<args>)"
+                msg = (
+                    f"Expected a comparison (<, <=, >, >=) for every `evaluation_criteria`. "
+                    f"You should add a comparison to {eval_funcs}. "
+                    f"I.e. `{example_call} > 0.5` instead of just `{example_call}`"
+                )
+            else:
+                msg = f"Received an incorrect `evaluation_criteria`: {repr(incorrect_type)}"
+            raise InvalidEvaluationCriteria(msg)
+
         response = self.connection.post(
             CreateScenarioTestRequest(
                 name=name,

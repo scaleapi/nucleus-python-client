@@ -1,5 +1,5 @@
 import itertools
-from typing import Callable, Dict, List, Optional, Type, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from nucleus.logger import logger
 from nucleus.validate.eval_functions.base_eval_function import BaseEvalFunction
@@ -11,24 +11,102 @@ MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 
 
 class BoundingBoxIOU(BaseEvalFunction):
+    def __call__(
+        self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonIOU` object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            **kwargs,
+        )
+
     @classmethod
     def expected_name(cls) -> str:
         return "bbox_iou"
 
 
 class BoundingBoxMeanAveragePrecision(BaseEvalFunction):
+    def __call__(
+        self,
+        iou_threshold: float = 0.0,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonMAP` object.
+
+        Args:
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+        """
+        return super().__call__(
+            iou_threshold=iou_threshold,
+            **kwargs,
+        )
+
     @classmethod
     def expected_name(cls) -> str:
         return "bbox_map"
 
 
 class BoundingBoxRecall(BaseEvalFunction):
+    def __call__(
+        self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonRecall` object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            **kwargs,
+        )
+
     @classmethod
     def expected_name(cls) -> str:
         return "bbox_recall"
 
 
 class BoundingBoxPrecision(BaseEvalFunction):
+    def __call__(
+        self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonPrecision` object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            **kwargs,
+        )
+
     @classmethod
     def expected_name(cls) -> str:
         return "bbox_precision"
@@ -41,6 +119,35 @@ class CategorizationF1(BaseEvalFunction):
         f1_method: Optional[str] = None,
         **kwargs,
     ):
+        """
+        Args:
+            confidence_threshold: minimum confidence threshold for predictions to be taken into account for evaluation.
+                 Must be in [0, 1]. Default 0.0
+            f1_method: {'micro', 'macro', 'samples','weighted', 'binary'}, \
+                default='macro'
+            This parameter is required for multiclass/multilabel targets.
+            If ``None``, the scores for each class are returned. Otherwise, this
+            determines the type of averaging performed on the data:
+
+            ``'binary'``:
+                Only report results for the class specified by ``pos_label``.
+                This is applicable only if targets (``y_{true,pred}``) are binary.
+            ``'micro'``:
+                Calculate metrics globally by counting the total true positives,
+                false negatives and false positives.
+            ``'macro'``:
+                Calculate metrics for each label, and find their unweighted
+                mean.  This does not take label imbalance into account.
+            ``'weighted'``:
+                Calculate metrics for each label, and find their average weighted
+                by support (the number of true instances for each label). This
+                alters 'macro' to account for label imbalance; it can result in an
+                F-score that is not between precision and recall.
+            ``'samples'``:
+                Calculate metrics for each instance, and find their average (only
+                meaningful for multilabel classification where this differs from
+                :func:`accuracy_score`).
+        """
         return super().__call__(
             confidence_threshold=confidence_threshold, f1_method=f1_method
         )
@@ -99,13 +206,14 @@ class EvalFunctionNotAvailable(BaseEvalFunction):
 
 
 EvalFunction = Union[
-    Type[BoundingBoxIOU],
-    Type[BoundingBoxMeanAveragePrecision],
-    Type[BoundingBoxPrecision],
-    Type[BoundingBoxRecall],
-    Type[CustomEvalFunction],
-    Type[EvalFunctionNotAvailable],
-    Type[StandardEvalFunction],
+    BoundingBoxIOU,
+    BoundingBoxMeanAveragePrecision,
+    BoundingBoxPrecision,
+    BoundingBoxRecall,
+    CategorizationF1,
+    CustomEvalFunction,
+    EvalFunctionNotAvailable,
+    StandardEvalFunction,
 ]
 
 
@@ -140,14 +248,14 @@ class AvailableEvalFunctions:
             for f in available_functions
             if not f.is_public
         }
-        self.bbox_iou = self._assign_eval_function_if_defined(BoundingBoxIOU)  # type: ignore
-        self.bbox_precision = self._assign_eval_function_if_defined(
+        self.bbox_iou: BoundingBoxIOU = self._assign_eval_function_if_defined(BoundingBoxIOU)  # type: ignore
+        self.bbox_precision: BoundingBoxPrecision = self._assign_eval_function_if_defined(
             BoundingBoxPrecision  # type: ignore
         )
-        self.bbox_recall = self._assign_eval_function_if_defined(
+        self.bbox_recall: BoundingBoxRecall = self._assign_eval_function_if_defined(
             BoundingBoxRecall  # type: ignore
         )
-        self.bbox_map = self._assign_eval_function_if_defined(
+        self.bbox_map: BoundingBoxMeanAveragePrecision = self._assign_eval_function_if_defined(
             BoundingBoxMeanAveragePrecision  # type: ignore
         )
         self.cat_f1: CategorizationF1 = self._assign_eval_function_if_defined(
