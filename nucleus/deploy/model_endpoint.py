@@ -15,7 +15,7 @@ class SyncModelEndpoint:
     def __str__(self):
         return f"SyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def predict_one(self, url):
+    def predict(self, url):
         return self.client.sync_request(self.endpoint_id, url)
 
     def status(self):
@@ -40,7 +40,7 @@ class AsyncModelEndpoint:
     def __str__(self):
         return f"AsyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def predict(
+    def predict_batch(
         self,
         urls: Sequence[str],
     ) -> "AsyncModelEndpointResponse":
