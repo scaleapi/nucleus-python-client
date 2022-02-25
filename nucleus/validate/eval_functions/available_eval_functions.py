@@ -1,5 +1,5 @@
 import itertools
-from typing import Callable, Dict, List, Type, Union
+from typing import Callable, Dict, List, Optional, Type, Union
 
 from nucleus.logger import logger
 from nucleus.validate.eval_functions.base_eval_function import BaseEvalFunction
@@ -35,6 +35,16 @@ class BoundingBoxPrecision(BaseEvalFunction):
 
 
 class CategorizationF1(BaseEvalFunction):
+    def __call__(
+        self,
+        confidence_threshold: Optional[float] = None,
+        f1_method: Optional[str] = None,
+        **kwargs,
+    ):
+        return super().__call__(
+            confidence_threshold=confidence_threshold, f1_method=f1_method
+        )
+
     @classmethod
     def expected_name(cls) -> str:
         return "cat_f1"
@@ -140,7 +150,7 @@ class AvailableEvalFunctions:
         self.bbox_map = self._assign_eval_function_if_defined(
             BoundingBoxMeanAveragePrecision  # type: ignore
         )
-        self.cat_f1 = self._assign_eval_function_if_defined(
+        self.cat_f1: CategorizationF1 = self._assign_eval_function_if_defined(
             CategorizationF1  # type: ignore
         )
 

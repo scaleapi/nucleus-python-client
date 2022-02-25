@@ -1,4 +1,5 @@
 import abc
+from typing import Any, Dict
 
 from ..constants import ThresholdComparison
 from ..data_transfer_objects.eval_function import (
@@ -17,6 +18,7 @@ class BaseEvalFunction(abc.ABC):
         self.eval_func_entry = eval_func_entry
         self.id = eval_func_entry.id
         self.name = eval_func_entry.name
+        self.eval_func_arguments: Dict[str, Any] = {}
 
     def __repr__(self):
         return f"<EvalFunction: name={self.name}, id={self.id}>"
@@ -26,7 +28,7 @@ class BaseEvalFunction(abc.ABC):
     def expected_name(cls) -> str:
         """Name to look for in the EvalFunctionDefinitions"""
 
-    def __call__(self) -> "BaseEvalFunction":
+    def __call__(self, **kwargs) -> "BaseEvalFunction":
         """Adding call to prepare for being able to pass parameters to function
 
         Notes:
@@ -34,6 +36,7 @@ class BaseEvalFunction(abc.ABC):
             to look like eval_function() > 0.5 to support eval_function(parameters) > 0.5
             in the future
         """
+        self.eval_func_arguments.update(**kwargs)
         return self
 
     def __gt__(self, other) -> EvaluationCriterion:
@@ -57,6 +60,7 @@ class BaseEvalFunction(abc.ABC):
             eval_function_id=self.eval_func_entry.id,
             threshold_comparison=comparison,
             threshold=value,
+            eval_func_arguments=self.eval_func_arguments,
         )
 
     def to_entry(self):
