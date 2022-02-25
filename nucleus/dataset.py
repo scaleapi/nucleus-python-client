@@ -1017,6 +1017,7 @@ class Dataset:
                     "total_images": Count of images in the dataset
                     "indexed_images": Count of images with embeddings in the dataset
                     "percent_indexed": Percent of images in the dataset that have been successfully indexed
+                    "additional_context": Additional context to the response
                 }
         """
         return self._client.make_request(

@@ -556,3 +556,16 @@ def test_dataset_item_iterator(dataset):
     }
     for key in expected_items:
         assert actual_items[key] == expected_items[key]
+
+
+@pytest.mark.integration
+def test_dataset_get_continuous_indexing_status(dataset):
+    dataset.set_continuous_indexing(True)
+    
+    items = make_dataset_items()
+    dataset.append(items)
+
+    response = dataset.get_continuous_indexing_status()
+    assert response["total_images"] == len(items)
+    assert response["indexed_images"] <= len(items)
+    assert response["percent_indexed"] >= 0
