@@ -95,8 +95,8 @@ def test_passing_eval_arguments(CLIENT, test_slice, annotations):
     CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[
-            CLIENT.validate.eval_functions.bbox_iou(iou_threshold=0.5) > 0
+        evaluation_functions=[
+            CLIENT.validate.eval_functions.bbox_iou(iou_threshold=0.5)
         ],
     )
 
@@ -117,3 +117,15 @@ def test_scenario_test_set_model_baseline(CLIENT, annotations, scenario_test):
     # create some dataset_items for the scenario test to reference
     with pytest.raises(Exception):
         scenario_test.set_baseline_model("nonexistent_model_id")
+
+
+
+def test_passing_eval_arguments(CLIENT, test_slice, annotations):
+    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+    CLIENT.validate.create_scenario_test(
+        name=test_name,
+        slice_id=test_slice.id,
+        evaluation_functions=[
+            CLIENT.validate.eval_functions.bbox_iou(iou_threshold=0.5)
+        ],
+    )
