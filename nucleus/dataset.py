@@ -1008,16 +1008,16 @@ class Dataset:
         return response
 
     def get_continuous_indexing_status(self):
-        """Get current continuous indexing status for the dataset.
+        """Gets the continuous indexing progress for the dataset.
 
         Returns:
             Response payload::
 
                 {
-                    "total_images": Count of images in the dataset
-                    "indexed_images": Count of images with embeddings in the dataset
-                    "percent_indexed": Percent of images in the dataset that have been successfully indexed
-                    "additional_context": Additional context to the response
+                    "total_images": int
+                    "indexed_images": int
+                    "percent_indexed": float
+                    "additional_context": str
                 }
         """
         return self._client.make_request(
