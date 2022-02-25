@@ -849,10 +849,13 @@ class NucleusClient:
               be retrieved via :meth:`list_autotags` or a Nucleus dashboard URL.
 
         Returns:
-            {
-                "total_refinement_steps": total number of refinement steps made for this Autotag
-                "average_positives_selected_per_refinement": average number of positives selected per refinement step
-            }
+            Response payload::
+
+
+                {
+                    "total_refinement_steps": int
+                    "average_positives_selected_per_refinement": int
+                }
         """
         return self.make_request(
             {}, f"autotag/{autotag_id}/refinementMetrics", requests.get
