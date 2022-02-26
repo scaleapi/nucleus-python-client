@@ -49,13 +49,17 @@ class AsyncModelEndpoint:
 
     def predict_batch(
         self,
-        urls: Sequence[str],
+        urls: Sequence[
+            str
+        ],  # TODO figure out how to make this agree with return_pickled, urls
+        return_pickled: bool = True,
     ) -> "AsyncModelEndpointResponse":
         """
         Runs inference on the data items specified by urls. Returns a AsyncModelEndpointResponse.
 
         Parameters:
             urls: The list of URLs that should have inference run on them. Supported url formats are http(s)://, s3://.
+            return_pickled: Whether to return a bunch of pickled python objects, or serialized responses
 
         Returns:
             an AsyncModelEndpointResponse keeping track of the inference requests made
@@ -70,6 +74,7 @@ class AsyncModelEndpoint:
             inner_inference_request = self.client.async_request(
                 endpoint_id=self.endpoint_id,
                 url=inner_url,
+                return_pickled=return_pickled,
             )
             return inner_url, inner_inference_request
 
