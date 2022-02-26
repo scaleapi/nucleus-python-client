@@ -15,8 +15,15 @@ class SyncModelEndpoint:
     def __str__(self):
         return f"SyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def predict(self, url):
-        return self.client.sync_request(self.endpoint_id, url)
+    def predict(
+        self,
+        url: Optional[str] = None,
+        args: Optional[Dict] = None,
+        return_pickled: Optional[bool] = True,
+    ):
+        return self.client.sync_request(
+            self.endpoint_id, url=url, args=args, return_pickled=return_pickled
+        )
 
     def status(self):
         # TODO this functionality doesn't exist serverside

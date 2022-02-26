@@ -306,7 +306,11 @@ class DeployClient:
         return resp["deleted"]
 
     def sync_request(
-        self, endpoint_id: str, url: str, return_pickled: bool = True
+        self,
+        endpoint_id: str,
+        url: Optional[str],
+        args: Optional[Dict],
+        return_pickled: bool = True,
     ) -> str:
         """
         Not recommended for use, instead use functions provided by SyncModelEndpoint
@@ -317,6 +321,7 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            args: TODO fill in
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
@@ -324,14 +329,25 @@ class DeployClient:
             Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
         """
+        if url is None and args is None:
+            raise ValueError("Must specify at least one of url/args")
+        payload: Dict[str, Any] = dict(return_pickled=return_pickled)
+        if url is not None:
+            payload["url"] = url
+        if args is not None:
+            payload["args"] = args
         resp = self.connection.post(
-            payload=dict(url=url, return_pickled=return_pickled),
+            payload=payload,
             route=f"{SYNC_TASK_PATH}/{endpoint_id}",
         )
-        return resp["result_url"]
+        return resp  # what is response format?
 
     def async_request(
-        self, endpoint_id: str, url: str, return_pickled: bool = True
+        self,
+        endpoint_id: str,
+        url: Optional[str] = None,
+        args: Optional[Dict] = None,
+        return_pickled: bool = True,
     ) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
@@ -343,6 +359,7 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            args: A dictionary of arguments to the ModelBundle's predict fn. TODO fill out
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
@@ -350,8 +367,16 @@ class DeployClient:
             Example output:
                 `abcabcab-cabc-abca-0123456789ab`
         """
+        if url is None and args is None:
+            raise ValueError("Must specify at least one of url/args")
+        payload: Dict[str, Any] = dict(return_pickled=return_pickled)
+        if url is not None:
+            payload["url"] = url
+        if args is not None:
+            payload["args"] = args
+
         resp = self.connection.post(
-            payload=dict(url=url, return_pickled=return_pickled),
+            payload=payload,
             route=f"{ASYNC_TASK_PATH}/{endpoint_id}",
         )
         return resp["task_id"]
