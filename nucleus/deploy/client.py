@@ -116,12 +116,16 @@ class DeployClient:
         # Create bundle
         if model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
-            bundle_metadata["load_predict_fn"] = inspect.getsource(load_predict_fn)
+            bundle_metadata["load_predict_fn"] = inspect.getsource(
+                load_predict_fn
+            )
         else:
             bundle = dict(
                 load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
             )
-            bundle_metadata["load_predict_fn"] = inspect.getsource(load_predict_fn)
+            bundle_metadata["load_predict_fn"] = inspect.getsource(
+                load_predict_fn
+            )
             bundle_metadata["load_model_fn"] = inspect.getsource(load_model_fn)
         serialized_bundle = cloudpickle.dumps(bundle)
 
