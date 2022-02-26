@@ -48,6 +48,7 @@ class DeployClient:
         self.endpoint_auth_decorator_fn: Callable[
             [Dict[str, Any]], Dict[str, Any]
         ] = lambda x: x
+        self.bundle_location_fn: Optional[Callable[[], str]] = None
 
     def __repr__(self):
         return f"DeployClient(connection='{self.connection}')"
@@ -70,6 +71,21 @@ class DeployClient:
                 location. Only needed for self-hosted mode.
         """
         self.upload_bundle_fn = upload_bundle_fn
+
+    def register_bundle_location_fn(
+        self, bundle_location_fn: Callable[[], str]
+    ):
+        """
+        For self-hosted mode only. Registers a function that gives a location for a model bundle. Should give different
+        locations each time. This function is called as bundle_location_fn(), and should return a bundle_url that
+        register_upload_bundle_fn can take.
+
+        TODO: strictly, the function doesn't need to return a str, just anything that upload_bundle_fn can take in.
+
+        Parameters:
+            bundle_location_fn: Function that generates bundle_urls for upload_bundle_fn.
+        """
+        self.bundle_location_fn = bundle_location_fn
 
     def register_endpoint_auth_decorator(self, endpoint_auth_decorator_fn):
         """
@@ -101,6 +117,7 @@ class DeployClient:
             load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
             bundle_url: Only for self-hosted mode. Desired location of bundle.
+            Overrides any value given by self.bundle_location_fn
         """
 
         if (model is not None and load_model_fn is not None) or (
@@ -123,8 +140,12 @@ class DeployClient:
         if self.is_self_hosted:
             if self.upload_bundle_fn is None:
                 raise ValueError("Upload_bundle_fn should be registered")
+            if self.bundle_location_fn is None and bundle_url is None:
+                raise ValueError(
+                    "Need either bundle_location_fn or bundle_url to know where to upload bundles"
+                )
             if bundle_url is None:
-                raise ValueError("bundle_url is None")
+                bundle_url = self.bundle_location_fn()  # type: ignore
             self.upload_bundle_fn(serialized_bundle, bundle_url)
             raw_bundle_url = bundle_url
         else:
