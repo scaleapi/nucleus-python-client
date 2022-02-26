@@ -126,7 +126,7 @@ class DeployClient:
             bundle_metadata["load_predict_fn"] = inspect.getsource(
                 load_predict_fn
             )
-            bundle_metadata["load_model_fn"] = inspect.getsource(load_model_fn)
+            bundle_metadata["load_model_fn"] = inspect.getsource(load_model_fn)  # type: ignore
         serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
