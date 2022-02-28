@@ -70,6 +70,10 @@ pytest-xdist = "^2.5.0"
 smart_open = "^1.9.0" # For a temporary nucleus -> HMI integration
 
 
+[tool.poetry.scripts]
+scale-launch = 'nucleus.deploy.cli:run'
+
+
 [tool.pytest.ini_options]
 markers = [
     "integration: marks tests as slow (deselect with '-m \"not integration\"')",
