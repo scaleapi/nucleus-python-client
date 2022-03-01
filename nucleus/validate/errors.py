@@ -4,3 +4,7 @@ class CreateScenarioTestError(Exception):
 
 class EvalFunctionNotAvailableError(Exception):
     pass
+
+
+class InvalidEvaluationCriteria(Exception):
+    pass

@@ -6,17 +6,13 @@ from nucleus.job import AsyncJob
 from .constants import SCENARIO_TEST_ID_KEY
 from .data_transfer_objects.eval_function import GetEvalFunctions
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
-from .errors import CreateScenarioTestError
+from .errors import CreateScenarioTestError, InvalidEvaluationCriteria
 from .eval_functions.available_eval_functions import AvailableEvalFunctions
 from .eval_functions.base_eval_function import BaseEvalFunction
 from .scenario_test import ScenarioTest
 
 SUCCESS_KEY = "success"
 EVAL_FUNCTIONS_KEY = "eval_functions"
-
-
-class InvalidEvaluationCriteria(Exception):
-    pass
 
 
 class Validate:
@@ -38,7 +34,8 @@ class Validate:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            scenario_test_criterion = client.validate.eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
+            # Creates an EvaluationCriterion by using a comparison op
+            scenario_test_criterion = client.validate.eval_functions.bbox_iou() > 0.5
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -80,16 +77,16 @@ class Validate:
                 "Must pass an evaluation_function to the scenario test! I.e. "
                 "evaluation_functions=[client.validate.eval_functions.bbox_iou()]"
             )
-        incorrect_type = [
+        incorrect_types = [
             crit
             for crit in evaluation_criteria
             if not isinstance(crit, EvaluationCriterion)
         ]
-        if incorrect_type:
+        if len(incorrect_types) > 0:
             # NOTE: We expect people to forget adding comparison to these calls so make an explicit error msg.
             eval_funcs = [
                 incorrect
-                for incorrect in incorrect_type
+                for incorrect in incorrect_types
                 if isinstance(incorrect, BaseEvalFunction)
             ]
             if eval_funcs:
@@ -101,7 +98,7 @@ class Validate:
                     f"I.e. `{example_call} > 0.5` instead of just `{example_call}`"
                 )
             else:
-                msg = f"Received an incorrect `evaluation_criteria`: {repr(incorrect_type)}"
+                msg = f"Received an incorrect `evaluation_criteria`: {repr(incorrect_types)}"
             raise InvalidEvaluationCriteria(msg)
 
         response = self.connection.post(

@@ -1,7 +1,7 @@
 import pytest
 
 from nucleus.validate import CreateScenarioTestError
-from nucleus.validate.client import InvalidEvaluationCriteria
+from nucleus.validate.errors import InvalidEvaluationCriteria
 from nucleus.validate.scenario_test import ScenarioTest
 from tests.helpers import (
     EVAL_FUNCTION_COMPARISON,
