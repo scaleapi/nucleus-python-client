@@ -11,8 +11,8 @@ def test_invoke_jobs(runner):
     assert result.exit_code == 0
 
 
-def test_list_jobs(CLIENT, runner):
-    dataset = CLIENT.create_dataset(f"[PyTest] Dataset {get_uuid()}")
+def test_list_jobs(CLIENT, runner, function_scope_dataset):
+    dataset = function_scope_dataset
     items = make_dataset_items()
     dataset.append(items, asynchronous=True)
     result = runner.invoke(list_jobs)

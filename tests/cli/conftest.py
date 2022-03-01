@@ -15,7 +15,7 @@ def runner():
 
 
 @pytest.fixture(scope="module")
-def cli_datasets(CLIENT):
+def module_scope_datasets(CLIENT):
     test_datasets = []
     for i in range(3):
         dataset_name = f"[PyTest] CLI {i} {get_uuid()}"
@@ -28,8 +28,15 @@ def cli_datasets(CLIENT):
         CLIENT.delete_dataset(test_dataset.id)
 
 
+@pytest.fixture(scope="function")
+def function_scope_dataset(CLIENT):
+    dataset = CLIENT.create_dataset(f"[PyTest] Dataset {get_uuid()}")
+    yield dataset
+    CLIENT.delete_dataset(dataset.id)
+
+
 @pytest.fixture(scope="module")
-def cli_models(CLIENT):
+def module_scope_models(CLIENT):
     models = []
     for i in range(3):
         model_name = "[PyTest] Model {i}"
@@ -42,13 +49,13 @@ def cli_models(CLIENT):
 
 
 @pytest.fixture(scope="module")
-def populated_dataset(cli_datasets):
-    yield cli_datasets[0]
+def populated_dataset(module_scope_datasets):
+    yield module_scope_datasets[0]
 
 
 @pytest.fixture(scope="module")
-def model(cli_models):
-    yield cli_models[0]
+def model(module_scope_models):
+    yield module_scope_models[0]
 
 
 @pytest.fixture(scope="module")
