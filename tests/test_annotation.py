@@ -744,23 +744,10 @@ def test_default_category_gt_upload_async(dataset):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "epoch": 1,
-                "total": 1,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert float(status["job_progress"]) == 1.00
 
 
 @pytest.mark.integration
@@ -781,13 +768,7 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     except JobError:
         assert error_msg in job.errors()[-1]
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Errored",
-        "message": {
-            "final_error": f"BadRequestError: {error_msg}",
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Errored"
+    assert float(status["job_progress"]) == 1.00
