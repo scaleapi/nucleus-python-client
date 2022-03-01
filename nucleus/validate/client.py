@@ -8,7 +8,7 @@ from .data_transfer_objects.eval_function import GetEvalFunctions
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
 from .errors import CreateScenarioTestError, InvalidEvaluationCriteria
 from .eval_functions.available_eval_functions import AvailableEvalFunctions
-from .eval_functions.base_eval_function import BaseEvalFunction
+from .eval_functions.base_eval_function import EvalFunctionConfig
 from .scenario_test import ScenarioTest
 
 SUCCESS_KEY = "success"
@@ -87,10 +87,10 @@ class Validate:
             eval_funcs = [
                 incorrect
                 for incorrect in incorrect_types
-                if isinstance(incorrect, BaseEvalFunction)
+                if isinstance(incorrect, EvalFunctionConfig)
             ]
             if eval_funcs:
-                example: BaseEvalFunction = eval_funcs[0]
+                example: EvalFunctionConfig = eval_funcs[0]
                 example_call = f"{example.name}(<args>)"
                 msg = (
                     f"Expected a comparison (<, <=, >, >=) for every `evaluation_criteria`. "

@@ -8,8 +8,8 @@ from ..data_transfer_objects.eval_function import (
 )
 
 
-class BaseEvalFunction(abc.ABC):
-    """Abstract base class for concrete implementations of EvalFunctions
+class EvalFunctionConfig(abc.ABC):
+    """Abstract base class for concrete implementations of EvalFunctionsConfigs
 
     Operating on this class with comparison operators produces an EvaluationCriterion
     """
@@ -28,7 +28,7 @@ class BaseEvalFunction(abc.ABC):
     def expected_name(cls) -> str:
         """Name to look for in the EvalFunctionDefinitions"""
 
-    def __call__(self, **kwargs) -> "BaseEvalFunction":
+    def __call__(self, **kwargs) -> "EvalFunctionConfig":
         """Adding call to prepare for being able to pass parameters to function
 
         Notes:

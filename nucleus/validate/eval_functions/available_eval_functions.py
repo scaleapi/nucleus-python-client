@@ -2,7 +2,9 @@ import itertools
 from typing import Callable, Dict, List, Optional, Union
 
 from nucleus.logger import logger
-from nucleus.validate.eval_functions.base_eval_function import BaseEvalFunction
+from nucleus.validate.eval_functions.base_eval_function import (
+    EvalFunctionConfig,
+)
 
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
@@ -10,7 +12,7 @@ from ..errors import EvalFunctionNotAvailableError
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 
 
-class BoundingBoxIOU(BaseEvalFunction):
+class PolygonIOUConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = False,
@@ -19,6 +21,18 @@ class BoundingBoxIOU(BaseEvalFunction):
         **kwargs,
     ):
         """Configures a call to :class:`PolygonIOU` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            bbox_iou: BoundingBoxIOU = client.validate.eval_functions.bbox_iou
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[bbox_iou(confidence_threshold=0.8) > 0.5]
+            )
 
         Args:
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
@@ -37,13 +51,25 @@ class BoundingBoxIOU(BaseEvalFunction):
         return "bbox_iou"
 
 
-class BoundingBoxMeanAveragePrecision(BaseEvalFunction):
+class PolygonMAPConfig(EvalFunctionConfig):
     def __call__(
         self,
         iou_threshold: float = 0.5,
         **kwargs,
     ):
         """Configures a call to :class:`PolygonMAP` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            bbox_map: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.bbox_map
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[bbox_map(iou_threshold=0.6) > 0.8]
+            )
 
         Args:
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
@@ -58,7 +84,7 @@ class BoundingBoxMeanAveragePrecision(BaseEvalFunction):
         return "bbox_map"
 
 
-class BoundingBoxRecall(BaseEvalFunction):
+class PolygonRecallConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = False,
@@ -67,6 +93,18 @@ class BoundingBoxRecall(BaseEvalFunction):
         **kwargs,
     ):
         """Configures a call to :class:`PolygonRecall` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            bbox_recall: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.bbox_recall
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[bbox_recall(iou_threshold=0.6, confidence_threshold=0.4) > 0.9]
+            )
 
         Args:
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
@@ -85,7 +123,7 @@ class BoundingBoxRecall(BaseEvalFunction):
         return "bbox_recall"
 
 
-class BoundingBoxPrecision(BaseEvalFunction):
+class PolygonPrecisionConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = False,
@@ -94,6 +132,18 @@ class BoundingBoxPrecision(BaseEvalFunction):
         **kwargs,
     ):
         """Configures a call to :class:`PolygonPrecision` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            bbox_precision: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.bbox_precision
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[bbox_precision(iou_threshold=0.6, confidence_threshold=0.4) > 0.9]
+            )
 
         Args:
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
@@ -112,14 +162,27 @@ class BoundingBoxPrecision(BaseEvalFunction):
         return "bbox_precision"
 
 
-class CategorizationF1(BaseEvalFunction):
+class CategorizationF1Config(EvalFunctionConfig):
     def __call__(
         self,
         confidence_threshold: Optional[float] = None,
         f1_method: Optional[str] = None,
         **kwargs,
     ):
-        """
+        """ Configure an evaluation of :class:`CategorizationF1`.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            cat_f1: CategorizationF1 = client.validate.eval_functions.cat_f1
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[cat_f1(confidence_threshold=0.6, f1_method="weighted") > 0.7]
+            )
+
         Args:
             confidence_threshold: minimum confidence threshold for predictions to be taken into account for evaluation.
                  Must be in [0, 1]. Default 0.0
@@ -157,7 +220,7 @@ class CategorizationF1(BaseEvalFunction):
         return "cat_f1"
 
 
-class CustomEvalFunction(BaseEvalFunction):
+class CustomEvalFunction(EvalFunctionConfig):
     @classmethod
     def expected_name(cls) -> str:
         raise NotImplementedError(
@@ -165,7 +228,7 @@ class CustomEvalFunction(BaseEvalFunction):
         )  # Placeholder: See super().eval_func_entry for actual name
 
 
-class StandardEvalFunction(BaseEvalFunction):
+class StandardEvalFunction(EvalFunctionConfig):
     """Class for standard Model CI eval functions that have not been added as attributes on
     AvailableEvalFunctions yet.
     """
@@ -182,7 +245,7 @@ class StandardEvalFunction(BaseEvalFunction):
         return "public_function"  # Placeholder: See super().eval_func_entry for actual name
 
 
-class EvalFunctionNotAvailable(BaseEvalFunction):
+class EvalFunctionNotAvailable(EvalFunctionConfig):
     def __init__(
         self, not_available_name: str
     ):  # pylint: disable=super-init-not-called
@@ -206,11 +269,11 @@ class EvalFunctionNotAvailable(BaseEvalFunction):
 
 
 EvalFunction = Union[
-    BoundingBoxIOU,
-    BoundingBoxMeanAveragePrecision,
-    BoundingBoxPrecision,
-    BoundingBoxRecall,
-    CategorizationF1,
+    PolygonIOUConfig,
+    PolygonMAPConfig,
+    PolygonPrecisionConfig,
+    PolygonRecallConfig,
+    CategorizationF1Config,
     CustomEvalFunction,
     EvalFunctionNotAvailable,
     StandardEvalFunction,
@@ -242,24 +305,24 @@ class AvailableEvalFunctions:
             f.name: f for f in available_functions if f.is_public
         }
         # NOTE: Public are assigned
-        self._public_to_function: Dict[str, BaseEvalFunction] = {}
+        self._public_to_function: Dict[str, EvalFunctionConfig] = {}
         self._custom_to_function: Dict[str, CustomEvalFunction] = {
             f.name: CustomEvalFunction(f)
             for f in available_functions
             if not f.is_public
         }
-        self.bbox_iou: BoundingBoxIOU = self._assign_eval_function_if_defined(BoundingBoxIOU)  # type: ignore
-        self.bbox_precision: BoundingBoxPrecision = self._assign_eval_function_if_defined(
-            BoundingBoxPrecision  # type: ignore
+        self.bbox_iou: PolygonIOUConfig = self._assign_eval_function_if_defined(PolygonIOUConfig)  # type: ignore
+        self.bbox_precision: PolygonPrecisionConfig = self._assign_eval_function_if_defined(
+            PolygonPrecisionConfig  # type: ignore
         )
-        self.bbox_recall: BoundingBoxRecall = self._assign_eval_function_if_defined(
-            BoundingBoxRecall  # type: ignore
+        self.bbox_recall: PolygonRecallConfig = self._assign_eval_function_if_defined(
+            PolygonRecallConfig  # type: ignore
         )
-        self.bbox_map: BoundingBoxMeanAveragePrecision = self._assign_eval_function_if_defined(
-            BoundingBoxMeanAveragePrecision  # type: ignore
+        self.bbox_map: PolygonMAPConfig = self._assign_eval_function_if_defined(
+            PolygonMAPConfig  # type: ignore
         )
-        self.cat_f1: CategorizationF1 = self._assign_eval_function_if_defined(
-            CategorizationF1  # type: ignore
+        self.cat_f1: CategorizationF1Config = self._assign_eval_function_if_defined(
+            CategorizationF1Config  # type: ignore
         )
 
         # Add public entries that have not been implemented as an attribute on this class
@@ -281,7 +344,7 @@ class AvailableEvalFunctions:
         )
 
     @property
-    def public_functions(self) -> Dict[str, BaseEvalFunction]:
+    def public_functions(self) -> Dict[str, EvalFunctionConfig]:
         """Standard functions provided by Model CI.
 
         Notes:
