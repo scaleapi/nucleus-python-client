@@ -66,6 +66,8 @@ class DeployClient:
 
         This function should directly write the contents of serialized_bundle as a binary string into bundle_url.
 
+        See register_bundle_location_fn for more notes on the signature of upload_bundle_fn
+
         Parameters:
             upload_bundle_fn: Function that takes in a serialized bundle, and uploads that bundle to an appropriate
                 location. Only needed for self-hosted mode.
@@ -80,7 +82,9 @@ class DeployClient:
         locations each time. This function is called as bundle_location_fn(), and should return a bundle_url that
         register_upload_bundle_fn can take.
 
-        TODO: strictly, the function doesn't need to return a str, just anything that upload_bundle_fn can take in.
+        Strictly, bundle_location_fn() does not need to return a str. The only requirement is that if bundle_location_fn
+        returns a value of type T, then upload_bundle_fn() takes in an object of type T as its second argument
+        (i.e. bundle_url).
 
         Parameters:
             bundle_location_fn: Function that generates bundle_urls for upload_bundle_fn.
@@ -229,7 +233,6 @@ class DeployClient:
                 requirements,
                 endpoint_name,
             )
-            # TODO test
         payload = dict(
             endpoint_name=endpoint_name,
             env_params=env_params,
@@ -342,7 +345,10 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
-            args: TODO fill in
+            args: A dictionary of arguments to the `predict` function defined in your model bundle.
+                Must be json-serializable, i.e. composed of str, int, float, etc.
+                If your `predict` function has signature `predict(foo, bar)`, then args should be a dictionary with
+                keys `foo` and `bar`. Exactly one of url and args must be specified.
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
@@ -380,7 +386,10 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
-            args: A dictionary of arguments to the ModelBundle's predict fn. TODO fill out
+            args: A dictionary of arguments to the ModelBundle's predict function.
+                Must be json-serializable, i.e. composed of str, int, float, etc.
+                If your `predict` function has signature `predict(foo, bar)`, then args should be a dictionary with
+                keys `foo` and `bar`. Exactly one of url and args must be specified.
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
