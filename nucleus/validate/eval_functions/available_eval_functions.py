@@ -40,7 +40,7 @@ class BoundingBoxIOU(BaseEvalFunction):
 class BoundingBoxMeanAveragePrecision(BaseEvalFunction):
     def __call__(
         self,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = 0.5,
         **kwargs,
     ):
         """Configures a call to :class:`PolygonMAP` object.
@@ -62,7 +62,7 @@ class BoundingBoxRecall(BaseEvalFunction):
     def __call__(
         self,
         enforce_label_match: bool = False,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = 0.5,
         confidence_threshold: float = 0.0,
         **kwargs,
     ):
@@ -89,7 +89,7 @@ class BoundingBoxPrecision(BaseEvalFunction):
     def __call__(
         self,
         enforce_label_match: bool = False,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = 0.5,
         confidence_threshold: float = 0.0,
         **kwargs,
     ):
