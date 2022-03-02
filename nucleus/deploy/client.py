@@ -335,7 +335,7 @@ class DeployClient:
         url: Optional[str],
         args: Optional[Dict],
         return_pickled: bool = True,
-    ) -> str:
+    ) -> Dict[str, Any]:
         """
         Not recommended for use, instead use functions provided by SyncModelEndpoint
         Makes a request to the Sync Model Endpoint at endpoint_id, and blocks until request completion or timeout.
@@ -352,9 +352,13 @@ class DeployClient:
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
-            A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
+            A dictionary with key either "result_url" or "result", depending on the value of `return_pickled`.
+            If `return_pickled` is true, the key will be "result_url", otherwise the key will be "result".
+            If the key is "result_url", the value is a signedUrl that contains a cloudpickled Python object,
+            the result of running inference on the model input
             Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
+            Otherwise, the value is the arbitrary json returned by the endpoint's `predict` function.
         """
         if url is None and args is None:
             raise ValueError("Must specify at least one of url/args")
@@ -411,7 +415,7 @@ class DeployClient:
         )
         return resp["task_id"]
 
-    def get_async_response(self, async_task_id: str) -> str:
+    def get_async_response(self, async_task_id: str) -> Dict[str, Any]:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Gets inference results from a previously created task.
@@ -424,6 +428,7 @@ class DeployClient:
             Dictionary's keys are as follows:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
+            result: an aritrary json returned by the endpoint's `predict` function
             Example output:
                 `{'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}`
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
