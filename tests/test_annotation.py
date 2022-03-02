@@ -743,7 +743,6 @@ def test_default_category_gt_upload_async(dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
-
     assert job.status() == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -755,6 +754,11 @@ def test_default_category_gt_upload_async(dataset):
                 "ignored": 0,
                 "datasetId": dataset.id,
                 "processed": 1,
+            },
+            "segmentation_upload": {
+                "ignored": 0,
+                "n_errors": 0,
+                "processed": 0,
             },
         },
         "job_progress": "1.00",
