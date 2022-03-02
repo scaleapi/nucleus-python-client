@@ -371,7 +371,7 @@ class DeployClient:
             payload=payload,
             route=f"{SYNC_TASK_PATH}/{endpoint_id}",
         )
-        return resp  # what is response format?
+        return resp
 
     def async_request(
         self,
@@ -424,11 +424,13 @@ class DeployClient:
             async_task_id: The id/key returned from a previous invocation of async_request.
 
         Returns:
-            A dictionary that contains task status and optionally a result url if the task has completed.
+            A dictionary that contains task status and optionally a result url or result if the task has completed.
+            Result url or result will be returned if the task has succeeded. Will return a result url iff `return_pickled`
+            was set to True on task creation.
             Dictionary's keys are as follows:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
-            result: an aritrary json returned by the endpoint's `predict` function
+            result: an arbitrary json returned by the endpoint's `predict` function
             Example output:
                 `{'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}`
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
