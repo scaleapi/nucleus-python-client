@@ -163,7 +163,7 @@ class AsyncModelEndpointResponse:
         self.client = client
         self.request_ids = (
             request_ids.copy()
-        )  # custom request_id or url or str(args) -> task_id
+        )  # custom request_id or url or str(args) (clientside) -> task_id (serverside)
         self.responses: Dict[str, Optional[Dict]] = {
             req_id: None for req_id in request_ids.keys()
         }

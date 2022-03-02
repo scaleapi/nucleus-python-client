@@ -332,8 +332,8 @@ class DeployClient:
     def sync_request(
         self,
         endpoint_id: str,
-        url: Optional[str],
-        args: Optional[Dict],
+        url: Optional[str] = None,
+        args: Optional[Dict] = None,
         return_pickled: bool = True,
     ) -> Dict[str, Any]:
         """
@@ -353,12 +353,14 @@ class DeployClient:
 
         Returns:
             A dictionary with key either "result_url" or "result", depending on the value of `return_pickled`.
-            If `return_pickled` is true, the key will be "result_url", otherwise the key will be "result".
-            If the key is "result_url", the value is a signedUrl that contains a cloudpickled Python object,
-            the result of running inference on the model input
+            If `return_pickled` is true, the key will be "result_url",
+            and the value is a signedUrl that contains a cloudpickled Python object,
+            the result of running inference on the model input.
             Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
-            Otherwise, the value is the arbitrary json returned by the endpoint's `predict` function.
+
+            Otherwise, if `return_pickled` is false, the key will be "result",
+            and the value is the arbitrary json returned by the endpoint's `predict` function.
         """
         if url is None and args is None:
             raise ValueError("Must specify at least one of url/args")
