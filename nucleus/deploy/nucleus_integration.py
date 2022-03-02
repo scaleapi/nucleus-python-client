@@ -67,7 +67,9 @@ class NucleusDatasetInferenceRun:
         )
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
-            item_link = self.hmi_async_job.responses[s3url]
+            item_link = self.hmi_async_job.responses.get(s3url, {}).get(
+                "result_url", None
+            )
             if item_link is None:
                 logger.warning("No item link received for %s", s3url)
                 continue

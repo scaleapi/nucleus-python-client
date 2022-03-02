@@ -1,6 +1,6 @@
 import concurrent.futures
 from collections import Counter
-from typing import Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 TASK_PENDING_STATE = "PENDING"
 TASK_SUCCESS_STATE = "SUCCESS"
@@ -161,13 +161,15 @@ class AsyncModelEndpointResponse:
     ):
 
         self.client = client
-        self.request_ids = request_ids.copy()  # url or str(args) -> task_id
-        self.responses: Dict[str, Optional[str]] = {
-            url: None for url in request_ids.keys()
+        self.request_ids = (
+            request_ids.copy()
+        )  # custom request_id or url or str(args) -> task_id
+        self.responses: Dict[str, Optional[Dict]] = {
+            req_id: None for req_id in request_ids.keys()
         }
         # celery task statuses
         self.statuses: Dict[str, Optional[str]] = {
-            url: TASK_PENDING_STATE for url in request_ids.keys()
+            req_id: TASK_PENDING_STATE for req_id in request_ids.keys()
         }
 
     def poll_endpoints(self):
@@ -177,15 +179,16 @@ class AsyncModelEndpointResponse:
 
         # TODO: replace with batch endpoint, or make requests in parallel
 
-        def single_request(inner_url, inner_request_id):
+        def single_request(inner_url, inner_task_id):
             if self.statuses[inner_url] != TASK_PENDING_STATE:
                 return None
-            inner_response = self.client.get_async_response(inner_request_id)
+            inner_response = self.client.get_async_response(inner_task_id)
+            print("inner response", inner_response)
             return (
                 inner_url,
-                inner_request_id,
+                inner_task_id,
                 inner_response.get("state", None),
-                inner_response.get("result_url", None),
+                inner_response,
             )
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
@@ -204,16 +207,6 @@ class AsyncModelEndpointResponse:
             if result_url:
                 self.responses[url] = result_url
 
-        # for url, request_id in self.request_ids.items():
-        #     current_state = self.statuses[url]
-        #     if current_state == TASK_PENDING_STATE:
-        #         response = self.client.get_async_response(request_id)
-        #         print(response)
-        #         if "state" in response:
-        #             self.statuses[url] = response["state"]
-        #         if "result_url" in response:
-        #             self.responses[url] = response["result_url"]
-
     def is_done(self, poll=True) -> bool:
         """
         Checks if all the tasks from this round of requests are done, according to
@@ -227,7 +220,7 @@ class AsyncModelEndpointResponse:
             resp != TASK_PENDING_STATE for resp in self.statuses.values()
         )
 
-    def get_responses(self) -> Dict[str, Optional[str]]:
+    def get_responses(self) -> Dict[str, Optional[Dict[Any, Any]]]:
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
