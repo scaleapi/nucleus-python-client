@@ -290,19 +290,19 @@ class NucleusClient:
         )
         return AsyncJob.from_json(payload=payload, client=self)
 
-    def get_model(self, model_id: str) -> Model:
+    def get_model(self, model_or_model_run_id: str) -> Model:
         """Fetches a model by its ID.
 
         Parameters:
-            model_id: Nucleus-generated model ID (starts with ``prj_``). This can
-              be retrieved via :meth:`list_models` or a Nucleus dashboard URL.
+            model_or_model_run_id: You can pass either a model ID (starts with ``prj_``), or a model run id (starts with ``run_``) This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
 
         Returns:
             :class:`Model`: The Nucleus model as an object.
         """
         payload = self.make_request(
             payload={},
-            route=f"model/{model_id}",
+            route=f"model/{model_or_model_run_id}",
             requests_command=requests.get,
         )
         return Model.from_json(payload=payload, client=self)
