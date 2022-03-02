@@ -108,11 +108,10 @@ class AsyncJob:
             time_elapsed = time.perf_counter() - start_time
             if verbose_std_out:
                 print(f"Status at {time_elapsed} s: {status}")
-            if status["status"] == "Running":
-                continue
-
             if timeout_s and time_elapsed > timeout_s:
                 raise JobTimeoutError(self, timeout_s)
+            if status["status"] == "Running":
+                continue
 
             break
 
