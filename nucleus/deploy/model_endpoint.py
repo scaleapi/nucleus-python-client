@@ -7,6 +7,35 @@ TASK_SUCCESS_STATE = "SUCCESS"
 TASK_FAILURE_STATE = "FAILURE"
 
 
+class EndpointRequest:
+    """
+    Represents a single request to either a SyncModelEndpoint or AsyncModelEndpoint.
+    Parameters:
+        url: A url to some file that can be read in to a ModelBundle's predict function. Can be an image, raw text, etc.
+        args: A Dictionary with arguments to a ModelBundle's predict function. If the predict function has signature
+            predict_fn(foo, bar), then the keys in the dictionary should be 'foo' and 'bar'. Values must be native Python
+            objects.
+        return_pickled: Whether the output should be a pickled python object, or directly returned serialized json
+        request_id: A user-specifiable id for requests. Should be unique.
+    """
+
+    def __init__(
+        self,
+        url: Optional[str] = None,
+        args: Optional[Dict] = None,
+        return_pickled: Optional[bool] = True,
+        request_id: Optional[str] = None,
+    ):
+        if url is None and args is None:
+            raise ValueError(
+                "Must specify at least one of url or args as an EndpointRequest"
+            )
+        self.url = url
+        self.args = args
+        self.return_pickled = return_pickled
+        self.request_id = request_id
+
+
 class SyncModelEndpoint:
     def __init__(self, endpoint_id: str, client):
         self.endpoint_id = endpoint_id
@@ -15,14 +44,12 @@ class SyncModelEndpoint:
     def __str__(self):
         return f"SyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def predict(
-        self,
-        url: Optional[str] = None,
-        args: Optional[Dict] = None,
-        return_pickled: Optional[bool] = True,
-    ):
+    def predict(self, request: EndpointRequest):
         return self.client.sync_request(
-            self.endpoint_id, url=url, args=args, return_pickled=return_pickled
+            self.endpoint_id,
+            url=request.url,
+            args=request.args,
+            return_pickled=request.return_pickled,
         )
 
     def status(self):
@@ -48,18 +75,13 @@ class AsyncModelEndpoint:
         return f"AsyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
     def predict_batch(
-        self,
-        urls: Sequence[
-            str
-        ],  # TODO figure out how to make this agree with return_pickled, urls
-        return_pickled: bool = True,
+        self, requests: Sequence[EndpointRequest]
     ) -> "AsyncModelEndpointResponse":
         """
         Runs inference on the data items specified by urls. Returns a AsyncModelEndpointResponse.
 
         Parameters:
-            urls: The list of URLs that should have inference run on them. Supported url formats are http(s)://, s3://.
-            return_pickled: Whether to return a bunch of pickled python objects, or serialized responses
+            requests: List of EndpointRequests
 
         Returns:
             an AsyncModelEndpointResponse keeping track of the inference requests made
@@ -68,28 +90,26 @@ class AsyncModelEndpoint:
         # if batches are possible make this aware you can pass batches
         # TODO add batch support once those are out
 
-        # request_ids = {}  # Dict of url -> request id
+        def single_request(request):
+            # request has keys url and args
 
-        def single_request(inner_url):
             inner_inference_request = self.client.async_request(
                 endpoint_id=self.endpoint_id,
-                url=inner_url,
-                return_pickled=return_pickled,
+                url=request.url,
+                args=request.args,
+                return_pickled=request.return_pickled,
             )
-            return inner_url, inner_inference_request
+            if request.request_id is not None:
+                request_key = request.request_id
+            elif request.url is not None:
+                request_key = request.url
+            else:
+                request_key = str(request["args"])
+            return request_key, inner_inference_request
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-            urls_to_requests = executor.map(single_request, urls)
+            urls_to_requests = executor.map(single_request, requests)
             request_ids = dict(urls_to_requests)
-
-        # for url in urls:
-        #     # TODO make these requests in parallel instead of making them serially
-        #     inference_request = self.client.async_request(
-        #         endpoint_id=self.endpoint_id,
-        #         url=url,
-        #     )
-        #     request_ids[url] = inference_request
-        #     # make the request to the endpoint (in parallel or something)
 
         return AsyncModelEndpointResponse(
             self.client,
@@ -141,7 +161,7 @@ class AsyncModelEndpointResponse:
     ):
 
         self.client = client
-        self.request_ids = request_ids.copy()  # url -> task_id
+        self.request_ids = request_ids.copy()  # url or str(args) -> task_id
         self.responses: Dict[str, Optional[str]] = {
             url: None for url in request_ids.keys()
         }
