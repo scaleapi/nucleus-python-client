@@ -426,6 +426,7 @@ def test_annotate_async(dataset: Dataset):
 
 
 @pytest.mark.integration
+@pytest.mark.xfail(reason="Erroring jobs are running forever")
 def test_annotate_async_with_error(dataset: Dataset):
     dataset.append(make_dataset_items())
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
@@ -441,7 +442,7 @@ def test_annotate_async_with_error(dataset: Dataset):
         annotations=[semseg, polygon, bbox, category, multicategory],
         asynchronous=True,
     )
-    job.sleep_until_complete()
+    job.sleep_until_complete(timeout_s=60)
 
     assert job.status() == {
         "job_id": job.job_id,
