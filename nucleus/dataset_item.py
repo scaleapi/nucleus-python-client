@@ -233,12 +233,13 @@ class DatasetItem:  # pylint: disable=R0902
         )
         self.type = (
             DatasetItemType.IMAGE
-            if self.image_location
-            else (
-                DatasetItemType.POINTCLOUD
-                if self.pointcloud_location
-                else DatasetItemType.VIDEO
-            )
+            if self.image_location or self.video_frame_location
+            else DatasetItemType.POINTCLOUD
+            # else (
+            #     DatasetItemType.POINTCLOUD
+            #     if self.pointcloud_location
+            #     else DatasetItemType.VIDEO
+            # )
         )
         camera_params = (
             self.metadata.get(CAMERA_PARAMS_KEY, None)
