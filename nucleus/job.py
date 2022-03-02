@@ -90,24 +90,29 @@ class AsyncJob:
         )
         return [replace_double_slashes(error) for error in errors]
 
-    def sleep_until_complete(self, verbose_std_out=True):
+    def sleep_until_complete(
+        self, verbose_std_out=True, timeout_s: int = None
+    ):
         """Blocks until the job completes or errors.
 
         Parameters:
             verbose_std_out (Optional[bool]): Whether or not to verbosely log while
               sleeping. Defaults to True.
+            timeout_s: Raise error if job is still running after timout_s seconds
         """
         start_time = time.perf_counter()
         while 1:
             status = self.status()
             time.sleep(JOB_POLLING_INTERVAL)
 
+            time_elapsed = time.perf_counter() - start_time
             if verbose_std_out:
-                print(
-                    f"Status at {time.perf_counter() - start_time} s: {status}"
-                )
+                print(f"Status at {time_elapsed} s: {status}")
             if status["status"] == "Running":
                 continue
+
+            if timeout_s and time_elapsed > timeout_s:
+                raise JobTimeoutError(self, timeout_s)
 
             break
 
@@ -142,4 +147,12 @@ class JobError(Exception):
             f"For more detailed error messages you can call {str(job)}.errors()"
         )
         message = replace_double_slashes(message)
+        super().__init__(message)
+
+
+class JobTimeoutError(Exception):
+    def __init__(self, job: AsyncJob, timeout_seconds):
+        message = (
+            f"Refusing to wait longer for job: {job.job_id}. It is still running after {timeout_seconds} seconds",
+        )
         super().__init__(message)
