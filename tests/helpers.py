@@ -546,3 +546,17 @@ def create_predictions(
     ]
     dataset.upload_predictions(model, predictions)
     return predictions
+
+
+def assert_partial_equality(expected, result, base_keys=[]):
+    """Used to check partial equality of two json-like dictionaries."""
+    for key, value in expected.items():
+        # If value is a dict, recurse.
+        keys = base_keys + [key]
+        if isinstance(value, dict):
+            assert_partial_equality(value, result[key], keys)
+        else:
+            address = ".".join(keys)
+            assert (
+                result[key] == value
+            ), f"{address} is not equal: {result[key]} != {value}"
