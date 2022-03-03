@@ -151,7 +151,8 @@ class DeployClient:
             bundle_metadata["load_predict_fn"] = inspect.getsource(
                 load_predict_fn
             )
-            bundle_metadata["load_model_fn"] = inspect.getsource(load_model_fn)  # type: ignore
+            bundle_metadata["load_model_fn"] = inspect.getsource(
+                load_model_fn)  # type: ignore
         serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
@@ -224,7 +225,7 @@ class DeployClient:
              A ModelEndpoint object that can be used to make requests to the endpoint.
 
         """
-            # TODO test
+        # TODO test
         payload = dict(
             endpoint_name=endpoint_name,
             bundle_name=model_bundle.name,
