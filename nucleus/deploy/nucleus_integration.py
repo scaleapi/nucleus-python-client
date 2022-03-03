@@ -10,7 +10,7 @@ from nucleus import Dataset, DatasetItem
 from nucleus.dataset_item import DatasetItemType
 from nucleus.deploy.model_endpoint import (
     AsyncModelEndpoint,
-    AsyncModelEndpointResponse,
+    AsyncModelEndpointBatchResponse,
     EndpointRequest,
 )
 
@@ -26,7 +26,7 @@ class NucleusDatasetInferenceRun:
     # For the demo, we will need our Nucleus Dataset to have `image_location`s in s3://scale-ml-hosted-model-inference
     def __init__(
         self,
-        hmi_async_job: AsyncModelEndpointResponse,
+        hmi_async_job: AsyncModelEndpointBatchResponse,
         nucleus_client,
         s3url_to_dataset_map,
         dataset,
@@ -67,9 +67,7 @@ class NucleusDatasetInferenceRun:
         )
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
-            item_link = self.hmi_async_job.responses.get(s3url, {}).get(
-                "result_url", None
-            )
+            item_link = self.hmi_async_job.responses.get(s3url, {}).result_url
             if item_link is None:
                 logger.warning("No item link received for %s", s3url)
                 continue

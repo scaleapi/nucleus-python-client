@@ -1,6 +1,6 @@
 import concurrent.futures
 from collections import Counter
-from typing import Any, Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence
 
 from nucleus.deploy.request_validation import validate_task_request
 
@@ -35,6 +35,13 @@ class EndpointRequest:
         self.request_id = request_id
 
 
+class EndpointResponse:
+    def __init__(self, status, result_url, result):
+        self.status = status
+        self.result_url = result_url
+        self.result = result
+
+
 class SyncModelEndpoint:
     def __init__(self, endpoint_id: str, client):
         self.endpoint_id = endpoint_id
@@ -43,12 +50,17 @@ class SyncModelEndpoint:
     def __str__(self):
         return f"SyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
 
-    def predict(self, request: EndpointRequest):
-        return self.client.sync_request(
+    def predict(self, request: EndpointRequest) -> EndpointResponse:
+        raw_response = self.client.sync_request(
             self.endpoint_id,
             url=request.url,
             args=request.args,
             return_pickled=request.return_pickled,
+        )
+        return EndpointResponse(
+            status=TASK_SUCCESS_STATE,
+            result_url=raw_response.get("result_url", None),
+            result=raw_response.get("result", None),
         )
 
     def status(self):
@@ -75,7 +87,7 @@ class AsyncModelEndpoint:
 
     def predict_batch(
         self, requests: Sequence[EndpointRequest]
-    ) -> "AsyncModelEndpointResponse":
+    ) -> "AsyncModelEndpointBatchResponse":
         """
         Runs inference on the data items specified by urls. Returns a AsyncModelEndpointResponse.
 
@@ -110,7 +122,7 @@ class AsyncModelEndpoint:
             urls_to_requests = executor.map(single_request, requests)
             request_ids = dict(urls_to_requests)
 
-        return AsyncModelEndpointResponse(
+        return AsyncModelEndpointBatchResponse(
             self.client,
             request_ids=request_ids,
         )
@@ -139,7 +151,7 @@ class AsyncModelEndpoint:
         raise NotImplementedError
 
 
-class AsyncModelEndpointResponse:
+class AsyncModelEndpointBatchResponse:
     """
 
     Currently represents a list of async inference requests to a specific endpoint. Keeps track of the requests made,
@@ -163,7 +175,7 @@ class AsyncModelEndpointResponse:
         self.request_ids = (
             request_ids.copy()
         )  # custom request_id or url or str(args) (clientside) -> task_id (serverside)
-        self.responses: Dict[str, Optional[Dict]] = {
+        self.responses: Dict[str, Optional[EndpointResponse]] = {
             req_id: None for req_id in request_ids.keys()
         }
         # celery task statuses
@@ -180,6 +192,7 @@ class AsyncModelEndpointResponse:
 
         def single_request(inner_url, inner_task_id):
             if self.statuses[inner_url] != TASK_PENDING_STATE:
+                # Skip polling tasks that are completed
                 return None
             inner_response = self.client.get_async_response(inner_task_id)
             print("inner response", inner_response)
@@ -200,11 +213,16 @@ class AsyncModelEndpointResponse:
         for response in responses:
             if response is None:
                 continue
-            url, _, state, result_url = response
+            url, _, state, raw_response = response
             if state:
                 self.statuses[url] = state
-            if result_url:
-                self.responses[url] = result_url
+            if raw_response:
+                response_object = EndpointResponse(
+                    status=raw_response["state"],
+                    result_url=raw_response.get("result_url", None),
+                    result=raw_response.get("result", None),
+                )
+                self.responses[url] = response_object
 
     def is_done(self, poll=True) -> bool:
         """
@@ -219,7 +237,7 @@ class AsyncModelEndpointResponse:
             resp != TASK_PENDING_STATE for resp in self.statuses.values()
         )
 
-    def get_responses(self) -> Dict[str, Optional[Dict[Any, Any]]]:
+    def get_responses(self) -> Dict[str, Optional[EndpointResponse]]:
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
