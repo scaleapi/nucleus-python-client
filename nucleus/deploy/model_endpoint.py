@@ -41,6 +41,9 @@ class EndpointResponse:
         self.result_url = result_url
         self.result = result
 
+    def __str__(self):
+        return f"status: {self.status}, result: {self.result}, result_url: {self.result_url}"
+
 
 class SyncModelEndpoint:
     def __init__(self, endpoint_id: str, client):
