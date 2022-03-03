@@ -21,6 +21,9 @@ def test_invoke_slices(runner):
 
 
 @pytest.mark.integration
+@pytest.mark.skip(
+    reason="Slices listing times out for Nucleus PyTest account in CircleCI"
+)
 def test_invoke_slices_list(runner, cli_slices):
     runner = CliRunner()
     result = runner.invoke(list_slices)  # type: ignore
