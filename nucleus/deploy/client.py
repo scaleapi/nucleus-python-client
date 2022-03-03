@@ -83,6 +83,8 @@ class DeployClient:
         self,
         model_bundle_name: str,
         load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
+        env_params: Dict[str, str],
+        requirements: Optional[List[str]] = None,
         model: Optional[DeployModel_T] = None,
         load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
         bundle_url: Optional[str] = None,
@@ -102,6 +104,17 @@ class DeployClient:
             load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
             bundle_url: Only for self-hosted mode. Desired location of bundle.
+            requirements: A list of python package requirements, e.g.
+                ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
+                imported list of packages.
+            env_params: A dictionary that dictates environment information e.g.
+                the use of pytorch or tensorflow, which cuda/cudnn versions to use.
+                Specifically, the dictionary should contain the following keys:
+                "framework_type": either "tensorflow" or "pytorch".
+                "pytorch_version": Version of pytorch, e.g. "1.5.1", "1.7.0", etc. Only applicable if framework_type is pytorch
+                "cuda_version": Version of cuda used, e.g. "11.0".
+                "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
+                "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
         """
 
         if (model is not None and load_model_fn is not None) or (
@@ -111,6 +124,18 @@ class DeployClient:
                 "Exactly one of model and load_model_fn should be non-None"
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
+
+        if requirements is None:
+            requirements_inferred = find_packages_from_imports(globals())
+            requirements = [
+                f"{key}=={value}"
+                for key, value in requirements_inferred.items()
+            ]
+            logger.info(
+                "Using \n%s\n for model bundle %s",
+                requirements,
+                model_bundle_name,
+            )
 
         bundle_metadata = {}
         # Create bundle
@@ -126,7 +151,8 @@ class DeployClient:
             bundle_metadata["load_predict_fn"] = inspect.getsource(
                 load_predict_fn
             )
-            bundle_metadata["load_model_fn"] = inspect.getsource(load_model_fn)  # type: ignore
+            bundle_metadata["load_model_fn"] = inspect.getsource(
+                load_model_fn)  # type: ignore
         serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
@@ -150,9 +176,11 @@ class DeployClient:
 
         self.connection.post(
             payload=dict(
-                id=model_bundle_name,
+                bundle_name=model_bundle_name,
                 location=raw_bundle_url,
                 bundle_metadata=bundle_metadata,
+                requirements=requirements,
+                env_params=env_params,
             ),
             route="model_bundle",
         )  # TODO use return value somehow
@@ -170,8 +198,6 @@ class DeployClient:
         min_workers: int,
         max_workers: int,
         per_worker: int,
-        env_params: Dict[str, str],
-        requirements: Optional[List[str]] = None,
         gpu_type: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
         endpoint_type: str = "async",
@@ -190,17 +216,6 @@ class DeployClient:
             max_workers: Maximum number of workers for model endpoint
             per_worker: An autoscaling parameter. Use this to make a tradeoff between latency and costs,
                 a lower per_worker will mean more workers are created for a given workload
-            requirements: A list of python package requirements, e.g.
-                ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
-                imported list of packages.
-            env_params: A dictionary that dictates environment information e.g.
-                the use of pytorch or tensorflow, which cuda/cudnn versions to use.
-                Specifically, the dictionary should contain the following keys:
-                "framework_type": either "tensorflow" or "pytorch".
-                "pytorch_version": Version of pytorch, e.g. "1.5.1", "1.7.0", etc. Only applicable if framework_type is pytorch
-                "cuda_version": Version of cuda used, e.g. "11.0".
-                "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
-                "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
             overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
@@ -210,21 +225,9 @@ class DeployClient:
              A ModelEndpoint object that can be used to make requests to the endpoint.
 
         """
-        if requirements is None:
-            requirements_inferred = find_packages_from_imports(globals())
-            requirements = [
-                f"{key}=={value}"
-                for key, value in requirements_inferred.items()
-            ]
-            logger.info(
-                "Using \n%s\n for model endpoint %s",
-                requirements,
-                endpoint_name,
-            )
-            # TODO test
+        # TODO test
         payload = dict(
             endpoint_name=endpoint_name,
-            env_params=env_params,
             bundle_name=model_bundle.name,
             cpus=cpus,
             memory=memory,
@@ -233,7 +236,6 @@ class DeployClient:
             min_workers=min_workers,
             max_workers=max_workers,
             per_worker=per_worker,
-            requirements=requirements,
             endpoint_type=endpoint_type,
         )
         if gpus == 0:
