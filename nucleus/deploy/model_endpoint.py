@@ -1,4 +1,5 @@
 import concurrent.futures
+import uuid
 from collections import Counter
 from typing import Dict, Optional, Sequence
 
@@ -19,6 +20,7 @@ class EndpointRequest:
             objects.
         return_pickled: Whether the output should be a pickled python object, or directly returned serialized json
         request_id: A user-specifiable id for requests. Should be unique.
+            If one isn't provided the client will generate its own.
     """
 
     def __init__(
@@ -29,10 +31,12 @@ class EndpointRequest:
         request_id: Optional[str] = None,
     ):
         validate_task_request(url=url, args=args)
+        if request_id is None:
+            request_id = str(uuid.uuid4())
         self.url = url
         self.args = args
         self.return_pickled = return_pickled
-        self.request_id = request_id
+        self.request_id: str = request_id
 
 
 class EndpointResponse:
@@ -113,12 +117,7 @@ class AsyncModelEndpoint:
                 args=request.args,
                 return_pickled=request.return_pickled,
             )
-            if request.request_id is not None:
-                request_key = request.request_id
-            elif request.url is not None:
-                request_key = request.url
-            else:
-                request_key = str(request["args"])
+            request_key = request.request_id
             return request_key, inner_inference_request
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
