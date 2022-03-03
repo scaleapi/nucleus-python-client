@@ -17,6 +17,7 @@ from nucleus.deploy.constants import (
 from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
 from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
+from nucleus.deploy.request_validation import validate_task_request
 
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
@@ -378,8 +379,7 @@ class DeployClient:
             Otherwise, if `return_pickled` is false, the key will be "result",
             and the value is the arbitrary json returned by the endpoint's `predict` function.
         """
-        if url is None and args is None:
-            raise ValueError("Must specify at least one of url/args")
+        validate_task_request(url=url, args=args)
         payload: Dict[str, Any] = dict(return_pickled=return_pickled)
         if url is not None:
             payload["url"] = url
@@ -419,8 +419,7 @@ class DeployClient:
             Example output:
                 `abcabcab-cabc-abca-0123456789ab`
         """
-        if url is None and args is None:
-            raise ValueError("Must specify at least one of url/args")
+        validate_task_request(url=url, args=args)
         payload: Dict[str, Any] = dict(return_pickled=return_pickled)
         if url is not None:
             payload["url"] = url

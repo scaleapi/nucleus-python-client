@@ -2,6 +2,8 @@ import concurrent.futures
 from collections import Counter
 from typing import Any, Dict, Optional, Sequence
 
+from nucleus.deploy.request_validation import validate_task_request
+
 TASK_PENDING_STATE = "PENDING"
 TASK_SUCCESS_STATE = "SUCCESS"
 TASK_FAILURE_STATE = "FAILURE"
@@ -26,10 +28,7 @@ class EndpointRequest:
         return_pickled: Optional[bool] = True,
         request_id: Optional[str] = None,
     ):
-        if url is None and args is None:
-            raise ValueError(
-                "Must specify at least one of url or args as an EndpointRequest"
-            )
+        validate_task_request(url=url, args=args)
         self.url = url
         self.args = args
         self.return_pickled = return_pickled
