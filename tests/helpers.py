@@ -93,13 +93,13 @@ TEST_VIDEO_SCENES = {
             "frames": [
                 {
                     "video_frame_url": TEST_IMG_URLS[0],
-                    "type": "video",
+                    "type": "image",
                     "reference_id": "video_frame_0",
                     "metadata": {"time": 123, "foo": "bar"},
                 },
                 {
                     "video_frame_url": TEST_IMG_URLS[1],
-                    "type": "video",
+                    "type": "image",
                     "reference_id": "video_frame_1",
                     "metadata": {"time": 124, "foo": "bar_2"},
                 },
