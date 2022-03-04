@@ -1,14 +1,15 @@
 import sys
 from abc import abstractmethod
-from typing import List, Union
+from typing import Dict, List
 
 import numpy as np
 
-from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
-from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
+from nucleus.annotation import AnnotationList
+from nucleus.prediction import PredictionList
 
 from .base import Metric, ScalarResult
 from .filters import confidence_filter, polygon_label_filter
+from .label_grouper import LabelsGrouper
 from .metric_utils import compute_average_precision
 from .polygon_utils import (
     BoxOrPolygonAnnotation,
@@ -80,7 +81,7 @@ class PolygonMetric(Metric):
 
     def __init__(
         self,
-        enforce_label_match: bool = False,
+        enforce_label_match: bool = True,
         confidence_threshold: float = 0.0,
     ):
         """Initializes PolygonMetric abstract object.
@@ -92,6 +93,31 @@ class PolygonMetric(Metric):
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
+
+    def eval_grouped(
+        self,
+        annotations: List[BoxOrPolygonAnnotation],
+        predictions: List[BoxOrPolygonPrediction],
+    ) -> Dict[str, ScalarResult]:
+        grouped_annotations = LabelsGrouper(annotations)
+        grouped_predictions = LabelsGrouper(predictions)
+        results = {}
+        for label, label_annotations in grouped_annotations:
+            # TODO(gunnar): Enforce label match -> Why is that a parameter? Should we generally allow IOU matches
+            #  between different labels?!?
+            match_predictions = (
+                grouped_predictions.label_group(label)
+                if self.enforce_label_match
+                else predictions
+            )
+            eval_fn = label_match_wrapper(self.eval)
+            result = eval_fn(
+                label_annotations,
+                match_predictions,
+                enforce_label_match=self.enforce_label_match,
+            )
+            results[label] = result
+        return results
 
     @abstractmethod
     def eval(
@@ -107,23 +133,21 @@ class PolygonMetric(Metric):
 
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> ScalarResult:
+    ) -> Dict[str, ScalarResult]:
         if self.confidence_threshold > 0:
             predictions = confidence_filter(
                 predictions, self.confidence_threshold
             )
-        polygon_annotations: List[Union[BoxAnnotation, PolygonAnnotation]] = []
+        polygon_annotations: List[BoxOrPolygonAnnotation] = []
         polygon_annotations.extend(annotations.box_annotations)
         polygon_annotations.extend(annotations.polygon_annotations)
-        polygon_predictions: List[Union[BoxPrediction, PolygonPrediction]] = []
+        polygon_predictions: List[BoxOrPolygonPrediction] = []
         polygon_predictions.extend(predictions.box_predictions)
         polygon_predictions.extend(predictions.polygon_predictions)
 
-        eval_fn = label_match_wrapper(self.eval)
-        result = eval_fn(
+        result = self.eval_grouped(
             polygon_annotations,
             polygon_predictions,
-            enforce_label_match=self.enforce_label_match,
         )
         return result
 
@@ -166,7 +190,7 @@ class PolygonIOU(PolygonMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
-        enforce_label_match: bool = False,
+        enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
     ):
@@ -234,7 +258,7 @@ class PolygonPrecision(PolygonMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
-        enforce_label_match: bool = False,
+        enforce_label_match: bool = True,
         iou_threshold: float = 0.5,
         confidence_threshold: float = 0.0,
     ):
@@ -303,7 +327,7 @@ class PolygonRecall(PolygonMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
-        enforce_label_match: bool = False,
+        enforce_label_match: bool = True,
         iou_threshold: float = 0.5,
         confidence_threshold: float = 0.0,
     ):
@@ -460,7 +484,7 @@ class PolygonMAP(PolygonMetric):
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
         self.iou_threshold = iou_threshold
-        super().__init__(enforce_label_match=False, confidence_threshold=0)
+        super().__init__(enforce_label_match=True, confidence_threshold=0)
 
     def eval(
         self,

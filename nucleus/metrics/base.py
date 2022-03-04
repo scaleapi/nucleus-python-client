@@ -1,7 +1,7 @@
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Dict, Iterable, List
 
 from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
@@ -89,7 +89,7 @@ class Metric(ABC):
     @abstractmethod
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> MetricResult:
+    ) -> Dict[str, MetricResult]:
         """A metric must override this method and return a metric result, given annotations and predictions."""
 
     @abstractmethod
