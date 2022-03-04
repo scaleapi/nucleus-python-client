@@ -19,7 +19,8 @@ class EndpointRequest:
             predict_fn(foo, bar), then the keys in the dictionary should be 'foo' and 'bar'. Values must be native Python
             objects.
         return_pickled: Whether the output should be a pickled python object, or directly returned serialized json
-        request_id: A user-specifiable id for requests. Should be unique.
+        request_id: A user-specifiable id for requests.
+            Should be unique among EndpointRequests made in the same batch call.
             If one isn't provided the client will generate its own.
     """
 
@@ -99,7 +100,7 @@ class AsyncModelEndpoint:
         Runs inference on the data items specified by urls. Returns a AsyncModelEndpointResponse.
 
         Parameters:
-            requests: List of EndpointRequests
+            requests: List of EndpointRequests. Request_ids must all be distinct.
 
         Returns:
             an AsyncModelEndpointResponse keeping track of the inference requests made
@@ -107,6 +108,11 @@ class AsyncModelEndpoint:
         # Make inference requests to the endpoint,
         # if batches are possible make this aware you can pass batches
         # TODO add batch support once those are out
+
+        if len(requests) != len(
+            set(request.request_id for request in requests)
+        ):
+            raise ValueError("Request_ids in a batch must be unique")
 
         def single_request(request):
             # request has keys url and args
@@ -176,7 +182,7 @@ class AsyncModelEndpointBatchResponse:
         self.client = client
         self.request_ids = (
             request_ids.copy()
-        )  # custom request_id or url or str(args) (clientside) -> task_id (serverside)
+        )  # custom request_id (clientside) -> task_id (serverside)
         self.responses: Dict[str, Optional[EndpointResponse]] = {
             req_id: None for req_id in request_ids.keys()
         }
@@ -240,6 +246,10 @@ class AsyncModelEndpointBatchResponse:
         )
 
     def get_responses(self) -> Dict[str, Optional[EndpointResponse]]:
+        """
+        Returns a dictionary, where each key is the request_id for an EndpointRequest passed in, and the corresponding
+        object at that key is the corresponding EndpointResponse.
+        """
         if not self.is_done(poll=False):
             raise ValueError("Not all responses are done")
         return self.responses.copy()
