@@ -82,8 +82,10 @@ class DeployClient:
     def create_model_bundle(
         self,
         model_bundle_name: str,
-        load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
         env_params: Dict[str, str],
+        *,
+        load_predict_fn: Optional[Callable[[DeployModel_T], Callable[[Any], Any]]] = None,
+        predict_fn_or_cls: Optional[Callable[[Any], Any]] = None,
         requirements: Optional[List[str]] = None,
         model: Optional[DeployModel_T] = None,
         load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
@@ -91,7 +93,7 @@ class DeployClient:
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
-        A model bundle consists of a "load_predict_fn" and exactly one of "model" or "load_model_fn", such that
+        A model bundle consists of a "predict_fn_or_cls" or "load_predict_fn" and exactly one of "model" or "load_model_fn", such that
         load_predict_fn(model)
         or
         load_predict_fn(load_model_fn())
@@ -103,6 +105,7 @@ class DeployClient:
             model: Typically a trained Neural Network, e.g. a Pytorch module
             load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
+            predict_fn_or_cls: Function or a Callable class that runs inference on the call function.
             bundle_url: Only for self-hosted mode. Desired location of bundle.
             requirements: A list of python package requirements, e.g.
                 ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
@@ -117,11 +120,15 @@ class DeployClient:
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
         """
 
-        if (model is not None and load_model_fn is not None) or (
-            model is None and load_model_fn is None
-        ):
+        check_args = [
+            predict_fn_or_cls is not None,
+            model is not None,
+            load_model_fn is not None,
+        ]
+
+        if (sum(check_args) != 1):
             raise ValueError(
-                "Exactly one of model and load_model_fn should be non-None"
+                "Exactly one of `model` or `load_model_fn` or `predict_fn_or_cls` should be non-None"
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
@@ -139,7 +146,9 @@ class DeployClient:
 
         bundle_metadata = {}
         # Create bundle
-        if model is not None:
+        if predict_fn_or_cls:
+            bundle = predict_fn_or_cls
+        elif model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
                 load_predict_fn
@@ -198,6 +207,8 @@ class DeployClient:
         min_workers: int,
         max_workers: int,
         per_worker: int,
+        aws_role: str,
+        results_s3_bucket: str,
         gpu_type: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
         endpoint_type: str = "async",
@@ -214,6 +225,8 @@ class DeployClient:
             gpus: Number of gpus each worker should get, e.g. 0, 1, etc.
             min_workers: Minimum number of workers for model endpoint
             max_workers: Maximum number of workers for model endpoint
+            aws_role: worker AWS role
+            results_s3_bucket: Result S3 URL
             per_worker: An autoscaling parameter. Use this to make a tradeoff between latency and costs,
                 a lower per_worker will mean more workers are created for a given workload
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
@@ -237,6 +250,8 @@ class DeployClient:
             max_workers=max_workers,
             per_worker=per_worker,
             endpoint_type=endpoint_type,
+            aws_role=aws_role,
+            results_s3_bucket=results_s3_bucket,
         )
         if gpus == 0:
             del payload["gpu_type"]
@@ -346,7 +361,12 @@ class DeployClient:
         return resp["result_url"]
 
     def async_request(
-        self, endpoint_id: str, url: str, return_pickled: bool = True
+        self,
+        endpoint_id: str,
+        *,
+        url: Optional[str] = None,
+        kwargs: Dict[str, Any] = None,
+        return_pickled: bool = True,
     ) -> str:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
@@ -358,6 +378,9 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+                Incompatible with the parameter `kwargs`.
+            kwargs: A dictionary that defines named arguments of the __call__ bundle function.
+                Incompatible with the parameter `url`.
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
@@ -365,8 +388,18 @@ class DeployClient:
             Example output:
                 `abcabcab-cabc-abca-0123456789ab`
         """
+        if url and kwargs:
+            raise ValueError(
+                "Exactly one of `url` or `kwargs` should be non-None"
+            )
+        if url:
+            payload = dict(url=url)
+        else:
+            payload = dict(args=kwargs)
+        payload["return_pickled"] = return_pickled
+
         resp = self.connection.post(
-            payload=dict(url=url, return_pickled=return_pickled),
+            payload=payload,
             route=f"{ASYNC_TASK_PATH}/{endpoint_id}",
         )
         return resp["task_id"]
