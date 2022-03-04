@@ -31,6 +31,8 @@ class EndpointRequest:
         return_pickled: Optional[bool] = True,
         request_id: Optional[str] = None,
     ):
+        # TODO: request_id is pretty much here only to support the clientside AsyncModelEndpointBatchResponse
+        # so it should be removed when we get proper batch endpoints working.
         validate_task_request(url=url, args=args)
         if request_id is None:
             request_id = str(uuid.uuid4())
