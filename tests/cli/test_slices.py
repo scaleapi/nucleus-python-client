@@ -21,6 +21,7 @@ def test_invoke_slices(runner):
     assert result.exit_code == 0
 
 
+@pytest.mark.skip(reason="Hangs indefinitely")
 @pytest.mark.integration
 def test_invoke_slices_list(runner, cli_slices):
     runner = CliRunner()
