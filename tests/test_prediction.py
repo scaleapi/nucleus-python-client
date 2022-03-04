@@ -486,28 +486,10 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "prediction_upload": {
-                "epoch": 1,
-                "total": 3,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": model_run.dataset_id,
-                "processed": 3,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 4,
-        "total_steps": 4,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
 
 
 @pytest.mark.integration
@@ -535,30 +517,12 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "prediction_upload": {
-                "epoch": 1,
-                "total": 3,
-                "errored": 1,
-                "ignored": 0,
-                "datasetId": model_run.dataset_id,
-                "processed": 2,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 4,
-        "total_steps": 4,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
 
-    assert "Item with id fake_garbage doesn" in str(job.errors())
+    assert prediction_bbox.reference_id in str(job.errors())
 
 
 @pytest.mark.integration
@@ -574,23 +538,10 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "prediction_upload": {
-                "epoch": 1,
-                "total": 1,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": model_run.dataset_id,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
 
 
 @pytest.mark.integration
@@ -611,13 +562,7 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     except JobError:
         assert error_msg in job.errors()[-1]
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Errored",
-        "message": {
-            "final_error": f"BadRequestError: {error_msg}",
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Errored"
+    assert status["job_progress"] == "1.00"
