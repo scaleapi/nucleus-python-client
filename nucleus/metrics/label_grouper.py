@@ -14,20 +14,20 @@ class LabelsGrouper:
         self.codes, self.labels = pd.factorize(
             [item.label for item in self.items]
         )
-        self.it_idx = 0
+        self.group_idx = 0
 
     def __iter__(self):
-        self.it_idx = 0
+        self.group_idx = 0
         return self
 
     def __next__(self):
-        self.it_idx += 1
-        if self.it_idx >= len(self.labels):
+        if self.group_idx >= len(self.labels):
             raise StopIteration
-        label = self.labels[self.it_idx]
+        label = self.labels[self.group_idx]
         label_items = list(
-            np.take(self.items, np.where(self.codes == self.it_idx)[0])
+            np.take(self.items, np.where(self.codes == self.group_idx)[0])
         )
+        self.group_idx += 1
         return label, label_items
 
     def label_group(self, label: str) -> List[Any]:
