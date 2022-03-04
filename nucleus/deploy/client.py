@@ -84,7 +84,9 @@ class DeployClient:
         model_bundle_name: str,
         env_params: Dict[str, str],
         *,
-        load_predict_fn: Optional[Callable[[DeployModel_T], Callable[[Any], Any]]] = None,
+        load_predict_fn: Optional[
+            Callable[[DeployModel_T], Callable[[Any], Any]]
+        ] = None,
         predict_fn_or_cls: Optional[Callable[[Any], Any]] = None,
         requirements: Optional[List[str]] = None,
         model: Optional[DeployModel_T] = None,
@@ -126,7 +128,7 @@ class DeployClient:
             load_model_fn is not None,
         ]
 
-        if (sum(check_args) != 1):
+        if sum(check_args) != 1:
             raise ValueError(
                 "Exactly one of `model` or `load_model_fn` or `predict_fn_or_cls` should be non-None"
             )
@@ -161,7 +163,8 @@ class DeployClient:
                 load_predict_fn
             )
             bundle_metadata["load_model_fn"] = inspect.getsource(
-                load_model_fn)  # type: ignore
+                load_model_fn
+            )  # type: ignore
         serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
