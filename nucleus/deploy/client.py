@@ -150,6 +150,11 @@ class DeployClient:
         # Create bundle
         if predict_fn_or_cls:
             bundle = predict_fn_or_cls
+            if inspect.isfunction(predict_fn_or_cls):
+                source_code = inspect.getsource(predict_fn_or_cls)
+            else:
+                source_code = inspect.getsource(predict_fn_or_cls.__class__)
+            bundle_metadata["predict_fn_or_cls"] = source_code
         elif model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
