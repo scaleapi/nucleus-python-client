@@ -841,6 +841,26 @@ class NucleusClient:
         """
         return self.make_request({}, f"autotag/{autotag_id}", requests.delete)
 
+    def get_autotag_refinement_metrics(self, autotag_id: str) -> dict:
+        """Retrieves refinement metrics for an autotag by ID.
+
+        Parameters:
+            autotag_id: Nucleus-generated autotag ID (starts with ``tag_``). This can
+              be retrieved via :meth:`list_autotags` or a Nucleus dashboard URL.
+
+        Returns:
+            Response payload::
+
+
+                {
+                    "total_refinement_steps": int
+                    "average_positives_selected_per_refinement": int
+                }
+        """
+        return self.make_request(
+            {}, f"autotag/{autotag_id}/refinementMetrics", requests.get
+        )
+
     def delete_model(self, model_id: str) -> dict:
         """Deletes a model by ID.
 
