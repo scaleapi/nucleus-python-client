@@ -92,13 +92,13 @@ TEST_VIDEO_SCENES = {
             "frame_rate": 15,
             "frames": [
                 {
-                    "video_frame_url": TEST_IMG_URLS[0],
+                    "image_url": TEST_IMG_URLS[0],
                     "type": "image",
                     "reference_id": "video_frame_0",
                     "metadata": {"time": 123, "foo": "bar"},
                 },
                 {
-                    "video_frame_url": TEST_IMG_URLS[1],
+                    "image_url": TEST_IMG_URLS[1],
                     "type": "image",
                     "reference_id": "video_frame_1",
                     "metadata": {"time": 124, "foo": "bar_2"},
@@ -124,28 +124,25 @@ TEST_DATASET_ITEMS = [
 
 TEST_VIDEO_ITEMS = [
     DatasetItem(
-        None,
+        TEST_IMG_URLS[0],
         reference_id_from_url(TEST_IMG_URLS[0]),
         None,
         None,
         True,
-        TEST_IMG_URLS[0],
     ),
     DatasetItem(
-        None,
+        TEST_IMG_URLS[1],
         reference_id_from_url(TEST_IMG_URLS[1]),
         None,
         None,
         True,
-        TEST_IMG_URLS[1],
     ),
     DatasetItem(
-        None,
+        TEST_IMG_URLS[2],
         reference_id_from_url(TEST_IMG_URLS[2]),
         None,
         None,
         True,
-        TEST_IMG_URLS[2],
     ),
 ]
 
