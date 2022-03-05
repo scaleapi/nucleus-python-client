@@ -1,9 +1,12 @@
 import inspect
 import logging
+import os
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 import cloudpickle
 import requests
+import shutil
+import tempfile
 
 from nucleus.connection import Connection
 from nucleus.deploy.constants import (
@@ -99,6 +102,60 @@ class DeployClient:
         required fields for self-hosting.
         """
         self.endpoint_auth_decorator_fn = endpoint_auth_decorator_fn
+
+    def create_model_bundle_from_dir(
+        self,
+        model_bundle_name: str,
+        base_path: str,
+        requirements_path: str,
+        base_image: str,
+        env_params: Dict[str, str],
+        load_predict_fn_module_path: str,
+        load_model_fn_module_path: str
+    ) -> ModelBundle:
+        """
+        """
+        with open(requirements_path, "r") as f:
+            requirements = f.read().splitlines()
+
+
+        try:
+            local_zip_file = tempfile.NamedTemporaryFile()
+            shutil.make_archive(local_zip_file.name, "zip", base_path)
+            model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
+            s3_path = model_bundle_url["signedUrl"]
+
+            # FIXME: Right now, the signedUrl endpoint returns a path that ends with a UUID,
+            # without the ability to specify a suffix (i.e. a file extension). This means that
+            # we'll have to find another means of distinguishing file types. We could add metadata,
+            # or do something brute force and do a try/except when parsing various file types.
+            raw_bundle_url = f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
+            logger.info(f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}")
+
+            local_zip_file.seek(0)
+            zip_bytes = local_zip_file.read()
+
+            requests.put(s3_path, data=zip_bytes)
+        finally:
+            local_zip_file.close()
+
+        bundle_metadata = {
+            "type": "zip",
+            "load_predict_fn_module_path": load_predict_fn_module_path,
+            "load_model_fn_module_path": load_model_fn_module_path,
+        }
+
+        self.connection.post(
+            payload=dict(
+                bundle_name=model_bundle_name,
+                location=raw_bundle_url,
+                bundle_metadata=bundle_metadata,
+                requirements=requirements,
+                env_params=env_params,
+            ),
+            route="model_bundle"
+        )
+        return ModelBundle(model_bundle_name)
 
     def create_model_bundle(
         self,
