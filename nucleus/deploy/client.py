@@ -119,9 +119,10 @@ class DeployClient:
             requirements = f.read().splitlines()
 
 
+        tmpdir = tempfile.mkdtemp()
         try:
-            local_zip_file = tempfile.NamedTemporaryFile()
-            shutil.make_archive(local_zip_file.name, "zip", base_path)
+            tmparchive = os.path.join(tmpdir, "bundle")
+            data = open(shutil.make_archive(tmparchive, "zip", base_path), "rb").read()
             model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
             s3_path = model_bundle_url["signedUrl"]
 
@@ -132,12 +133,9 @@ class DeployClient:
             raw_bundle_url = f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
             logger.info(f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}")
 
-            local_zip_file.seek(0)
-            zip_bytes = local_zip_file.read()
-
-            requests.put(s3_path, data=zip_bytes)
+            requests.put(s3_path, data=data)
         finally:
-            local_zip_file.close()
+            shutil.rmtree(tmpdir)
 
         bundle_metadata = {
             "type": "zip",
