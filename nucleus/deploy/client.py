@@ -17,6 +17,7 @@ from nucleus.deploy.constants import (
 from nucleus.deploy.find_packages import find_packages_from_imports
 from nucleus.deploy.model_bundle import ModelBundle
 from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
+from nucleus.deploy.request_validation import validate_task_request
 
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 
@@ -49,6 +50,7 @@ class DeployClient:
         self.endpoint_auth_decorator_fn: Callable[
             [Dict[str, Any]], Dict[str, Any]
         ] = lambda x: x
+        self.bundle_location_fn: Optional[Callable[[], str]] = None
 
     def __repr__(self):
         return f"DeployClient(connection='{self.connection}')"
@@ -66,11 +68,30 @@ class DeployClient:
 
         This function should directly write the contents of serialized_bundle as a binary string into bundle_url.
 
+        See register_bundle_location_fn for more notes on the signature of upload_bundle_fn
+
         Parameters:
             upload_bundle_fn: Function that takes in a serialized bundle, and uploads that bundle to an appropriate
                 location. Only needed for self-hosted mode.
         """
         self.upload_bundle_fn = upload_bundle_fn
+
+    def register_bundle_location_fn(
+        self, bundle_location_fn: Callable[[], str]
+    ):
+        """
+        For self-hosted mode only. Registers a function that gives a location for a model bundle. Should give different
+        locations each time. This function is called as bundle_location_fn(), and should return a bundle_url that
+        register_upload_bundle_fn can take.
+
+        Strictly, bundle_location_fn() does not need to return a str. The only requirement is that if bundle_location_fn
+        returns a value of type T, then upload_bundle_fn() takes in an object of type T as its second argument
+        (i.e. bundle_url).
+
+        Parameters:
+            bundle_location_fn: Function that generates bundle_urls for upload_bundle_fn.
+        """
+        self.bundle_location_fn = bundle_location_fn
 
     def register_endpoint_auth_decorator(self, endpoint_auth_decorator_fn):
         """
@@ -109,6 +130,7 @@ class DeployClient:
             load_predict_fn: Function that when called with model, returns a function that carries out inference
             predict_fn_or_cls: Function or a Callable class that runs inference on the call function.
             bundle_url: Only for self-hosted mode. Desired location of bundle.
+            Overrides any value given by self.bundle_location_fn
             requirements: A list of python package requirements, e.g.
                 ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
                 imported list of packages.
@@ -175,8 +197,12 @@ class DeployClient:
         if self.is_self_hosted:
             if self.upload_bundle_fn is None:
                 raise ValueError("Upload_bundle_fn should be registered")
+            if self.bundle_location_fn is None and bundle_url is None:
+                raise ValueError(
+                    "Need either bundle_location_fn or bundle_url to know where to upload bundles"
+                )
             if bundle_url is None:
-                raise ValueError("bundle_url is None")
+                bundle_url = self.bundle_location_fn()  # type: ignore
             self.upload_bundle_fn(serialized_bundle, bundle_url)
             raw_bundle_url = bundle_url
         else:
@@ -246,7 +272,6 @@ class DeployClient:
              A ModelEndpoint object that can be used to make requests to the endpoint.
 
         """
-        # TODO test
         payload = dict(
             endpoint_name=endpoint_name,
             bundle_name=model_bundle.name,
@@ -344,8 +369,12 @@ class DeployClient:
         return resp["deleted"]
 
     def sync_request(
-        self, endpoint_id: str, url: str, return_pickled: bool = True
-    ) -> str:
+        self,
+        endpoint_id: str,
+        url: Optional[str] = None,
+        args: Optional[Dict] = None,
+        return_pickled: bool = True,
+    ) -> Dict[str, Any]:
         """
         Not recommended for use, instead use functions provided by SyncModelEndpoint
         Makes a request to the Sync Model Endpoint at endpoint_id, and blocks until request completion or timeout.
@@ -355,25 +384,40 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
+            args: A dictionary of arguments to the `predict` function defined in your model bundle.
+                Must be json-serializable, i.e. composed of str, int, float, etc.
+                If your `predict` function has signature `predict(foo, bar)`, then args should be a dictionary with
+                keys `foo` and `bar`. Exactly one of url and args must be specified.
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
-            A signedUrl that contains a cloudpickled Python object, the result of running inference on the model input
+            A dictionary with key either "result_url" or "result", depending on the value of `return_pickled`.
+            If `return_pickled` is true, the key will be "result_url",
+            and the value is a signedUrl that contains a cloudpickled Python object,
+            the result of running inference on the model input.
             Example output:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
+
+            Otherwise, if `return_pickled` is false, the key will be "result",
+            and the value is the arbitrary json returned by the endpoint's `predict` function.
         """
+        validate_task_request(url=url, args=args)
+        payload: Dict[str, Any] = dict(return_pickled=return_pickled)
+        if url is not None:
+            payload["url"] = url
+        if args is not None:
+            payload["args"] = args
         resp = self.connection.post(
-            payload=dict(url=url, return_pickled=return_pickled),
+            payload=payload,
             route=f"{SYNC_TASK_PATH}/{endpoint_id}",
         )
-        return resp["result_url"]
+        return resp
 
     def async_request(
         self,
         endpoint_id: str,
-        *,
         url: Optional[str] = None,
-        kwargs: Dict[str, Any] = None,
+        args: Optional[Dict] = None,
         return_pickled: bool = True,
     ) -> str:
         """
@@ -386,9 +430,10 @@ class DeployClient:
             endpoint_id: The id of the endpoint to make the request to
             url: A url that points to a file containing model input.
                 Must be accessible by Scale Deploy, hence it needs to either be public or a signedURL.
-                Incompatible with the parameter `kwargs`.
-            kwargs: A dictionary that defines named arguments of the __call__ bundle function.
-                Incompatible with the parameter `url`.
+            args: A dictionary of arguments to the ModelBundle's predict function.
+                Must be json-serializable, i.e. composed of str, int, float, etc.
+                If your `predict` function has signature `predict(foo, bar)`, then args should be a dictionary with
+                keys `foo` and `bar`. Exactly one of url and args must be specified.
             return_pickled: Whether the python object returned is pickled, or directly written to the file returned.
 
         Returns:
@@ -396,15 +441,12 @@ class DeployClient:
             Example output:
                 `abcabcab-cabc-abca-0123456789ab`
         """
-        if url and kwargs:
-            raise ValueError(
-                "Exactly one of `url` or `kwargs` should be non-None"
-            )
-        if url:
-            payload = dict(url=url)
-        else:
-            payload = dict(args=kwargs)
-        payload["return_pickled"] = return_pickled
+        validate_task_request(url=url, args=args)
+        payload: Dict[str, Any] = dict(return_pickled=return_pickled)
+        if url is not None:
+            payload["url"] = url
+        if args is not None:
+            payload["args"] = args
 
         resp = self.connection.post(
             payload=payload,
@@ -412,7 +454,7 @@ class DeployClient:
         )
         return resp["task_id"]
 
-    def get_async_response(self, async_task_id: str) -> str:
+    def get_async_response(self, async_task_id: str) -> Dict[str, Any]:
         """
         Not recommended to use this, instead we recommend to use functions provided by AsyncModelEndpoint.
         Gets inference results from a previously created task.
@@ -421,10 +463,13 @@ class DeployClient:
             async_task_id: The id/key returned from a previous invocation of async_request.
 
         Returns:
-            A dictionary that contains task status and optionally a result url if the task has completed.
+            A dictionary that contains task status and optionally a result url or result if the task has completed.
+            Result url or result will be returned if the task has succeeded. Will return a result url iff `return_pickled`
+            was set to True on task creation.
             Dictionary's keys are as follows:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
+            result: an arbitrary json returned by the endpoint's `predict` function
             Example output:
                 `{'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}`
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
