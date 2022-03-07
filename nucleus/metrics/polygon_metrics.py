@@ -1,5 +1,6 @@
 import sys
 from abc import abstractmethod
+from collections import defaultdict
 from typing import Dict, List
 
 import numpy as np
@@ -7,7 +8,7 @@ import numpy as np
 from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
 
-from .base import Metric, ScalarResult
+from .base import GroupedScalarResult, Metric, ScalarResult
 from .filters import confidence_filter, polygon_label_filter
 from .label_grouper import LabelsGrouper
 from .metric_utils import compute_average_precision
@@ -128,8 +129,16 @@ class PolygonMetric(Metric):
         # Main evaluation function that subclasses must override.
         pass
 
-    def aggregate_score(self, results: List[ScalarResult]) -> ScalarResult:  # type: ignore[override]
-        return ScalarResult.aggregate(results)
+    def aggregate_score(self, results: List[GroupedScalarResult]) -> Dict[str, ScalarResult]:  # type: ignore[override]
+        label_to_values = defaultdict(list)
+        for item_result in results:
+            for label, label_result in item_result.group_to_scalar.items():
+                label_to_values[label].append(label_result)
+        scores = {
+            label: ScalarResult.aggregate(values)
+            for label, values in label_to_values.items()
+        }
+        return scores
 
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList

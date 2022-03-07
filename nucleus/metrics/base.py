@@ -37,6 +37,18 @@ class ScalarResult(MetricResult):
         return ScalarResult(value, total_weight)
 
 
+@dataclass
+class GroupedScalarResult(MetricResult):
+    group_to_scalar: Dict[str, ScalarResult]
+
+    @property
+    def value(self):
+        return {
+            group: scalar.value
+            for group, scalar in self.group_to_scalar.items()
+        }
+
+
 class Metric(ABC):
     """Abstract class for defining a metric, which takes a list of annotations
     and predictions and returns a scalar.
@@ -93,7 +105,9 @@ class Metric(ABC):
         """A metric must override this method and return a metric result, given annotations and predictions."""
 
     @abstractmethod
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+    def aggregate_score(
+        self, results: List[MetricResult]
+    ) -> Dict[str, ScalarResult]:
         """A metric must define how to aggregate results from single items to a single ScalarResult.
 
         E.g. to calculate a R2 score with sklearn you could define a custom metric class ::
