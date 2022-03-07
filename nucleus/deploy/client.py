@@ -377,7 +377,7 @@ class DeployClient:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
 
             Otherwise, if `return_pickled` is false, the key will be "result",
-            and the value is what is returned by the endpoint's `predict` function, serialized as json.
+            and the value is the output of the endpoint's `predict` function, serialized as json.
         """
         validate_task_request(url=url, args=args)
         payload: Dict[str, Any] = dict(return_pickled=return_pickled)
