@@ -241,8 +241,6 @@ class DeployClient:
         min_workers: int,
         max_workers: int,
         per_worker: int,
-        aws_role: str,
-        results_s3_bucket: str,
         gpu_type: Optional[str] = None,
         overwrite_existing_endpoint: bool = False,
         endpoint_type: str = "async",
@@ -259,8 +257,6 @@ class DeployClient:
             gpus: Number of gpus each worker should get, e.g. 0, 1, etc.
             min_workers: Minimum number of workers for model endpoint
             max_workers: Maximum number of workers for model endpoint
-            aws_role: worker AWS role
-            results_s3_bucket: Result S3 URL
             per_worker: An autoscaling parameter. Use this to make a tradeoff between latency and costs,
                 a lower per_worker will mean more workers are created for a given workload
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
@@ -283,8 +279,6 @@ class DeployClient:
             max_workers=max_workers,
             per_worker=per_worker,
             endpoint_type=endpoint_type,
-            aws_role=aws_role,
-            results_s3_bucket=results_s3_bucket,
         )
         if gpus == 0:
             del payload["gpu_type"]
