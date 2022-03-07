@@ -43,6 +43,15 @@ class EndpointRequest:
 
 
 class EndpointResponse:
+    """
+    Represents a response received from a ModelEndpoint.
+    Status is a string representing the status of the request, i.e. SUCCESS, FAILURE, or PENDING
+    Exactly one of result_url or result will be populated, depending on the value of `return_pickled` in the request.
+    result_url is a string that is a url containing the pickled python object from the ModelEndpoint's predict function.
+    result is a string that is the serialized return value (in json form) of the ModelEndpoint's predict function.
+        Specifically, one can json.loads() the value of result to get the original python object back.
+    """
+
     def __init__(self, status, result_url, result):
         self.status = status
         self.result_url = result_url
