@@ -377,7 +377,7 @@ class DeployClient:
                 `https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy`
 
             Otherwise, if `return_pickled` is false, the key will be "result",
-            and the value is the arbitrary json returned by the endpoint's `predict` function.
+            and the value is what is returned by the endpoint's `predict` function, serialized as json.
         """
         validate_task_request(url=url, args=args)
         payload: Dict[str, Any] = dict(return_pickled=return_pickled)
@@ -447,7 +447,7 @@ class DeployClient:
             Dictionary's keys are as follows:
             state: 'PENDING' or 'SUCCESS' or 'FAILURE'
             result_url: a url pointing to inference results. This url is accessible for 12 hours after the request has been made.
-            result: an arbitrary json returned by the endpoint's `predict` function
+            result: the value returned by the endpoint's `predict` function, serialized as json
             Example output:
                 `{'state': 'SUCCESS', 'result_url': 'https://foo.s3.us-west-2.amazonaws.com/bar/baz/qux?xyzzy'}`
         TODO: do we want to read the results from here as well? i.e. translate result_url into a python object
