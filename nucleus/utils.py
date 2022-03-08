@@ -14,6 +14,7 @@ from nucleus.annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
@@ -26,6 +27,7 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     ITEM_KEY,
+    LINE_TYPE,
     MULTICATEGORY_TYPE,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
@@ -36,6 +38,7 @@ from .prediction import (
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
+    LinePrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
@@ -90,6 +93,7 @@ def format_prediction_response(
         Union[
             BoxPrediction,
             PolygonPrediction,
+            LinePrediction,
             CuboidPrediction,
             CategoryPrediction,
             SegmentationPrediction,
@@ -114,12 +118,14 @@ def format_prediction_response(
         Union[
             Type[BoxPrediction],
             Type[PolygonPrediction],
+            Type[LinePrediction],
             Type[CuboidPrediction],
             Type[CategoryPrediction],
             Type[SegmentationPrediction],
         ],
     ] = {
         BOX_TYPE: BoxPrediction,
+        LINE_TYPE: LinePrediction,
         POLYGON_TYPE: PolygonPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
@@ -193,6 +199,9 @@ def convert_export_payload(api_payload):
             annotations[POLYGON_TYPE].append(
                 PolygonAnnotation.from_json(polygon)
             )
+        for line in row[LINE_TYPE]:
+            line[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[LINE_TYPE].append(LineAnnotation.from_json(line))
         for box in row[BOX_TYPE]:
             box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
