@@ -182,7 +182,7 @@ class DeployClient:
             bundle_func_1 = dict(model=model, load_predict_fn=load_predict_fn)
             serialized_bundle = cloudpickle.dumps(bundle_func_1)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
-                load_predict_fn     # type: ignore
+                load_predict_fn  # type: ignore
             )
         else:
             bundle_func_2 = dict(
@@ -190,10 +190,10 @@ class DeployClient:
             )
             serialized_bundle = cloudpickle.dumps(bundle_func_2)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
-                load_predict_fn     # type: ignore
+                load_predict_fn  # type: ignore
             )
             bundle_metadata["load_model_fn"] = inspect.getsource(
-                load_model_fn       # type: ignore
+                load_model_fn  # type: ignore
             )
 
         if self.is_self_hosted:
