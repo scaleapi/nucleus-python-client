@@ -118,11 +118,18 @@ class DeployClient:
         with open(requirements_path, "r") as f:
             requirements = f.read().splitlines()
 
-
         tmpdir = tempfile.mkdtemp()
         try:
             tmparchive = os.path.join(tmpdir, "bundle")
-            data = open(shutil.make_archive(tmparchive, "zip", base_path), "rb").read()
+            root_dir = os.path.dirname(base_path)
+            base_dir = os.path.basename(base_path)
+
+            data = open(shutil.make_archive(
+                base_name=tmparchive,
+                format="zip",
+                root_dir=root_dir,
+                base_dir=base_dir
+            ), "rb").read()
             model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
             s3_path = model_bundle_url["signedUrl"]
 
