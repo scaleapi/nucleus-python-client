@@ -30,6 +30,7 @@ from .helpers import (
     assert_category_annotation_matches_dict,
     assert_line_annotation_matches_dict,
     assert_multicategory_annotation_matches_dict,
+    assert_partial_equality,
     assert_polygon_annotation_matches_dict,
     assert_segmentation_annotation_matches_dict,
     reference_id_from_url,
@@ -762,8 +763,9 @@ def test_default_category_gt_upload_async(dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
+    result = job.status()
 
-    assert job.status() == {
+    expected = {
         "job_id": job.job_id,
         "status": "Completed",
         "message": {
@@ -780,6 +782,7 @@ def test_default_category_gt_upload_async(dataset):
         "completed_steps": 1,
         "total_steps": 1,
     }
+    assert_partial_equality(expected, result)
 
 
 @pytest.mark.integration
@@ -800,7 +803,9 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     except JobError:
         assert error_msg in job.errors()[-1]
 
-    assert job.status() == {
+    result = job.status()
+
+    expected = {
         "job_id": job.job_id,
         "status": "Errored",
         "message": {
@@ -810,3 +815,5 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
         "completed_steps": 1,
         "total_steps": 1,
     }
+
+    assert_partial_equality(expected, result)
