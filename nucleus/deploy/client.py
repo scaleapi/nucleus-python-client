@@ -108,7 +108,6 @@ class DeployClient:
         model_bundle_name: str,
         base_path: str,
         requirements_path: str,
-        base_image: str,
         env_params: Dict[str, str],
         load_predict_fn_module_path: str,
         load_model_fn_module_path: str
