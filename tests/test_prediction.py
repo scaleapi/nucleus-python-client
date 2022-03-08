@@ -29,6 +29,7 @@ from .helpers import (
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
+    assert_partial_equality,
     assert_polygon_prediction_matches_dict,
     assert_segmentation_annotation_matches_dict,
     reference_id_from_url,
@@ -573,8 +574,9 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
         asynchronous=True,
     )
     job.sleep_until_complete()
+    result = job.status()
 
-    assert job.status() == {
+    expected = {
         "job_id": job.job_id,
         "status": "Completed",
         "message": {
@@ -591,6 +593,7 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
         "completed_steps": 1,
         "total_steps": 1,
     }
+    assert_partial_equality(expected, result)
 
 
 @pytest.mark.integration
@@ -611,7 +614,9 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     except JobError:
         assert error_msg in job.errors()[-1]
 
-    assert job.status() == {
+    result = job.status()
+
+    expected = {
         "job_id": job.job_id,
         "status": "Errored",
         "message": {
@@ -621,3 +626,5 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
         "completed_steps": 1,
         "total_steps": 1,
     }
+
+    assert_partial_equality(expected, result)
