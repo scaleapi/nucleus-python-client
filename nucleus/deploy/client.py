@@ -130,24 +130,26 @@ class DeployClient:
                 root_dir=root_dir,
                 base_dir=base_dir
             ), "rb").read()
-            model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
-            s3_path = model_bundle_url["signedUrl"]
-
-            # FIXME: Right now, the signedUrl endpoint returns a path that ends with a UUID,
-            # without the ability to specify a suffix (i.e. a file extension). This means that
-            # we'll have to find another means of distinguishing file types. We could add metadata,
-            # or do something brute force and do a try/except when parsing various file types.
-            raw_bundle_url = f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
-            logger.info(f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}")
-
-            requests.put(s3_path, data=data)
         finally:
             shutil.rmtree(tmpdir)
+
+        model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
+        s3_path = model_bundle_url["signedUrl"]
+
+        # FIXME: Right now, the signedUrl endpoint returns a path that ends with a UUID,
+        # without the ability to specify a suffix (i.e. a file extension). This means that
+        # we'll have to find another means of distinguishing file types. We could add metadata,
+        # or do something brute force and do a try/except when parsing various file types.
+        raw_bundle_url = f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
+        logger.info(f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}")
+
+        requests.put(s3_path, data=data)
 
         bundle_metadata = {
             "type": "zip",
             "load_predict_fn_module_path": load_predict_fn_module_path,
             "load_model_fn_module_path": load_model_fn_module_path,
+            "base_dir": base_dir,
         }
 
         self.connection.post(
