@@ -226,7 +226,6 @@ class DeployClient:
         max_workers: int,
         per_worker: int,
         gpu_type: Optional[str] = None,
-        overwrite_existing_endpoint: bool = False,
         endpoint_type: str = "async",
     ) -> Union[AsyncModelEndpoint, SyncModelEndpoint]:
         """
@@ -245,7 +244,6 @@ class DeployClient:
                 a lower per_worker will mean more workers are created for a given workload
             gpu_type: If specifying a non-zero number of gpus, this controls the type of gpu requested. Current options are
                 "nvidia-tesla-t4" for NVIDIA T4s, or "nvidia-tesla-v100" for NVIDIA V100s.
-            overwrite_existing_endpoint: Whether or not we should overwrite existing endpoints
             endpoint_type: Either "sync" or "async". Type of endpoint we want to instantiate.
 
         Returns:
@@ -269,12 +267,7 @@ class DeployClient:
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
         payload = self.endpoint_auth_decorator_fn(payload)
-        if overwrite_existing_endpoint:
-            resp = self.connection.put(
-                payload, f"{ENDPOINT_PATH}/{endpoint_name}"
-            )
-        else:
-            resp = self.connection.post(payload, ENDPOINT_PATH)
+        resp = self.connection.post(payload, ENDPOINT_PATH)
         endpoint_creation_task_id = resp.get(
             "endpoint_creation_task_id", None
         )  # TODO probably throw on None
@@ -289,6 +282,49 @@ class DeployClient:
             raise ValueError(
                 "Endpoint should be one of the types 'sync' or 'async'"
             )
+
+    def edit_model_endpoint(
+        self,
+        endpoint_name: str,
+        model_bundle: Optional[ModelBundle] = None,
+        cpus: Optional[int] = None,
+        memory: Optional[str] = None,
+        gpus: Optional[int] = None,
+        min_workers: Optional[int] = None,
+        max_workers: Optional[int] = None,
+        per_worker: Optional[int] = None,
+        gpu_type: Optional[str] = None,
+    ):
+        """
+        Edit an existing model endpoint
+        """
+        if model_bundle is not None:
+            bundle_name = model_bundle.name
+        else:
+            bundle_name = None
+        payload = dict(
+            endpoint_name=endpoint_name,
+            bundle_name=bundle_name,
+            cpus=cpus,
+            memory=memory,
+            gpus=gpus,
+            gpu_type=gpu_type,
+            min_workers=min_workers,
+            max_workers=max_workers,
+            per_worker=per_worker,
+        )
+        if gpus is None or gpus == 0:
+            payload["gpu_type"] = None
+        elif gpus > 0 and gpu_type is None:
+            raise ValueError("If nonzero gpus, must provide gpu_type")
+        for _, v in payload.copy().items():
+            if v is None:
+                del v
+        resp = self.connection.put(payload, f"{ENDPOINT_PATH}/{endpoint_name}")
+        endpoint_creation_task_id = resp.get("endpoint_creation_task_id", None)
+        logger.info(
+            "Endpoint creation task id is %s", endpoint_creation_task_id
+        )
 
     # Relatively small wrappers around http requests
 
