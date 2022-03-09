@@ -6,6 +6,7 @@ from nucleus import (
     BoxAnnotation,
     CategoryAnnotation,
     DatasetItem,
+    LineAnnotation,
     MultiCategoryAnnotation,
     Point,
     PolygonAnnotation,
@@ -22,12 +23,14 @@ from .helpers import (
     TEST_DEFAULT_CATEGORY_ANNOTATIONS,
     TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
+    TEST_LINE_ANNOTATIONS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
     assert_category_annotation_matches_dict,
+    assert_line_annotation_matches_dict,
     assert_multicategory_annotation_matches_dict,
     assert_partial_equality,
     assert_polygon_annotation_matches_dict,
@@ -106,6 +109,22 @@ def test_box_gt_upload(dataset):
     response_annotation = response[0]
     assert_box_annotation_matches_dict(
         response_annotation, TEST_BOX_ANNOTATIONS[0]
+    )
+
+
+def test_line_gt_upload(dataset):
+    annotation = LineAnnotation.from_json(TEST_LINE_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"]["line"]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_line_annotation_matches_dict(
+        response_annotation, TEST_LINE_ANNOTATIONS[0]
     )
 
 

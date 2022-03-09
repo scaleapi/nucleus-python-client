@@ -176,6 +176,24 @@ TEST_BOX_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_LINE_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Line Annotation ${i}",
+        "geometry": {
+            "vertices": [
+                {
+                    "x": 10 + i * 35 + j,
+                    "y": 20 + i * 55 + j,
+                }
+                for j in range(3)
+            ],
+        },
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Line Annotation Annotation Id{i}",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_POLYGON_ANNOTATIONS = [
     {
         "label": f"[Pytest] Polygon Annotation ${i}",
@@ -302,6 +320,11 @@ TEST_BOX_MODEL_PDF = {
     for box_annotation in TEST_BOX_ANNOTATIONS
 }
 
+TEST_LINE_MODEL_PDF = {
+    line_annotation["label"]: 1 / len(TEST_LINE_ANNOTATIONS)
+    for line_annotation in TEST_LINE_ANNOTATIONS
+}
+
 TEST_POLYGON_MODEL_PDF = {
     polygon_annotation["label"]: 1 / len(TEST_POLYGON_ANNOTATIONS)
     for polygon_annotation in TEST_POLYGON_ANNOTATIONS
@@ -324,6 +347,20 @@ TEST_BOX_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_BOX_ANNOTATIONS))
+]
+
+TEST_LINE_PREDICTIONS = [
+    {
+        **TEST_LINE_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_LINE_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_LINE_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_LINE_ANNOTATIONS))
 ]
 
 TEST_POLYGON_PREDICTIONS = [
@@ -391,6 +428,18 @@ def assert_box_annotation_matches_dict(annotation_instance, annotation_dict):
     assert (
         annotation_instance.annotation_id == annotation_dict["annotation_id"]
     )
+
+
+def assert_line_annotation_matches_dict(annotation_instance, annotation_dict):
+    assert annotation_instance.label == annotation_dict["label"]
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
+    for instance_pt, dict_pt in zip(
+        annotation_instance.vertices, annotation_dict["geometry"]["vertices"]
+    ):
+        assert instance_pt.x == dict_pt["x"]
+        assert instance_pt.y == dict_pt["y"]
 
 
 def assert_polygon_annotation_matches_dict(
@@ -474,6 +523,11 @@ def assert_segmentation_annotation_matches_dict(
 # Useful to check prediction uploads/updates match.
 def assert_box_prediction_matches_dict(prediction_instance, prediction_dict):
     assert_box_annotation_matches_dict(prediction_instance, prediction_dict)
+    assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def assert_line_prediction_matches_dict(prediction_instance, prediction_dict):
+    assert_line_annotation_matches_dict(prediction_instance, prediction_dict)
     assert prediction_instance.confidence == prediction_dict["confidence"]
 
 

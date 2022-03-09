@@ -15,7 +15,8 @@ __all__ = [
     "DatasetItemRetrievalError",
     "Frame",
     "LidarScene",
-    "VideoScene",
+    "LineAnnotation",
+    "LinePrediction",
     "Model",
     "ModelCreationError",
     # "MultiCategoryAnnotation", # coming soon!
@@ -31,6 +32,7 @@ __all__ = [
     "SegmentationAnnotation",
     "SegmentationPrediction",
     "Slice",
+    "VideoScene",
 ]
 
 import os
@@ -49,6 +51,7 @@ from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    LineAnnotation,
     MultiCategoryAnnotation,
     Point,
     Point3D,
@@ -119,6 +122,7 @@ from .prediction import (
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
+    LinePrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
