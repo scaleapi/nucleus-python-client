@@ -29,7 +29,6 @@ from .helpers import (
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
-    assert_partial_equality,
     assert_polygon_prediction_matches_dict,
     assert_segmentation_annotation_matches_dict,
     reference_id_from_url,
