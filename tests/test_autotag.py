@@ -98,7 +98,7 @@ def test_export_slice_embeddings(CLIENT):
 def test_get_autotag_refinement_metrics(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
         response = CLIENT.get_autotag_refinement_metrics(
-            "tag_c5jwvzzde8c00604mkx0"
+            "tag_c8jwr0rpy1w00e134an0"
         )
         assert response["total_refinement_steps"] >= 0
         assert response["average_positives_selected_per_refinement"] >= 0
