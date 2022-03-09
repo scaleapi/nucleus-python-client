@@ -14,7 +14,10 @@ from nucleus.deploy.constants import (
     SCALE_DEPLOY_ENDPOINT,
     SYNC_TASK_PATH,
 )
-from nucleus.deploy.find_packages import find_packages_from_imports, get_imports
+from nucleus.deploy.find_packages import (
+    find_packages_from_imports,
+    get_imports,
+)
 from nucleus.deploy.model_bundle import ModelBundle
 from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
 from nucleus.deploy.request_validation import validate_task_request
