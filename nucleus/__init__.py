@@ -290,19 +290,34 @@ class NucleusClient:
         )
         return AsyncJob.from_json(payload=payload, client=self)
 
-    def get_model(self, model_id: str) -> Model:
+    def get_model(
+        self, model_id: str = None, model_run_id: str = None
+    ) -> Model:
         """Fetches a model by its ID.
 
         Parameters:
-            model_id: Nucleus-generated model ID (starts with ``prj_``). This can
-              be retrieved via :meth:`list_models` or a Nucleus dashboard URL.
+            model_id: You can pass either a model ID (starts with ``prj_``) or a model run id (starts with ``run_``) This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
+            model_run_id: You can pass either a model ID (starts with ``prj_``), or a model run id (starts with ``run_``) This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
+
+            In the future, we plan to hide model_run_ids fully from users.
 
         Returns:
             :class:`Model`: The Nucleus model as an object.
         """
+        if model_id is None and model_run_id is None:
+            raise ValueError("Must pass either a model_id or a model_run_id")
+        if model_id is not None and model_run_id is not None:
+            raise ValueError("Must pass either a model_id or a model_run_id")
+
+        model_or_model_run_id = (
+            model_id if model_id is not None else model_run_id
+        )
+
         payload = self.make_request(
             payload={},
-            route=f"model/{model_id}",
+            route=f"model/{model_or_model_run_id}",
             requests_command=requests.get,
         )
         return Model.from_json(payload=payload, client=self)

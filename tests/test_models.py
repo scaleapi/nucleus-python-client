@@ -62,7 +62,6 @@ def test_model_creation_and_listing(CLIENT, dataset):
     model = CLIENT.create_model(model_name, model_reference)
     model_run = TEST_MODEL_RUN + get_uuid()
     m_run = model.create_run(model_run, dataset, TEST_PREDS)
-    m_run.commit()
 
     assert isinstance(model, Model)
     assert isinstance(m_run, ModelRun)
@@ -72,6 +71,7 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     # Get a model
     m = CLIENT.get_model(model.id)
+    m = CLIENT.get_model(m_run.model_run_id)
     assert m == model
 
     assert model in ms
