@@ -39,7 +39,7 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
-from .scene import LidarScene
+from .scene import LidarScene, VideoScene
 
 STRING_REPLACEMENTS = {
     "\\\\n": "\n",
@@ -215,7 +215,9 @@ def convert_export_payload(api_payload):
 
 
 def serialize_and_write(
-    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
+    upload_units: Sequence[
+        Union[DatasetItem, Annotation, LidarScene, VideoScene]
+    ],
     file_pointer,
 ):
     if len(upload_units) == 0:
@@ -224,7 +226,9 @@ def serialize_and_write(
         )
     for unit in upload_units:
         try:
-            if isinstance(unit, (DatasetItem, Annotation, LidarScene)):
+            if isinstance(
+                unit, (DatasetItem, Annotation, LidarScene, VideoScene)
+            ):
                 file_pointer.write(unit.to_json() + "\n")
             else:
                 file_pointer.write(json.dumps(unit) + "\n")
@@ -254,7 +258,9 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
 
 
 def serialize_and_write_to_presigned_url(
-    upload_units: Sequence[Union[DatasetItem, Annotation, LidarScene]],
+    upload_units: Sequence[
+        Union[DatasetItem, Annotation, LidarScene, VideoScene]
+    ],
     dataset_id: str,
     client,
 ):

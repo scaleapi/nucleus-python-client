@@ -18,7 +18,7 @@ class EvaluationCriterion(ImmutableModel):
 
         Instead of defining criteria like this::
 
-            from nucleus.modelci.data_transfer_objects.eval_function import (
+            from nucleus.validate.data_transfer_objects.eval_function import (
                 EvaluationCriterion,
                 ThresholdComparison,
             )
@@ -33,7 +33,7 @@ class EvaluationCriterion(ImmutableModel):
 
         we define it like this::
 
-            bbox_recall = client.modelci.eval_functions.bbox_recall
+            bbox_recall = client.validate.eval_functions.bbox_recall
             criteria = [
                 bbox_recall() > 0.5
             ]
@@ -71,11 +71,11 @@ class EvalFunctionEntry(ImmutableModel):
     name: str
     is_public: bool
     user_id: str
-    serialized_fn: str
+    serialized_fn: Optional[str] = None
     raw_source: Optional[str] = None
 
 
 class GetEvalFunctions(ImmutableModel):
-    """Expected format from GET modelci/eval_fn"""
+    """Expected format from GET validate/eval_fn"""
 
     eval_functions: List[EvalFunctionEntry]

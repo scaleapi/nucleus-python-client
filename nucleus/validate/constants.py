@@ -7,8 +7,8 @@ PASS_KEY = "pass"
 RESULT_KEY = "result"
 THRESHOLD_COMPARISON_KEY = "threshold_comparison"
 THRESHOLD_KEY = "threshold"
-UNIT_TEST_ID_KEY = "unit_test_id"
-UNIT_TEST_NAME_KEY = "unit_test_name"
+SCENARIO_TEST_ID_KEY = "scenario_test_id"
+SCENARIO_TEST_NAME_KEY = "scenario_test_name"
 
 
 class ThresholdComparison(str, Enum):
