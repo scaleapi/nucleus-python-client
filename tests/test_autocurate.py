@@ -49,6 +49,7 @@ def model_run(CLIENT):
 
 
 @pytest.mark.integration
+@pytest.mark.xfail(reason="Autocurate constantly erroring out.")
 def test_autocurate_integration(model_run, CLIENT):
     job = autocurate.entropy("Test Autocurate Integration", model_run, CLIENT)
     job.sleep_until_complete()

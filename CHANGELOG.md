@@ -4,6 +4,12 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.7) - 2021-03-08
+
+### Added
+- `get_autotag_refinement_metrics`
+- Get model using `model_run_id`
+- Video API change to require `image_location` instead of `video_frame_location` in `DatasetItems`
 ## [0.6.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.6) - 2021-02-18
 
 ### Added

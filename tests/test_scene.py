@@ -26,7 +26,6 @@ from nucleus.constants import (
     TYPE_KEY,
     UPDATE_KEY,
     URL_KEY,
-    VIDEO_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
 )
 from nucleus.scene import flatten
@@ -307,15 +306,15 @@ def test_video_scene_add_item():
         FRAME_RATE_KEY: frame_rate,
         FRAMES_KEY: [
             {
-                URL_KEY: TEST_VIDEO_ITEMS[2].video_frame_location,
+                URL_KEY: TEST_VIDEO_ITEMS[2].image_location,
                 REFERENCE_ID_KEY: TEST_VIDEO_ITEMS[2].reference_id,
-                TYPE_KEY: VIDEO_KEY,
+                TYPE_KEY: IMAGE_KEY,
                 METADATA_KEY: TEST_VIDEO_ITEMS[2].metadata or {},
             },
             {
-                URL_KEY: TEST_VIDEO_ITEMS[1].video_frame_location,
+                URL_KEY: TEST_VIDEO_ITEMS[1].image_location,
                 REFERENCE_ID_KEY: TEST_VIDEO_ITEMS[1].reference_id,
-                TYPE_KEY: VIDEO_KEY,
+                TYPE_KEY: IMAGE_KEY,
                 METADATA_KEY: TEST_VIDEO_ITEMS[1].metadata or {},
             },
         ],
@@ -572,7 +571,6 @@ def test_video_scene_upload_async(dataset_scene):
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-
     job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
