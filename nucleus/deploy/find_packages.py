@@ -315,16 +315,17 @@ def find_packages_from_imports(globals_copy):
     """
     Call this from a python notebook to get the current notebook's packages.
     """
-    imports = _get_imports(globals_copy)
-    reqs, _ = seek_pip_packages_from_imports(imports)
+    modules = get_imports(globals_copy)
+    # Extract names of the modules
+    import_names = set(map(lambda m: m.__name__, modules))
+    reqs, _ = seek_pip_packages_from_imports(import_names)
     return reqs
 
 
-def _get_imports(globals_copy):
+def get_imports(globals_copy):
     """"""
-
-    imports = set()
-    for _, val in globals_copy.items():
+    modules = []
+    for name, val in globals_copy.items():
         if isinstance(val, types.ModuleType):
-            imports.add(val.__name__)
-    return imports
+            modules.append(val)
+    return modules

@@ -14,7 +14,7 @@ from nucleus.deploy.constants import (
     SCALE_DEPLOY_ENDPOINT,
     SYNC_TASK_PATH,
 )
-from nucleus.deploy.find_packages import find_packages_from_imports
+from nucleus.deploy.find_packages import find_packages_from_imports, get_imports
 from nucleus.deploy.model_bundle import ModelBundle
 from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
 from nucleus.deploy.request_validation import validate_task_request
@@ -109,6 +109,7 @@ class DeployClient:
         model: Optional[DeployModel_T] = None,
         load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
         bundle_url: Optional[str] = None,
+        globals_copy: Optional[Dict[str, Any]] = None,
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
@@ -137,6 +138,7 @@ class DeployClient:
                 "cuda_version": Version of cuda used, e.g. "11.0".
                 "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
+            globals_copy: Dictionary of the global symbol table. Normally provided by `globals()` built-in function.
         """
 
         if (model is not None and load_model_fn is not None) or (
@@ -148,6 +150,7 @@ class DeployClient:
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
         if requirements is None:
+            # TODO explore: does globals() actually work as expected? Should we use globals_copy instead?
             requirements_inferred = find_packages_from_imports(globals())
             requirements = [
                 f"{key}=={value}"
@@ -158,6 +161,15 @@ class DeployClient:
                 requirements,
                 model_bundle_name,
             )
+
+        # Prepare cloudpickle for external imports
+        if globals_copy:
+            for module in get_imports(globals_copy):
+                if module.__name__ == cloudpickle.__name__:
+                    # Avoid recursion
+                    # register_pickle_by_value does not work properly with itself
+                    continue
+                cloudpickle.register_pickle_by_value(module)
 
         bundle_metadata = {}
         # Create bundle
