@@ -323,9 +323,11 @@ def find_packages_from_imports(globals_copy):
 
 
 def get_imports(globals_copy):
-    """"""
+    """
+    Get a list of imported modules from `globals_copy`.
+    """
     modules = []
-    for name, val in globals_copy.items():
+    for _, val in globals_copy.items():
         if isinstance(val, types.ModuleType):
             modules.append(val)
     return modules
