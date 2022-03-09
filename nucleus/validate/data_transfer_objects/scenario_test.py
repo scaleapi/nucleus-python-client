@@ -7,7 +7,7 @@ from nucleus.pydantic_base import ImmutableModel
 from .eval_function import EvaluationCriterion
 
 
-class CreateUnitTestRequest(ImmutableModel):
+class CreateScenarioTestRequest(ImmutableModel):
     name: str
     slice_id: str
     evaluation_criteria: List[EvaluationCriterion]
