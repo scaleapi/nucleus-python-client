@@ -303,7 +303,6 @@ class DeployClient:
         else:
             bundle_name = None
         payload = dict(
-            endpoint_name=endpoint_name,
             bundle_name=bundle_name,
             cpus=cpus,
             memory=memory,
@@ -313,13 +312,14 @@ class DeployClient:
             max_workers=max_workers,
             per_worker=per_worker,
         )
+        # TODO what about aws_role and results_s3_bucket?
         if gpus is None or gpus == 0:
             payload["gpu_type"] = None
         elif gpus > 0 and gpu_type is None:
             raise ValueError("If nonzero gpus, must provide gpu_type")
-        for _, v in payload.copy().items():
+        for k, v in payload.copy().items():
             if v is None:
-                del v
+                del payload[k]
         resp = self.connection.put(payload, f"{ENDPOINT_PATH}/{endpoint_name}")
         endpoint_creation_task_id = resp.get("endpoint_creation_task_id", None)
         logger.info(
