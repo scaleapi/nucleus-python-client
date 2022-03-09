@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from nucleus import (
@@ -468,6 +470,8 @@ def test_category_gt_upload_update(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
+    # TODO(gunnar): Remove this sleep -> This is added due to flakiness. Might be replication lag?
+    time.sleep(2)
     response = dataset.refloc(annotation.reference_id)["annotations"][
         "category"
     ]

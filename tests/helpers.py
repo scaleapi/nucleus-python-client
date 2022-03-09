@@ -16,7 +16,7 @@ TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
-DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
+DATASET_WITH_AUTOTAG = "ds_c8jwdhy4y4f0078hzceg"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 EVAL_FUNCTION_THRESHOLD = 0.5
@@ -92,14 +92,14 @@ TEST_VIDEO_SCENES = {
             "frame_rate": 15,
             "frames": [
                 {
-                    "video_frame_url": TEST_IMG_URLS[0],
-                    "type": "video",
+                    "image_url": TEST_IMG_URLS[0],
+                    "type": "image",
                     "reference_id": "video_frame_0",
                     "metadata": {"time": 123, "foo": "bar"},
                 },
                 {
-                    "video_frame_url": TEST_IMG_URLS[1],
-                    "type": "video",
+                    "image_url": TEST_IMG_URLS[1],
+                    "type": "image",
                     "reference_id": "video_frame_1",
                     "metadata": {"time": 124, "foo": "bar_2"},
                 },
@@ -124,28 +124,25 @@ TEST_DATASET_ITEMS = [
 
 TEST_VIDEO_ITEMS = [
     DatasetItem(
-        None,
+        TEST_IMG_URLS[0],
         reference_id_from_url(TEST_IMG_URLS[0]),
         None,
         None,
         True,
-        TEST_IMG_URLS[0],
     ),
     DatasetItem(
-        None,
+        TEST_IMG_URLS[1],
         reference_id_from_url(TEST_IMG_URLS[1]),
         None,
         None,
         True,
-        TEST_IMG_URLS[1],
     ),
     DatasetItem(
-        None,
+        TEST_IMG_URLS[2],
         reference_id_from_url(TEST_IMG_URLS[2]),
         None,
         None,
         True,
-        TEST_IMG_URLS[2],
     ),
 ]
 

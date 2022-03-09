@@ -641,7 +641,7 @@ class Dataset:
             )
 
         if asynchronous:
-            # TODO check_all_scene_paths_remote(scenes)
+            check_all_scene_paths_remote(scenes)
             request_id = serialize_and_write_to_presigned_url(
                 scenes, self.id, self._client
             )

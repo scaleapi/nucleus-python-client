@@ -13,7 +13,6 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
-    VIDEO_FRAME_LOCATION_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
 )
 
@@ -487,8 +486,11 @@ class VideoScene(ABC):
                 item, DatasetItem
             ), "Each item in a scene must be a DatasetItem object"
             assert (
-                item.video_frame_location is not None
-            ), "Each item in a scene must have a video_frame_location"
+                item.image_location is not None
+            ), "Each item in a video scene must have an image_location"
+            assert (
+                item.upload_to_scale is not False
+            ), "Skipping upload to Scale is not currently implemented for videos"
 
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
@@ -598,11 +600,5 @@ def check_all_scene_paths_remote(
             if image_location and is_local_path(image_location):
                 raise ValueError(
                     f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
-                    "local, or a remote URL type that is not supported."
-                )
-            video_frame_location = getattr(item, VIDEO_FRAME_LOCATION_KEY)
-            if video_frame_location and is_local_path(video_frame_location):
-                raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.video_frame_location} is either "
                     "local, or a remote URL type that is not supported."
                 )
