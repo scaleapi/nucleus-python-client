@@ -163,27 +163,27 @@ class Model:
 
         return model_run
 
-    def evaluate(self, unit_test_names: List[str]) -> AsyncJob:
+    def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
-            unit_test = client.modelci.create_unit_test(
-                "sample_unit_test", "YOUR_SLICE_ID"
+            scenario_test = client.validate.create_scenario_test(
+                "sample_scenario_test", "YOUR_SLICE_ID"
             )
 
-            model.evaluate(["sample_unit_test"])
+            model.evaluate(["sample_scenario_test"])
 
         Args:
-            unit_test_names: list of unit tests to evaluate
+            scenario_test_names: list of unit tests to evaluate
 
         Returns:
             AsyncJob object of evaluation job
         """
         response = self._client.make_request(
-            {"test_names": unit_test_names},
-            f"modelci/{self.id}/evaluate",
+            {"test_names": scenario_test_names},
+            f"validate/{self.id}/evaluate",
             requests_command=requests.post,
         )
         return AsyncJob.from_json(response, self._client)

@@ -1,4 +1,4 @@
-class CreateUnitTestError(Exception):
+class CreateScenarioTestError(Exception):
     pass
 
 
