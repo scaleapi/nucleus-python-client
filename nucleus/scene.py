@@ -487,7 +487,7 @@ class VideoScene(ABC):
             ), "Each item in a scene must be a DatasetItem object"
             assert (
                 item.image_location is not None
-            ), "Each item in a video scene must have a image_location"
+            ), "Each item in a video scene must have an image_location"
             assert (
                 item.upload_to_scale is not False
             ), "Skipping upload to Scale is not currently implemented for videos"
