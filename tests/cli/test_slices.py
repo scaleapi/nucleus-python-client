@@ -12,7 +12,6 @@ def cli_slices(test_slice):
 
 
 # TODO(gunnar): Add actual slice data through fixture
-@pytest.mark.skip(reason="Hangs indefinitely")
 def test_invoke_slices(runner):
     # NOTE: The list_slices method is tested elsewhere, just testing control flow
     with mock.patch("cli.slices.list_slices"):
@@ -21,7 +20,6 @@ def test_invoke_slices(runner):
     assert result.exit_code == 0
 
 
-@pytest.mark.skip(reason="Hangs indefinitely")
 @pytest.mark.integration
 def test_invoke_slices_list(runner, cli_slices):
     runner = CliRunner()
