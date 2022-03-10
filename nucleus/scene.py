@@ -441,10 +441,10 @@ class VideoScene(ABC):
         attachment_type (str): The type of attachments being uploaded as a string literal.
             Currently, videos can only be uploaded as an array of frames, so the only
             accepted attachment_type is "image".
-        items (Optional[List[:class:`DatasetItem`]]): List of items representing frames, 
-            to be a part of the scene. A scene can be created before items have been added 
-            to it, but must be non-empty when uploading to a :class:`Dataset`. A video scene 
-            can contain a maximum of 3000 items. 
+        items (Optional[List[:class:`DatasetItem`]]): List of items representing frames,
+            to be a part of the scene. A scene can be created before items have been added
+            to it, but must be non-empty when uploading to a :class:`Dataset`. A video scene
+            can contain a maximum of 3000 items.
         metadata (Optional[Dict]): Optional metadata to include with the scene.
 
     Refer to our `guide to uploading video data
