@@ -145,7 +145,6 @@ class DeployClient:
         requests.put(s3_path, data=data)
 
         bundle_metadata = {
-            "type": "zip",
             "load_predict_fn_module_path": load_predict_fn_module_path,
             "load_model_fn_module_path": load_model_fn_module_path,
             "base_dir": base_dir,
@@ -153,6 +152,7 @@ class DeployClient:
 
         self.connection.post(
             payload=dict(
+                type="zip",
                 bundle_name=model_bundle_name,
                 location=raw_bundle_url,
                 bundle_metadata=bundle_metadata,
@@ -266,6 +266,7 @@ class DeployClient:
 
         self.connection.post(
             payload=dict(
+                type="cloudpickle",
                 bundle_name=model_bundle_name,
                 location=raw_bundle_url,
                 bundle_metadata=bundle_metadata,
