@@ -150,12 +150,22 @@ class DatasetItemUploader:
         """Constructs a function that will generate form data on each retry."""
 
         def fn():
-            payload = construct_append_payload(items, update)
+
+            # For some reason, our backend only accepts this reformatting of items when
+            # doing local upload.
+            # TODO: make it just accept the same exact format as a normal append request
+            # i.e. the output of construct_append_payload(items, update)
+            json_data = []
+            for item in items:
+                item_payload = item.to_payload()
+                item_payload[UPDATE_KEY] = update
+                json_data.append(item_payload)
+
             form_data = [
                 FileFormField(
                     name=ITEMS_KEY,
                     filename=None,
-                    value=json.dumps(payload, allow_nan=False),
+                    value=json.dumps(json_data, allow_nan=False),
                     content_type="application/json",
                 )
             ]

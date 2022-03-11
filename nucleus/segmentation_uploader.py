@@ -112,3 +112,8 @@
 #                     (MASK_TYPE, (filename, mask_fp, "image/png"))
 #                 )
 #             return request_payload, file_pointers
+
+
+# {"items": [{"metadata": {"test": 0}, "reference_id": "test_img.jpg", "image_url": "tests/test_img.jpg", "upload_to_scale": true}]
+
+# [{"metadata": {"test": 0}, "reference_id": "test_img.jpg", "image_url": "tests/test_img.jpg", "upload_to_scale": true, "update": false}]
