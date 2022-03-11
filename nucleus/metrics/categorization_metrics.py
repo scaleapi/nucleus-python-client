@@ -33,22 +33,28 @@ class CategorizationResult(MetricResult):
     predictions: List[CategoryPrediction]
 
     @property
-    def value(self):
+    def results(self) -> Dict[str, float]:
         annotation_labels = to_taxonomy_labels(self.annotations)
         prediction_labels = to_taxonomy_labels(self.predictions)
 
         # TODO: Change task.py interface such that we can return label matching
-        # NOTE: Returning 1 if all taxonomy labels match else 0
-        values = {}
-        values["f1_macro"] = f1_score(
-            list(annotation_labels), list(prediction_labels), average="macro"
-        )
-        values["f1_weighted"] = f1_score(
-            list(annotation_labels),
-            list(prediction_labels),
-            average="weighted",
-        )
-        return values
+        results = {
+            "f1_macro": f1_score(
+                list(annotation_labels),
+                list(prediction_labels),
+                average="macro",
+            )
+        }
+        return results
+
+    @property
+    def extra_info(self) -> Dict[str, str]:
+        annotation_labels = to_taxonomy_labels(self.annotations)
+        prediction_labels = to_taxonomy_labels(self.predictions)
+        return {
+            "annotations": ", ".join(annotation_labels),
+            "predictions": ", ".join(prediction_labels),
+        }
 
 
 class CategorizationMetric(Metric):

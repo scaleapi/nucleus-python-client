@@ -1,7 +1,8 @@
+import dataclasses
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 
 from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
@@ -9,6 +10,17 @@ from nucleus.prediction import PredictionList
 
 class MetricResult(ABC):
     """Base MetricResult class"""
+
+    @property
+    @abstractmethod
+    def results(self) -> Dict[str, float]:
+        """Interface for item results"""
+        return
+
+    @property
+    def extra_info(self) -> Dict[str, str]:
+        """Overload this to pass extra info about the item to show in the UI"""
+        return {}
 
 
 @dataclass
@@ -27,6 +39,14 @@ class ScalarResult(MetricResult):
     value: float
     weight: float = 1.0
 
+    @property
+    def results(self) -> Dict[str, float]:
+        return {"value": self.value}
+
+    @property
+    def extra_info(self) -> Dict[str, str]:
+        return {"weight:": str(self.weight)}
+
     @staticmethod
     def aggregate(results: Iterable["ScalarResult"]) -> "ScalarResult":
         """Aggregates results using a weighted average."""
@@ -42,7 +62,7 @@ class GroupedScalarResult(MetricResult):
     group_to_scalar: Dict[str, ScalarResult]
 
     @property
-    def value(self):
+    def results(self) -> Dict[str, Any]:
         return {
             group: scalar.value
             for group, scalar in self.group_to_scalar.items()

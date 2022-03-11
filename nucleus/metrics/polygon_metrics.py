@@ -99,7 +99,7 @@ class PolygonMetric(Metric):
         self,
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
-    ) -> Dict[str, ScalarResult]:
+    ) -> GroupedScalarResult:
         grouped_annotations = LabelsGrouper(annotations)
         grouped_predictions = LabelsGrouper(predictions)
         results = {}
@@ -118,7 +118,7 @@ class PolygonMetric(Metric):
                 enforce_label_match=self.enforce_label_match,
             )
             results[label] = result
-        return results
+        return GroupedScalarResult(group_to_scalar=results)
 
     @abstractmethod
     def eval(
