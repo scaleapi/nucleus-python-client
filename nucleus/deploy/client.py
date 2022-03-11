@@ -113,6 +113,25 @@ class DeployClient:
         load_model_fn_module_path: str
     ) -> ModelBundle:
         """
+        Packages up code from a local filesystem folder and uploads that as a bundle to Scale Deploy.
+        In this mode, a bundle is just local code instead of a serialized object.
+
+        Parameters:
+            model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            base_path: The path on the local filesystem where the bundle code lives.
+            requirements_path: A path on the local filesystem where a requirements.txt file lives.
+            env_params: A dictionary that dictates environment information e.g.
+                the use of pytorch or tensorflow, which cuda/cudnn versions to use.
+                Specifically, the dictionary should contain the following keys:
+                "framework_type": either "tensorflow" or "pytorch".
+                "pytorch_version": Version of pytorch, e.g. "1.5.1", "1.7.0", etc. Only applicable if framework_type is pytorch
+                "cuda_version": Version of cuda used, e.g. "11.0".
+                "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
+                "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
+            load_predict_fn_module_path: A python module path within base_path for a function that, when called with the output of
+                load_model_fn_module_path, returns a function that carries out inference.
+            load_model_fn_module_path: A python module path within base_path for a function that returns a model. The output feeds into
+                the function located at load_predict_fn_module_path.
         """
         with open(requirements_path, "r") as f:
             requirements = f.read().splitlines()
@@ -135,10 +154,9 @@ class DeployClient:
         model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
         s3_path = model_bundle_url["signedUrl"]
 
-        # FIXME: Right now, the signedUrl endpoint returns a path that ends with a UUID,
+        # NOTE: Right now, the signedUrl endpoint returns a path that ends with a UUID,
         # without the ability to specify a suffix (i.e. a file extension). This means that
-        # we'll have to find another means of distinguishing file types. We could add metadata,
-        # or do something brute force and do a try/except when parsing various file types.
+        # we'll have to find another means of distinguishing file types.
         raw_bundle_url = f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
         logger.info(f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}")
 
