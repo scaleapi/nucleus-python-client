@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, BinaryIO, Callable, Sequence, Tuple
 
 import aiohttp
 import nest_asyncio
+from tqdm import tqdm
 
 from nucleus.constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from nucleus.errors import NucleusAPIError
@@ -25,6 +26,16 @@ class FileFormField:
 
 
 FileFormData = Sequence[FileFormField]
+
+
+async def gather_with_concurrency(n, *tasks):
+    semaphore = asyncio.Semaphore(n)
+
+    async def sem_task(task):
+        async with semaphore:
+            return await task
+
+    return await asyncio.gather(*(sem_task(task) for task in tasks))
 
 
 class FormDataContextHandler:
@@ -85,6 +96,8 @@ def make_many_form_data_requests_concurrently(
     client: "NucleusClient",
     requests: Sequence[FormDataContextHandler],
     route: str,
+    progressbar: tqdm,
+    concurrency: int = 30,
 ):
     """
     Makes an async post request with form data to a Nucleus endpoint.
@@ -97,7 +110,9 @@ def make_many_form_data_requests_concurrently(
     """
     loop = get_event_loop()
     return loop.run_until_complete(
-        form_data_request_helper(client, requests, route)
+        form_data_request_helper(
+            client, requests, route, progressbar, concurrency
+        )
     )
 
 
@@ -105,6 +120,8 @@ async def form_data_request_helper(
     client: "NucleusClient",
     requests: Sequence[FormDataContextHandler],
     route: str,
+    progressbar: tqdm,
+    concurrency: int = 30,
 ):
     """
     Makes an async post request with files to a Nucleus endpoint.
@@ -123,11 +140,12 @@ async def form_data_request_helper(
                     request=request,
                     route=route,
                     session=session,
+                    progressbar=progressbar,
                 )
             )
             for request in requests
         ]
-        return await asyncio.gather(*tasks)
+        return await gather_with_concurrency(concurrency, *tasks)
 
 
 async def _post_form_data(
@@ -135,6 +153,7 @@ async def _post_form_data(
     request: FormDataContextHandler,
     route: str,
     session: aiohttp.ClientSession,
+    progressbar: tqdm,
 ):
     """
     Makes an async post request with files to a Nucleus endpoint.
@@ -175,7 +194,7 @@ async def _post_form_data(
 
                 if response.status == 503:
                     raise TimeoutError(
-                        "The request to upload your max is timing out, please lower the batch size."
+                        "The request to upload your max is timing out, please lower local_files_per_upload_request in your api call."
                     )
 
                 if not response.ok:
@@ -188,5 +207,5 @@ async def _post_form_data(
                             data,
                         ),
                     )
-
+                progressbar.update(1)
                 return data

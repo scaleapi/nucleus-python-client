@@ -35,14 +35,20 @@ class DatasetItemUploader:
     def upload(
         self,
         dataset_items: List[DatasetItem],
-        batch_size: int = 20,
+        batch_size: int = 5000,
         update: bool = False,
+        local_files_per_upload_request: int = 10,
+        local_file_upload_concurrency: int = 30,
     ) -> UploadResponse:
         """
 
         Args:
             dataset_items: Items to Upload
-            batch_size: How many items to pool together for a single request
+            batch_size: How many items to pool together for a single request for items
+             without files to upload
+            files_per_upload_request: How many items to pool together for a single
+                request for items with files to upload
+
             update: Update records instead of overwriting
 
         Returns:
@@ -50,6 +56,8 @@ class DatasetItemUploader:
         """
         local_items = []
         remote_items = []
+        if local_files_per_upload_request > 10:
+            raise ValueError("local_files_per_upload_request should be <= 10")
 
         # Check local files exist before sending requests
         for item in dataset_items:
@@ -60,30 +68,26 @@ class DatasetItemUploader:
             else:
                 remote_items.append(item)
 
-        local_batches = [
-            local_items[i : i + batch_size]
-            for i in range(0, len(local_items), batch_size)
-        ]
+        agg_response = UploadResponse(json={DATASET_ID_KEY: self.dataset_id})
+
+        async_responses: List[Any] = []
+
+        if local_items:
+            async_responses.extend(
+                self._process_append_requests_local(
+                    self.dataset_id,
+                    items=local_items,
+                    update=update,
+                    batch_size=batch_size,
+                    local_files_per_upload_request=local_files_per_upload_request,
+                    local_file_upload_concurrency=local_file_upload_concurrency,
+                )
+            )
 
         remote_batches = [
             remote_items[i : i + batch_size]
             for i in range(0, len(remote_items), batch_size)
         ]
-
-        agg_response = UploadResponse(json={DATASET_ID_KEY: self.dataset_id})
-
-        async_responses: List[Any] = []
-
-        if local_batches:
-            tqdm_local_batches = self._client.tqdm_bar(
-                local_batches, desc="Local file batches"
-            )
-
-            for batch in tqdm_local_batches:
-                responses = self._process_append_requests_local(
-                    self.dataset_id, items=batch, update=update
-                )
-                async_responses.extend(responses)
 
         if remote_batches:
             tqdm_remote_batches = self._client.tqdm_bar(
@@ -108,20 +112,30 @@ class DatasetItemUploader:
         dataset_id: str,
         items: Sequence[DatasetItem],
         update: bool,
-        local_batch_size: int = 10,
+        batch_size: int,
+        local_files_per_upload_request: int,
+        local_file_upload_concurrency: int,
     ):
+        # Batch into requests
         requests = []
-        for i in range(0, len(items), local_batch_size):
-            batch = items[i : i + local_batch_size]
+        batch_size = local_files_per_upload_request
+        for i in range(0, len(items), batch_size):
+            batch = items[i : i + batch_size]
             request = FormDataContextHandler(
                 self.get_form_data_and_file_pointers_fn(batch, update)
             )
             requests.append(request)
 
+        progressbar = self._client.tqdm_bar(
+            total=len(requests), desc="Local file batches"
+        )
+
         return make_many_form_data_requests_concurrently(
             self._client,
             requests,
             f"dataset/{dataset_id}/append",
+            progressbar=progressbar,
+            concurrency=local_file_upload_concurrency,
         )
 
     def _process_append_requests(
@@ -147,7 +161,12 @@ class DatasetItemUploader:
     def get_form_data_and_file_pointers_fn(
         self, items: Sequence[DatasetItem], update: bool
     ) -> Callable[..., Tuple[FileFormData, Sequence[BinaryIO]]]:
-        """Constructs a function that will generate form data on each retry."""
+        """Defines a function to be called on each retry.
+
+        File pointers are also returned so whoever calls this function can
+        appropriately close the files. This is intended for use with a
+        FormDataContextHandler in order to make form data requests.
+        """
 
         def fn():
 
@@ -172,9 +191,11 @@ class DatasetItemUploader:
 
             file_pointers = []
             for item in items:
-                image_fp = open(  # pylint: disable=R1732
-                    item.image_location, "rb"  # pylint: disable=R1732
-                )  # pylint: disable=R1732
+                # I don't know of a way to use with, since all files in the request
+                # need to be opened at the same time.
+                # pylint: disable=consider-using-with
+                image_fp = open(item.image_location, "rb")
+                # pylint: enable=consider-using-with
                 img_type = f"image/{os.path.splitext(item.image_location)[1].strip('.')}"
                 form_data.append(
                     FileFormField(

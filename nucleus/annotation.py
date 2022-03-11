@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Type, Union
@@ -69,6 +70,9 @@ class Annotation:
     def to_json(self) -> str:
         """Serializes annotation object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
+
+    def has_local_files(self) -> bool:
+        return False
 
 
 @dataclass  # pylint: disable=R0902
@@ -578,6 +582,13 @@ class SegmentationAnnotation(Annotation):
 
         return payload
 
+    def has_files(self) -> bool:
+        if is_local_path(self.mask_url):
+            if not os.path.isfile(self.mask_url):
+                raise Exception(f"Mask file {self.mask_url} does not exist.")
+            return True
+        return False
+
 
 class AnnotationTypes(Enum):
     BOX = BOX_TYPE
@@ -737,12 +748,12 @@ def is_local_path(path: str) -> bool:
 
 
 def check_all_mask_paths_remote(
-    annotations: Sequence[Union[Annotation]],
+    annotations: Sequence[Annotation],
 ):
     for annotation in annotations:
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
                     "Found an annotation with a local path, which is not currently"
-                    f"supported. Use a remote path instead. {annotation}"
+                    f"supported for asynchronous upload. Use a remote path instead, or try synchronous upload. {annotation}"
                 )
