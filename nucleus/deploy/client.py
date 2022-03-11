@@ -116,19 +116,19 @@ class DeployClient:
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
-        A model bundle consists of a "predict_fn_or_cls" or "load_predict_fn" and exactly one of "model" or "load_model_fn", such that
-        load_predict_fn(model)
-        or
-        load_predict_fn(load_model_fn())
-        returns a function predict_fn that takes in model input and returns model output.
-        Pre/post-processing code can be included inside load_predict_fn/model.
+
+        A model bundle consists of exactly {predict_fn_or_cls}, {load_predict_fn + model}, or {load_predict_fn + load_model_fn}.
+        Pre/post-processing code can be included inside load_predict_fn/model or in predict_fn_or_cls call.
 
         Parameters:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            predict_fn_or_cls: Function or a Callable class that runs end-to-end (pre/post processing and model inference) on the call.
+                I.e. `predict_fn_or_cls(REQUEST) -> RESPONSE`.
             model: Typically a trained Neural Network, e.g. a Pytorch module
-            load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
-            predict_fn_or_cls: Function or a Callable class that runs inference on the call function.
+                I.e. `load_predict_fn(model) -> func; func(REQUEST) -> RESPONSE`
+            load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
+                I.e. `load_predict_fn(load_model_fn()) -> func; func(REQUEST) -> RESPONSE`
             bundle_url: Only for self-hosted mode. Desired location of bundle.
             Overrides any value given by self.bundle_location_fn
             requirements: A list of python package requirements, e.g.
@@ -146,13 +146,13 @@ class DeployClient:
 
         check_args = [
             predict_fn_or_cls is not None,
-            model is not None,
-            load_model_fn is not None,
+            load_predict_fn is not None and model is not None,
+            load_predict_fn is not None and load_model_fn is not None,
         ]
 
         if sum(check_args) != 1:
             raise ValueError(
-                "Exactly one of `model` or `load_model_fn` or `predict_fn_or_cls` should be non-None"
+                "A model bundle consists of exactly {predict_fn_or_cls}, {load_predict_fn + model}, or {load_predict_fn + load_model_fn}."
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
