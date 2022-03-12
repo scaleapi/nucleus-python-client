@@ -168,33 +168,33 @@ class DeployClient:
                 model_bundle_name,
             )
 
+        bundle: Union[Callable[[Any], Any], Dict[str, Any], None]   # validate bundle
         bundle_metadata = {}
         # Create bundle
         if predict_fn_or_cls:
-            bundle_fn_or_cls = predict_fn_or_cls
-            serialized_bundle = cloudpickle.dumps(bundle_fn_or_cls)
+            bundle = predict_fn_or_cls
             if inspect.isfunction(predict_fn_or_cls):
                 source_code = inspect.getsource(predict_fn_or_cls)
             else:
                 source_code = inspect.getsource(predict_fn_or_cls.__class__)
             bundle_metadata["predict_fn_or_cls"] = source_code
         elif model is not None:
-            bundle_func_1 = dict(model=model, load_predict_fn=load_predict_fn)
-            serialized_bundle = cloudpickle.dumps(bundle_func_1)
+            bundle = dict(model=model, load_predict_fn=load_predict_fn)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
                 load_predict_fn  # type: ignore
             )
         else:
-            bundle_func_2 = dict(
+            bundle = dict(
                 load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
             )
-            serialized_bundle = cloudpickle.dumps(bundle_func_2)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
                 load_predict_fn  # type: ignore
             )
             bundle_metadata["load_model_fn"] = inspect.getsource(
                 load_model_fn  # type: ignore
             )
+
+        serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
             if self.upload_bundle_fn is None:
