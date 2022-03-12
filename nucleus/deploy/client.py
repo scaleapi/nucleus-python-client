@@ -241,7 +241,7 @@ class DeployClient:
             globals_copy: Dictionary of the global symbol table. Normally provided by `globals()` built-in function.
         """
         # TODO(ivan): remove `disable=too-many-branches` when get rid of `load_*` functions
-        #pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches
 
         check_args = [
             predict_fn_or_cls is not None,
