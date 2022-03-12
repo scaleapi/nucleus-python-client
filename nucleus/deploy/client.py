@@ -133,8 +133,8 @@ class DeployClient:
             load_model_fn_module_path: A python module path within base_path for a function that returns a model. The output feeds into
                 the function located at load_predict_fn_module_path.
         """
-        with open(requirements_path, "r", encoding="utf-8") as f:
-            requirements = f.read().splitlines()
+        with open(requirements_path, "r", encoding="utf-8") as req_f:
+            requirements = req_f.read().splitlines()
 
         tmpdir = tempfile.mkdtemp()
         try:
@@ -150,8 +150,8 @@ class DeployClient:
                     base_dir=base_dir,
                 ),
                 "rb",
-            ) as f:
-                data = f.read()
+            ) as zip_f:
+                data = zip_f.read()
         finally:
             shutil.rmtree(tmpdir)
 
