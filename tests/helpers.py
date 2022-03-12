@@ -301,6 +301,9 @@ TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
 
 TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
 
+this_dir = os.path.dirname(os.path.realpath(__file__))
+TEST_LOCAL_MASK_URL = os.path.join(this_dir, "testdata/000000000285.png")
+
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
