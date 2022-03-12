@@ -168,7 +168,9 @@ class DeployClient:
                 model_bundle_name,
             )
 
-        bundle: Union[Callable[[Any], Any], Dict[str, Any], None]   # validate bundle
+        bundle: Union[
+            Callable[[Any], Any], Dict[str, Any], None
+        ]  # validate bundle
         bundle_metadata = {}
         # Create bundle
         if predict_fn_or_cls:
