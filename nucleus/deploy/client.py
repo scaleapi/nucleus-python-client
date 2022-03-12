@@ -110,7 +110,7 @@ class DeployClient:
         requirements_path: str,
         env_params: Dict[str, str],
         load_predict_fn_module_path: str,
-        load_model_fn_module_path: str
+        load_model_fn_module_path: str,
     ) -> ModelBundle:
         """
         Packages up code from a local filesystem folder and uploads that as a bundle to Scale Deploy.
@@ -142,23 +142,32 @@ class DeployClient:
             root_dir = os.path.dirname(base_path)
             base_dir = os.path.basename(base_path)
 
-            data = open(shutil.make_archive(
-                base_name=tmparchive,
-                format="zip",
-                root_dir=root_dir,
-                base_dir=base_dir
-            ), "rb").read()
+            data = open(
+                shutil.make_archive(
+                    base_name=tmparchive,
+                    format="zip",
+                    root_dir=root_dir,
+                    base_dir=base_dir,
+                ),
+                "rb",
+            ).read()
         finally:
             shutil.rmtree(tmpdir)
 
-        model_bundle_url = self.connection.post({}, MODEL_BUNDLE_SIGNED_URL_PATH)
+        model_bundle_url = self.connection.post(
+            {}, MODEL_BUNDLE_SIGNED_URL_PATH
+        )
         s3_path = model_bundle_url["signedUrl"]
 
         # NOTE: Right now, the signedUrl endpoint returns a path that ends with a UUID,
         # without the ability to specify a suffix (i.e. a file extension). This means that
         # we'll have to find another means of distinguishing file types.
-        raw_bundle_url = f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
-        logger.info(f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}")
+        raw_bundle_url = (
+            f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
+        )
+        logger.info(
+            f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}"
+        )
 
         requests.put(s3_path, data=data)
 
@@ -177,7 +186,7 @@ class DeployClient:
                 requirements=requirements,
                 env_params=env_params,
             ),
-            route="model_bundle"
+            route="model_bundle",
         )
         return ModelBundle(model_bundle_name)
 
