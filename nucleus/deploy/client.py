@@ -3,10 +3,10 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
-import cloudpickle
-import requests
 import shutil
 import tempfile
+import cloudpickle
+import requests
 
 from nucleus.connection import Connection
 from nucleus.deploy.constants import (
@@ -133,7 +133,7 @@ class DeployClient:
             load_model_fn_module_path: A python module path within base_path for a function that returns a model. The output feeds into
                 the function located at load_predict_fn_module_path.
         """
-        with open(requirements_path, "r") as f:
+        with open(requirements_path, "r", encoding="utf-8") as f:
             requirements = f.read().splitlines()
 
         tmpdir = tempfile.mkdtemp()
@@ -142,7 +142,7 @@ class DeployClient:
             root_dir = os.path.dirname(base_path)
             base_dir = os.path.basename(base_path)
 
-            data = open(
+            with open(
                 shutil.make_archive(
                     base_name=tmparchive,
                     format="zip",
@@ -150,7 +150,8 @@ class DeployClient:
                     base_dir=base_dir,
                 ),
                 "rb",
-            ).read()
+            ) as f:
+                data = f.read()
         finally:
             shutil.rmtree(tmpdir)
 
@@ -163,10 +164,11 @@ class DeployClient:
         # without the ability to specify a suffix (i.e. a file extension). This means that
         # we'll have to find another means of distinguishing file types.
         raw_bundle_url = (
-            f"s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
+            "s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
         )
         logger.info(
-            f"create_model_bundle_from_dir: raw_bundle_url={raw_bundle_url}"
+            "create_model_bundle_from_dir: raw_bundle_url=%s",
+            raw_bundle_url,
         )
 
         requests.put(s3_path, data=data)
