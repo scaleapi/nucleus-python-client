@@ -1,7 +1,8 @@
+import itertools
 from typing import Callable, Dict, List, Type, Union
 
 from nucleus.logger import logger
-from nucleus.modelci.eval_functions.base_eval_function import BaseEvalFunction
+from nucleus.validate.eval_functions.base_eval_function import BaseEvalFunction
 
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
@@ -31,6 +32,12 @@ class BoundingBoxPrecision(BaseEvalFunction):
     @classmethod
     def expected_name(cls) -> str:
         return "bbox_precision"
+
+
+class CategorizationF1(BaseEvalFunction):
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cat_f1"
 
 
 class CustomEvalFunction(BaseEvalFunction):
@@ -98,7 +105,7 @@ class AvailableEvalFunctions:
 
     The available evaluation functions are listed in the sample below::
 
-        e = client.modelci.eval_functions
+        e = client.validate.eval_functions
         unit_test_criteria = [
             e.bbox_iou() > 5,
             e.bbox_map() > 0.95,
@@ -132,6 +139,9 @@ class AvailableEvalFunctions:
         )
         self.bbox_map = self._assign_eval_function_if_defined(
             BoundingBoxMeanAveragePrecision  # type: ignore
+        )
+        self.cat_f1 = self._assign_eval_function_if_defined(
+            CategorizationF1  # type: ignore
         )
 
         # Add public entries that have not been implemented as an attribute on this class
@@ -189,3 +199,14 @@ class AvailableEvalFunctions:
             return eval_function
         else:
             return EvalFunctionNotAvailable(expected_name)
+
+    def from_id(self, eval_function_id: str):
+        for eval_func in itertools.chain(
+            self._public_to_function.values(),
+            self._custom_to_function.values(),
+        ):
+            if eval_func.id == eval_function_id:
+                return eval_func
+        raise EvalFunctionNotAvailableError(
+            f"Could not find Eval Function with id {eval_function_id}"
+        )

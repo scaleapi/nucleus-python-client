@@ -32,7 +32,7 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
-from .scene import LidarScene
+from .scene import LidarScene, VideoScene
 
 
 def construct_append_payload(
@@ -50,7 +50,8 @@ def construct_append_payload(
 
 
 def construct_append_scenes_payload(
-    scene_list: List[LidarScene], update: Optional[bool] = False
+    scene_list: Union[List[LidarScene], List[VideoScene]],
+    update: Optional[bool] = False,
 ) -> dict:
     scenes = []
     for scene in scene_list:

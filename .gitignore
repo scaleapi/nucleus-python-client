@@ -136,9 +136,6 @@ dmypy.json
 # Mac OS desktop services store
 .DS_Store
 
-# Poetry lockfile (no need for deploys, best practice is to not check this in)
-poetry.lock
-
 # vscode
 .vscode/
 

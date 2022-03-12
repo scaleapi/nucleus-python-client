@@ -2,9 +2,10 @@ import math
 import os
 import uuid
 from pathlib import Path
+from typing import List
 
-from nucleus import BoxPrediction, DatasetItem
-from nucleus.modelci import ThresholdComparison
+from nucleus import BoxAnnotation, BoxPrediction, Dataset, DatasetItem, Model
+from nucleus.validate import ThresholdComparison
 
 PRESIGN_EXPIRY_SECONDS = 60 * 60 * 24 * 2  # 2 days
 N_UUID_CHARACTERS = 10
@@ -15,7 +16,7 @@ TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
-DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
+DATASET_WITH_AUTOTAG = "ds_c8jwdhy4y4f0078hzceg"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 EVAL_FUNCTION_THRESHOLD = 0.5
@@ -77,8 +78,34 @@ TEST_LIDAR_SCENES = {
                     },
                 },
             ],
-            "metadata": {},
+            "metadata": {"test_meta_field": "test_meta_value"},
         },
+    ],
+    "update": False,
+}
+
+TEST_VIDEO_SCENES = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "video_upload_type": "image",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "video_frame_url": TEST_IMG_URLS[0],
+                    "type": "video",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "video_frame_url": TEST_IMG_URLS[1],
+                    "type": "video",
+                    "reference_id": "video_frame_1",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        }
     ],
     "update": False,
 }
@@ -93,6 +120,33 @@ TEST_DATASET_ITEMS = [
     DatasetItem(TEST_IMG_URLS[1], reference_id_from_url(TEST_IMG_URLS[1])),
     DatasetItem(TEST_IMG_URLS[2], reference_id_from_url(TEST_IMG_URLS[2])),
     DatasetItem(TEST_IMG_URLS[3], reference_id_from_url(TEST_IMG_URLS[3])),
+]
+
+TEST_VIDEO_ITEMS = [
+    DatasetItem(
+        None,
+        reference_id_from_url(TEST_IMG_URLS[0]),
+        None,
+        None,
+        True,
+        TEST_IMG_URLS[0],
+    ),
+    DatasetItem(
+        None,
+        reference_id_from_url(TEST_IMG_URLS[1]),
+        None,
+        None,
+        True,
+        TEST_IMG_URLS[1],
+    ),
+    DatasetItem(
+        None,
+        reference_id_from_url(TEST_IMG_URLS[2]),
+        None,
+        None,
+        True,
+        TEST_IMG_URLS[2],
+    ),
 ]
 
 TEST_LIDAR_ITEMS = [
@@ -454,3 +508,59 @@ def running_as_nucleus_pytest_user(client):
     if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
         return True
     return False
+
+
+def create_box_annotations(
+    dataset: Dataset, dataset_items: List[DatasetItem]
+) -> List[BoxAnnotation]:
+    annotations = [
+        BoxAnnotation(
+            label=f"[Pytest] Box Annotation {ds_item.reference_id}",
+            x=50 + i * 10,
+            y=60 + i * 10,
+            width=70 + i * 10,
+            height=80 + i * 10,
+            reference_id=ds_item.reference_id,
+            annotation_id=f"[Pytest] Box Annotation Annotation Id{i}",
+        )
+        for i, ds_item in enumerate(dataset_items)
+    ]
+    dataset.annotate(annotations)
+    return annotations
+
+
+def create_predictions(
+    dataset: Dataset, model: Model, annotations: List[BoxAnnotation]
+) -> List[BoxPrediction]:
+    predictions = [
+        BoxPrediction(
+            label=ann.label,
+            x=ann.x,
+            y=ann.y,
+            width=ann.width,
+            height=ann.height,
+            reference_id=ann.reference_id,
+            confidence=0.1 * i,
+        )
+        for i, ann in enumerate(annotations)
+    ]
+    dataset.upload_predictions(model, predictions)
+    return predictions
+
+
+def assert_partial_equality(expected, result, base_keys=[]):
+    """Used to check partial equality of two json-like dictionaries.
+
+    This means that all the keys/values in the expected dict must be present in the result dict,
+    but the result dict may contain additional keys.
+    """
+    for key, value in expected.items():
+        # If value is a dict, recurse.
+        keys = base_keys + [key]
+        if isinstance(value, dict):
+            assert_partial_equality(value, result[key], keys)
+        else:
+            address = ".".join(keys)
+            assert (
+                result[key] == value
+            ), f"{address} is not equal: {result[key]} != {value}"

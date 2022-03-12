@@ -486,28 +486,10 @@ def test_mixed_pred_upload_async(model_run: ModelRun):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "prediction_upload": {
-                "epoch": 1,
-                "total": 3,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": model_run.dataset_id,
-                "processed": 3,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 4,
-        "total_steps": 4,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
 
 
 @pytest.mark.integration
@@ -535,30 +517,12 @@ def test_mixed_pred_upload_async_with_error(model_run: ModelRun):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "prediction_upload": {
-                "epoch": 1,
-                "total": 3,
-                "errored": 1,
-                "ignored": 0,
-                "datasetId": model_run.dataset_id,
-                "processed": 2,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 4,
-        "total_steps": 4,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
 
-    assert "Item with id fake_garbage doesn" in str(job.errors())
+    assert prediction_bbox.reference_id in str(job.errors())
 
 
 @pytest.mark.integration
@@ -574,30 +538,18 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
     )
     job.sleep_until_complete()
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "prediction_upload": {
-                "epoch": 1,
-                "total": 1,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": model_run.dataset_id,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
 
 
 @pytest.mark.integration
-def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
+def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     prediction = CategoryPrediction.from_json(
         TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]
     )
+    error_msg = f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset {model_run.dataset_id}, or label {prediction.label} does not exist in the taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]}.'
     try:
         job: AsyncJob = model_run.predict(
             annotations=[
@@ -606,19 +558,11 @@ def test_non_existent_taxonomy_category_gt_upload_async(model_run: ModelRun):
             asynchronous=True,
         )
         job.sleep_until_complete()
-    except JobError:
-        assert (
-            f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
-            in job.errors()[-1]
-        )
 
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Errored",
-        "message": {
-            "status_log": "No additional information can be provided at this time."
-        },
-        "job_progress": "0.00",
-        "completed_steps": 0,
-        "total_steps": 1,
-    }
+    except JobError:
+        assert error_msg in job.errors()[-1]
+
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Errored"
+    assert status["job_progress"] == "1.00"

@@ -17,6 +17,29 @@ Nucleus is a new way—the right way—to develop ML models, helping us move awa
 
 `$ pip install scale-nucleus`
 
+
+## CLI installation
+We recommend installing the CLI via `pipx` (https://pypa.github.io/pipx/installation/). This makes sure that
+the CLI does not interfere with you system packages and is accessible from your favorite terminal.
+
+For MacOS:
+```bash
+brew install pipx
+pipx ensurepath
+pipx install scale-nucleus
+# Optional installation of shell completion (for bash, zsh or fish)
+nu install-completions
+```
+
+Otherwise, install via pip (requires pip 19.0 or later):
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+python3 -m pipx install scale-nucleus
+# Optional installation of shell completion (for bash, zsh or fish)
+nu install-completions
+```
+
 ## Common issues/FAQ
 
 ### Outdated Client
