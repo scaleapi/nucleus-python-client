@@ -582,12 +582,24 @@ class SegmentationAnnotation(Annotation):
 
         return payload
 
-    def has_files(self) -> bool:
+    def has_local_files(self) -> bool:
         if is_local_path(self.mask_url):
             if not os.path.isfile(self.mask_url):
                 raise Exception(f"Mask file {self.mask_url} does not exist.")
             return True
         return False
+
+    def __eq__(self, other):
+        if not isinstance(other, SegmentationAnnotation):
+            return False
+        self.annotations = sorted(self.annotations, key=lambda x: x.index)
+        other.annotations = sorted(other.annotations, key=lambda x: x.index)
+        return (
+            (self.annotation_id == other.annotation_id)
+            and (self.annotations == other.annotations)
+            and (self.mask_url == other.mask_url)
+            and (self.reference_id == other.reference_id)
+        )
 
 
 class AnnotationTypes(Enum):

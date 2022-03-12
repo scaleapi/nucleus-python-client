@@ -7,7 +7,7 @@ from nucleus.async_utils import (
     FormDataContextHandler,
     make_many_form_data_requests_concurrently,
 )
-from nucleus.constants import ITEMS_KEY, SEGMENTATIONS_KEY
+from nucleus.constants import MASK_TYPE, SERIALIZED_REQUEST_KEY
 from nucleus.payload_constructor import (
     construct_annotation_payload,
     construct_segmentation_payload,
@@ -143,7 +143,7 @@ class AnnotationUploader:
         return make_many_form_data_requests_concurrently(
             client=self._client,
             requests=requests,
-            route=f"dataset/{self.dataset_id}/annotate_segmentation_files",
+            route=f"dataset/{self.dataset_id}/annotate",
             progressbar=progressbar,
             concurrency=local_file_upload_concurrency,
         )
@@ -166,7 +166,7 @@ class AnnotationUploader:
             )
             form_data = [
                 FileFormField(
-                    name=ITEMS_KEY,
+                    name=SERIALIZED_REQUEST_KEY,
                     filename=None,
                     value=json.dumps(request_json),
                     content_type="application/json",
@@ -186,7 +186,7 @@ class AnnotationUploader:
                     )
                 form_data.append(
                     FileFormField(
-                        name=SEGMENTATIONS_KEY,
+                        name=MASK_TYPE,
                         filename=segmentation.mask_url,
                         value=mask_fp,
                         content_type="image/png",
