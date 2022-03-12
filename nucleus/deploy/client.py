@@ -1,5 +1,8 @@
 import inspect
 import logging
+import os
+import shutil
+import tempfile
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 import cloudpickle
@@ -99,6 +102,95 @@ class DeployClient:
         required fields for self-hosting.
         """
         self.endpoint_auth_decorator_fn = endpoint_auth_decorator_fn
+
+    def create_model_bundle_from_dir(
+        self,
+        model_bundle_name: str,
+        base_path: str,
+        requirements_path: str,
+        env_params: Dict[str, str],
+        load_predict_fn_module_path: str,
+        load_model_fn_module_path: str,
+    ) -> ModelBundle:
+        """
+        Packages up code from a local filesystem folder and uploads that as a bundle to Scale Deploy.
+        In this mode, a bundle is just local code instead of a serialized object.
+
+        Parameters:
+            model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            base_path: The path on the local filesystem where the bundle code lives.
+            requirements_path: A path on the local filesystem where a requirements.txt file lives.
+            env_params: A dictionary that dictates environment information e.g.
+                the use of pytorch or tensorflow, which cuda/cudnn versions to use.
+                Specifically, the dictionary should contain the following keys:
+                "framework_type": either "tensorflow" or "pytorch".
+                "pytorch_version": Version of pytorch, e.g. "1.5.1", "1.7.0", etc. Only applicable if framework_type is pytorch
+                "cuda_version": Version of cuda used, e.g. "11.0".
+                "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
+                "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
+            load_predict_fn_module_path: A python module path within base_path for a function that, when called with the output of
+                load_model_fn_module_path, returns a function that carries out inference.
+            load_model_fn_module_path: A python module path within base_path for a function that returns a model. The output feeds into
+                the function located at load_predict_fn_module_path.
+        """
+        with open(requirements_path, "r", encoding="utf-8") as req_f:
+            requirements = req_f.read().splitlines()
+
+        tmpdir = tempfile.mkdtemp()
+        try:
+            tmparchive = os.path.join(tmpdir, "bundle")
+            root_dir = os.path.dirname(base_path)
+            base_dir = os.path.basename(base_path)
+
+            with open(
+                shutil.make_archive(
+                    base_name=tmparchive,
+                    format="zip",
+                    root_dir=root_dir,
+                    base_dir=base_dir,
+                ),
+                "rb",
+            ) as zip_f:
+                data = zip_f.read()
+        finally:
+            shutil.rmtree(tmpdir)
+
+        model_bundle_url = self.connection.post(
+            {}, MODEL_BUNDLE_SIGNED_URL_PATH
+        )
+        s3_path = model_bundle_url["signedUrl"]
+
+        # NOTE: Right now, the signedUrl endpoint returns a path that ends with a UUID,
+        # without the ability to specify a suffix (i.e. a file extension). This means that
+        # we'll have to find another means of distinguishing file types.
+        raw_bundle_url = (
+            "s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
+        )
+        logger.info(
+            "create_model_bundle_from_dir: raw_bundle_url=%s",
+            raw_bundle_url,
+        )
+
+        requests.put(s3_path, data=data)
+
+        bundle_metadata = {
+            "load_predict_fn_module_path": load_predict_fn_module_path,
+            "load_model_fn_module_path": load_model_fn_module_path,
+            "base_dir": base_dir,
+        }
+
+        self.connection.post(
+            payload=dict(
+                packaging_type="zip",
+                bundle_name=model_bundle_name,
+                location=raw_bundle_url,
+                bundle_metadata=bundle_metadata,
+                requirements=requirements,
+                env_params=env_params,
+            ),
+            route="model_bundle",
+        )
+        return ModelBundle(model_bundle_name)
 
     def create_model_bundle(
         self,
@@ -203,6 +295,7 @@ class DeployClient:
 
         self.connection.post(
             payload=dict(
+                packaging_type="cloudpickle",
                 bundle_name=model_bundle_name,
                 location=raw_bundle_url,
                 bundle_metadata=bundle_metadata,
