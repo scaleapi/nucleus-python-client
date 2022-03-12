@@ -24,7 +24,7 @@ def accumulate_dict_values(dicts: Iterable[dict]):
     result = {}
     for d in dicts:
         for key, value in d.items():
-            if key not in result:
+            if key not in result or key == "dataset_id":
                 result[key] = value
             else:
                 result[key] += value
@@ -112,15 +112,12 @@ class AnnotationUploader:
             "Segmentation batches" if segmentation else "Annotation batches"
         )
         for batch in self._client.tqdm_bar(batches, desc=progress_bar_name):
-            if segmentation:
-                payload = construct_segmentation_payload(batch, update)
-                # TODO: remove validation checks in backend for /annotate
-                # since it should work.
-                route = f"dataset/{self.dataset_id}/annotate_segmentation"
-            else:
-                payload = construct_annotation_payload(batch, update)
-                route = f"dataset/{self.dataset_id}/annotate"
-            responses.append(self._client.make_request(payload, route))
+            payload = construct_annotation_payload(batch, update)
+            responses.append(
+                self._client.make_request(
+                    payload, route=f"dataset/{self.dataset_id}/annotate"
+                )
+            )
         return responses
 
     def make_batched_file_form_data_requests(
