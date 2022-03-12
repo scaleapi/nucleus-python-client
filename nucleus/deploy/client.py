@@ -170,7 +170,7 @@ class DeployClient:
 
         self.connection.post(
             payload=dict(
-                type="zip",
+                packaging_type="zip",
                 bundle_name=model_bundle_name,
                 location=raw_bundle_url,
                 bundle_metadata=bundle_metadata,
@@ -284,7 +284,7 @@ class DeployClient:
 
         self.connection.post(
             payload=dict(
-                type="cloudpickle",
+                packaging_type="cloudpickle",
                 bundle_name=model_bundle_name,
                 location=raw_bundle_url,
                 bundle_metadata=bundle_metadata,
