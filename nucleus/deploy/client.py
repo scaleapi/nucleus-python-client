@@ -198,8 +198,12 @@ class DeployClient:
     def create_model_bundle(
         self,
         model_bundle_name: str,
-        load_predict_fn: Callable[[DeployModel_T], Callable[[Any], Any]],
         env_params: Dict[str, str],
+        *,
+        load_predict_fn: Optional[
+            Callable[[DeployModel_T], Callable[[Any], Any]]
+        ] = None,
+        predict_fn_or_cls: Optional[Callable[[Any], Any]] = None,
         requirements: Optional[List[str]] = None,
         model: Optional[DeployModel_T] = None,
         load_model_fn: Optional[Callable[[], DeployModel_T]] = None,
@@ -208,18 +212,19 @@ class DeployClient:
     ) -> ModelBundle:
         """
         Grabs a s3 signed url and uploads a model bundle to Scale Deploy.
-        A model bundle consists of a "load_predict_fn" and exactly one of "model" or "load_model_fn", such that
-        load_predict_fn(model)
-        or
-        load_predict_fn(load_model_fn())
-        returns a function predict_fn that takes in model input and returns model output.
-        Pre/post-processing code can be included inside load_predict_fn/model.
+
+        A model bundle consists of exactly {predict_fn_or_cls}, {load_predict_fn + model}, or {load_predict_fn + load_model_fn}.
+        Pre/post-processing code can be included inside load_predict_fn/model or in predict_fn_or_cls call.
 
         Parameters:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            predict_fn_or_cls: Function or a Callable class that runs end-to-end (pre/post processing and model inference) on the call.
+                I.e. `predict_fn_or_cls(REQUEST) -> RESPONSE`.
             model: Typically a trained Neural Network, e.g. a Pytorch module
-            load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
             load_predict_fn: Function that when called with model, returns a function that carries out inference
+                I.e. `load_predict_fn(model) -> func; func(REQUEST) -> RESPONSE`
+            load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
+                I.e. `load_predict_fn(load_model_fn()) -> func; func(REQUEST) -> RESPONSE`
             bundle_url: Only for self-hosted mode. Desired location of bundle.
             Overrides any value given by self.bundle_location_fn
             requirements: A list of python package requirements, e.g.
@@ -235,12 +240,18 @@ class DeployClient:
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             globals_copy: Dictionary of the global symbol table. Normally provided by `globals()` built-in function.
         """
+        # TODO(ivan): remove `disable=too-many-branches` when get rid of `load_*` functions
+        # pylint: disable=too-many-branches
 
-        if (model is not None and load_model_fn is not None) or (
-            model is None and load_model_fn is None
-        ):
+        check_args = [
+            predict_fn_or_cls is not None,
+            load_predict_fn is not None and model is not None,
+            load_predict_fn is not None and load_model_fn is not None,
+        ]
+
+        if sum(check_args) != 1:
             raise ValueError(
-                "Exactly one of model and load_model_fn should be non-None"
+                "A model bundle consists of exactly {predict_fn_or_cls}, {load_predict_fn + model}, or {load_predict_fn + load_model_fn}."
             )
         # TODO should we try to catch when people intentionally pass both model and load_model_fn as None?
 
@@ -266,23 +277,34 @@ class DeployClient:
                     continue
                 cloudpickle.register_pickle_by_value(module)
 
+        bundle: Union[
+            Callable[[Any], Any], Dict[str, Any], None
+        ]  # validate bundle
         bundle_metadata = {}
         # Create bundle
-        if model is not None:
+        if predict_fn_or_cls:
+            bundle = predict_fn_or_cls
+            if inspect.isfunction(predict_fn_or_cls):
+                source_code = inspect.getsource(predict_fn_or_cls)
+            else:
+                source_code = inspect.getsource(predict_fn_or_cls.__class__)
+            bundle_metadata["predict_fn_or_cls"] = source_code
+        elif model is not None:
             bundle = dict(model=model, load_predict_fn=load_predict_fn)
             bundle_metadata["load_predict_fn"] = inspect.getsource(
-                load_predict_fn
+                load_predict_fn  # type: ignore
             )
         else:
             bundle = dict(
                 load_model_fn=load_model_fn, load_predict_fn=load_predict_fn
             )
             bundle_metadata["load_predict_fn"] = inspect.getsource(
-                load_predict_fn
+                load_predict_fn  # type: ignore
             )
             bundle_metadata["load_model_fn"] = inspect.getsource(
                 load_model_fn  # type: ignore
             )
+
         serialized_bundle = cloudpickle.dumps(bundle)
 
         if self.is_self_hosted:
