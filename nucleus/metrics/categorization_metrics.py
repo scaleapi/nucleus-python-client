@@ -207,10 +207,12 @@ class CategorizationF1(CategorizationMetric):
         for result in results:
             gt.extend(list(to_taxonomy_labels(result.annotations)))
             predicted.extend(list(to_taxonomy_labels(result.predictions)))
-        results = {}
-        results["macro"] = f1_score(gt, predicted, average="macro")
-        results["weighted"] = f1_score(gt, predicted, average="weighted")
+        aggregate_scores = {}
+        aggregate_scores["macro"] = f1_score(gt, predicted, average="macro")
+        aggregate_scores["weighted"] = f1_score(
+            gt, predicted, average="weighted"
+        )
         return {
             result_label: ScalarResult(val)
-            for result_label, val in results.items()
+            for result_label, val in aggregate_scores.items()
         }

@@ -1,8 +1,7 @@
-import dataclasses
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List
+from typing import Dict, Iterable, List
 
 from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
@@ -15,7 +14,6 @@ class MetricResult(ABC):
     @abstractmethod
     def results(self) -> Dict[str, float]:
         """Interface for item results"""
-        return
 
     @property
     def extra_info(self) -> Dict[str, str]:
@@ -62,11 +60,15 @@ class GroupedScalarResult(MetricResult):
     group_to_scalar: Dict[str, ScalarResult]
 
     @property
-    def results(self) -> Dict[str, Any]:
-        return {
+    def results(self) -> Dict[str, float]:
+        group_results = {
             group: scalar.value
             for group, scalar in self.group_to_scalar.items()
         }
+        group_results["all_groups"] = ScalarResult.aggregate(
+            self.group_to_scalar.values()
+        ).value
+        return group_results
 
 
 class Metric(ABC):
@@ -121,7 +123,7 @@ class Metric(ABC):
     @abstractmethod
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> Dict[str, MetricResult]:
+    ) -> MetricResult:
         """A metric must override this method and return a metric result, given annotations and predictions."""
 
     @abstractmethod

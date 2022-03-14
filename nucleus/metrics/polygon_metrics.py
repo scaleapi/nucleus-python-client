@@ -1,12 +1,12 @@
 import sys
 from abc import abstractmethod
 from collections import defaultdict
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 
-from nucleus.annotation import AnnotationList
-from nucleus.prediction import PredictionList
+from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
+from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
 
 from .base import GroupedScalarResult, Metric, ScalarResult
 from .filters import confidence_filter, polygon_label_filter
@@ -88,7 +88,7 @@ class PolygonMetric(Metric):
         """Initializes PolygonMetric abstract object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Default False
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Default True
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
         """
         self.enforce_label_match = enforce_label_match
@@ -97,8 +97,8 @@ class PolygonMetric(Metric):
 
     def eval_grouped(
         self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
+        annotations: List[Union[BoxAnnotation, PolygonAnnotation]],
+        predictions: List[Union[BoxPrediction, PolygonPrediction]],
     ) -> GroupedScalarResult:
         grouped_annotations = LabelsGrouper(annotations)
         grouped_predictions = LabelsGrouper(predictions)
@@ -142,15 +142,15 @@ class PolygonMetric(Metric):
 
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> Dict[str, ScalarResult]:
+    ) -> GroupedScalarResult:
         if self.confidence_threshold > 0:
             predictions = confidence_filter(
                 predictions, self.confidence_threshold
             )
-        polygon_annotations: List[BoxOrPolygonAnnotation] = []
+        polygon_annotations: List[Union[BoxAnnotation, PolygonAnnotation]] = []
         polygon_annotations.extend(annotations.box_annotations)
         polygon_annotations.extend(annotations.polygon_annotations)
-        polygon_predictions: List[BoxOrPolygonPrediction] = []
+        polygon_predictions: List[Union[BoxPrediction, PolygonPrediction]] = []
         polygon_predictions.extend(predictions.box_predictions)
         polygon_predictions.extend(predictions.polygon_predictions)
 
