@@ -1,6 +1,7 @@
 from nucleus.annotation import SegmentationAnnotation
 from nucleus.dataset import Dataset
 from tests.helpers import (
+    NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET,
     TEST_LOCAL_MASK_URL,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_segmentation_annotation_matches_dict,
@@ -38,15 +39,17 @@ def test_batch_local_semseg_gt_upload(dataset: Dataset):
         request_annotation.mask_url = TEST_LOCAL_MASK_URL
     response = dataset.annotate(annotations=request_annotations)
 
-    print(request_annotations)
-    print(response)
-
     assert response["dataset_id"] == dataset.id
-    assert response["annotations_processed"] == 4
+    assert (
+        response["annotations_processed"]
+        == NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    )
     assert response["annotations_ignored"] == 0
     assert bad_reference_id in response["errors"][0]
 
-    for request_annotation in request_annotations[:4]:
+    for request_annotation in request_annotations[
+        :NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    ]:
         response_annotation = dataset.refloc(request_annotation.reference_id)[
             "annotations"
         ]["segmentation"][0]
@@ -78,7 +81,10 @@ def test_batch_semseg_gt_upload(dataset):
     ]
     response = dataset.annotate(annotations=annotations)
     assert response["dataset_id"] == dataset.id
-    assert response["annotations_processed"] == 4
+    assert (
+        response["annotations_processed"]
+        == NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    )
     assert response["annotations_ignored"] == 0
 
 
@@ -90,14 +96,20 @@ def test_batch_semseg_gt_upload_ignore(dataset):
     ]
     response = dataset.annotate(annotations=annotations)
     assert response["dataset_id"] == dataset.id
-    assert response["annotations_processed"] == 4
+    assert (
+        response["annotations_processed"]
+        == NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    )
     assert response["annotations_ignored"] == 0
 
     # When we re-upload, expect them to be ignored
     response = dataset.annotate(annotations=annotations)
     assert response["dataset_id"] == dataset.id
     assert response["annotations_processed"] == 0
-    assert response["annotations_ignored"] == 4
+    assert (
+        response["annotations_ignored"]
+        == NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    )
 
 
 def test_batch_semseg_gt_upload_update(dataset):
@@ -108,11 +120,17 @@ def test_batch_semseg_gt_upload_update(dataset):
     ]
     response = dataset.annotate(annotations=annotations)
     assert response["dataset_id"] == dataset.id
-    assert response["annotations_processed"] == 4
+    assert (
+        response["annotations_processed"]
+        == NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    )
     assert response["annotations_ignored"] == 0
 
     # When we re-upload, expect uploads to be processed
     response = dataset.annotate(annotations=annotations, update=True)
     assert response["dataset_id"] == dataset.id
-    assert response["annotations_processed"] == 4
+    assert (
+        response["annotations_processed"]
+        == NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET
+    )
     assert response["annotations_ignored"] == 0

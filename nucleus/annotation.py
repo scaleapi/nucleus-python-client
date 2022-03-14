@@ -71,7 +71,13 @@ class Annotation:
         """Serializes annotation object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
 
-    def has_local_files(self) -> bool:
+    def has_local_files_to_upload(self) -> bool:
+        """Returns True if annotation has local files that need to be uploaded.
+
+        Nearly all subclasses have no local files, so we default this to just return
+        false. If the subclass has local files, it should override this method (but
+        that is not the only thing required to get local upload of files to work.)
+        """
         return False
 
 
@@ -582,7 +588,8 @@ class SegmentationAnnotation(Annotation):
 
         return payload
 
-    def has_local_files(self) -> bool:
+    def has_local_files_to_upload(self) -> bool:
+        """Check if the mask url is local and needs to be uploaded."""
         if is_local_path(self.mask_url):
             if not os.path.isfile(self.mask_url):
                 raise Exception(f"Mask file {self.mask_url} does not exist.")

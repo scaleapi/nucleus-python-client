@@ -29,6 +29,7 @@ FileFormData = Sequence[FileFormField]
 
 
 async def gather_with_concurrency(n, *tasks):
+    """Helper method to limit the concurrency when gathering the results from multiple tasks."""
     semaphore = asyncio.Semaphore(n)
 
     async def sem_task(task):
@@ -107,6 +108,9 @@ def make_many_form_data_requests_concurrently(
         requests: Each requst should be a FormDataContextHandler object which will
             handle generating form data, and opening/closing files for each request.
         route: route for the request.
+        progressbar: A tqdm progress bar to use for showing progress to the user.
+        concurrency: How many concurrent requests to run at once. Should be exposed
+            to the user.
     """
     loop = get_event_loop()
     return loop.run_until_complete(
@@ -168,7 +172,7 @@ async def _post_form_data(
 
     logger.info("Posting to %s", endpoint)
 
-    for sleep_time in RetryStrategy.sleep_times + [-1]:
+    for sleep_time in RetryStrategy.sleep_times() + [-1]:
         with request as form:
             async with session.post(
                 endpoint,

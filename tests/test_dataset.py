@@ -262,6 +262,7 @@ def test_dataset_append_local(CLIENT, dataset):
             reference_id="bad",
         )
     ]
+    num_local_items_to_test = 10
     with pytest.raises(ValueError) as e:
         dataset.append(ds_items_local_error)
         assert "Out of range float values are not JSON compliant" in str(
@@ -273,7 +274,7 @@ def test_dataset_append_local(CLIENT, dataset):
             metadata={"test": 0},
             reference_id=LOCAL_FILENAME.split("/")[-1] + str(i),
         )
-        for i in range(1000)
+        for i in range(num_local_items_to_test)
     ]
 
     response = dataset.append(ds_items_local)
@@ -281,7 +282,7 @@ def test_dataset_append_local(CLIENT, dataset):
     assert isinstance(response, UploadResponse)
     resp_json = response.json()
     assert resp_json[DATASET_ID_KEY] == dataset.id
-    assert resp_json[NEW_ITEMS] == 1000
+    assert resp_json[NEW_ITEMS] == num_local_items_to_test
     assert resp_json[UPDATED_ITEMS] == 0
     assert resp_json[IGNORED_ITEMS] == 0
     assert resp_json[ERROR_ITEMS] == 0

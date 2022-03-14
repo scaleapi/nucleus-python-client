@@ -32,6 +32,11 @@ def accumulate_dict_values(dicts: Iterable[dict]):
 
 
 class AnnotationUploader:
+    """This is a helper class not intended for direct use. Please use dataset.annotate.
+
+    This class is purely a helper class for implementing dataset.annotate.
+    """
+
     def __init__(self, dataset_id: str, client: "NucleusClient"):  # noqa: F821
         self.dataset_id = dataset_id
         self._client = client
@@ -45,6 +50,7 @@ class AnnotationUploader:
         local_files_per_upload_request: int = 10,
         local_file_upload_concurrency: int = 30,
     ):
+        """For more details on parameters and functionality, see dataset.annotate."""
         if local_files_per_upload_request > 10:
             raise ValueError("local_files_per_upload_request must be <= 10")
         annotations_without_files: List[Annotation] = []
@@ -52,7 +58,7 @@ class AnnotationUploader:
         segmentations_with_remote_files: List[SegmentationAnnotation] = []
 
         for annotation in annotations:
-            if annotation.has_local_files():
+            if annotation.has_local_files_to_upload():
                 # Only segmentations have local files currently, and probably for a long
                 # time to to come.
                 assert isinstance(annotation, SegmentationAnnotation)
