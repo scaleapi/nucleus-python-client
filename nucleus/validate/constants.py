@@ -9,6 +9,7 @@ THRESHOLD_COMPARISON_KEY = "threshold_comparison"
 THRESHOLD_KEY = "threshold"
 SCENARIO_TEST_ID_KEY = "scenario_test_id"
 SCENARIO_TEST_NAME_KEY = "scenario_test_name"
+SCENARIO_TEST_METRICS_KEY = "scenario_test_metrics"
 
 
 class ThresholdComparison(str, Enum):
