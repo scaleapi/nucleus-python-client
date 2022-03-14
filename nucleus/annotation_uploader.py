@@ -1,5 +1,5 @@
 import json
-from typing import TYPE_CHECKING, Iterable, List, Sequence
+from typing import TYPE_CHECKING, Iterable, List, Optional, Sequence
 
 from nucleus.annotation import Annotation, SegmentationAnnotation
 from nucleus.async_utils import (
@@ -34,12 +34,14 @@ def accumulate_dict_values(dicts: Iterable[dict]):
 class AnnotationUploader:
     """This is a helper class not intended for direct use. Please use dataset.annotate.
 
-    This class is purely a helper class for implementing dataset.annotate.
+    This class is purely a helper class for implementing dataset.annotate/dataset.predict.
     """
 
-    def __init__(self, dataset_id: str, client: "NucleusClient"):  # noqa: F821
-        self.dataset_id = dataset_id
+    def __init__(
+        self, dataset_id: Optional[str], client: "NucleusClient"
+    ):  # noqa: F821
         self._client = client
+        self._route = f"dataset/{dataset_id}/annotate"
 
     def upload(
         self,
@@ -83,7 +85,7 @@ class AnnotationUploader:
             # segmentation will take a lot longer for the server to process than a single
             # annotation of any other kind.
             responses.extend(
-                self.make_batched_annotate_requests(
+                self.make_batched_requests(
                     segmentations_with_remote_files,
                     update,
                     batch_size=remote_files_per_upload_request,
@@ -92,7 +94,7 @@ class AnnotationUploader:
             )
         if annotations_without_files:
             responses.extend(
-                self.make_batched_annotate_requests(
+                self.make_batched_requests(
                     annotations_without_files,
                     update,
                     batch_size=batch_size,
@@ -102,7 +104,7 @@ class AnnotationUploader:
 
         return accumulate_dict_values(responses)
 
-    def make_batched_annotate_requests(
+    def make_batched_requests(
         self,
         annotations: Sequence[Annotation],
         update: bool,
@@ -120,9 +122,7 @@ class AnnotationUploader:
         for batch in self._client.tqdm_bar(batches, desc=progress_bar_name):
             payload = construct_annotation_payload(batch, update)
             responses.append(
-                self._client.make_request(
-                    payload, route=f"dataset/{self.dataset_id}/annotate"
-                )
+                self._client.make_request(payload, route=self._route)
             )
         return responses
 
@@ -149,7 +149,7 @@ class AnnotationUploader:
         return make_many_form_data_requests_concurrently(
             client=self._client,
             requests=requests,
-            route=f"dataset/{self.dataset_id}/annotate",
+            route=self._route,
             progressbar=progressbar,
             concurrency=local_file_upload_concurrency,
         )
@@ -202,3 +202,25 @@ class AnnotationUploader:
             return form_data, file_pointers
 
         return fn
+
+
+class PredictionUploader(AnnotationUploader):
+    def __init__(
+        self,
+        client: "NucleusClient",
+        dataset_id: Optional[str] = None,
+        model_id: Optional[str] = None,
+        model_run_id: Optional[str] = None,
+    ):
+        super().__init__(dataset_id, client)
+        self._client = client
+        if model_run_id is not None:
+            assert model_id is None and dataset_id is None
+            self._route = f"modelRun/{model_run_id}/predict"
+        else:
+            assert (
+                model_id is not None and dataset_id is not None
+            ), "Model ID and dataset ID are required if not using model run id."
+            self._route = (
+                f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
+            )
