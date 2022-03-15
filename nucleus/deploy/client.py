@@ -158,29 +158,35 @@ class DeployClient:
         finally:
             shutil.rmtree(tmpdir)
 
-        model_bundle_url = self.connection.post(
-            {}, MODEL_BUNDLE_SIGNED_URL_PATH
-        )
-        s3_path = model_bundle_url["signedUrl"]
-
-        # NOTE: Right now, the signedUrl endpoint returns a path that ends with a UUID,
-        # without the ability to specify a suffix (i.e. a file extension). This means that
-        # we'll have to find another means of distinguishing file types.
-        raw_bundle_url = (
-            "s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
-        )
-        logger.info(
-            "create_model_bundle_from_dir: raw_bundle_url=%s",
-            raw_bundle_url,
-        )
-
-        requests.put(s3_path, data=data)
+        if self.is_self_hosted:
+            if self.upload_bundle_fn is None:
+                raise ValueError("Upload_bundle_fn should be registered")
+            if self.bundle_location_fn is None:
+                raise ValueError(
+                    "Need either bundle_location_fn to know where to upload bundles"
+                )
+            raw_bundle_url = self.bundle_location_fn()  # type: ignore
+            self.upload_bundle_fn(data, raw_bundle_url)
+        else:
+            model_bundle_url = self.connection.post(
+                {}, MODEL_BUNDLE_SIGNED_URL_PATH
+            )
+            s3_path = model_bundle_url["signedUrl"]
+            raw_bundle_url = (
+                "s3://{model_bundle_url['bucket']}/{model_bundle_url['key']}"
+            )
+            requests.put(s3_path, data=data)
 
         bundle_metadata = {
             "load_predict_fn_module_path": load_predict_fn_module_path,
             "load_model_fn_module_path": load_model_fn_module_path,
             "base_dir": base_dir,
         }
+
+        logger.info(
+            "create_model_bundle_from_dir: raw_bundle_url=%s",
+            raw_bundle_url,
+        )
 
         self.connection.post(
             payload=dict(
