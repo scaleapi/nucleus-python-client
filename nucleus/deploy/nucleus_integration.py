@@ -10,7 +10,8 @@ from nucleus import Dataset, DatasetItem
 from nucleus.dataset_item import DatasetItemType
 from nucleus.deploy.model_endpoint import (
     AsyncModelEndpoint,
-    AsyncModelEndpointResponse,
+    AsyncModelEndpointBatchResponse,
+    EndpointRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,21 +26,21 @@ class NucleusDatasetInferenceRun:
     # For the demo, we will need our Nucleus Dataset to have `image_location`s in s3://scale-ml-hosted-model-inference
     def __init__(
         self,
-        hmi_async_job: AsyncModelEndpointResponse,
+        async_job: AsyncModelEndpointBatchResponse,
         nucleus_client,
         s3url_to_dataset_map,
         dataset,
     ):
-        self.hmi_async_job = hmi_async_job
+        self.async_job = async_job
         self.nucleus_client = nucleus_client
         self.s3url_to_dataset_map = s3url_to_dataset_map
         self.dataset = dataset
 
     def is_done(self, poll=True):
-        return self.hmi_async_job.is_done(poll=poll)
+        return self.async_job.is_done(poll=poll)
 
     def poll(self):
-        return self.hmi_async_job.poll_endpoints()
+        return self.async_job.poll_endpoints()
 
     def upload_to_nucleus(
         self, model_run_name, model=None, model_name=None, model_ref_id=None
@@ -66,7 +67,7 @@ class NucleusDatasetInferenceRun:
         )
         prediction_items = []
         for s3url, dataset_item in self.s3url_to_dataset_map.items():
-            item_link = self.hmi_async_job.responses[s3url]
+            item_link = self.async_job.responses.get(s3url, {}).result_url
             if item_link is None:
                 logger.warning("No item link received for %s", s3url)
                 continue
@@ -99,13 +100,15 @@ class NucleusDatasetInferenceRun:
 
 
 def create_nucleus_dataset_inference_run(
-    hmi_endpoint: AsyncModelEndpoint, nucleus_client, dataset: Dataset
+    model_endpoint: AsyncModelEndpoint, nucleus_client, dataset: Dataset
 ):
     """
     Returns a NucleusDatasetInferenceRun, client will need to periodically call poll on this in order to upload
     """
     s3urls, s3url_to_dataset_map = _nucleus_ds_to_s3url_list(dataset)
-    async_job = hmi_endpoint.predict_batch(s3urls)
+    async_job = model_endpoint.predict_batch(
+        [EndpointRequest(url=s3url, request_id=s3url) for s3url in s3urls]
+    )
     return NucleusDatasetInferenceRun(
         async_job, nucleus_client, s3url_to_dataset_map, dataset
     )
