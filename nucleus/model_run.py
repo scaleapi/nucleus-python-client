@@ -27,7 +27,7 @@ from nucleus.utils import (
 from .constants import (
     ANNOTATIONS_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
-    REQUEST_ID_KEY,
+    REQUEST_IDS_KEY,
     UPDATE_KEY,
 )
 from .prediction import (
@@ -130,11 +130,11 @@ class ModelRun:
         if asynchronous:
             check_all_mask_paths_remote(annotations)
 
-            request_id = serialize_and_write_to_presigned_url(
-                annotations, self.dataset_id, self._client
+            request_ids = serialize_and_write_to_presigned_url(
+                annotations, self.dataset_id, self._client, can_shard=True
             )
             response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                payload={REQUEST_IDS_KEY: request_ids, UPDATE_KEY: update},
                 route=f"modelRun/{self.model_run_id}/predict?async=1",
             )
             return AsyncJob.from_json(response, self._client)
