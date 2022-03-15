@@ -194,39 +194,6 @@ def test_non_existent_taxonomy_category_gt_upload(model_run):
     )
 
 
-def test_segmentation_pred_upload(model_run):
-    prediction = SegmentationPrediction.from_json(
-        TEST_SEGMENTATION_PREDICTIONS[0]
-    )
-    response = model_run.predict(annotations=[prediction])
-
-    assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_processed"] == 1
-    assert response["predictions_ignored"] == 0
-
-    response = model_run.refloc(prediction.reference_id)["segmentation"]
-    assert isinstance(response[0], SegmentationPrediction)
-
-    assert_segmentation_annotation_matches_dict(
-        response[0], TEST_SEGMENTATION_PREDICTIONS[0]
-    )
-
-
-def test_segmentation_pred_upload_ignore(model_run):
-    prediction = SegmentationPrediction.from_json(
-        TEST_SEGMENTATION_PREDICTIONS[0]
-    )
-    response1 = model_run.predict(annotations=[prediction])
-
-    assert response1["predictions_processed"] == 1
-
-    # Upload Duplicate annotation
-    response = model_run.predict(annotations=[prediction])
-    assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_processed"] == 0
-    assert response["predictions_ignored"] == 1
-
-
 def test_box_pred_upload_update(model_run):
     prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])

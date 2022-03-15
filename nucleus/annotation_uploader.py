@@ -24,7 +24,11 @@ def accumulate_dict_values(dicts: Iterable[dict]):
     result = {}
     for d in dicts:
         for key, value in d.items():
-            if key not in result or key == "dataset_id":
+            if (
+                key not in result
+                or key == "dataset_id"
+                or key == "model_run_id"
+            ):
                 result[key] = value
             else:
                 result[key] += value
@@ -32,7 +36,8 @@ def accumulate_dict_values(dicts: Iterable[dict]):
 
 
 class AnnotationUploader:
-    """This is a helper class not intended for direct use. Please use dataset.annotate.
+    """This is a helper class not intended for direct use. Please use dataset.annotate
+    or dataset.upload_predictions.
 
     This class is purely a helper class for implementing dataset.annotate/dataset.predict.
     """

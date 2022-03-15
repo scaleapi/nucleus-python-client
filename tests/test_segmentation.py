@@ -1,11 +1,63 @@
 from nucleus.annotation import SegmentationAnnotation
 from nucleus.dataset import Dataset
+from nucleus.model import Model
+from nucleus.prediction import SegmentationPrediction
 from tests.helpers import (
     NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET,
     TEST_LOCAL_MASK_URL,
     TEST_SEGMENTATION_ANNOTATIONS,
+    TEST_SEGMENTATION_PREDICTIONS,
     assert_segmentation_annotation_matches_dict,
 )
+
+
+def test_segmentation_pred_upload_local(dataset: Dataset, model: Model):
+    prediction = SegmentationPrediction.from_json(
+        TEST_SEGMENTATION_PREDICTIONS[0]
+    )
+    prediction.mask_url = TEST_LOCAL_MASK_URL
+    response = dataset.upload_predictions(model, [prediction])
+
+    assert response["predictions_processed"] == 1
+
+    response = dataset.predictions_refloc(model, prediction.reference_id)[
+        "segmentation"
+    ][0]
+    assert isinstance(response, SegmentationPrediction)
+    assert response == prediction
+
+
+def test_segmentation_pred_upload(dataset: Dataset, model: Model):
+    prediction = SegmentationPrediction.from_json(
+        TEST_SEGMENTATION_PREDICTIONS[0]
+    )
+    response = dataset.upload_predictions(model, [prediction])
+
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = dataset.predictions_refloc(model, prediction.reference_id)[
+        "segmentation"
+    ]
+    assert isinstance(response[0], SegmentationPrediction)
+
+    assert_segmentation_annotation_matches_dict(
+        response[0], TEST_SEGMENTATION_PREDICTIONS[0]
+    )
+
+
+def test_segmentation_pred_upload_ignore(dataset: Dataset, model: Model):
+    prediction = SegmentationPrediction.from_json(
+        TEST_SEGMENTATION_PREDICTIONS[0]
+    )
+    response1 = dataset.upload_predictions(model, [prediction])
+
+    assert response1["predictions_processed"] == 1
+
+    # Upload Duplicate annotation
+    response = dataset.upload_predictions(model, [prediction])
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 1
 
 
 def test_single_local_semseg_gt_upload(dataset: Dataset):
