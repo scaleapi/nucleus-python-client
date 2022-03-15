@@ -219,7 +219,7 @@ class DeployClient:
         self,
         endpoint_name: str,
         model_bundle: ModelBundle,
-        cpus: int,
+        cpus: float,
         memory: str,
         gpus: int,
         min_workers: int,
