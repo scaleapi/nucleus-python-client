@@ -95,7 +95,7 @@ class DeployClient:
 
     def register_endpoint_auth_decorator(self, endpoint_auth_decorator_fn):
         """
-        For self-hosted mode only. Registers a function that modifies the endpoint creation payload to include
+        For self-hosted mode only. Registers a function that modifies the endpoint creation/edit payload to include
         required fields for self-hosting.
         """
         self.endpoint_auth_decorator_fn = endpoint_auth_decorator_fn
@@ -312,11 +312,11 @@ class DeployClient:
             max_workers=max_workers,
             per_worker=per_worker,
         )
-        # TODO what about aws_role and results_s3_bucket?
-        if gpus is None or gpus == 0:
+        # Allows changing some authorization settings by changing endpoint_auth_decorator_fn
+        payload = self.endpoint_auth_decorator_fn(payload)
+        if gpus == 0 and gpu_type is not None:
+            logger.warning("GPU type setting %s will have no effect", gpu_type)
             payload["gpu_type"] = None
-        elif gpus > 0 and gpu_type is None:
-            raise ValueError("If nonzero gpus, must provide gpu_type")
         for k, v in payload.copy().items():
             if v is None:
                 del payload[k]
