@@ -1,11 +1,11 @@
-import numpy as np
-from functools import wraps
 from typing import Dict, List, Tuple
+from functools import wraps
+import numpy as np
 from shapely.geometry import Polygon
 
-from .base import ScalarResult
 from nucleus.annotation import CuboidAnnotation
 from nucleus.prediction import CuboidPrediction
+from .base import ScalarResult
 
 
 def group_cuboids_by_label(
