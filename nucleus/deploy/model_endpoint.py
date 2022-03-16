@@ -1,9 +1,10 @@
 import concurrent.futures
 import uuid
 from collections import Counter
-from typing import Any, Dict, List,Optional, Sequence
 from dataclasses import dataclass
-from dataclasses_json import dataclass_json, Undefined
+from typing import Dict, Optional, Sequence
+
+from dataclasses_json import Undefined, dataclass_json
 
 from nucleus.deploy.request_validation import validate_task_request
 
@@ -18,6 +19,7 @@ class Endpoint:
     """
     Represents an Endpoint from the database.
     """
+
     name: str
     metadata: Optional[Dict] = None
     endpoint_type: Optional[str] = None

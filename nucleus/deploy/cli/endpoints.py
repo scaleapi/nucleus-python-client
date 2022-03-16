@@ -1,10 +1,10 @@
 import click
 from rich.console import Console
-from rich.table import Column, Table
 from rich.syntax import Syntax
+from rich.table import Column, Table
 
-from nucleus.deploy.model_endpoint import Endpoint, AsyncModelEndpoint
 from nucleus.deploy.cli.client import init_client
+from nucleus.deploy.model_endpoint import AsyncModelEndpoint, Endpoint
 
 
 @click.group("endpoints")
@@ -56,12 +56,12 @@ def list_bundles(bundle_name):
     for meta_name, meta_value in model_bundle.metadata.items():
         # TODO print non-code metadata differently
         console.print(f"{meta_name}:", style="yellow")
-        syntax = Syntax(meta_value, 'python')
+        syntax = Syntax(meta_value, "python")
         console.print(syntax)
 
 
 @endpoints.command("delete")
-@click.argument('endpoint_name')
+@click.argument("endpoint_name")
 def delete_bundle(endpoint_name):
     """Delete a model bundle"""
     client = init_client()

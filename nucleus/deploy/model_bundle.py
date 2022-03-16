@@ -1,6 +1,7 @@
-from typing import Any, Dict, List
 from dataclasses import dataclass
-from dataclasses_json import dataclass_json, Undefined
+from typing import Any, Dict, List, Optional
+
+from dataclasses_json import Undefined, dataclass_json
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -10,14 +11,13 @@ class ModelBundle:
     Represents a ModelBundle.
     """
 
-    bundle_id: str
     bundle_name: str
-    env_params: Dict[str, str]
-    location: str
-    metadata: Dict[Any, Any]
-    packaging_type: str
-    requirements: List[str]
-
+    bundle_id: Optional[str] = None
+    env_params: Optional[Dict[str, str]] = None
+    location: Optional[str] = None
+    metadata: Optional[Dict[Any, Any]] = None
+    packaging_type: Optional[str]
+    requirements: Optional[List[str]]
 
     def __str__(self):
         return f"ModelBundle(bundle_name={self.bundle_name})"

@@ -22,7 +22,11 @@ from nucleus.deploy.find_packages import (
     get_imports,
 )
 from nucleus.deploy.model_bundle import ModelBundle
-from nucleus.deploy.model_endpoint import AsyncModelEndpoint, Endpoint, SyncModelEndpoint
+from nucleus.deploy.model_endpoint import (
+    AsyncModelEndpoint,
+    Endpoint,
+    SyncModelEndpoint,
+)
 from nucleus.deploy.request_validation import validate_task_request
 
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
@@ -444,8 +448,10 @@ class DeployClient:
             A ModelBundle object
         """
         resp = self.connection.get(f"model_bundle/{bundle_name}")
-        assert len(resp['bundles']) == 1, f"Bundle with name `{bundle_name}` not found"
-        return ModelBundle.from_dict(resp['bundles'][0])
+        assert (
+            len(resp["bundles"]) == 1
+        ), f"Bundle with name `{bundle_name}` not found"
+        return ModelBundle.from_dict(resp["bundles"][0])
 
     def list_model_endpoints(
         self,
@@ -459,12 +465,16 @@ class DeployClient:
         """
         resp = self.connection.get(ENDPOINT_PATH)
         async_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
-            AsyncModelEndpoint(endpoint=Endpoint.from_dict(endpoint), client=self)
+            AsyncModelEndpoint(
+                endpoint=Endpoint.from_dict(endpoint), client=self
+            )
             for endpoint in resp["endpoints"]
             if endpoint["endpoint_type"] == "async"
         ]
         sync_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
-            SyncModelEndpoint(endpoint=Endpoint.from_dict(endpoint), client=self)
+            SyncModelEndpoint(
+                endpoint=Endpoint.from_dict(endpoint), client=self
+            )
             for endpoint in resp["endpoints"]
             if endpoint["endpoint_type"] == "sync"
         ]
