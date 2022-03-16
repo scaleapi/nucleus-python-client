@@ -524,7 +524,7 @@ class SegmentationAnnotation(Annotation):
 
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
-          accessible to Scale. The mask is an HxW int8 array saved in PNG format,
+          accessible to Scale, or a local path. The mask is an HxW int8 array saved in PNG format,
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
           segmentation).
