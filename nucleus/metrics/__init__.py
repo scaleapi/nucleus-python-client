@@ -8,3 +8,4 @@ from .polygon_metrics import (
     PolygonPrecision,
     PolygonRecall,
 )
+from .cuboid_metrics import CuboidIOU, CuboidPrecision, CuboidRecall
