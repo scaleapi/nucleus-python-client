@@ -92,7 +92,7 @@ class Validate:
         response = self.connection.get(
             f"validate/scenario_test/{scenario_test_id}",
         )
-        return ScenarioTest(response["id"], self.connection)
+        return ScenarioTest(response["unit_test"]["id"], self.connection)
 
     @property
     def scenario_tests(self) -> List[ScenarioTest]:
