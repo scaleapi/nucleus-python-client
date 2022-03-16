@@ -4,6 +4,22 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.7.0) - 2022-03-16
+
+### Added
+- mask_url can now be a local file for segmentation annotations or predictions, meaning local upload is now supported for segmentations
+- Camera params for sensor fusion ingest now support additional camera params to accommodate fisheye camera, etc.
+- More detailed parameters to control for upload in case of timeouts (see dataset.upload_predictions, dataset.append, and dataset.upload_predictions)
+
+### Fixed
+- Artifically low concurrency for local uploads (all local uploads should be faster now)
+- Client no longer uses the deprecated (and now removed) segmentation-specific server endpoints
+- Fixed a bug where retries for local uploads were not working properly: should improve local upload robustness
+
+### Removed
+- client.predict, client.annotate, have been marked as deprecated for several months.
+
+
 ## [0.7.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.7.0) - 2022-03-09
 
 ### Added
