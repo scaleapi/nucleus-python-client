@@ -1,13 +1,29 @@
 import concurrent.futures
 import uuid
 from collections import Counter
-from typing import Dict, Optional, Sequence
+from typing import Any, Dict, List,Optional, Sequence
+from dataclasses import dataclass
+from dataclasses_json import dataclass_json, Undefined
 
 from nucleus.deploy.request_validation import validate_task_request
 
 TASK_PENDING_STATE = "PENDING"
 TASK_SUCCESS_STATE = "SUCCESS"
 TASK_FAILURE_STATE = "FAILURE"
+
+
+@dataclass_json(undefined=Undefined.EXCLUDE)
+@dataclass
+class Endpoint:
+    """
+    Represents an Endpoint from the database.
+    """
+    name: str
+    metadata: Optional[Dict] = None
+    endpoint_type: Optional[str] = None
+
+    def __str__(self):
+        return f"Endpoint(name={self.name})"
 
 
 class EndpointRequest:
@@ -62,16 +78,16 @@ class EndpointResponse:
 
 
 class SyncModelEndpoint:
-    def __init__(self, endpoint_id: str, client):
-        self.endpoint_id = endpoint_id
+    def __init__(self, endpoint: str, client):
+        self.endpoint = endpoint
         self.client = client
 
     def __str__(self):
-        return f"SyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
+        return f"SyncModelEndpoint <endpoint_name:{self.endpoint.name}>"
 
     def predict(self, request: EndpointRequest) -> EndpointResponse:
         raw_response = self.client.sync_request(
-            self.endpoint_id,
+            self.endpoint.name,
             url=request.url,
             args=request.args,
             return_pickled=request.return_pickled,
@@ -92,17 +108,17 @@ class AsyncModelEndpoint:
     A higher level abstraction for a Model Endpoint.
     """
 
-    def __init__(self, endpoint_id: str, client):
+    def __init__(self, endpoint: str, client):
         """
         Parameters:
-            endpoint_id: The unique name of the ModelEndpoint
+            endpoint: Endpoint object.
             client: A DeployClient object
         """
-        self.endpoint_id = endpoint_id
+        self.endpoint = endpoint
         self.client = client
 
     def __str__(self):
-        return f"AsyncModelEndpoint <endpoint_id:{self.endpoint_id}>"
+        return f"AsyncModelEndpoint <endpoint_name:{self.endpoint.name}>"
 
     def predict_batch(
         self, requests: Sequence[EndpointRequest]
@@ -129,7 +145,7 @@ class AsyncModelEndpoint:
             # request has keys url and args
 
             inner_inference_request = self.client.async_request(
-                endpoint_id=self.endpoint_id,
+                endpoint_id=self.endpoint.name,
                 url=request.url,
                 args=request.args,
                 return_pickled=request.return_pickled,

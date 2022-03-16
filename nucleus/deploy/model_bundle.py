@@ -1,11 +1,23 @@
+from typing import Any, Dict, List
+from dataclasses import dataclass
+from dataclasses_json import dataclass_json, Undefined
+
+
+@dataclass_json(undefined=Undefined.EXCLUDE)
+@dataclass
 class ModelBundle:
     """
     Represents a ModelBundle.
-    TODO fill this out with more than just a name potentially.
     """
 
-    def __init__(self, name):
-        self.name = name
+    bundle_id: str
+    bundle_name: str
+    env_params: Dict[str, str]
+    location: str
+    metadata: Dict[Any, Any]
+    packaging_type: str
+    requirements: List[str]
+
 
     def __str__(self):
-        return f"ModelBundle(name={self.name})"
+        return f"ModelBundle(bundle_name={self.bundle_name})"
