@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import requests
 
+from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.job import AsyncJob
 from nucleus.prediction import (
     BoxPrediction,
@@ -20,16 +21,7 @@ from nucleus.utils import (
     serialize_and_write_to_presigned_url,
 )
 
-from .annotation import (
-    Annotation,
-    BoxAnnotation,
-    CategoryAnnotation,
-    CuboidAnnotation,
-    MultiCategoryAnnotation,
-    PolygonAnnotation,
-    SegmentationAnnotation,
-    check_all_mask_paths_remote,
-)
+from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
@@ -304,19 +296,13 @@ class Dataset:
 
     def annotate(
         self,
-        annotations: Sequence[
-            Union[
-                BoxAnnotation,
-                PolygonAnnotation,
-                CuboidAnnotation,
-                CategoryAnnotation,
-                MultiCategoryAnnotation,
-                SegmentationAnnotation,
-            ]
-        ],
+        annotations: Sequence[Annotation],
         update: bool = DEFAULT_ANNOTATION_UPDATE_MODE,
         batch_size: int = 5000,
         asynchronous: bool = False,
+        remote_files_per_upload_request: int = 20,
+        local_files_per_upload_request: int = 10,
+        local_file_upload_concurrency: int = 30,
     ) -> Union[Dict[str, Any], AsyncJob]:
         """Uploads ground truth annotations to the dataset.
 
@@ -349,9 +335,20 @@ class Dataset:
               objects to upload.
             update: Whether to ignore or overwrite metadata for conflicting annotations.
             batch_size: Number of annotations processed in each concurrent batch.
-              Default is 5000.
+              Default is 5000. If you get timeouts when uploading geometric annotations,
+              you can try lowering this batch size.
             asynchronous: Whether or not to process the upload asynchronously (and
               return an :class:`AsyncJob` object). Default is False.
+            remote_files_per_upload_request: Number of remote files to upload in each
+                request. Segmentations have either local or remote files, if you are
+                getting timeouts while uploading segmentations with remote urls, you
+                should lower this value from its default of 20.
+            local_files_per_upload_request: Number of local files to upload in each
+                request. Segmentations have either local or remote files, if you are
+                getting timeouts while uploading segmentations with local files, you
+                should lower this value from its default of 10. The maximum is 10.
+            local_file_upload_concurrency: Number of concurrent local file uploads.
+
 
         Returns:
             If synchronous, payload describing the upload result::
@@ -363,9 +360,8 @@ class Dataset:
 
             Otherwise, returns an :class:`AsyncJob` object.
         """
-        check_all_mask_paths_remote(annotations)
-
         if asynchronous:
+            check_all_mask_paths_remote(annotations)
             request_id = serialize_and_write_to_presigned_url(
                 annotations, self.id, self._client
             )
@@ -374,8 +370,14 @@ class Dataset:
                 route=f"dataset/{self.id}/annotate?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        return self._client.annotate_dataset(
-            self.id, annotations, update=update, batch_size=batch_size
+        uploader = AnnotationUploader(dataset_id=self.id, client=self._client)
+        return uploader.upload(
+            annotations=annotations,
+            update=update,
+            batch_size=batch_size,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     def ingest_tasks(self, task_ids: List[str]) -> dict:
@@ -412,6 +414,8 @@ class Dataset:
         update: bool = False,
         batch_size: int = 20,
         asynchronous: bool = False,
+        local_files_per_upload_request: int = 10,
+        local_file_upload_concurrency: int = 30,
     ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """Appends items or scenes to a dataset.
 
@@ -482,12 +486,20 @@ class Dataset:
                 Sequence[:class:`LidarScene`] \
                 Sequence[:class:`VideoScene`]
               ]): List of items or scenes to upload.
-            batch_size: Size of the batch for larger uploads. Default is 20.
+            batch_size: Size of the batch for larger uploads. Default is 20. This is
+                for items that have a remote URL and do not require a local upload.
+                If you get timeouts for uploading remote urls, try decreasing this.
             update: Whether or not to overwrite metadata on reference ID collision.
               Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
               return an :class:`AsyncJob` object). This is required when uploading
               scenes. Default is False.
+            files_per_upload_request: How large to make each upload request when your
+                files are local. If you get timeouts, you may need to lower this from
+                its default of 10. The default is 10.
+            local_file_upload_concurrency: How many local file requests to send
+                concurrently. If you start to see gateway timeouts or cloudflare related
+                errors, you may need to lower this from its default of 30.
 
         Returns:
             For scenes
@@ -557,6 +569,8 @@ class Dataset:
             dataset_items,
             update=update,
             batch_size=batch_size,
+            local_files_per_upload_request=local_files_per_upload_request,
+            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     @deprecated("Prefer using Dataset.append instead.")
@@ -1270,6 +1284,10 @@ class Dataset:
         ],
         update: bool = False,
         asynchronous: bool = False,
+        batch_size: int = 5000,
+        remote_files_per_upload_request: int = 20,
+        local_files_per_upload_request: int = 10,
+        local_file_upload_concurrency: int = 30,
     ):
         """Uploads predictions and associates them with an existing :class:`Model`.
 
@@ -1312,6 +1330,21 @@ class Dataset:
               collision. Default is False.
             asynchronous: Whether or not to process the upload asynchronously (and
               return an :class:`AsyncJob` object). Default is False.
+            batch_size: Number of predictions processed in each concurrent batch.
+              Default is 5000. If you get timeouts when uploading geometric predictions,
+              you can try lowering this batch size. This is only relevant for
+              asynchronous=False
+            remote_files_per_upload_request: Number of remote files to upload in each
+                request. Segmentations have either local or remote files, if you are
+                getting timeouts while uploading segmentations with remote urls, you
+                should lower this value from its default of 20. This is only relevant for
+                asynchronous=False.
+            local_files_per_upload_request: Number of local files to upload in each
+                request. Segmentations have either local or remote files, if you are
+                getting timeouts while uploading segmentations with local files, you
+                should lower this value from its default of 10. The maximum is 10.
+                This is only relevant for asynchronous=False
+            local_file_upload_concurrency: Number of concurrent local file uploads.
 
         Returns:
             Payload describing the synchronous upload::
@@ -1335,12 +1368,19 @@ class Dataset:
             )
             return AsyncJob.from_json(response, self._client)
         else:
-            return self._client.predict(
+            uploader = PredictionUploader(
                 model_run_id=None,
                 dataset_id=self.id,
                 model_id=model.id,
+                client=self._client,
+            )
+            return uploader.upload(
                 annotations=predictions,
+                batch_size=batch_size,
                 update=update,
+                remote_files_per_upload_request=remote_files_per_upload_request,
+                local_files_per_upload_request=local_files_per_upload_request,
+                local_file_upload_concurrency=local_file_upload_concurrency,
             )
 
     def predictions_iloc(self, model, index):
@@ -1431,6 +1471,8 @@ class Dataset:
         dataset_items: List[DatasetItem],
         batch_size: int = 20,
         update: bool = False,
+        local_files_per_upload_request: int = 10,
+        local_file_upload_concurrency: int = 30,
     ) -> UploadResponse:
         """
         Appends images to a dataset with given dataset_id.
@@ -1438,8 +1480,16 @@ class Dataset:
 
         Args:
             dataset_items: Items to Upload
-            batch_size: size of the batch for long payload
+            batch_size: how many items with remote urls to include in each request.
+                If you get timeouts for uploading remote urls, try decreasing this.
             update: Update records on conflict otherwise overwrite
+            local_files_per_upload_request: How large to make each upload request when your
+                files are local. If you get timeouts, you may need to lower this from
+                its default of 10. The maximum is 10.
+            local_file_upload_concurrency: How many local file requests to send
+                concurrently. If you start to see gateway timeouts or cloudflare related
+                errors, you may need to lower this from its default of 30.
+
         Returns:
             UploadResponse
         """
@@ -1450,9 +1500,14 @@ class Dataset:
                 "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
                 "an existing dataset supporting dataset items."
             )
-
-        populator = DatasetItemUploader(self.id, self._client)
-        return populator.upload(dataset_items, batch_size, update)
+        uploader = DatasetItemUploader(self.id, self._client)
+        return uploader.upload(
+            dataset_items=dataset_items,
+            batch_size=batch_size,
+            update=update,
+            local_files_per_upload_request=local_files_per_upload_request,
+            local_file_upload_concurrency=local_file_upload_concurrency,
+        )
 
     def update_scene_metadata(self, mapping: Dict[str, dict]):
         """

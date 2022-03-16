@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Type, Union
@@ -69,6 +70,15 @@ class Annotation:
     def to_json(self) -> str:
         """Serializes annotation object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
+
+    def has_local_files_to_upload(self) -> bool:
+        """Returns True if annotation has local files that need to be uploaded.
+
+        Nearly all subclasses have no local files, so we default this to just return
+        false. If the subclass has local files, it should override this method (but
+        that is not the only thing required to get local upload of files to work.)
+        """
+        return False
 
 
 @dataclass  # pylint: disable=R0902
@@ -578,6 +588,26 @@ class SegmentationAnnotation(Annotation):
 
         return payload
 
+    def has_local_files_to_upload(self) -> bool:
+        """Check if the mask url is local and needs to be uploaded."""
+        if is_local_path(self.mask_url):
+            if not os.path.isfile(self.mask_url):
+                raise Exception(f"Mask file {self.mask_url} does not exist.")
+            return True
+        return False
+
+    def __eq__(self, other):
+        if not isinstance(other, SegmentationAnnotation):
+            return False
+        self.annotations = sorted(self.annotations, key=lambda x: x.index)
+        other.annotations = sorted(other.annotations, key=lambda x: x.index)
+        return (
+            (self.annotation_id == other.annotation_id)
+            and (self.annotations == other.annotations)
+            and (self.mask_url == other.mask_url)
+            and (self.reference_id == other.reference_id)
+        )
+
 
 class AnnotationTypes(Enum):
     BOX = BOX_TYPE
@@ -737,12 +767,12 @@ def is_local_path(path: str) -> bool:
 
 
 def check_all_mask_paths_remote(
-    annotations: Sequence[Union[Annotation]],
+    annotations: Sequence[Annotation],
 ):
     for annotation in annotations:
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
                     "Found an annotation with a local path, which is not currently"
-                    f"supported. Use a remote path instead. {annotation}"
+                    f"supported for asynchronous upload. Use a remote path instead, or try synchronous upload. {annotation}"
                 )
