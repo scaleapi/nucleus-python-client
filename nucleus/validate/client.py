@@ -94,7 +94,8 @@ class Validate:
         )
         return ScenarioTest(response["id"], self.connection)
 
-    def list_scenario_tests(self) -> List[ScenarioTest]:
+    @property
+    def scenario_tests(self) -> List[ScenarioTest]:
         """Lists all Scenario Tests of the current user. ::
 
             import nucleus
@@ -103,7 +104,7 @@ class Validate:
                 "sample_scenario_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.validate.list_scenario_tests()
+            client.validate.scenario_tests()
 
         Returns:
             A list of ScenarioTest objects.
