@@ -287,7 +287,7 @@ class DeployClient:
         self,
         endpoint_name: str,
         model_bundle: Optional[ModelBundle] = None,
-        cpus: Optional[int] = None,
+        cpus: Optional[float] = None,
         memory: Optional[str] = None,
         gpus: Optional[int] = None,
         min_workers: Optional[int] = None,
