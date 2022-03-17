@@ -258,6 +258,7 @@ def recall_precision(
     :param ground_truth:
     :param threshold: threshold in overlap ratio if IoU
     """
+
     tp_sum = 0
     fp_sum = 0
     fn_sum = 0
