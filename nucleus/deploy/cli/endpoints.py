@@ -1,7 +1,6 @@
 import click
 from rich.console import Console
-from rich.syntax import Syntax
-from rich.table import Column, Table
+from rich.table import Table
 
 from nucleus.deploy.cli.client import init_client
 from nucleus.deploy.model_endpoint import AsyncModelEndpoint, Endpoint
@@ -10,7 +9,6 @@ from nucleus.deploy.model_endpoint import AsyncModelEndpoint, Endpoint
 @click.group("endpoints")
 def endpoints():
     """Endpoints is a wrapper around model bundles in Scale Launch"""
-    pass
 
 
 @endpoints.command("list")

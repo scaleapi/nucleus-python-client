@@ -9,7 +9,6 @@ from nucleus.deploy.cli.client import init_client
 @click.group("bundles")
 def bundles():
     """Bundles is a wrapper around model bundles in Scale Launch"""
-    pass
 
 
 @bundles.command("list")
