@@ -50,6 +50,7 @@ rich = "^10.15.2"
 shellingham = "^1.4.0"
 scikit-learn = ">=0.24.0"
 cloudpickle = "^2.0.0"
+dataclasses-json = "^0.5.6"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
@@ -72,6 +73,8 @@ smart_open = "^1.9.0" # For a temporary nucleus -> HMI integration
 
 [tool.poetry.scripts]
 nu = "cli.nu:nu"
+scale-launch = 'nucleus.deploy.cli.bin:entry_point'
+
 
 [tool.pytest.ini_options]
 markers = [

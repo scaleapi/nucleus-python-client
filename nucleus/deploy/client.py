@@ -22,7 +22,11 @@ from nucleus.deploy.find_packages import (
     get_imports,
 )
 from nucleus.deploy.model_bundle import ModelBundle
-from nucleus.deploy.model_endpoint import AsyncModelEndpoint, SyncModelEndpoint
+from nucleus.deploy.model_endpoint import (
+    AsyncModelEndpoint,
+    Endpoint,
+    SyncModelEndpoint,
+)
 from nucleus.deploy.request_validation import validate_task_request
 
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
@@ -390,7 +394,7 @@ class DeployClient:
         """
         payload = dict(
             endpoint_name=endpoint_name,
-            bundle_name=model_bundle.name,
+            bundle_name=model_bundle.bundle_name,
             cpus=cpus,
             memory=memory,
             gpus=gpus,
@@ -417,10 +421,11 @@ class DeployClient:
         logger.info(
             "Endpoint creation task id is %s", endpoint_creation_task_id
         )
+        endpoint = Endpoint(name=endpoint_name)
         if endpoint_type == "async":
-            return AsyncModelEndpoint(endpoint_id=endpoint_name, client=self)
+            return AsyncModelEndpoint(endpoint=endpoint, client=self)
         elif endpoint_type == "sync":
-            return SyncModelEndpoint(endpoint_id=endpoint_name, client=self)
+            return SyncModelEndpoint(endpoint=endpoint, client=self)
         else:
             raise ValueError(
                 "Endpoint should be one of the types 'sync' or 'async'"
@@ -437,9 +442,22 @@ class DeployClient:
         """
         resp = self.connection.get("model_bundle")
         model_bundles = [
-            ModelBundle(name=item["bundle_name"]) for item in resp["bundles"]
+            ModelBundle.from_dict(item) for item in resp["bundles"]  # type: ignore
         ]
         return model_bundles
+
+    def get_model_bundle(self, bundle_name: str) -> ModelBundle:
+        """
+        Returns a Model Bundle object specified by `bundle_name`.
+
+        Returns:
+            A ModelBundle object
+        """
+        resp = self.connection.get(f"model_bundle/{bundle_name}")
+        assert (
+            len(resp["bundles"]) == 1
+        ), f"Bundle with name `{bundle_name}` not found"
+        return ModelBundle.from_dict(resp["bundles"][0])  # type: ignore
 
     def list_model_endpoints(
         self,
@@ -453,12 +471,16 @@ class DeployClient:
         """
         resp = self.connection.get(ENDPOINT_PATH)
         async_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
-            AsyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
+            AsyncModelEndpoint(
+                endpoint=Endpoint.from_dict(endpoint), client=self  # type: ignore
+            )
             for endpoint in resp["endpoints"]
             if endpoint["endpoint_type"] == "async"
         ]
         sync_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
-            SyncModelEndpoint(endpoint_id=endpoint["name"], client=self)
+            SyncModelEndpoint(
+                endpoint=Endpoint.from_dict(endpoint), client=self  # type: ignore
+            )
             for endpoint in resp["endpoints"]
             if endpoint["endpoint_type"] == "sync"
         ]
@@ -468,7 +490,7 @@ class DeployClient:
         """
         Deletes the model bundle on the server.
         """
-        route = f"model_bundle/{model_bundle.name}"
+        route = f"model_bundle/{model_bundle.bundle_name}"
         resp = self.connection.delete(route)
         return resp["deleted"]
 
@@ -478,7 +500,7 @@ class DeployClient:
         """
         Deletes a model endpoint.
         """
-        route = f"{ENDPOINT_PATH}/{model_endpoint.endpoint_id}"
+        route = f"{ENDPOINT_PATH}/{model_endpoint.endpoint.name}"
         resp = self.connection.delete(route)
         return resp["deleted"]
 
