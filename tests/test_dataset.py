@@ -579,7 +579,4 @@ def test_dataset_item_iterator(dataset):
         for item in dataset.items_generator(page_size=1)
     }
     for key in expected_items:
-        print("Expected: {}".format(expected_items[key]))
-        print("Actual: {}".format(actual_items[key]))
-
         assert actual_items[key] == expected_items[key]
