@@ -37,29 +37,6 @@ def list_endpoints():
     console.print(table)
 
 
-@endpoints.command("get")
-def list_bundles(bundle_name):
-    """Priint bundle info"""
-    client = init_client()
-
-    model_bundle = client.get_model_bundle(bundle_name)
-
-    console = Console()
-    console.print(f"{model_bundle.bundle_id=}")
-    console.print(f"{model_bundle.bundle_name=}")
-    console.print(f"{model_bundle.location=}")
-    console.print(f"{model_bundle.packaging_type=}")
-    console.print(f"{model_bundle.env_params=}")
-    console.print(f"{model_bundle.requirements=}")
-
-    console.print("model_bundle.metadata:")
-    for meta_name, meta_value in model_bundle.metadata.items():
-        # TODO print non-code metadata differently
-        console.print(f"{meta_name}:", style="yellow")
-        syntax = Syntax(meta_value, "python")
-        console.print(syntax)
-
-
 @endpoints.command("delete")
 @click.argument("endpoint_name")
 def delete_bundle(endpoint_name):
