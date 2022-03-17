@@ -3,15 +3,11 @@ from abc import abstractmethod
 from typing import List
 
 from nucleus.annotation import AnnotationList, CuboidAnnotation
-from nucleus.prediction import PredictionList, CuboidPrediction
+from nucleus.prediction import CuboidPrediction, PredictionList
 
 from .base import Metric, ScalarResult
+from .cuboid_utils import detection_iou, label_match_wrapper, recall_precision
 from .filters import confidence_filter
-from .cuboid_utils import (
-    label_match_wrapper,
-    detection_iou,
-    recall_precision,
-)
 
 
 class CuboidMetric(Metric):
