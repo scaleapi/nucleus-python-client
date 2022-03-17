@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from .annotation import Point3D, is_local_path
 from .constants import (
+    BACKEND_REFERENCE_ID_KEY,
     CAMERA_PARAMS_KEY,
     CX_KEY,
     CY_KEY,
@@ -235,6 +236,8 @@ class DatasetItem:  # pylint: disable=R0902
         image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
             ORIGINAL_IMAGE_URL_KEY, None
         )
+        if BACKEND_REFERENCE_ID_KEY in payload:
+            payload[REFERENCE_ID_KEY] = payload[BACKEND_REFERENCE_ID_KEY]
         return cls(
             image_location=image_url,
             pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),

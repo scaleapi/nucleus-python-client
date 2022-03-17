@@ -40,7 +40,6 @@ class NucleusAPIError(Exception):
     def __init__(
         self, endpoint, command, requests_response=None, aiohttp_response=None
     ):
-        super().__init__()
         self.message = f"Your client is on version {nucleus_client_version}. If you have not recently done so, please make sure you have updated to the latest version of the client by running pip install --upgrade scale-nucleus\n"
         if requests_response is not None:
             self.status_code = requests_response.status_code
@@ -63,6 +62,7 @@ class NucleusAPIError(Exception):
             for infra_flake_message in INFRA_FLAKE_MESSAGES
         ):
             self.message += "\n This likely indicates temporary downtime of the API, please try again in a minute or two"
+        super().__init__(self.message)
 
 
 class NoAPIKey(Exception):
