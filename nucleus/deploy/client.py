@@ -436,7 +436,7 @@ class DeployClient:
         """
         resp = self.connection.get("model_bundle")
         model_bundles = [
-            ModelBundle.from_dict(item) for item in resp["bundles"]     # type: ignore
+            ModelBundle.from_dict(item) for item in resp["bundles"]  # type: ignore
         ]
         return model_bundles
 
@@ -451,7 +451,7 @@ class DeployClient:
         assert (
             len(resp["bundles"]) == 1
         ), f"Bundle with name `{bundle_name}` not found"
-        return ModelBundle.from_dict(resp["bundles"][0])    # type: ignore
+        return ModelBundle.from_dict(resp["bundles"][0])  # type: ignore
 
     def list_model_endpoints(
         self,
