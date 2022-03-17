@@ -104,7 +104,7 @@ class Validate:
                 "sample_scenario_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.validate.scenario_tests()
+            client.validate.scenario_tests
 
         Returns:
             A list of ScenarioTest objects.
