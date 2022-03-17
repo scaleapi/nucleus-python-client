@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 import requests
 
@@ -40,9 +40,13 @@ from .constants import (
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     EXPORTED_ROWS,
+    ITEMS_KEY,
     KEEP_HISTORY_KEY,
+    LAST_PAGE,
     MESSAGE_KEY,
     NAME_KEY,
+    PAGE_SIZE,
+    PAGE_TOKEN,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
@@ -59,7 +63,7 @@ from .dataset_item import (
 )
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
-from .errors import DatasetItemRetrievalError
+from .errors import DatasetItemRetrievalError, NucleusAPIError
 from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
@@ -168,12 +172,52 @@ class Dataset:
         dataset_size = DatasetSize.parse_obj(response)
         return dataset_size.count
 
+    def items_generator(self, page_size=100000) -> Iterable[DatasetItem]:
+        """Generator yielding all dataset items in the dataset.
+
+
+        ::
+            sum_example_field = 0
+            for item in dataset.items_generator():
+                sum += item.metadata["example_field"]
+
+        Args:
+            page_size (int, optional): Number of items to return per page. If you are
+                experiencing timeouts while using this generator, you can try lowering
+                the page size.
+        """
+        last_page = False
+        page_token = None
+        while not last_page:
+            try:
+                response = self._client.make_request(
+                    {PAGE_TOKEN: page_token, PAGE_SIZE: page_size},
+                    f"dataset/{self.id}/itemsPage",
+                    requests.post,
+                )
+            except NucleusAPIError as e:
+                if e.status_code == 503:
+                    e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page size."
+                raise e
+            page_token, last_page = response[PAGE_TOKEN], response[LAST_PAGE]
+            print(page_token, last_page)
+            for item in response[ITEMS_KEY]:
+                yield DatasetItem.from_json(item)
+
     @property
     def items(self) -> List[DatasetItem]:
-        """List of all DatasetItem objects in the Dataset."""
-        response = self._client.make_request(
-            {}, f"dataset/{self.id}/datasetItems", requests.get
-        )
+        """List of all DatasetItem objects in the Dataset.
+
+        For fetching more than 200k items see :meth:`NucleusDataset.items_generator`.
+        """
+        try:
+            response = self._client.make_request(
+                {}, f"dataset/{self.id}/datasetItems", requests.get
+            )
+        except NucleusAPIError as e:
+            if e.status_code == 503:
+                e.message += "\nThe server timed out while trying to load your items. Please try iterating over dataset.items_generator() instead."
+            raise e
         dataset_items = response.get("dataset_items", None)
         error = response.get("error", None)
         constructed_dataset_items = []
