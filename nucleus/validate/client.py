@@ -122,7 +122,7 @@ class Validate:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.validate.list_scenario_tests()[0]
+            scenario_test = client.validate.scenario_tests[0]
 
             success = client.validate.delete_scenario_test(scenario_test.id)
 

@@ -37,7 +37,7 @@ def test_list_scenario_test(CLIENT, test_slice, annotations):
         evaluation_criteria=[e.bbox_iou() > 0.5],
     )
 
-    scenario_tests = CLIENT.validate.list_scenario_tests()
+    scenario_tests = CLIENT.validate.scenario_tests
     assert all(
         isinstance(scenario_test, ScenarioTest)
         for scenario_test in scenario_tests
