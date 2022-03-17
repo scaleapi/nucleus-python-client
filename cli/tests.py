@@ -32,7 +32,7 @@ def list_tests():
     console = Console()
     with console.status("Finding your Scenario Tests", spinner="dots4"):
         client = init_client()
-        scenario_tests = client.validate.list_scenario_tests()
+        scenario_tests = client.validate.scenario_tests
         table = Table(
             Column("id", overflow="fold", min_width=24),
             "Name",
@@ -73,7 +73,7 @@ def describe_test(scenario_test_id, all):
     # scenario_test = client.validate.get_scenario_test(scenario_test_id)
     assert scenario_test_id or all, "Must pass a scenario_test_id or --all"
     client = init_client()
-    scenario_tests = client.validate.list_scenario_tests()
+    scenario_tests = client.validate.scenario_tests
     if all:
         tree = Tree(":chart_with_upwards_trend: All Scenario Tests")
         with Live(
