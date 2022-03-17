@@ -2,14 +2,12 @@ from functools import wraps
 from typing import Dict, List, Tuple
 
 import numpy as np
+from shapely.geometry import Polygon
 
 from nucleus.annotation import CuboidAnnotation
 from nucleus.prediction import CuboidPrediction
 
 from .base import ScalarResult
-
-# from shapely.geometry import Polygon
-from .geometry import GeometryPolygon, polygon_intersection_area
 
 
 def group_cuboids_by_label(
@@ -130,7 +128,7 @@ def compute_outer_iou(
         xyz_1, wlh_1, yaw_1, scale_convention=scale_convention
     )
     polygons_1 = [
-        GeometryPolygon(points=corners_1[[1, 0, 4, 5, 1], :2])
+        Polygon(corners_1[[1, 0, 4, 5, 1], :2])
         for corners_1 in cuboid_corners_1
     ]
     area_intersection = np.zeros(
@@ -149,9 +147,10 @@ def compute_outer_iou(
     for i, corners_0 in enumerate(cuboid_corners_0):
         for j, polygon_1 in enumerate(polygons_1):
             if distance_mask[i, j]:
-                area_intersection[i, j] = polygon_intersection_area(
-                    GeometryPolygon(points=corners_0[[1, 0, 4, 5, 1], :2]),
-                    polygon_1,
+                area_intersection[i, j] = (
+                    Polygon(corners_0[[1, 0, 4, 5, 1], :2])
+                    .intersection(polygon_1)
+                    .area
                 )
 
     intersection = height_intersection * area_intersection
