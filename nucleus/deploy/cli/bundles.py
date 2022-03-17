@@ -46,14 +46,14 @@ def get_bundle(bundle_name):
     model_bundle = client.get_model_bundle(bundle_name)
 
     console = Console()
-    console.print(f"{model_bundle.bundle_id=}")
-    console.print(f"{model_bundle.bundle_name=}")
-    console.print(f"{model_bundle.location=}")
-    console.print(f"{model_bundle.packaging_type=}")
-    console.print(f"{model_bundle.env_params=}")
-    console.print(f"{model_bundle.requirements=}")
+    console.print(f"bundle_id: {model_bundle.bundle_id}")
+    console.print(f"bundle_name: {model_bundle.bundle_name}")
+    console.print(f"location: {model_bundle.location}")
+    console.print(f"packaging_type: {model_bundle.packaging_type}")
+    console.print(f"env_params: {model_bundle.env_params}")
+    console.print(f"requirements: {model_bundle.requirements}")
 
-    console.print("model_bundle.metadata:")
+    console.print("metadata:")
     for meta_name, meta_value in model_bundle.metadata.items():
         # TODO print non-code metadata differently
         console.print(f"{meta_name}:", style="yellow")
