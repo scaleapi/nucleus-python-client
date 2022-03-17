@@ -388,7 +388,7 @@ class DeployClient:
         """
         payload = dict(
             endpoint_name=endpoint_name,
-            bundle_name=model_bundle.name,
+            bundle_name=model_bundle.bundle_name,
             cpus=cpus,
             memory=memory,
             gpus=gpus,
@@ -436,7 +436,7 @@ class DeployClient:
         """
         resp = self.connection.get("model_bundle")
         model_bundles = [
-            ModelBundle.from_dict(item) for item in resp["bundles"]
+            ModelBundle.from_dict(item) for item in resp["bundles"]     # type: ignore
         ]
         return model_bundles
 
@@ -451,7 +451,7 @@ class DeployClient:
         assert (
             len(resp["bundles"]) == 1
         ), f"Bundle with name `{bundle_name}` not found"
-        return ModelBundle.from_dict(resp["bundles"][0])
+        return ModelBundle.from_dict(resp["bundles"][0])    # type: ignore
 
     def list_model_endpoints(
         self,
@@ -466,14 +466,14 @@ class DeployClient:
         resp = self.connection.get(ENDPOINT_PATH)
         async_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
             AsyncModelEndpoint(
-                endpoint=Endpoint.from_dict(endpoint), client=self
+                endpoint=Endpoint.from_dict(endpoint), client=self  # type: ignore
             )
             for endpoint in resp["endpoints"]
             if endpoint["endpoint_type"] == "async"
         ]
         sync_endpoints: List[Union[AsyncModelEndpoint, SyncModelEndpoint]] = [
             SyncModelEndpoint(
-                endpoint=Endpoint.from_dict(endpoint), client=self
+                endpoint=Endpoint.from_dict(endpoint), client=self  # type: ignore
             )
             for endpoint in resp["endpoints"]
             if endpoint["endpoint_type"] == "sync"

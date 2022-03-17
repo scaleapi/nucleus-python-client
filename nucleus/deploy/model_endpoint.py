@@ -80,7 +80,7 @@ class EndpointResponse:
 
 
 class SyncModelEndpoint:
-    def __init__(self, endpoint: str, client):
+    def __init__(self, endpoint: Endpoint, client):
         self.endpoint = endpoint
         self.client = client
 
@@ -110,7 +110,7 @@ class AsyncModelEndpoint:
     A higher level abstraction for a Model Endpoint.
     """
 
-    def __init__(self, endpoint: str, client):
+    def __init__(self, endpoint: Endpoint, client):
         """
         Parameters:
             endpoint: Endpoint object.
