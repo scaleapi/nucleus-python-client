@@ -45,7 +45,7 @@ click = ">=7.1.2,<9.0"  # NOTE: COLAB has 7.1.2 and has problems updating
 rich = "^10.15.2"
 shellingham = "^1.4.0"
 scikit-learn = ">=0.24.0"
-Shapely = ">=1.7.1"
+Shapely = "^1.8.1"
 
 [tool.poetry.dev-dependencies]
 poetry = "^1.1.5"
