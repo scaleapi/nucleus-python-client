@@ -1,10 +1,12 @@
-from typing import Dict, List, Tuple
 from functools import wraps
+from typing import Dict, List, Tuple
+
 import numpy as np
 from shapely.geometry import Polygon
 
 from nucleus.annotation import CuboidAnnotation
 from nucleus.prediction import CuboidPrediction
+
 from .base import ScalarResult
 
 
