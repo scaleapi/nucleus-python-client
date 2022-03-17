@@ -300,12 +300,11 @@ class NucleusClient:
         """Fetches a model by its ID.
 
         Parameters:
-            model_id: You can pass either a model ID (starts with ``prj_``) or a model run id (starts with ``run_``) This can
-              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
-            model_run_id: You can pass either a model ID (starts with ``prj_``), or a model run id (starts with ``run_``) This can
-              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
+            model_id: You can pass either a model ID (starts with ``prj_``) or a model run ID (starts with ``run_``) This can be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run IDs result from the application of a model to a dataset.
+            model_run_id: You can pass either a model ID (starts with ``prj_``), or a model run ID (starts with ``run_``) This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run IDs result from the application of a model to a dataset.
 
-            In the future, we plan to hide model_run_ids fully from users.
+              In the future, we plan to hide ``model_run_ids`` fully from users.
 
         Returns:
             :class:`Model`: The Nucleus model as an object.
