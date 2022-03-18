@@ -166,7 +166,7 @@ class DeployClient:
                     "Need either bundle_location_fn to know where to upload bundles"
                 )
             raw_bundle_url = self.bundle_location_fn()  # type: ignore
-            self.upload_bundle_fn(data, raw_bundle_url)
+            self.upload_bundle_fn(data, raw_bundle_url)  # type: ignore
         else:
             model_bundle_url = self.connection.post(
                 {}, MODEL_BUNDLE_SIGNED_URL_PATH
@@ -457,10 +457,10 @@ class DeployClient:
             if v is None:
                 del payload[k]
         resp = self.connection.put(payload, f"{ENDPOINT_PATH}/{endpoint_name}")
-        endpoint_creation_task_id = resp.get("endpoint_creation_task_id", None)
-        logger.info(
-            "Endpoint creation task id is %s", endpoint_creation_task_id
-        )
+        endpoint_creation_task_id = resp.get(
+            "endpoint_creation_task_id", None
+        )  # Returned from server as "creation"
+        logger.info("Endpoint edit task id is %s", endpoint_creation_task_id)
 
     # Relatively small wrappers around http requests
 
