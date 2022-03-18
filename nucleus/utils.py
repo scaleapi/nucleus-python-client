@@ -4,7 +4,7 @@ import io
 import json
 import uuid
 from collections import defaultdict
-from typing import IO, Dict, List, Sequence, Type, Union
+from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
 
 import requests
 from requests.models import HTTPError
@@ -19,6 +19,7 @@ from nucleus.annotation import (
     PolygonAnnotation,
     SegmentationAnnotation,
 )
+from nucleus.errors import NucleusAPIError
 
 from .constants import (
     ANNOTATION_TYPES,
@@ -27,8 +28,11 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     ITEM_KEY,
+    LAST_PAGE,
     LINE_TYPE,
     MULTICATEGORY_TYPE,
+    PAGE_SIZE,
+    PAGE_TOKEN,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
     SEGMENTATION_TYPE,
@@ -49,6 +53,9 @@ STRING_REPLACEMENTS = {
     "\\\\t": "\t",
     '\\\\"': '"',
 }
+
+if TYPE_CHECKING:
+    from . import NucleusClient
 
 
 class KeyErrorDict(dict):
@@ -292,3 +299,27 @@ def replace_double_slashes(s: str) -> str:
     for key, val in STRING_REPLACEMENTS.items():
         s = s.replace(key, val)
     return s
+
+
+def paginate_generator(
+    client: "NucleusClient",
+    endpoint: str,
+    result_key: str,
+    page_size: int = 100000,
+):
+    last_page = False
+    page_token = None
+    while not last_page:
+        try:
+            response = client.make_request(
+                {PAGE_TOKEN: page_token, PAGE_SIZE: page_size},
+                endpoint,
+                requests.post,
+            )
+        except NucleusAPIError as e:
+            if e.status_code == 503:
+                e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page_size."
+            raise e
+        page_token, last_page = response[PAGE_TOKEN], response[LAST_PAGE]
+        for json_value in response[result_key]:
+            yield json_value

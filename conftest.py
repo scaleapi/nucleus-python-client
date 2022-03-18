@@ -1,9 +1,13 @@
 import os
+from typing import TYPE_CHECKING
 
 import pytest
 
 import nucleus
 from tests.helpers import TEST_DATASET_ITEMS, TEST_DATASET_NAME
+
+if TYPE_CHECKING:
+    from nucleus import NucleusClient
 
 assert "NUCLEUS_PYTEST_API_KEY" in os.environ, (
     "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid "
@@ -20,12 +24,12 @@ def CLIENT():
 
 
 @pytest.fixture()
-def dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
-    ds.append(TEST_DATASET_ITEMS)
-    yield ds
+def dataset(CLIENT: "NucleusClient"):
+    test_dataset = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
+    test_dataset.append(TEST_DATASET_ITEMS)
+    yield test_dataset
 
-    CLIENT.delete_dataset(ds.id)
+    CLIENT.delete_dataset(test_dataset.id)
 
 
 @pytest.fixture()

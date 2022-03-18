@@ -4,13 +4,15 @@ from typing import Dict, Iterable, List, Set, Tuple, Union
 import requests
 
 from nucleus.annotation import Annotation
-from nucleus.constants import EXPORTED_ROWS
+from nucleus.constants import EXPORTED_ROWS, ITEMS_KEY
 from nucleus.dataset_item import DatasetItem
+from nucleus.errors import NucleusAPIError
 from nucleus.job import AsyncJob
 from nucleus.utils import (
     KeyErrorDict,
     convert_export_payload,
     format_dataset_item_response,
+    paginate_generator,
 )
 
 
@@ -57,30 +59,6 @@ class Slice:
                 return True
         return False
 
-    def _fetch_all(self) -> dict:
-        """Retrieves info and all items of the Slice.
-
-        Returns:
-            A dict mapping keys to the corresponding info retrieved.
-            ::
-
-                {
-                    "name": Union[str, int],
-                    "slice_id": str,
-                    "dataset_id": str,
-                    "dataset_items": List[{
-                        "id": str,
-                        "metadata": Dict[str, Union[str, int, float]],
-                        "ref_id": str,
-                        "original_image_url": str
-                    }]
-                }
-        """
-        response = self._client.make_request(
-            {}, f"slice/{self.id}", requests_command=requests.get
-        )
-        return response
-
     @property
     def slice_id(self):
         warnings.warn(
@@ -103,10 +81,52 @@ class Slice:
             self._dataset_id = self.info()["dataset_id"]
         return self._dataset_id
 
+    def items_generator(self, page_size=100000):
+        """Generator yielding all dataset items in the dataset.
+
+        ::
+            sum_example_field = 0
+            for item in slice.items_generator():
+                sum += item.metadata["example_field"]
+
+        Args:
+            page_size (int, optional): Number of items to return per page. If you are
+                experiencing timeouts while using this generator, you can try lowering
+                the page size.
+
+        Yields:
+            an iterable of DatasetItem objects.
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"slice/{self.id}/itemsPage",
+            result_key=ITEMS_KEY,
+            page_size=page_size,
+        )
+        for item_json in json_generator:
+            yield DatasetItem.from_json(item_json)
+
     @property
     def items(self):
-        """All DatasetItems contained in the Slice."""
-        return self._fetch_all()["dataset_items"]
+        """All DatasetItems contained in the Slice.
+
+        For fetching more than 200k items see :meth:`Slice.items_generator`.
+
+        """
+        try:
+            dataset_item_jsons = self._client.make_request(
+                {}, f"slice/{self.id}", requests_command=requests.get
+            )[
+                "dataset_items"
+            ]  # Unfortunately, we didn't use a standard value here, so not using a constant for the key
+            return [
+                DatasetItem.from_json(dataset_item_json)
+                for dataset_item_json in dataset_item_jsons
+            ]
+        except NucleusAPIError as e:
+            if e.status_code == 503:
+                e.message += "/n Your request timed out while trying to get all the items in the slice. Please try slice.items_generator() instead."
+            raise e
 
     def info(self) -> dict:
         """Retrieves the name, slice_id, and dataset_id of the Slice.

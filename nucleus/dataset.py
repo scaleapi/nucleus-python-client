@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 
 import requests
 
@@ -18,6 +18,7 @@ from nucleus.utils import (
     convert_export_payload,
     format_dataset_item_response,
     format_prediction_response,
+    paginate_generator,
     serialize_and_write_to_presigned_url,
 )
 
@@ -32,6 +33,7 @@ from .constants import (
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     EXPORTED_ROWS,
+    ITEMS_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
@@ -51,7 +53,7 @@ from .dataset_item import (
 )
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
-from .errors import DatasetItemRetrievalError
+from .errors import NucleusAPIError
 from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
@@ -160,25 +162,51 @@ class Dataset:
         dataset_size = DatasetSize.parse_obj(response)
         return dataset_size.count
 
+    def items_generator(self, page_size=100000) -> Iterable[DatasetItem]:
+        """Generator yielding all dataset items in the dataset.
+
+
+        ::
+            sum_example_field = 0
+            for item in dataset.items_generator():
+                sum += item.metadata["example_field"]
+
+        Args:
+            page_size (int, optional): Number of items to return per page. If you are
+                experiencing timeouts while using this generator, you can try lowering
+                the page size.
+
+        Yields:
+            an iterable of DatasetItem objects.
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/itemsPage",
+            result_key=ITEMS_KEY,
+            page_size=page_size,
+        )
+        for item_json in json_generator:
+            yield DatasetItem.from_json(item_json)
+
     @property
     def items(self) -> List[DatasetItem]:
-        """List of all DatasetItem objects in the Dataset."""
-        response = self._client.make_request(
-            {}, f"dataset/{self.id}/datasetItems", requests.get
-        )
-        dataset_items = response.get("dataset_items", None)
-        error = response.get("error", None)
-        constructed_dataset_items = []
-        if dataset_items:
-            for item in dataset_items:
-                image_url = item.get("original_image_url")
-                metadata = item.get("metadata", None)
-                ref_id = item.get("ref_id", None)
-                dataset_item = DatasetItem(image_url, ref_id, metadata)
-                constructed_dataset_items.append(dataset_item)
-        elif error:
-            raise DatasetItemRetrievalError(message=error)
-        return constructed_dataset_items
+        """List of all DatasetItem objects in the Dataset.
+
+        For fetching more than 200k items see :meth:`NucleusDataset.items_generator`.
+        """
+        try:
+            response = self._client.make_request(
+                {}, f"dataset/{self.id}/datasetItems", requests.get
+            )
+        except NucleusAPIError as e:
+            if e.status_code == 503:
+                e.message += "\nThe server timed out while trying to load your items. Please try iterating over dataset.items_generator() instead."
+            raise e
+        dataset_item_jsons = response.get("dataset_items", None)
+        return [
+            DatasetItem.from_json(item_json)
+            for item_json in dataset_item_jsons
+        ]
 
     @property
     def scenes(self) -> List[ScenesListEntry]:

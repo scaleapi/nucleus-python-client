@@ -570,3 +570,15 @@ def test_dataset_item_metadata_update(dataset):
     }
 
     assert actual_metadata == expected_metadata
+
+
+def test_dataset_item_iterator(dataset):
+    items = make_dataset_items()
+    dataset.append(items)
+    expected_items = {item.reference_id: item for item in dataset.items}
+    actual_items = {
+        item.reference_id: item
+        for item in dataset.items_generator(page_size=1)
+    }
+    for key in expected_items:
+        assert actual_items[key] == expected_items[key]
