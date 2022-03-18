@@ -24,7 +24,7 @@ def test_reprs():
     test_repr(Slice(slice_id="fake_slice_id", client=client))
 
 
-def test_slice_create_and_delete_and_list(dataset):
+def test_slice_create_and_delete_and_list(dataset: Dataset):
     ds_items = dataset.items
 
     # Slice creation
@@ -40,13 +40,9 @@ def test_slice_create_and_delete_and_list(dataset):
     assert slc.name == TEST_SLICE_NAME
     assert slc.dataset_id == dataset.id
 
-    items = slc.items
-    assert len(items) == 2
-    for item in ds_items[:2]:
-        assert (
-            item.reference_id == items[0]["ref_id"]
-            or item.reference_id == items[1]["ref_id"]
-        )
+    assert {item.reference_id for item in slc.items} == {
+        item.reference_id for item in ds_items[:2]
+    }
 
     response = slc.info()
     assert response["name"] == TEST_SLICE_NAME
@@ -58,20 +54,39 @@ def test_slice_create_and_export(dataset):
     # Dataset upload
     ds_items = dataset.items
 
-    annotation_in_slice = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    slice_ref_ids = [item.reference_id for item in ds_items[:1]]
+    # This test assumes one box annotation per item.
+    annotations = [
+        BoxAnnotation.from_json(json_data)
+        for json_data in TEST_BOX_ANNOTATIONS
+    ]
     # Slice creation
     slc = dataset.create_slice(
         name=TEST_SLICE_NAME,
-        reference_ids=[item.reference_id for item in ds_items[:1]],
+        reference_ids=slice_ref_ids,
     )
 
-    dataset.annotate(annotations=[annotation_in_slice])
+    dataset.annotate(annotations=annotations)
 
-    expected_box_annotation = copy.deepcopy(annotation_in_slice)
+    def get_expected_box_annotation(reference_id):
+        for annotation in annotations:
+            if annotation.reference_id == reference_id:
+                return annotation
+
+    def get_expected_item(reference_id):
+        if reference_id not in slice_ref_ids:
+            raise ValueError("Got results outside the slice")
+        for item in ds_items:
+            if item.reference_id == reference_id:
+                return item
 
     exported = slc.items_and_annotations()
-    assert exported[0][ITEM_KEY] == ds_items[0]
-    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == expected_box_annotation
+    for row in exported:
+        reference_id = row[ITEM_KEY].reference_id
+        assert row[ITEM_KEY] == get_expected_item(reference_id)
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][
+            0
+        ] == get_expected_box_annotation(reference_id)
 
 
 def test_slice_append(dataset):
@@ -85,30 +100,13 @@ def test_slice_append(dataset):
 
     # Insert duplicate first item
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
+    slice_items = slc.items
 
-    items = slc.items
-    assert len(items) == 3
-    for item in ds_items[:3]:
-        assert (
-            item.reference_id == items[0]["ref_id"]
-            or item.reference_id == items[1]["ref_id"]
-            or item.reference_id == items[2]["ref_id"]
-        )
+    assert len(slice_items) == 3
 
-    all_stored_items = [_[ITEM_KEY] for _ in slc.items_and_annotations()]
-
-    def sort_by_reference_id(items):
-        # Remove the generated item_ids and standardize
-        #  empty metadata so we can do an equality check.
-        for item in items:
-            item.item_id = None
-            if item.metadata == {}:
-                item.metadata = None
-        return sorted(items, key=lambda x: x.reference_id)
-
-    assert sort_by_reference_id(all_stored_items) == sort_by_reference_id(
-        ds_items[:3]
-    )
+    assert {_.reference_id for _ in ds_items[:3]} == {
+        _.reference_id for _ in slice_items
+    }
 
 
 @pytest.mark.skip(reason="404 not found error")

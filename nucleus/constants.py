@@ -100,9 +100,7 @@ PREDICTIONS_IGNORED_KEY = "predictions_ignored"
 PREDICTIONS_PROCESSED_KEY = "predictions_processed"
 REFERENCE_IDS_KEY = "reference_ids"
 REFERENCE_ID_KEY = "reference_id"
-BACKEND_REFERENCE_ID_KEY = (
-    "ref_id"  # TODO(355762): Our backend returns this instead of the "proper" key sometimes.
-)
+BACKEND_REFERENCE_ID_KEY = "ref_id"  # TODO(355762): Our backend returns this instead of the "proper" key sometimes.
 REQUEST_ID_KEY = "requestId"
 SCENES_KEY = "scenes"
 SERIALIZED_REQUEST_KEY = "serialized_request"
