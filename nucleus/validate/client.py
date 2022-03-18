@@ -92,9 +92,10 @@ class Validate:
         response = self.connection.get(
             f"validate/scenario_test/{scenario_test_id}",
         )
-        return ScenarioTest(response["id"], self.connection)
+        return ScenarioTest(response["unit_test"]["id"], self.connection)
 
-    def list_scenario_tests(self) -> List[ScenarioTest]:
+    @property
+    def scenario_tests(self) -> List[ScenarioTest]:
         """Lists all Scenario Tests of the current user. ::
 
             import nucleus
@@ -103,7 +104,7 @@ class Validate:
                 "sample_scenario_test", "slc_bx86ea222a6g057x4380"
             )
 
-            client.validate.list_scenario_tests()
+            client.validate.scenario_tests
 
         Returns:
             A list of ScenarioTest objects.
@@ -121,7 +122,7 @@ class Validate:
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            scenario_test = client.validate.list_scenario_tests()[0]
+            scenario_test = client.validate.scenario_tests[0]
 
             success = client.validate.delete_scenario_test(scenario_test.id)
 

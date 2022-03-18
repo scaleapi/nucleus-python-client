@@ -32,6 +32,13 @@ def dataset(CLIENT: "NucleusClient"):
     CLIENT.delete_dataset(test_dataset.id)
 
 
+@pytest.fixture()
+def model(CLIENT):
+    model = CLIENT.create_model(TEST_DATASET_NAME, "fake_reference_id")
+    yield model
+    CLIENT.delete_model(model.id)
+
+
 if __name__ == "__main__":
     client = nucleus.NucleusClient(API_KEY)
     # ds = client.create_dataset("Test Dataset With Autotags")
