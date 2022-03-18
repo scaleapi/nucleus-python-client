@@ -302,7 +302,10 @@ def replace_double_slashes(s: str) -> str:
 
 
 def paginate_generator(
-    client: "NucleusClient", endpoint: str, result_key, page_size: int = 100000
+    client: "NucleusClient",
+    endpoint: str,
+    result_key: str,
+    page_size: int = 100000,
 ):
     last_page = False
     page_token = None
