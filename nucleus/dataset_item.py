@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Sequence
 from .annotation import Point3D, is_local_path
 from .constants import (
     BACKEND_REFERENCE_ID_KEY,
+    CAMERA_MODEL_KEY,
     CAMERA_PARAMS_KEY,
     CX_KEY,
     CY_KEY,
@@ -15,8 +16,14 @@ from .constants import (
     FY_KEY,
     HEADING_KEY,
     IMAGE_URL_KEY,
+    K1_KEY,
+    K2_KEY,
+    K3_KEY,
+    K4_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
+    P1_KEY,
+    P2_KEY,
     POINTCLOUD_URL_KEY,
     POSITION_KEY,
     REFERENCE_ID_KEY,
@@ -28,6 +35,18 @@ from .constants import (
     Y_KEY,
     Z_KEY,
 )
+
+
+class CameraModels(Enum):
+    BROWN_CONRADY = "brown_conrady"
+    FISHEYE = "fisheye"
+
+    def __contains__(self, item):
+        try:
+            self(item)
+        except ValueError:
+            return False
+        return True
 
 
 @dataclass
@@ -93,6 +112,20 @@ class CameraParams:
     fy: float
     cx: float
     cy: float
+    camera_model: str
+    k1: float
+    k2: float
+    k3: float
+    k4: float
+    p1: float
+    p2: float
+
+    def __post_init__(self):
+        if self.camera_model is not None:
+            if self.camera_model not in CameraModels:
+                raise ValueError(
+                    f'Invalid Camera Model, the supported options are "{CameraModels.BROWN_CONRADY}" and "{CameraModels.FISHEYE}"'
+                )
 
     @classmethod
     def from_json(cls, payload: Dict[str, Any]):
@@ -104,11 +137,18 @@ class CameraParams:
             payload[FY_KEY],
             payload[CX_KEY],
             payload[CY_KEY],
+            payload.get(K1_KEY, None),
+            payload.get(K2_KEY, None),
+            payload.get(K3_KEY, None),
+            payload.get(K4_KEY, None),
+            payload.get(P1_KEY, None),
+            payload.get(P2_KEY, None),
+            payload.get(CAMERA_MODEL_KEY, None),
         )
 
     def to_payload(self) -> dict:
         """Serializes camera params object to schematized JSON dict."""
-        return {
+        payload = {
             POSITION_KEY: self.position.to_payload(),
             HEADING_KEY: self.heading.to_payload(),
             FX_KEY: self.fx,
@@ -116,6 +156,21 @@ class CameraParams:
             CX_KEY: self.cx,
             CY_KEY: self.cy,
         }
+        if self.k1:
+            payload[K1_KEY] = self.k1
+        if self.k2:
+            payload[K2_KEY] = self.k2
+        if self.k3:
+            payload[K3_KEY] = self.k3
+        if self.k4:
+            payload[K4_KEY] = self.k4
+        if self.p1:
+            payload[P1_KEY] = self.p1
+        if self.p2:
+            payload[P2_KEY] = self.p2
+        if self.camera_model:
+            payload[CAMERA_MODEL_KEY] = self.camera_model
+        return payload
 
 
 class DatasetItemType(Enum):
