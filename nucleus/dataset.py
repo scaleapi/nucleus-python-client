@@ -1217,10 +1217,7 @@ class Dataset:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             dataset = client.get_dataset(dataset_id="YOUR_DATASET_ID")
 
-            model = client.get_model(
-                model_id="YOUR_MODEL_PRJ_ID",
-                dataset_id="YOUR_DATASET_ID"
-            )
+            model = client.get_model(model_id="YOUR_MODEL_PRJ_ID")
 
             # Compute all evaluation metrics including IOU-based matching:
             dataset.calculate_evaluation_metrics(model)
