@@ -315,9 +315,7 @@ def detection_iou(
     prediction: List[CuboidPrediction],
     groundtruth: List[CuboidAnnotation],
     threshold_in_overlap_ratio: float,
-) -> Tuple[
-    np.ndarray[float], np.ndarray[float]
-]:  # pylint: disable=unsubscriptable-object
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculates the 2D IOU and 3D IOU overlap between predictions and groundtruth.
     Uses linear sum assignment to associate cuboids.
