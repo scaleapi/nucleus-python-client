@@ -4,6 +4,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.2) - 2022-03-18
+
+### Added
+- a fix to the CameraModels enumeration to fix export of camera calibrations for 3D scenes
+
 ## [0.8.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.0) - 2022-03-18
 
 ### Added
