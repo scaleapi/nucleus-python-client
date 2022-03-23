@@ -81,12 +81,12 @@ class CuboidIOU(CuboidMetric):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        birds_eye_view: bool = False,
+        iou_2d: bool = False,
     ):
         """Initializes CuboidIOU object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             birds_eye_view: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
@@ -95,7 +95,7 @@ class CuboidIOU(CuboidMetric):
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
         self.iou_threshold = iou_threshold
-        self.birds_eye_view = birds_eye_view
+        self.iou_2d = iou_2d
         super().__init__(enforce_label_match, confidence_threshold)
 
     def eval(
@@ -103,16 +103,17 @@ class CuboidIOU(CuboidMetric):
         annotations: List[CuboidAnnotation],
         predictions: List[CuboidPrediction],
     ) -> ScalarResult:
-        iou_3d, iou_2d = detection_iou(
+        iou_3d_metric, iou_2d_metric = detection_iou(
             predictions,
             annotations,
             threshold_in_overlap_ratio=self.iou_threshold,
         )
+
         weight = max(len(annotations), len(predictions))
-        if self.birds_eye_view:
-            avg_iou = iou_2d.sum() / max(weight, sys.float_info.epsilon)
+        if self.iou_2d:
+            avg_iou = iou_2d_metric.sum() / max(weight, sys.float_info.epsilon)
         else:
-            avg_iou = iou_3d.sum() / max(weight, sys.float_info.epsilon)
+            avg_iou = iou_3d_metric.sum() / max(weight, sys.float_info.epsilon)
 
         return ScalarResult(avg_iou, weight)
 
@@ -130,7 +131,7 @@ class CuboidPrecision(CuboidMetric):
         """Initializes CuboidIOU object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
         """
@@ -168,7 +169,7 @@ class CuboidRecall(CuboidMetric):
         """Initializes CuboidIOU object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
         """
