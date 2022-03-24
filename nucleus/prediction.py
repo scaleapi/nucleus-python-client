@@ -26,6 +26,7 @@ from .constants import (
     CONFIDENCE_KEY,
     CUBOID_TYPE,
     DIMENSIONS_KEY,
+    EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
     LABEL_KEY,
@@ -153,6 +154,9 @@ class BoxPrediction(BoxAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
+            If any custom object embeddings have been uploaded previously to this dataset,
+            this vector must match the dimensions of the previously ingested vectors.
     """
 
     def __init__(
@@ -167,6 +171,7 @@ class BoxPrediction(BoxAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        embedding_vector: Optional[list] = None,
     ):
         super().__init__(
             label=label,
@@ -177,6 +182,7 @@ class BoxPrediction(BoxAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            embedding_vector=embedding_vector
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -204,6 +210,7 @@ class BoxPrediction(BoxAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
 
@@ -296,6 +303,9 @@ class PolygonPrediction(PolygonAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
+            If any custom object embeddings have been uploaded previously to this dataset,
+            this vector must match the dimensions of the previously ingested vectors.
     """
 
     def __init__(
@@ -307,6 +317,7 @@ class PolygonPrediction(PolygonAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        embedding_vector: Optional[list] = None,
     ):
         super().__init__(
             label=label,
@@ -314,6 +325,7 @@ class PolygonPrediction(PolygonAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            embedding_vector=embedding_vector,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -340,6 +352,7 @@ class PolygonPrediction(PolygonAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
 
