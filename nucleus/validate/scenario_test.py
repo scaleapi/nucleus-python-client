@@ -10,6 +10,7 @@ from typing import List
 from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
 from ..dataset_item import DatasetItem
+from ..model import Model
 from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestMetric
@@ -36,6 +37,7 @@ class ScenarioTest:
     connection: Connection = field(repr=False)
     name: str = field(init=False)
     slice_id: str = field(init=False)
+    baseline_model: Model = None
 
     def __post_init__(self):
         # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
@@ -141,3 +143,24 @@ class ScenarioTest:
         return [
             DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
         ]
+
+    def set_baseline_model(self, model_id: str):
+        """Set's a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
+        this scenario test must have been evaluated using that model.  The baseline model's performance
+        is used as the threshold for all metrics against which other models are compared.
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            scenario_test = client.validate.scenario_tests[0]
+            model = client.get_model('my_baseline_model')
+
+            scenario_test.set_baseline_model(model)
+
+        Returns:
+            A list of :class:`ScenarioTestEvaluation` objects.
+        """
+        response = self.connection.post(
+            f"validate/scenario_test/{self.id}/set_baseline_model/{model_id}"
+        )
+        self.baseline_model = Model.from_json(response)
+        return self.baseline_model
