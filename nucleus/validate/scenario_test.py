@@ -11,6 +11,13 @@ from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
 from ..dataset_item import DatasetItem
 from ..model import Model
+from .constants import (
+    EVAL_FUNCTION_ID_KEY,
+    SCENARIO_TEST_ID_KEY,
+    SCENARIO_TEST_METRICS_KEY,
+    THRESHOLD_COMPARISON_KEY,
+    THRESHOLD_KEY,
+)
 from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestMetric
@@ -89,8 +96,8 @@ class ScenarioTest:
             "validate/scenario_test_metric",
         )
         return ScenarioTestMetric(
-            scenario_test_id=response["scenario_test_id"],
-            eval_function_id=response["eval_function_id"],
+            scenario_test_id=response[SCENARIO_TEST_ID_KEY],
+            eval_function_id=response[EVAL_FUNCTION_ID_KEY],
             threshold=evaluation_criterion.threshold,
             threshold_comparison=evaluation_criterion.threshold_comparison,
         )
@@ -112,7 +119,7 @@ class ScenarioTest:
         )
         return [
             ScenarioTestMetric(**metric)
-            for metric in response["scenario_test_metrics"]
+            for metric in response[SCENARIO_TEST_METRICS_KEY]
         ]
 
     def get_eval_history(self) -> List[ScenarioTestEvaluation]:

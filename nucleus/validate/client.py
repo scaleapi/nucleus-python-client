@@ -5,7 +5,7 @@ from nucleus.job import AsyncJob
 
 from .constants import SCENARIO_TEST_ID_KEY
 from .data_transfer_objects.eval_function import (
-    EvaluationCriterion,
+    EvalFunctionEntry,
     GetEvalFunctions,
 )
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
@@ -51,7 +51,7 @@ class Validate:
         self,
         name: str,
         slice_id: str,
-        evaluation_criteria: List[EvaluationCriterion],
+        evaluation_functions: List[EvalFunctionEntry],
     ) -> ScenarioTest:
         """Creates a new Scenario Test from an existing Nucleus :class:`Slice`:. ::
 
@@ -61,28 +61,28 @@ class Validate:
             scenario_test = client.validate.create_scenario_test(
                 name="sample_scenario_test",
                 slice_id="YOUR_SLICE_ID",
-                evaluation_criteria=[client.validate.eval_functions.bbox_iou() > 0.5]
+                evaluation_functions=[client.validate.eval_functions.bbox_iou()]
             )
 
         Args:
             name: unique name of test
             slice_id: id of (pre-defined) slice of items to evaluate test on.
-            evaluation_criteria: :class:`EvaluationCriterion` defines a pass/fail criteria for the test. Created with a
-                comparison with an eval functions. See :class:`eval_functions`.
+            evaluation_functions: :class:`EvalFunctionEntry` defines an evaluation metric for the test.
+            Created with an element from the list of available eval functions. See :class:`eval_functions`.
 
         Returns:
             Created ScenarioTest object.
         """
-        if not evaluation_criteria:
+        if not evaluation_functions:
             raise CreateScenarioTestError(
-                "Must pass an evaluation_criteria to the scenario test! I.e. "
-                "evaluation_criteria = [client.validate.eval_functions.bbox_iou() > 0.5]"
+                "Must pass an evaluation_function to the scenario test! I.e. "
+                "evaluation_functions=[client.validate.eval_functions.bbox_iou()]"
             )
         response = self.connection.post(
             CreateScenarioTestRequest(
                 name=name,
                 slice_id=slice_id,
-                evaluation_criteria=evaluation_criteria,
+                evaluation_functions=evaluation_functions,
             ).dict(),
             "validate/scenario_test",
         )
