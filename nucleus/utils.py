@@ -8,6 +8,7 @@ from typing import IO, Dict, List, Sequence, Type, Union
 
 import requests
 from requests.models import HTTPError
+import numpy as np
 
 from nucleus.annotation import (
     Annotation,
@@ -283,3 +284,18 @@ def replace_double_slashes(s: str) -> str:
     for key, val in STRING_REPLACEMENTS.items():
         s = s.replace(key, val)
     return s
+
+
+def bin_to_numpy(bin_file_path: str = None):
+    '''
+    Takes bin file and returns the Point Cloud
+    Args:
+        param filepath: bin filepath
+        type filepath: str
+
+    Returns:
+        np_pcd: (x,4) numpy array representation of Point Cloud
+        type frame_to_s3_URI: np.array
+    '''
+    np_pcd = np.fromfile(bin_file_path, dtype=np.float32).reshape(-1, 4)
+    return np_pcd
