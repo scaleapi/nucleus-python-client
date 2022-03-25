@@ -4,13 +4,13 @@ from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 
 from .constants import SCENARIO_TEST_ID_KEY
-from .data_transfer_objects.eval_function import (
-    EvalFunctionEntry,
-    GetEvalFunctions,
-)
+from .data_transfer_objects.eval_function import GetEvalFunctions
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
 from .errors import CreateScenarioTestError
-from .eval_functions.available_eval_functions import AvailableEvalFunctions
+from .eval_functions.available_eval_functions import (
+    AvailableEvalFunctions,
+    EvalFunction,
+)
 from .scenario_test import ScenarioTest
 
 SUCCESS_KEY = "success"
@@ -51,7 +51,7 @@ class Validate:
         self,
         name: str,
         slice_id: str,
-        evaluation_functions: List[EvalFunctionEntry],
+        evaluation_functions: List[EvalFunction],
     ) -> ScenarioTest:
         """Creates a new Scenario Test from an existing Nucleus :class:`Slice`:. ::
 
@@ -82,7 +82,9 @@ class Validate:
             CreateScenarioTestRequest(
                 name=name,
                 slice_id=slice_id,
-                evaluation_functions=evaluation_functions,
+                evaluation_functions=[
+                    ef.to_entry() for ef in evaluation_functions
+                ],
             ).dict(),
             "validate/scenario_test",
         )

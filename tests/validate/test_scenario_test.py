@@ -34,7 +34,7 @@ def test_list_scenario_test(CLIENT, test_slice, annotations):
     scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[e.bbox_iou() > 0.5],
+        evaluation_functions=[e.bbox_iou()],
     )
 
     scenario_tests = CLIENT.validate.scenario_tests
@@ -53,7 +53,7 @@ def test_scenario_test_items(CLIENT, test_slice, slice_items, annotations):
     scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[CLIENT.validate.eval_functions.bbox_iou() > 0.5],
+        evaluation_functions=[CLIENT.validate.eval_functions.bbox_iou()],
     )
 
     expected_items_locations = [item.image_location for item in slice_items]
@@ -70,5 +70,23 @@ def test_no_criteria_raises_error(CLIENT, test_slice, annotations):
         CLIENT.validate.create_scenario_test(
             name=test_name,
             slice_id=test_slice.id,
-            evaluation_criteria=[],
+            evaluation_functions=[],
         )
+
+
+def test_scenario_test_set_metric_threshold(
+    CLIENT, annotations, scenario_test
+):
+    # create some dataset_items for the scenario test to reference
+    threshold = 0.5
+    scenario_test_metrics = scenario_test.get_criteria()
+    metric = scenario_test_metrics[0]
+    assert metric
+    metric.set_threshold(threshold)
+    assert metric.threshold == threshold
+
+
+def test_scenario_test_set_model_baseline(CLIENT, annotations, scenario_test):
+    # create some dataset_items for the scenario test to reference
+    with pytest.raises(Exception):
+        scenario_test.set_baseline_model("nonexistent_model_id")

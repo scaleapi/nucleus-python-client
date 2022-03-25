@@ -4,7 +4,7 @@ from pydantic import validator
 
 from nucleus.pydantic_base import ImmutableModel
 
-from .eval_function import EvalFunctionEntry, EvaluationCriterion
+from .eval_function import EvalFunctionEntry
 
 
 class CreateScenarioTestRequest(ImmutableModel):

@@ -10,13 +10,10 @@ from typing import List
 from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
 from ..dataset_item import DatasetItem
-from ..model import Model
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
     SCENARIO_TEST_ID_KEY,
     SCENARIO_TEST_METRICS_KEY,
-    THRESHOLD_COMPARISON_KEY,
-    THRESHOLD_KEY,
 )
 from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
@@ -44,7 +41,7 @@ class ScenarioTest:
     connection: Connection = field(repr=False)
     name: str = field(init=False)
     slice_id: str = field(init=False)
-    baseline_model: Model = None
+    baseline_model_id: str = None
 
     def __post_init__(self):
         # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
@@ -100,6 +97,7 @@ class ScenarioTest:
             eval_function_id=response[EVAL_FUNCTION_ID_KEY],
             threshold=evaluation_criterion.threshold,
             threshold_comparison=evaluation_criterion.threshold_comparison,
+            connection=self.connection,
         )
 
     def get_criteria(self) -> List[ScenarioTestMetric]:
@@ -118,7 +116,7 @@ class ScenarioTest:
             f"validate/scenario_test/{self.id}/metrics",
         )
         return [
-            ScenarioTestMetric(**metric)
+            ScenarioTestMetric(**metric, connection=self.connection)
             for metric in response[SCENARIO_TEST_METRICS_KEY]
         ]
 
@@ -159,15 +157,15 @@ class ScenarioTest:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             scenario_test = client.validate.scenario_tests[0]
-            model = client.get_model('my_baseline_model')
 
-            scenario_test.set_baseline_model(model)
+            scenario_test.set_baseline_model('my_baseline_model_id')
 
         Returns:
             A list of :class:`ScenarioTestEvaluation` objects.
         """
         response = self.connection.post(
-            f"validate/scenario_test/{self.id}/set_baseline_model/{model_id}"
+            {},
+            f"validate/scenario_test/{self.id}/set_baseline_model/{model_id}",
         )
-        self.baseline_model = Model.from_json(response)
-        return self.baseline_model
+        self.baseline_model_id = response.get("baseline_model_id")
+        return self.baseline_model_id
