@@ -12,9 +12,7 @@ from tests.helpers import (
 def test_scenario_test_metric_creation(CLIENT, annotations, scenario_test):
     # create some dataset_items for the scenario test to reference
     iou = CLIENT.validate.eval_functions.bbox_iou
-    scenario_test_metric = scenario_test.add_criterion(
-        iou() > EVAL_FUNCTION_THRESHOLD
-    )
+    scenario_test_metric = scenario_test.add_eval_function(iou)
     assert scenario_test_metric.scenario_test_id == scenario_test.id
     assert scenario_test_metric.eval_function_id
     assert scenario_test_metric.threshold == EVAL_FUNCTION_THRESHOLD

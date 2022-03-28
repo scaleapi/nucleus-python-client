@@ -14,10 +14,16 @@ from .constants import (
     EVAL_FUNCTION_ID_KEY,
     SCENARIO_TEST_ID_KEY,
     SCENARIO_TEST_METRICS_KEY,
+    THRESHOLD_COMPARISON_KEY,
+    THRESHOLD_KEY,
 )
 from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
-from .data_transfer_objects.scenario_test_metric import AddScenarioTestMetric
+from .data_transfer_objects.scenario_test_metric import (
+    AddScenarioTestFunction,
+    AddScenarioTestMetric,
+)
+from .eval_functions.available_eval_functions import EvalFunction
 from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
 
@@ -51,10 +57,10 @@ class ScenarioTest:
         self.name = response[NAME_KEY]
         self.slice_id = response[SLICE_ID_KEY]
 
-    def add_criterion(
-        self, evaluation_criterion: EvaluationCriterion
+    def add_eval_function(
+        self, eval_function: EvalFunction
     ) -> ScenarioTestMetric:
-        """Creates and adds a new criteria to the :class:`ScenarioTest`. ::
+        """Creates and adds a new evaluation metric to the :class:`ScenarioTest`. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
@@ -64,39 +70,37 @@ class ScenarioTest:
 
             e = client.validate.eval_functions
             # Assuming a user would like to add all available public evaluation functions as criteria
-            scenario_test.add_criterion(
-                e.bbox_iou() > 0.5
+            scenario_test.add_eval_function(
+                e.bbox_iou
             )
-            scenario_test.add_criterion(
-                e.bbox_map() > 0.85
+            scenario_test.add_eval_function(
+                e.bbox_map
             )
-            scenario_test.add_criterion(
-                e.bbox_precision() > 0.7
+            scenario_test.add_eval_function(
+                e.bbox_precision
             )
-            scenario_test.add_criterion(
-                e.bbox_recall() > 0.6
+            scenario_test.add_eval_function(
+                e.bbox_recall
             )
 
         Args:
-            evaluation_criterion: :class:`EvaluationCriterion` created by comparison with an :class:`EvalFunction`
+            eval_function: :class:`EvalFunction`
 
         Returns:
             The created ScenarioTestMetric object.
         """
         response = self.connection.post(
-            AddScenarioTestMetric(
+            AddScenarioTestFunction(
                 scenario_test_name=self.name,
-                eval_function_id=evaluation_criterion.eval_function_id,
-                threshold=evaluation_criterion.threshold,
-                threshold_comparison=evaluation_criterion.threshold_comparison,
+                eval_function_id=eval_function.id,
             ).dict(),
-            "validate/scenario_test_metric",
+            "validate/scenario_test_eval_function",
         )
         return ScenarioTestMetric(
             scenario_test_id=response[SCENARIO_TEST_ID_KEY],
             eval_function_id=response[EVAL_FUNCTION_ID_KEY],
-            threshold=evaluation_criterion.threshold,
-            threshold_comparison=evaluation_criterion.threshold_comparison,
+            threshold=response.get(THRESHOLD_KEY, None),
+            threshold_comparison=response.get(THRESHOLD_COMPARISON_KEY, None),
             connection=self.connection,
         )
 
