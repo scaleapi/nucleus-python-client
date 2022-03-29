@@ -16,6 +16,7 @@ from .constants import (
     SCENARIO_TEST_METRICS_KEY,
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
+    ThresholdComparison,
 )
 from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
@@ -92,11 +93,15 @@ class ScenarioTest:
             ).dict(),
             "validate/scenario_test_eval_function",
         )
+        print(response)
         return ScenarioTestMetric(
             scenario_test_id=response[SCENARIO_TEST_ID_KEY],
             eval_function_id=response[EVAL_FUNCTION_ID_KEY],
             threshold=response.get(THRESHOLD_KEY, None),
-            threshold_comparison=response.get(THRESHOLD_COMPARISON_KEY, None),
+            threshold_comparison=response.get(
+                THRESHOLD_COMPARISON_KEY,
+                ThresholdComparison.GREATER_THAN_EQUAL_TO,
+            ),
             connection=self.connection,
         )
 
