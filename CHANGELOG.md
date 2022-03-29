@@ -4,6 +4,10 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.3) - 2022-03-29
+
+### Added
+- new Validate functionality to intialize scenario tests without a threshold, and to set test thresholds based on a baseline model.
 ## [0.8.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.2) - 2022-03-18
 
 ### Added

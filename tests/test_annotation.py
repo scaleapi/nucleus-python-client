@@ -724,6 +724,7 @@ def test_default_category_gt_upload_async(dataset):
     assert_partial_equality(expected, result)
 
 
+@pytest.mark.skip("Need to adjust error message on taxonomy failure")
 @pytest.mark.integration
 def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     annotation = CategoryAnnotation.from_json(

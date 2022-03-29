@@ -58,3 +58,6 @@ class BaseEvalFunction(abc.ABC):
             threshold_comparison=comparison,
             threshold=value,
         )
+
+    def to_entry(self):
+        return self.eval_func_entry

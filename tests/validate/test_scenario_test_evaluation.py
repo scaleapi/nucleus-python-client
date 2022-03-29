@@ -22,7 +22,7 @@ def test_scenario_test_evaluation(
     )
     job.sleep_until_complete()
 
-    criteria = scenario_test.get_criteria()
+    criteria = scenario_test.get_eval_functions()
     evaluations = scenario_test.get_eval_history()
     assert isinstance(evaluations, list)
     assert len(evaluations) == len(criteria)
@@ -78,7 +78,7 @@ def test_scenario_test_evaluation_no_prediction_for_last_item(
     )
     job.sleep_until_complete()
 
-    criteria = scenario_test.get_criteria()
+    criteria = scenario_test.get_eval_functions()
     evaluations = scenario_test.get_eval_history()
     assert isinstance(evaluations, list)
     assert len(evaluations) == len(criteria)

@@ -109,7 +109,7 @@ def build_scenario_test_info_tree(client, scenario_test, tree):
         slice_branch.add(f"name: '{slice_info['name']}'")
         slice_branch.add(f"len: {len(slc.items)}")
         slice_branch.add(f"url: {slice_url}")
-        criteria = scenario_test.get_criteria()
+        criteria = scenario_test.get_eval_functions()
         criteria_branch = tree.add(":crossed_flags: Criteria")
         for criterion in criteria:
             pretty_criterion = format_criterion(
