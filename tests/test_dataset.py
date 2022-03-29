@@ -334,28 +334,23 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
         job.sleep_until_complete()
     status = job.status()
     status["message"]["PayloadUrl"] = ""
-    assert status == {
-        "job_id": f"{job.job_id}",
-        "status": "Errored",
-        "message": {
-            "PayloadUrl": "",
-            "final_error": (
-                "One or more of the images you attempted to upload did not process"
-                " correctly. Please see the status for an overview and the errors (job.errors()) for "
-                "more detailed messages."
-            ),
-            "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
-            "ingest_to_reupload_queue": {
-                "epoch": 1,
-                "total": 5,
-                "datasetId": f"{dataset.id}",
-                "processed": 5,
-            },
-            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
+    print("STATUS: ")
+    print(status)
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Errored"
+    assert status["job_progress"] == "0.80"
+    assert status["completed_steps"] == 4
+    assert status["total_steps"] == 5
+    assert status["message"] == {
+        "PayloadUrl": "",
+        "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
+        "ingest_to_reupload_queue": {
+            "epoch": 1,
+            "total": 5,
+            "datasetId": f"{dataset.id}",
+            "processed": 5,
         },
-        "job_progress": "0.80",
-        "completed_steps": 4,
-        "total_steps": 5,
+        "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
     }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (
