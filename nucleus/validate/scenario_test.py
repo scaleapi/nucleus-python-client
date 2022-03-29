@@ -5,7 +5,7 @@ edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
@@ -17,12 +17,8 @@ from .constants import (
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
 )
-from .data_transfer_objects.eval_function import EvaluationCriterion
 from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
-from .data_transfer_objects.scenario_test_metric import (
-    AddScenarioTestFunction,
-    AddScenarioTestMetric,
-)
+from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
 from .eval_functions.available_eval_functions import EvalFunction
 from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
@@ -47,7 +43,7 @@ class ScenarioTest:
     connection: Connection = field(repr=False)
     name: str = field(init=False)
     slice_id: str = field(init=False)
-    baseline_model_id: str = None
+    baseline_model_id: Optional[str] = None
 
     def __post_init__(self):
         # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
@@ -104,14 +100,14 @@ class ScenarioTest:
             connection=self.connection,
         )
 
-    def get_criteria(self) -> List[ScenarioTestMetric]:
+    def get_eval_functions(self) -> List[ScenarioTestMetric]:
         """Retrieves all criteria of the :class:`ScenarioTest`. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             scenario_test = client.validate.scenario_tests[0]
 
-            scenario_test.get_criteria()
+            scenario_test.get_eval_functions()
 
         Returns:
             A list of ScenarioTestMetric objects.

@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
-
-from nucleus.pydantic_base import ImmutableModel
+from typing import Dict, Optional
 
 from ..connection import Connection
 from .constants import ThresholdComparison
@@ -17,7 +15,7 @@ class ScenarioTestMetric:
     eval_function_id: str
     threshold: Optional[float]
     connection: Connection
-    eval_func_arguments: Optional[List] = field(default_factory=dict)
+    eval_func_arguments: Optional[Dict] = field(default_factory=dict)
     threshold_comparison: ThresholdComparison = (
         ThresholdComparison.GREATER_THAN_EQUAL_TO
     )

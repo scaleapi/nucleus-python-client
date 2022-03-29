@@ -20,7 +20,7 @@ def test_scenario_test_metric_creation(CLIENT, annotations, scenario_test):
         scenario_test_metric.threshold_comparison == EVAL_FUNCTION_COMPARISON
     )
 
-    criteria = scenario_test.get_criteria()
+    criteria = scenario_test.get_eval_functions()
     assert isinstance(criteria, list)
     assert scenario_test_metric in criteria
 
@@ -77,7 +77,7 @@ def test_scenario_test_set_metric_threshold(
 ):
     # create some dataset_items for the scenario test to reference
     threshold = 0.5
-    scenario_test_metrics = scenario_test.get_criteria()
+    scenario_test_metrics = scenario_test.get_eval_functions()
     metric = scenario_test_metrics[0]
     assert metric
     metric.set_threshold(threshold)

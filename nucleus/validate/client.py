@@ -82,9 +82,7 @@ class Validate:
             CreateScenarioTestRequest(
                 name=name,
                 slice_id=slice_id,
-                evaluation_functions=[
-                    ef.to_entry() for ef in evaluation_functions
-                ],
+                evaluation_functions=evaluation_functions,
             ).dict(),
             "validate/scenario_test",
         )
