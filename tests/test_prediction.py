@@ -609,4 +609,4 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     status = job.status()
     assert status["job_id"] == job.job_id
     assert status["status"] == "Errored"
-    assert status["job_progress"] == "1.00"
+    assert status["job_progress"] == "0.00"
