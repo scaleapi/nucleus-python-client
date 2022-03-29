@@ -699,6 +699,7 @@ class NucleusClient:
                 {
                     "total_refinement_steps": int
                     "average_positives_selected_per_refinement": int
+                    "average_ms_taken_in_refinement": float
                 }
         """
         return self.make_request(
