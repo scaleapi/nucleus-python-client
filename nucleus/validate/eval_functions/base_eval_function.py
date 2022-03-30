@@ -62,6 +62,3 @@ class EvalFunctionConfig(abc.ABC):
             threshold=value,
             eval_func_arguments=self.eval_func_arguments,
         )
-
-    def to_entry(self):
-        return self.eval_func_entry

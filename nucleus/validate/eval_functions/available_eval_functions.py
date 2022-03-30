@@ -6,7 +6,7 @@ from nucleus.validate.eval_functions.base_eval_function import (
     EvalFunctionConfig,
 )
 
-from ...metrics.cuboid_metrics import DNFMetadataFilters
+from ...metrics.cuboid_metrics import DNFFilter
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
 
@@ -169,8 +169,8 @@ class CuboidIOU2DConfig(EvalFunctionConfig):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
         **kwargs,
     ):
         """Configure a call to CuboidIOU object.
@@ -211,8 +211,8 @@ class CuboidIOU3DConfig(EvalFunctionConfig):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
         **kwargs,
     ):
         """Configure a call to CuboidIOU object.
@@ -254,8 +254,8 @@ class CuboidPrecisionConfig(EvalFunctionConfig):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
         **kwargs,
     ):
         """Configure a call to CuboidPrecision object.
@@ -280,7 +280,6 @@ class CuboidPrecisionConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
-            iou_2d=False,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
             **kwargs,
@@ -297,8 +296,8 @@ class CuboidRecallConfig(EvalFunctionConfig):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
         **kwargs,
     ):
         """Configure a call to a CuboidRecall object.
@@ -323,7 +322,6 @@ class CuboidRecallConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
-            iou_2d=False,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
             **kwargs,

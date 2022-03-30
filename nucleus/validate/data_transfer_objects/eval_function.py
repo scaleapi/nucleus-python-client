@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import validator
+from pydantic import BaseModel, validator
 
 from ...pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
