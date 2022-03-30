@@ -1,7 +1,6 @@
 import pytest
 
 from nucleus.validate import CreateScenarioTestError
-from nucleus.validate.errors import InvalidEvaluationCriteria
 from nucleus.validate.scenario_test import ScenarioTest
 from tests.helpers import (
     EVAL_FUNCTION_COMPARISON,
@@ -89,20 +88,6 @@ def test_scenario_test_set_model_baseline(CLIENT, annotations, scenario_test):
     # create some dataset_items for the scenario test to reference
     with pytest.raises(Exception):
         scenario_test.set_baseline_model("nonexistent_model_id")
-
-
-def test_missing_comparison_raises_invalid_criteria(
-    CLIENT, test_slice, annotations
-):
-    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
-    with pytest.raises(InvalidEvaluationCriteria):
-        CLIENT.validate.create_scenario_test(
-            name=test_name,
-            slice_id=test_slice.id,
-            evaluation_criteria=[
-                CLIENT.validate.eval_functions.bbox_iou(iou_threshold=0.5)
-            ],
-        )
 
 
 def test_passing_eval_arguments(CLIENT, test_slice, annotations):
