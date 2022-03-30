@@ -61,11 +61,18 @@ def filter_to_comparison_function(
             lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
             == metadata_filter.value
         )
+    elif op is FilterOp.NEQ:
+        return (
+            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
+            != metadata_filter.value
+        )
     else:
-        raise RuntimeError(f"Fell through all op cases, no match for: '{op}' - MetadataFilter: {metadata_filter},")
+        raise RuntimeError(
+            f"Fell through all op cases, no match for: '{op}' - MetadataFilter: {metadata_filter},"
+        )
 
 
-def filter_metadata(
+def filter_by_metadata_fields(
     ann_or_pred: Union[List[Annotation], List[Prediction]],
     metadata_filter: Union[DNFMetadataFilters, List[MetadataFilter]],
 ):
@@ -78,7 +85,7 @@ def filter_metadata(
             interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
             Finally, the most outer list combines these filters as a disjunction (OR).
     """
-    if len(metadata_filter) == 0:
+    if metadata_filter is None or len(metadata_filter) == 0:
         return ann_or_pred
 
     if isinstance(metadata_filter[0], MetadataFilter):
@@ -165,10 +172,10 @@ class CuboidMetric(Metric):
         cuboid_predictions.extend(predictions.cuboid_predictions)
 
         eval_fn = label_match_wrapper(self.eval)
-        cuboid_annotations = filter_metadata(
+        cuboid_annotations = filter_by_metadata_fields(
             cuboid_annotations, self.annotation_filters
         )
-        cuboid_predictions = filter_metadata(
+        cuboid_predictions = filter_by_metadata_fields(
             cuboid_annotations, self.prediction_filters
         )
         result = eval_fn(
@@ -197,7 +204,7 @@ class CuboidIOU(CuboidMetric):
         Args:
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
-            birds_eye_view: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
                 [[MetadataFilter('x', '=', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
@@ -260,6 +267,16 @@ class CuboidPrecision(CuboidMetric):
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         assert (
             0 <= iou_threshold <= 1

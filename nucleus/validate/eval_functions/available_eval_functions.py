@@ -8,6 +8,7 @@ from nucleus.validate.eval_functions.base_eval_function import (
 
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
+from ...metrics.cuboid_metrics import DNFMetadataFilters
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 
@@ -160,6 +161,177 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
     @classmethod
     def expected_name(cls) -> str:
         return "bbox_precision"
+
+
+class CuboidIOU2DConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[DNFMetadataFilters] = None,
+        prediction_filters: Optional[DNFMetadataFilters] = None,
+        **kwargs,
+    ):
+        """Configure a call to CuboidIOU object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            iou_2d=True,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_iou_2d"
+
+
+class CuboidIOU3DConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[DNFMetadataFilters] = None,
+        prediction_filters: Optional[DNFMetadataFilters] = None,
+        **kwargs,
+    ):
+        """Configure a call to CuboidIOU object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            iou_2d=False,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_iou_3d"
+
+
+class CuboidPrecisionConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[DNFMetadataFilters] = None,
+        prediction_filters: Optional[DNFMetadataFilters] = None,
+        **kwargs,
+    ):
+        """Configure a call to CuboidPrecision object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            iou_2d=False,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_precision"
+
+
+class CuboidRecallConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[DNFMetadataFilters] = None,
+        prediction_filters: Optional[DNFMetadataFilters] = None,
+        **kwargs,
+    ):
+        """Configure a call to a CuboidRecall object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter('x', '==', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
+                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
+                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            iou_2d=False,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_recall"
 
 
 class CategorizationF1Config(EvalFunctionConfig):
@@ -323,6 +495,15 @@ class AvailableEvalFunctions:
         )
         self.cat_f1: CategorizationF1Config = self._assign_eval_function_if_defined(
             CategorizationF1Config  # type: ignore
+        )
+        self.cuboid_iou_2d: CuboidIOU2DConfig = (
+            self._assign_eval_function_if_defined(CuboidIOU2DConfig)
+        )
+        self.cuboid_iou_3d: CuboidIOU3DConfig = (
+            self._assign_eval_function_if_defined(CuboidIOU3DConfig)
+        )
+        self.cuboid_precision: CuboidPrecision = (
+            self._assign_eval_function_if_defined(CuboidPrecisionConfig)
         )
 
         # Add public entries that have not been implemented as an attribute on this class
