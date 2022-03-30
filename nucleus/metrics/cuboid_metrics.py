@@ -4,8 +4,27 @@ from collections import namedtuple
 from enum import Enum
 from typing import Callable, List, Optional, Union
 
-from nucleus.annotation import Annotation, AnnotationList, CuboidAnnotation
-from nucleus.prediction import CuboidPrediction, Prediction, PredictionList
+from nucleus.annotation import (
+    Annotation,
+    AnnotationList,
+    BoxAnnotation,
+    CategoryAnnotation,
+    CuboidAnnotation,
+    LineAnnotation,
+    MultiCategoryAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+)
+from nucleus.prediction import (
+    BoxPrediction,
+    CategoryPrediction,
+    CuboidPrediction,
+    LinePrediction,
+    PolygonPrediction,
+    Prediction,
+    PredictionList,
+    SegmentationPrediction,
+)
 
 from .base import Metric, ScalarResult
 from .cuboid_utils import detection_iou, label_match_wrapper, recall_precision
@@ -31,10 +50,30 @@ interpreted as a conjunction (AND), forming a more selective and multiple column
 Finally, the most outer list combines these filters as a disjunction (OR).
 """
 
+AnnotationsWithMetadata = Union[
+    BoxAnnotation,
+    CategoryAnnotation,
+    CuboidAnnotation,
+    LineAnnotation,
+    MultiCategoryAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+]
+
+
+PredictionsWithMetadata = Union[
+    BoxPrediction,
+    CategoryPrediction,
+    CuboidPrediction,
+    LinePrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+]
+
 
 def filter_to_comparison_function(
     metadata_filter: MetadataFilter,
-) -> Callable[[Union[Annotation, Prediction]], bool]:
+) -> Callable[[Union[AnnotationsWithMetadata, PredictionsWithMetadata]], bool]:
     op = FilterOp(metadata_filter.op)
     if op is FilterOp.GT:
         return (

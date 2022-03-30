@@ -6,9 +6,9 @@ from nucleus.validate.eval_functions.base_eval_function import (
     EvalFunctionConfig,
 )
 
+from ...metrics.cuboid_metrics import DNFMetadataFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
-from ...metrics.cuboid_metrics import DNFMetadataFilters
 
 MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 
@@ -496,15 +496,10 @@ class AvailableEvalFunctions:
         self.cat_f1: CategorizationF1Config = self._assign_eval_function_if_defined(
             CategorizationF1Config  # type: ignore
         )
-        self.cuboid_iou_2d: CuboidIOU2DConfig = (
-            self._assign_eval_function_if_defined(CuboidIOU2DConfig)
-        )
-        self.cuboid_iou_3d: CuboidIOU3DConfig = (
-            self._assign_eval_function_if_defined(CuboidIOU3DConfig)
-        )
-        self.cuboid_precision: CuboidPrecision = (
-            self._assign_eval_function_if_defined(CuboidPrecisionConfig)
-        )
+        self.cuboid_iou_2d: CuboidIOU2DConfig = self._assign_eval_function_if_defined(CuboidIOU2DConfig)  # type: ignore
+        self.cuboid_iou_3d: CuboidIOU3DConfig = self._assign_eval_function_if_defined(CuboidIOU3DConfig)  # type: ignore
+        self.cuboid_precision: CuboidPrecisionConfig = self._assign_eval_function_if_defined(CuboidPrecisionConfig)  # type: ignore
+        self.cuboid_recall: CuboidRecallConfig = self._assign_eval_function_if_defined(CuboidRecallConfig)  # type: ignore
 
         # Add public entries that have not been implemented as an attribute on this class
         for func_entry in self._public_func_entries.values():
