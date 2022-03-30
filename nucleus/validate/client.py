@@ -6,7 +6,7 @@ from nucleus.job import AsyncJob
 from .constants import SCENARIO_TEST_ID_KEY
 from .data_transfer_objects.eval_function import GetEvalFunctions
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
-from .errors import CreateScenarioTestError, InvalidEvaluationCriteria
+from .errors import CreateScenarioTestError
 from .eval_functions.available_eval_functions import AvailableEvalFunctions
 from .eval_functions.base_eval_function import EvalFunctionConfig
 from .scenario_test import ScenarioTest
