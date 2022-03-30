@@ -95,7 +95,7 @@ def test_passing_eval_arguments(CLIENT, test_slice, annotations):
     CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[
-            CLIENT.validate.eval_functions.bbox_iou(iou_threshold=0.5) > 0
+        evaluation_functions=[
+            CLIENT.validate.eval_functions.bbox_iou(iou_threshold=0.5)
         ],
     )
