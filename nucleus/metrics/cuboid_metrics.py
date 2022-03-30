@@ -1,3 +1,5 @@
+import enum
+import functools
 import sys
 from abc import abstractmethod
 from collections import namedtuple
@@ -40,9 +42,29 @@ class FilterOp(str, Enum):
     NEQ = "!="
 
 
-MetadataFilter = namedtuple("MetadataFilter", ["key", "op", "value"])
-DNFMetadataFilters = List[List[MetadataFilter]]
-DNFMetadataFilters.__doc__ = """\
+class FilterType(str, enum.Enum):
+    FIELD = "field"
+    METADATA = "metadata"
+
+
+AnnotationOrPredictionFilter = namedtuple(
+    "AnnotationOrPredictionFilter", ["key", "op", "value", "type"]
+)
+FieldFilter = namedtuple(
+    "FieldFilter",
+    ["key", "op", "value", "type"],
+    defaults=[None, None, None, FilterType.FIELD],
+)
+MetadataFilter = namedtuple(
+    "MetadataFilter",
+    ["key", "op", "value", "type"],
+    defaults=[None, None, None, FilterType.METADATA],
+)
+
+DNFFilter = List[
+    List[Union[FieldFilter, MetadataFilter, AnnotationOrPredictionFilter]]
+]
+DNFFilter.__doc__ = """\
 Disjunctive normal form (DNF) filters.
 DNF allows arbitrary boolean logical combinations of single field predicates.
 The innermost structures each describe a single column predicate. The list of inner predicates is
@@ -71,40 +93,34 @@ PredictionsWithMetadata = Union[
 ]
 
 
+def field_getter(field_name):
+    return lambda ann_or_pred: getattr(ann_or_pred, field_name)
+
+
+def metadata_field_getter(field_name):
+    return lambda ann_or_pred: ann_or_pred.metadata[field_name]
+
+
 def filter_to_comparison_function(
-    metadata_filter: MetadataFilter,
+    metadata_filter: AnnotationOrPredictionFilter,
 ) -> Callable[[Union[AnnotationsWithMetadata, PredictionsWithMetadata]], bool]:
+    if FilterType(metadata_filter.type) == FilterType.FIELD:
+        getter = field_getter(metadata_filter.key)
+    elif FilterType(metadata_filter.type) == FilterType.METADATA:
+        getter = metadata_field_getter(metadata_filter.key)
     op = FilterOp(metadata_filter.op)
     if op is FilterOp.GT:
-        return (
-            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
-            > metadata_filter.value
-        )
+        return lambda ann_or_pred: getter(ann_or_pred) > metadata_filter.value
     elif op is FilterOp.GTE:
-        return (
-            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
-            >= metadata_filter.value
-        )
+        return lambda ann_or_pred: getter(ann_or_pred) >= metadata_filter.value
     elif op is FilterOp.LT:
-        return (
-            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
-            < metadata_filter.value
-        )
+        return lambda ann_or_pred: getter(ann_or_pred) < metadata_filter.value
     elif op is FilterOp.LTE:
-        return (
-            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
-            <= metadata_filter.value
-        )
+        return lambda ann_or_pred: getter(ann_or_pred) <= metadata_filter.value
     elif op is FilterOp.EQ:
-        return (
-            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
-            == metadata_filter.value
-        )
+        return lambda ann_or_pred: getter(ann_or_pred) == metadata_filter.value
     elif op is FilterOp.NEQ:
-        return (
-            lambda ann_or_pred: ann_or_pred.metadata[metadata_filter.key]
-            != metadata_filter.value
-        )
+        return lambda ann_or_pred: getter(ann_or_pred) != metadata_filter.value
     else:
         raise RuntimeError(
             f"Fell through all op cases, no match for: '{op}' - MetadataFilter: {metadata_filter},"
@@ -112,8 +128,10 @@ def filter_to_comparison_function(
 
 
 def filter_by_metadata_fields(
-    ann_or_pred: Union[List[Annotation], List[Prediction]],
-    metadata_filter: Union[DNFMetadataFilters, List[MetadataFilter]],
+    ann_or_pred: Union[
+        List[AnnotationsWithMetadata], List[PredictionsWithMetadata]
+    ],
+    metadata_filter: Union[DNFFilter, List[MetadataFilter], List[List[List]]],
 ):
     """
     Attributes:
@@ -127,9 +145,25 @@ def filter_by_metadata_fields(
     if metadata_filter is None or len(metadata_filter) == 0:
         return ann_or_pred
 
-    if isinstance(metadata_filter[0], MetadataFilter):
+    if isinstance(metadata_filter[0], MetadataFilter) or isinstance(
+        metadata_filter[0], FieldFilter
+    ):
         # Normalize into DNF
-        metadata_filter: DNFMetadataFilters = [metadata_filter]
+        metadata_filter: DNFFilter = [metadata_filter]
+    # NOTE: We have to handle JSON transformed tuples which become three layers of lists
+    if (
+        isinstance(metadata_filter, list)
+        and isinstance(metadata_filter[0], list)
+        and isinstance(metadata_filter[0][0], list)
+    ):
+        formatted_filter = []
+        for or_branch in metadata_filter:
+            and_chain = [
+                AnnotationOrPredictionFilter(*condition)
+                for condition in or_branch
+            ]
+            formatted_filter.append(and_chain)
+        metadata_filter = formatted_filter
 
     filtered = []
     for item in ann_or_pred:
@@ -161,8 +195,8 @@ class CuboidMetric(Metric):
         self,
         enforce_label_match: bool = False,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
     ):
         """Initializes CuboidMetric abstract object.
 
@@ -215,7 +249,7 @@ class CuboidMetric(Metric):
             cuboid_annotations, self.annotation_filters
         )
         cuboid_predictions = filter_by_metadata_fields(
-            cuboid_annotations, self.prediction_filters
+            cuboid_predictions, self.prediction_filters
         )
         result = eval_fn(
             cuboid_annotations,
@@ -235,8 +269,8 @@ class CuboidIOU(CuboidMetric):
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
         iou_2d: bool = False,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
     ):
         """Initializes CuboidIOU object.
 
@@ -297,8 +331,8 @@ class CuboidPrecision(CuboidMetric):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
     ):
         """Initializes CuboidIOU object.
 
@@ -352,8 +386,8 @@ class CuboidRecall(CuboidMetric):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFMetadataFilters] = None,
-        prediction_filters: Optional[DNFMetadataFilters] = None,
+        annotation_filters: Optional[DNFFilter] = None,
+        prediction_filters: Optional[DNFFilter] = None,
     ):
         """Initializes CuboidIOU object.
 
