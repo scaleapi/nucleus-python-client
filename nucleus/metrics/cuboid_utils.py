@@ -113,6 +113,7 @@ def compute_outer_iou(
     :param distance_threshold: computes iou only within this distance (~3x speedup)
     :return: (n, m) 3D IoU, (n, m) 2D IoU
     """
+
     bottom_z = np.maximum.outer(
         xyz_0[:, 2] - (wlh_0[:, 2] / 2), xyz_1[:, 2] - (wlh_1[:, 2] / 2)
     )
@@ -249,14 +250,17 @@ def associate_cuboids_on_iou(
 
 
 def recall_precision(
-    prediction,
-    groundtruth,
+    prediction: List[CuboidPrediction],
+    groundtruth: List[CuboidAnnotation],
     threshold_in_overlap_ratio: float,
 ) -> Dict[str, float]:
     """
-    :param predictions:
-    :param ground_truth:
-    :param threshold: threshold in overlap ratio if IoU
+    Calculates the precision and recall of each lidar frame.
+
+    Args:
+        :param predictions: list of cuboid annotation predictions.
+        :param ground_truth: list of cuboid annotation groundtruths.
+        :param threshold: IOU threshold to consider detection as valid. Must be in [0, 1].
     """
 
     tp_sum = 0
@@ -307,13 +311,30 @@ def recall_precision(
     }
 
 
-def detection_iou(prediction, groundtruth, threshold_in_overlap_ratio):
+def detection_iou(
+    prediction: List[CuboidPrediction],
+    groundtruth: List[CuboidAnnotation],
+    threshold_in_overlap_ratio: float,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Calculates the 2D IOU and 3D IOU overlap between predictions and groundtruth.
+    Uses linear sum assignment to associate cuboids.
+
+    Args:
+        :param predictions: list of cuboid annotation predictions.
+        :param ground_truth: list of cuboid annotation groundtruths.
+        :param threshold: IOU threshold to consider detection as valid. Must be in [0, 1].
+    """
 
     gt_items = process_dataitem(groundtruth)
     pred_items = process_dataitem(prediction)
 
     meter_2d = []
     meter_3d = []
+
+    if gt_items["xyz"].shape[0] == 0 or pred_items["xyz"].shape[0] == 0:
+        return np.array([0.0]), np.array([0.0])
+
     iou_3d, iou_2d = compute_outer_iou(
         gt_items["xyz"],
         gt_items["wlh"],
