@@ -1,180 +1,14 @@
-import enum
-import functools
 import sys
 from abc import abstractmethod
-from collections import namedtuple
-from enum import Enum
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
 
-from nucleus.annotation import (
-    Annotation,
-    AnnotationList,
-    BoxAnnotation,
-    CategoryAnnotation,
-    CuboidAnnotation,
-    LineAnnotation,
-    MultiCategoryAnnotation,
-    PolygonAnnotation,
-    SegmentationAnnotation,
-)
-from nucleus.prediction import (
-    BoxPrediction,
-    CategoryPrediction,
-    CuboidPrediction,
-    LinePrediction,
-    PolygonPrediction,
-    Prediction,
-    PredictionList,
-    SegmentationPrediction,
-)
+from nucleus.annotation import AnnotationList, CuboidAnnotation
+from nucleus.prediction import CuboidPrediction, PredictionList
 
 from .base import Metric, ScalarResult
 from .cuboid_utils import detection_iou, label_match_wrapper, recall_precision
+from .filtering import ListOfAndFilters, ListOfOrAndFilters, apply_filters
 from .filters import confidence_filter
-
-
-class FilterOp(str, Enum):
-    GT = ">"
-    GTE = ">="
-    LT = "<"
-    LTE = "<="
-    EQ = "=="
-    NEQ = "!="
-
-
-class FilterType(str, enum.Enum):
-    FIELD = "field"
-    METADATA = "metadata"
-
-
-AnnotationOrPredictionFilter = namedtuple(
-    "AnnotationOrPredictionFilter", ["key", "op", "value", "type"]
-)
-FieldFilter = namedtuple(
-    "FieldFilter",
-    ["key", "op", "value", "type"],
-    defaults=[None, None, None, FilterType.FIELD],
-)
-MetadataFilter = namedtuple(
-    "MetadataFilter",
-    ["key", "op", "value", "type"],
-    defaults=[None, None, None, FilterType.METADATA],
-)
-
-DNFFilter = List[
-    List[Union[FieldFilter, MetadataFilter, AnnotationOrPredictionFilter]]
-]
-DNFFilter.__doc__ = """\
-Disjunctive normal form (DNF) filters.
-DNF allows arbitrary boolean logical combinations of single field predicates.
-The innermost structures each describe a single column predicate. The list of inner predicates is
-interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
-Finally, the most outer list combines these filters as a disjunction (OR).
-"""
-
-AnnotationsWithMetadata = Union[
-    BoxAnnotation,
-    CategoryAnnotation,
-    CuboidAnnotation,
-    LineAnnotation,
-    MultiCategoryAnnotation,
-    PolygonAnnotation,
-    SegmentationAnnotation,
-]
-
-
-PredictionsWithMetadata = Union[
-    BoxPrediction,
-    CategoryPrediction,
-    CuboidPrediction,
-    LinePrediction,
-    PolygonPrediction,
-    SegmentationPrediction,
-]
-
-
-def field_getter(field_name):
-    return lambda ann_or_pred: getattr(ann_or_pred, field_name)
-
-
-def metadata_field_getter(field_name):
-    return lambda ann_or_pred: ann_or_pred.metadata[field_name]
-
-
-def filter_to_comparison_function(
-    metadata_filter: AnnotationOrPredictionFilter,
-) -> Callable[[Union[AnnotationsWithMetadata, PredictionsWithMetadata]], bool]:
-    if FilterType(metadata_filter.type) == FilterType.FIELD:
-        getter = field_getter(metadata_filter.key)
-    elif FilterType(metadata_filter.type) == FilterType.METADATA:
-        getter = metadata_field_getter(metadata_filter.key)
-    op = FilterOp(metadata_filter.op)
-    if op is FilterOp.GT:
-        return lambda ann_or_pred: getter(ann_or_pred) > metadata_filter.value
-    elif op is FilterOp.GTE:
-        return lambda ann_or_pred: getter(ann_or_pred) >= metadata_filter.value
-    elif op is FilterOp.LT:
-        return lambda ann_or_pred: getter(ann_or_pred) < metadata_filter.value
-    elif op is FilterOp.LTE:
-        return lambda ann_or_pred: getter(ann_or_pred) <= metadata_filter.value
-    elif op is FilterOp.EQ:
-        return lambda ann_or_pred: getter(ann_or_pred) == metadata_filter.value
-    elif op is FilterOp.NEQ:
-        return lambda ann_or_pred: getter(ann_or_pred) != metadata_filter.value
-    else:
-        raise RuntimeError(
-            f"Fell through all op cases, no match for: '{op}' - MetadataFilter: {metadata_filter},"
-        )
-
-
-def filter_by_metadata_fields(
-    ann_or_pred: Union[
-        List[AnnotationsWithMetadata], List[PredictionsWithMetadata]
-    ],
-    metadata_filter: Union[DNFFilter, List[MetadataFilter], List[List[List]]],
-):
-    """
-    Attributes:
-        ann_or_pred: Prediction or Annotation
-        metadata_filter: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
-            [[MetadataFilter('x', '=', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
-            predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
-            interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
-            Finally, the most outer list combines these filters as a disjunction (OR).
-    """
-    if metadata_filter is None or len(metadata_filter) == 0:
-        return ann_or_pred
-
-    if isinstance(metadata_filter[0], MetadataFilter) or isinstance(
-        metadata_filter[0], FieldFilter
-    ):
-        # Normalize into DNF
-        metadata_filter: DNFFilter = [metadata_filter]
-    # NOTE: We have to handle JSON transformed tuples which become three layers of lists
-    if (
-        isinstance(metadata_filter, list)
-        and isinstance(metadata_filter[0], list)
-        and isinstance(metadata_filter[0][0], list)
-    ):
-        formatted_filter = []
-        for or_branch in metadata_filter:
-            and_chain = [
-                AnnotationOrPredictionFilter(*condition)
-                for condition in or_branch
-            ]
-            formatted_filter.append(and_chain)
-        metadata_filter = formatted_filter
-
-    filtered = []
-    for item in ann_or_pred:
-        for or_branch in metadata_filter:
-            and_conditions = (
-                filter_to_comparison_function(cond) for cond in or_branch
-            )
-            if all(c(item) for c in and_conditions):
-                filtered.append(item)
-                break
-    return filtered
 
 
 class CuboidMetric(Metric):
@@ -195,24 +29,30 @@ class CuboidMetric(Metric):
         self,
         enforce_label_match: bool = False,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFFilter] = None,
-        prediction_filters: Optional[DNFFilter] = None,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
     ):
         """Initializes CuboidMetric abstract object.
 
         Args:
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Default False
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
-            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter('x', '=', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
-                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
-                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter('x', '=', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
-                predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
-                interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
+                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
+                these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
+                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
+                these filters as a disjunction (OR).
         """
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
@@ -245,11 +85,11 @@ class CuboidMetric(Metric):
         cuboid_predictions.extend(predictions.cuboid_predictions)
 
         eval_fn = label_match_wrapper(self.eval)
-        cuboid_annotations = filter_by_metadata_fields(
-            cuboid_annotations, self.annotation_filters
+        cuboid_annotations = apply_filters(
+            cuboid_annotations, self.annotation_filters  # type: ignore
         )
-        cuboid_predictions = filter_by_metadata_fields(
-            cuboid_predictions, self.prediction_filters
+        cuboid_predictions = apply_filters(
+            cuboid_predictions, self.prediction_filters  # type: ignore
         )
         result = eval_fn(
             cuboid_annotations,
@@ -269,8 +109,12 @@ class CuboidIOU(CuboidMetric):
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
         iou_2d: bool = False,
-        annotation_filters: Optional[DNFFilter] = None,
-        prediction_filters: Optional[DNFFilter] = None,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
     ):
         """Initializes CuboidIOU object.
 
@@ -331,8 +175,12 @@ class CuboidPrecision(CuboidMetric):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFFilter] = None,
-        prediction_filters: Optional[DNFFilter] = None,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
     ):
         """Initializes CuboidIOU object.
 
@@ -386,8 +234,12 @@ class CuboidRecall(CuboidMetric):
         enforce_label_match: bool = True,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
-        annotation_filters: Optional[DNFFilter] = None,
-        prediction_filters: Optional[DNFFilter] = None,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
     ):
         """Initializes CuboidIOU object.
 
