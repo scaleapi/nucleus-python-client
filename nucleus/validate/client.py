@@ -5,12 +5,13 @@ from nucleus.job import AsyncJob
 
 from .constants import SCENARIO_TEST_ID_KEY
 from .data_transfer_objects.eval_function import GetEvalFunctions
-from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
-from .errors import CreateScenarioTestError
-from .eval_functions.available_eval_functions import (
-    AvailableEvalFunctions,
-    EvalFunction,
+from .data_transfer_objects.scenario_test import (
+    CreateScenarioTestRequest,
+    EvalFunctionListEntry,
 )
+from .errors import CreateScenarioTestError
+from .eval_functions.available_eval_functions import AvailableEvalFunctions
+from .eval_functions.base_eval_function import EvalFunctionConfig
 from .scenario_test import ScenarioTest
 
 SUCCESS_KEY = "success"
@@ -36,7 +37,8 @@ class Validate:
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
 
-            scenario_test_criterion = client.validate.eval_functions.bbox_iou() > 0.5  # Creates an EvaluationCriterion by comparison
+            # Creates an EvaluationCriterion by using a comparison op
+            scenario_test_criterion = client.validate.eval_functions.bbox_iou() > 0.5
 
         Returns:
             :class:`AvailableEvalFunctions`: A container for all the available eval functions
@@ -51,7 +53,7 @@ class Validate:
         self,
         name: str,
         slice_id: str,
-        evaluation_functions: List[EvalFunction],
+        evaluation_functions: List[EvalFunctionConfig],
     ) -> ScenarioTest:
         """Creates a new Scenario Test from an existing Nucleus :class:`Slice`:. ::
 
@@ -78,12 +80,16 @@ class Validate:
                 "Must pass an evaluation_function to the scenario test! I.e. "
                 "evaluation_functions=[client.validate.eval_functions.bbox_iou()]"
             )
+
         response = self.connection.post(
             CreateScenarioTestRequest(
                 name=name,
                 slice_id=slice_id,
                 evaluation_functions=[
-                    ef.to_entry() for ef in evaluation_functions  # type:ignore
+                    EvalFunctionListEntry(
+                        id=ef.id, eval_func_arguments=ef.eval_func_arguments
+                    )
+                    for ef in evaluation_functions
                 ],
             ).dict(),
             "validate/scenario_test",
