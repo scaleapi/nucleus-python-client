@@ -4,8 +4,6 @@ from pydantic import validator
 
 from nucleus.pydantic_base import ImmutableModel
 
-from .eval_function import EvalFunctionEntry
-
 
 class EvalFunctionListEntry(ImmutableModel):
     id: str
