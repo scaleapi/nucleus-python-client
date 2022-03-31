@@ -1,7 +1,7 @@
 import enum
 import functools
 from enum import Enum
-from typing import Callable, List, NamedTuple, Sequence, Union
+from typing import Callable, Iterable, List, NamedTuple, Sequence, Set, Union
 
 from nucleus.annotation import (
     BoxAnnotation,
@@ -28,6 +28,8 @@ class FilterOp(str, Enum):
     EQ = "="
     EQEQ = "=="
     NEQ = "!="
+    IN = "in"
+    NOT_IN = "not in"
 
 
 class FilterType(str, enum.Enum):
@@ -41,10 +43,19 @@ class FilterType(str, enum.Enum):
     METADATA = "metadata"
 
 
+FilterableBaseVals = Union[str, float, int]
+FilterableValues = Union[
+    FilterableBaseVals,
+    Sequence[FilterableBaseVals],
+    Set[FilterableBaseVals],
+    Iterable[FilterableBaseVals],
+]
+
+
 class AnnotationOrPredictionFilter(NamedTuple):
     key: str
     op: Union[FilterOp, str]
-    value: Union[str, float, int]
+    value: FilterableValues
     allow_missing: bool
     type: FilterType
 
@@ -52,7 +63,7 @@ class AnnotationOrPredictionFilter(NamedTuple):
 class FieldFilter(NamedTuple):
     key: str
     op: Union[FilterOp, str]
-    value: Union[str, float, int]
+    value: FilterableValues
     allow_missing: bool = False
     type: FilterType = FilterType.FIELD
 
@@ -60,7 +71,7 @@ class FieldFilter(NamedTuple):
 class MetadataFilter(NamedTuple):
     key: str
     op: Union[FilterOp, str]
-    value: Union[str, float, int]
+    value: FilterableValues
     allow_missing: bool = False
     type: FilterType = FilterType.METADATA
 
@@ -158,7 +169,7 @@ def _metadata_field_getter(
         )
 
 
-def _filter_to_comparison_function(
+def _filter_to_comparison_function(  # pylint: disable=too-many-return-statements
     filter_def: Filter,
 ) -> Callable[[Union[AnnotationsWithMetadata, PredictionsWithMetadata]], bool]:
     """Creates a comparison function from a filter configuration to apply to annotations or predictions
@@ -190,6 +201,14 @@ def _filter_to_comparison_function(
         return lambda ann_or_pred: getter(ann_or_pred) == filter_def.value
     elif op is FilterOp.NEQ:
         return lambda ann_or_pred: getter(ann_or_pred) != filter_def.value
+    elif op is FilterOp.IN:
+        return lambda ann_or_pred: getter(ann_or_pred) in set(
+            filter_def.value  # type: ignore
+        )
+    elif op is FilterOp.NOT_IN:
+        return lambda ann_or_pred: getter(ann_or_pred) not in set(
+            filter_def.value  # type:ignore
+        )
     else:
         raise RuntimeError(
             f"Fell through all op cases, no match for: '{op}' - MetadataFilter: {filter_def},"

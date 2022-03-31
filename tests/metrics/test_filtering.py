@@ -236,3 +236,45 @@ def test_neq_field(annotations_or_predictions):
     valid_gt = [FieldFilter("x", "!=", annotations_or_predictions[0].x)]
     filtered = apply_filters(annotations_or_predictions, valid_gt)
     assert filtered == annotations_or_predictions[1:]
+
+
+def test_in_metadata(annotations_or_predictions):
+    valid_gt = [MetadataFilter("index", "in", [0, 2])]
+    filtered = apply_filters(annotations_or_predictions, valid_gt)
+    assert filtered == [
+        annotations_or_predictions[0],
+        annotations_or_predictions[2],
+    ]
+
+
+def test_in_field(annotations_or_predictions):
+    valid_gt = [
+        FieldFilter(
+            "x",
+            "in",
+            [annotations_or_predictions[0].x, annotations_or_predictions[2].x],
+        )
+    ]
+    filtered = apply_filters(annotations_or_predictions, valid_gt)
+    assert filtered == [
+        annotations_or_predictions[0],
+        annotations_or_predictions[2],
+    ]
+
+
+def test_not_in_metadata(annotations_or_predictions):
+    valid_gt = [MetadataFilter("index", "not in", [0, 1])]
+    filtered = apply_filters(annotations_or_predictions, valid_gt)
+    assert filtered == annotations_or_predictions[2:]
+
+
+def test_not_in_field(annotations_or_predictions):
+    valid_gt = [
+        FieldFilter(
+            "x",
+            "not in",
+            [annotations_or_predictions[0].x, annotations_or_predictions[1].x],
+        )
+    ]
+    filtered = apply_filters(annotations_or_predictions, valid_gt)
+    assert filtered == annotations_or_predictions[2:]
