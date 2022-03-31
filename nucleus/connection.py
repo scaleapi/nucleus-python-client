@@ -55,7 +55,7 @@ class Connection:
 
         logger.info("Make request to %s", endpoint)
 
-        for retry_wait_time in RetryStrategy.sleep_times:
+        for retry_wait_time in RetryStrategy.sleep_times():
             response = requests_command(
                 endpoint,
                 json=payload,

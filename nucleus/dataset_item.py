@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Sequence
 
 from .annotation import Point3D, is_local_path
 from .constants import (
+    BACKEND_REFERENCE_ID_KEY,
     CAMERA_MODEL_KEY,
     CAMERA_PARAMS_KEY,
     CX_KEY,
@@ -36,7 +37,7 @@ from .constants import (
 )
 
 
-class CameraModels(Enum):
+class CameraModels(str, Enum):
     BROWN_CONRADY = "brown_conrady"
     FISHEYE = "fisheye"
 
@@ -121,7 +122,7 @@ class CameraParams:
 
     def __post_init__(self):
         if self.camera_model is not None:
-            if self.camera_model not in CameraModels:
+            if self.camera_model not in (k for k in CameraModels):
                 raise ValueError(
                     f'Invalid Camera Model, the supported options are "{CameraModels.BROWN_CONRADY}" and "{CameraModels.FISHEYE}"'
                 )
@@ -136,13 +137,13 @@ class CameraParams:
             payload[FY_KEY],
             payload[CX_KEY],
             payload[CY_KEY],
+            payload.get(CAMERA_MODEL_KEY, None),
             payload.get(K1_KEY, None),
             payload.get(K2_KEY, None),
             payload.get(K3_KEY, None),
             payload.get(K4_KEY, None),
             payload.get(P1_KEY, None),
             payload.get(P2_KEY, None),
-            payload.get(CAMERA_MODEL_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -290,6 +291,8 @@ class DatasetItem:  # pylint: disable=R0902
         image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
             ORIGINAL_IMAGE_URL_KEY, None
         )
+        if BACKEND_REFERENCE_ID_KEY in payload:
+            payload[REFERENCE_ID_KEY] = payload[BACKEND_REFERENCE_ID_KEY]
         return cls(
             image_location=image_url,
             pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),

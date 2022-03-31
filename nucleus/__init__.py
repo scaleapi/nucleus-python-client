@@ -300,12 +300,11 @@ class NucleusClient:
         """Fetches a model by its ID.
 
         Parameters:
-            model_id: You can pass either a model ID (starts with ``prj_``) or a model run id (starts with ``run_``) This can
-              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
-            model_run_id: You can pass either a model ID (starts with ``prj_``), or a model run id (starts with ``run_``) This can
-              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run ids result from the application of a model to a dataset.
+            model_id: You can pass either a model ID (starts with ``prj_``) or a model run ID (starts with ``run_``) This can be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run IDs result from the application of a model to a dataset.
+            model_run_id: You can pass either a model ID (starts with ``prj_``), or a model run ID (starts with ``run_``) This can
+              be retrieved via :meth:`list_models` or a Nucleus dashboard URL. Model run IDs result from the application of a model to a dataset.
 
-            In the future, we plan to hide model_run_ids fully from users.
+              In the future, we plan to hide ``model_run_ids`` fully from users.
 
         Returns:
             :class:`Model`: The Nucleus model as an object.
@@ -460,93 +459,6 @@ class NucleusClient:
             dataset_items, batch_size=batch_size, update=update
         )
 
-    def annotate_dataset(
-        self,
-        dataset_id: str,
-        annotations: Sequence[
-            Union[
-                BoxAnnotation,
-                PolygonAnnotation,
-                CuboidAnnotation,
-                CategoryAnnotation,
-                MultiCategoryAnnotation,
-                SegmentationAnnotation,
-            ]
-        ],
-        update: bool,
-        batch_size: int = 5000,
-    ) -> Dict[str, object]:
-        # TODO: deprecate in favor of Dataset.annotate invocation
-
-        # Split payload into segmentations and Box/Polygon
-        segmentations = [
-            ann
-            for ann in annotations
-            if isinstance(ann, SegmentationAnnotation)
-        ]
-        other_annotations = [
-            ann
-            for ann in annotations
-            if not isinstance(ann, SegmentationAnnotation)
-        ]
-
-        batches = [
-            other_annotations[i : i + batch_size]
-            for i in range(0, len(other_annotations), batch_size)
-        ]
-
-        semseg_batches = [
-            segmentations[i : i + batch_size]
-            for i in range(0, len(segmentations), batch_size)
-        ]
-
-        agg_response = {
-            DATASET_ID_KEY: dataset_id,
-            ANNOTATIONS_PROCESSED_KEY: 0,
-            ANNOTATIONS_IGNORED_KEY: 0,
-            ERRORS_KEY: [],
-        }
-
-        total_batches = len(batches) + len(semseg_batches)
-
-        tqdm_batches = self.tqdm_bar(batches)
-
-        with self.tqdm_bar(total=total_batches) as pbar:
-            for batch in tqdm_batches:
-                payload = construct_annotation_payload(batch, update)
-                response = self.make_request(
-                    payload, f"dataset/{dataset_id}/annotate"
-                )
-                pbar.update(1)
-                if STATUS_CODE_KEY in response:
-                    agg_response[ERRORS_KEY] = response
-                else:
-                    agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
-                        ANNOTATIONS_PROCESSED_KEY
-                    ]
-                    agg_response[ANNOTATIONS_IGNORED_KEY] += response[
-                        ANNOTATIONS_IGNORED_KEY
-                    ]
-                    agg_response[ERRORS_KEY] += response[ERRORS_KEY]
-
-            for s_batch in semseg_batches:
-                payload = construct_segmentation_payload(s_batch, update)
-                response = self.make_request(
-                    payload, f"dataset/{dataset_id}/annotate_segmentation"
-                )
-                pbar.update(1)
-                if STATUS_CODE_KEY in response:
-                    agg_response[ERRORS_KEY] = response
-                else:
-                    agg_response[ANNOTATIONS_PROCESSED_KEY] += response[
-                        ANNOTATIONS_PROCESSED_KEY
-                    ]
-                    agg_response[ANNOTATIONS_IGNORED_KEY] += response[
-                        ANNOTATIONS_IGNORED_KEY
-                    ]
-
-        return agg_response
-
     @deprecated(msg="Use Dataset.ingest_tasks instead")
     def ingest_tasks(self, dataset_id: str, payload: dict):
         dataset = self.get_dataset(dataset_id)
@@ -598,93 +510,6 @@ class NucleusClient:
         return ModelRun(
             response[MODEL_RUN_ID_KEY], dataset_id=dataset_id, client=self
         )
-
-    @deprecated("Use Dataset.upload_predictions instead.")
-    def predict(
-        self,
-        annotations: List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
-                CategoryPrediction,
-            ]
-        ],
-        model_run_id: Optional[str] = None,
-        model_id: Optional[str] = None,
-        dataset_id: Optional[str] = None,
-        update: bool = False,
-        batch_size: int = 5000,
-    ):
-        if model_run_id is not None:
-            assert model_id is None and dataset_id is None
-            endpoint = f"modelRun/{model_run_id}/predict"
-        else:
-            assert (
-                model_id is not None and dataset_id is not None
-            ), "Model ID and dataset ID are required if not using model run id."
-            endpoint = (
-                f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
-            )
-        segmentations = [
-            ann
-            for ann in annotations
-            if isinstance(ann, SegmentationPrediction)
-        ]
-
-        other_predictions = [
-            ann
-            for ann in annotations
-            if not isinstance(ann, SegmentationPrediction)
-        ]
-
-        s_batches = [
-            segmentations[i : i + batch_size]
-            for i in range(0, len(segmentations), batch_size)
-        ]
-
-        batches = [
-            other_predictions[i : i + batch_size]
-            for i in range(0, len(other_predictions), batch_size)
-        ]
-
-        errors = []
-        predictions_processed = 0
-        predictions_ignored = 0
-
-        tqdm_batches = self.tqdm_bar(batches)
-
-        for batch in tqdm_batches:
-            batch_payload = construct_box_predictions_payload(
-                batch,
-                update,
-            )
-            response = self.make_request(batch_payload, endpoint)
-            if STATUS_CODE_KEY in response:
-                errors.append(response)
-            else:
-                predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
-                predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
-                if ERRORS_KEY in response:
-                    errors += response[ERRORS_KEY]
-
-        for s_batch in s_batches:
-            payload = construct_segmentation_payload(s_batch, update)
-            response = self.make_request(payload, endpoint)
-            # pbar.update(1)
-            if STATUS_CODE_KEY in response:
-                errors.append(response)
-            else:
-                predictions_processed += response[PREDICTIONS_PROCESSED_KEY]
-                predictions_ignored += response[PREDICTIONS_IGNORED_KEY]
-
-        return {
-            MODEL_RUN_ID_KEY: model_run_id,
-            PREDICTIONS_PROCESSED_KEY: predictions_processed,
-            PREDICTIONS_IGNORED_KEY: predictions_ignored,
-            ERRORS_KEY: errors,
-        }
 
     @deprecated(
         "Model runs have been deprecated and will be removed. Use a Model instead."
@@ -874,6 +699,7 @@ class NucleusClient:
                 {
                     "total_refinement_steps": int
                     "average_positives_selected_per_refinement": int
+                    "average_ms_taken_in_refinement": float
                 }
         """
         return self.make_request(

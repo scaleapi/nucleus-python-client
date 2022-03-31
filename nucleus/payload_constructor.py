@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from .annotation import (
     BoxAnnotation,
@@ -72,11 +72,22 @@ def construct_annotation_payload(
     ],
     update: bool,
 ) -> dict:
-    annotations = []
-    for annotation_item in annotation_items:
-        annotations.append(annotation_item.to_payload())
-
-    return {ANNOTATIONS_KEY: annotations, ANNOTATION_UPDATE_KEY: update}
+    annotations = [
+        annotation.to_payload()
+        for annotation in annotation_items
+        if not isinstance(annotation, SegmentationAnnotation)
+    ]
+    segmentations = [
+        annotation.to_payload()
+        for annotation in annotation_items
+        if isinstance(annotation, SegmentationAnnotation)
+    ]
+    payload: Dict[str, Any] = {ANNOTATION_UPDATE_KEY: update}
+    if annotations:
+        payload[ANNOTATIONS_KEY] = annotations
+    if segmentations:
+        payload[SEGMENTATIONS_KEY] = segmentations
+    return payload
 
 
 def construct_segmentation_payload(

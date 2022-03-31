@@ -20,7 +20,7 @@ DATASET_WITH_AUTOTAG = "ds_c8jwdhy4y4f0078hzceg"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 EVAL_FUNCTION_THRESHOLD = 0.5
-EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN
+EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN_EQUAL_TO
 
 
 TEST_IMG_URLS = [
@@ -301,6 +301,11 @@ TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
 
 TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
 
+this_dir = os.path.dirname(os.path.realpath(__file__))
+TEST_LOCAL_MASK_URL = os.path.join(this_dir, "testdata/000000000285.png")
+
+
+NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET = len(TEST_DATASET_ITEMS)
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
