@@ -45,35 +45,97 @@ class FilterType(str, enum.Enum):
     METADATA = "metadata"
 
 
-FilterableBaseVals = Union[str, float, int]
-FilterableValues = Union[
+FilterableBaseVals = Union[str, float, int, bool]
+FilterableTypes = Union[
     FilterableBaseVals,
     Sequence[FilterableBaseVals],
     Set[FilterableBaseVals],
     Iterable[FilterableBaseVals],
 ]
 
+AnnotationTypes = Union[
+    BoxAnnotation,
+    CategoryAnnotation,
+    CuboidAnnotation,
+    LineAnnotation,
+    MultiCategoryAnnotation,
+    PolygonAnnotation,
+    SegmentationAnnotation,
+]
+PredictionTypes = Union[
+    BoxPrediction,
+    CategoryPrediction,
+    CuboidPrediction,
+    LinePrediction,
+    PolygonPrediction,
+    SegmentationPrediction,
+]
+
 
 class AnnotationOrPredictionFilter(NamedTuple):
+    """Internal type for reconstruction of JSON encoded payload. Type field decides if filter behaves like FieldFilter
+    or MetadataFilter
+
+    Attributes:
+        key: key to compare with value
+        op: :class:`FilterOp` or one of [">", ">=", "<", "<=", "=", "==", "!=", "in", "not in"] to define comparison
+            with value field
+        value: bool, str, float or int to compare the field with key or list of the same values for 'in' and 'not in'
+            ops
+        allow_missing: Allow missing field values. Will REMOVE the object with the missing field from the selection
+        type: DO NOT USE. Internal type for serialization over the wire. Changing this will change the `NamedTuple`
+            type as well.
+    """
+
     key: str
     op: Union[FilterOp, str]
-    value: FilterableValues
+    value: FilterableTypes
     allow_missing: bool
     type: FilterType
 
 
 class FieldFilter(NamedTuple):
+    """Filter on standard field of AnnotationTypes or PredictionTypes
+
+    Examples:
+        FieldFilter("x", ">", 10) would pass every :class:`BoxAnnotation` with `x` attribute larger than 10
+        FieldFilter("label", "in", [) would pass every :class:`BoxAnnotation` with `x` attribute larger than 10
+
+    Attributes:
+        key: key to compare with value
+        op: :class:`FilterOp` or one of [">", ">=", "<", "<=", "=", "==", "!=", "in", "not in"] to define comparison
+            with value field
+        value: bool, str, float or int to compare the field with key or list of the same values for 'in' and 'not in'
+            ops
+        allow_missing: Allow missing field values. Will REMOVE the object with the missing field from the selection
+        type: DO NOT USE. Internal type for serialization over the wire. Changing this will change the `NamedTuple`
+            type as well.
+    """
+
     key: str
     op: Union[FilterOp, str]
-    value: FilterableValues
+    value: FilterableTypes
     allow_missing: bool = False
     type: FilterType = FilterType.FIELD
 
 
 class MetadataFilter(NamedTuple):
+    """Filter on customer provided metadata associated with AnnotationTypes or PredictionTypes
+
+    Attributes:
+        key: key to compare with value
+        op: :class:`FilterOp` or one of [">", ">=", "<", "<=", "=", "==", "!=", "in", "not in"] to define comparison
+            with value field
+        value: bool, str, float or int to compare the field with key or list of the same values for 'in' and 'not in'
+            ops
+        allow_missing: Allow missing metada values. Will REMOVE the object with the missing field from the selection
+        type: DO NOT USE. Internal type for serialization over the wire. Changing this will change the `NamedTuple`
+            type as well.
+    """
+
     key: str
     op: Union[FilterOp, str]
-    value: FilterableValues
+    value: FilterableTypes
     allow_missing: bool = False
     type: FilterType = FilterType.METADATA
 
@@ -113,24 +175,6 @@ The list of predicates is interpreted as a conjunction (AND), forming a multiple
 If providing a doubly nested list the innermost list has to be trivially expandable (*list) to a
 :class:`AnnotationOrPredictionFilter`
 """
-
-AnnotationTypes = Union[
-    BoxAnnotation,
-    CategoryAnnotation,
-    CuboidAnnotation,
-    LineAnnotation,
-    MultiCategoryAnnotation,
-    PolygonAnnotation,
-    SegmentationAnnotation,
-]
-PredictionTypes = Union[
-    BoxPrediction,
-    CategoryPrediction,
-    CuboidPrediction,
-    LinePrediction,
-    PolygonPrediction,
-    SegmentationPrediction,
-]
 
 
 def _attribute_getter(
@@ -246,10 +290,14 @@ def apply_filters(
     """Apply filters to list of annotations or list of predictions
     Attributes:
         ann_or_pred: Prediction or Annotation
-        filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF), like
-            [[MetadataFilter('x', '=', 0), ...], ...]. DNF allows arbitrary boolean logical combinations of single field
-            predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
-            interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
+        filters: Filter predicates. Allowed formats are:
+            ListOfAndFilters where each Filter forms a chain of AND predicates.
+            or
+            ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+            [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+            DNF allows arbitrary boolean logical combinations of single field
+            predicates. The innermost structures each describe a single column predicate. The list of inner predicates
+            is interpreted as a conjunction (AND), forming a more selective `and` multiple column predicate.
             Finally, the most outer list combines these filters as a disjunction (OR).
     """
     if filters is None or len(filters) == 0:

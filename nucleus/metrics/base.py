@@ -102,18 +102,24 @@ class Metric(ABC):
     ):
         """
         Args:
-            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
-                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
                 DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
-                these filters as a disjunction (OR).
-            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
-                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
                 DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
-                these filters as a disjunction (OR).
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         self.annotation_filters = annotation_filters
         self.prediction_filters = prediction_filters
