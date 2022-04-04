@@ -1,5 +1,6 @@
 import enum
 import functools
+import logging
 from enum import Enum
 from typing import Callable, Iterable, List, NamedTuple, Sequence, Set, Union
 
@@ -226,6 +227,20 @@ def _metadata_field_getter(
     ann_or_pred: Union[AnnotationTypes, PredictionTypes],
 ):
     """Create a function to get a metadata field"""
+    if isinstance(
+        ann_or_pred, (SegmentationAnnotation, SegmentationPrediction)
+    ):
+        if allow_missing:
+            logging.warning(
+                "Trying to filter metadata on SegmentationAnnotation or Prediction. "
+                "This will never work until metadata is supported for this format."
+            )
+            return AlwaysFalseComparison()
+        else:
+            raise RuntimeError(
+                f"{type(ann_or_pred)} doesn't support metadata filtering"
+            )
+
     if allow_missing:
         return (
             ann_or_pred.metadata.get(field_name, AlwaysFalseComparison())
