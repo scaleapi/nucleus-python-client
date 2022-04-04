@@ -10,6 +10,7 @@ from nucleus.annotation import (
     LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
+    SegmentationAnnotation,
 )
 from nucleus.prediction import (
     BoxPrediction,
@@ -17,6 +18,7 @@ from nucleus.prediction import (
     CuboidPrediction,
     LinePrediction,
     PolygonPrediction,
+    SegmentationPrediction,
 )
 
 
@@ -77,8 +79,8 @@ class MetadataFilter(NamedTuple):
 
 
 Filter = Union[FieldFilter, MetadataFilter, AnnotationOrPredictionFilter]
-ListOfOrAndFilters = List[List[Union[Filter]]]
-ListOfOrAndFilters.__doc__ = """\
+DNFFilters = List[List[Filter]]
+DNFFilters.__doc__ = """\
 Disjunctive normal form (DNF) filters.
 DNF allows arbitrary boolean logical combinations of single field predicates.
 The innermost structures each describe a single field predicate.
@@ -88,31 +90,53 @@ predicate.
 
 Finally, the most outer list combines these filters as a disjunction (OR).
 """
-ListOfAndFilters = List[
-    Union[FieldFilter, MetadataFilter, AnnotationOrPredictionFilter]
-]
+ListOfOrAndFilters = Union[DNFFilters, List[List[List]]]
+ListOfOrAndFilters.__doc__ = """\
+Disjunctive normal form (DNF) filters.
+DNF allows arbitrary boolean logical combinations of single field predicates.
+The innermost structures each describe a single field predicate.
+    -The list of inner predicates is interpreted as a conjunction (AND), forming a more selective and multiple column
+     predicate.
+    -Finally, the most outer list combines these filters as a disjunction (OR).
 
-AnnotationsWithMetadata = Union[
+If providing a triple nested list the innermost list has to be trivially expandable (*list) to a
+:class:`AnnotationOrPredictionFilter`
+"""
+ListOfAndFilters = Union[
+    List[Filter],
+    List[List],
+]
+ListOfAndFilters.__doc__ = """\
+List of AND filters.
+The list of predicates is interpreted as a conjunction (AND), forming a multiple field predicate.
+
+If providing a doubly nested list the innermost list has to be trivially expandable (*list) to a
+:class:`AnnotationOrPredictionFilter`
+"""
+
+AnnotationTypes = Union[
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
     LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
+    SegmentationAnnotation,
 ]
-PredictionsWithMetadata = Union[
+PredictionTypes = Union[
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
     LinePrediction,
     PolygonPrediction,
+    SegmentationPrediction,
 ]
 
 
 def _attribute_getter(
     field_name: str,
     allow_missing: bool,
-    ann_or_pred: Union[AnnotationsWithMetadata, PredictionsWithMetadata],
+    ann_or_pred: Union[AnnotationTypes, PredictionTypes],
 ):
     """Create a function to get object fields"""
     if allow_missing:
@@ -150,7 +174,7 @@ class AlwaysFalseComparison:
 def _metadata_field_getter(
     field_name: str,
     allow_missing: bool,
-    ann_or_pred: Union[AnnotationsWithMetadata, PredictionsWithMetadata],
+    ann_or_pred: Union[AnnotationTypes, PredictionTypes],
 ):
     """Create a function to get a metadata field"""
     if allow_missing:
@@ -171,7 +195,7 @@ def _metadata_field_getter(
 
 def _filter_to_comparison_function(  # pylint: disable=too-many-return-statements
     filter_def: Filter,
-) -> Callable[[Union[AnnotationsWithMetadata, PredictionsWithMetadata]], bool]:
+) -> Callable[[Union[AnnotationTypes, PredictionTypes]], bool]:
     """Creates a comparison function from a filter configuration to apply to annotations or predictions
 
     Parameters:
@@ -216,12 +240,8 @@ def _filter_to_comparison_function(  # pylint: disable=too-many-return-statement
 
 
 def apply_filters(
-    ann_or_pred: Union[
-        Sequence[AnnotationsWithMetadata], Sequence[PredictionsWithMetadata]
-    ],
-    filters: Union[
-        ListOfOrAndFilters, ListOfAndFilters, List[List[List]], List[List]
-    ],
+    ann_or_pred: Union[Sequence[AnnotationTypes], Sequence[PredictionTypes]],
+    filters: Union[ListOfOrAndFilters, ListOfAndFilters],
 ):
     """Apply filters to list of annotations or list of predictions
     Attributes:
@@ -235,7 +255,7 @@ def apply_filters(
     if filters is None or len(filters) == 0:
         return ann_or_pred
 
-    filters = ensureListOfOrAndFilters(filters)
+    filters = ensureDNFFilters(filters)
 
     dnf_condition_functions = []
     for or_branch in filters:
@@ -253,7 +273,7 @@ def apply_filters(
     return filtered
 
 
-def ensureListOfOrAndFilters(filters) -> ListOfOrAndFilters:
+def ensureDNFFilters(filters) -> DNFFilters:
     """JSON encoding creates a triple nested lists from the doubly nested tuples. This function creates the
     tuple form again."""
     if isinstance(filters[0], (MetadataFilter, FieldFilter)):

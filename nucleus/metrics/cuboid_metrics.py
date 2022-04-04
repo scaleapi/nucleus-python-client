@@ -7,7 +7,7 @@ from nucleus.prediction import CuboidPrediction, PredictionList
 
 from .base import Metric, ScalarResult
 from .cuboid_utils import detection_iou, label_match_wrapper, recall_precision
-from .filtering import ListOfAndFilters, ListOfOrAndFilters, apply_filters
+from .filtering import ListOfAndFilters, ListOfOrAndFilters
 from .filters import confidence_filter
 
 
@@ -57,8 +57,7 @@ class CuboidMetric(Metric):
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
-        self.annotation_filters = annotation_filters
-        self.prediction_filters = prediction_filters
+        super().__init__(annotation_filters, prediction_filters)
 
     @abstractmethod
     def eval(
@@ -72,7 +71,7 @@ class CuboidMetric(Metric):
     def aggregate_score(self, results: List[ScalarResult]) -> ScalarResult:  # type: ignore[override]
         return ScalarResult.aggregate(results)
 
-    def __call__(
+    def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
     ) -> ScalarResult:
         if self.confidence_threshold > 0:
@@ -85,12 +84,6 @@ class CuboidMetric(Metric):
         cuboid_predictions.extend(predictions.cuboid_predictions)
 
         eval_fn = label_match_wrapper(self.eval)
-        cuboid_annotations = apply_filters(
-            cuboid_annotations, self.annotation_filters  # type: ignore
-        )
-        cuboid_predictions = apply_filters(
-            cuboid_predictions, self.prediction_filters  # type: ignore
-        )
         result = eval_fn(
             cuboid_annotations,
             cuboid_predictions,

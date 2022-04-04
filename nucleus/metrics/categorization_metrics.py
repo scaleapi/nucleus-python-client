@@ -1,11 +1,12 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Set, Tuple, Union
+from typing import List, Optional, Set, Tuple, Union
 
 from sklearn.metrics import f1_score
 
 from nucleus.annotation import AnnotationList, CategoryAnnotation
 from nucleus.metrics.base import Metric, MetricResult, ScalarResult
+from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from nucleus.metrics.filters import confidence_filter
 from nucleus.prediction import CategoryPrediction, PredictionList
 
@@ -56,12 +57,31 @@ class CategorizationMetric(Metric):
     def __init__(
         self,
         confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
     ):
         """Initializes CategorizationMetric abstract object.
 
         Args:
             confidence_threshold: minimum confidence threshold for predictions to be taken into account for evaluation. Must be in [0, 1]. Default 0.0
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
+                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
+                these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
+                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
+                these filters as a disjunction (OR).
         """
+        super().__init__(annotation_filters, prediction_filters)
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
 
@@ -83,7 +103,7 @@ class CategorizationMetric(Metric):
     def aggregate_score(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
         pass
 
-    def __call__(
+    def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
     ) -> CategorizationResult:
         if self.confidence_threshold > 0:
@@ -139,7 +159,15 @@ class CategorizationF1(CategorizationMetric):
     """Evaluation method that matches categories and returns a CategorizationF1Result that aggregates to the F1 score"""
 
     def __init__(
-        self, confidence_threshold: float = 0.0, f1_method: str = "macro"
+        self,
+        confidence_threshold: float = 0.0,
+        f1_method: str = "macro",
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
     ):
         """
         Args:
@@ -169,8 +197,22 @@ class CategorizationF1(CategorizationMetric):
                 Calculate metrics for each instance, and find their average (only
                 meaningful for multilabel classification where this differs from
                 :func:`accuracy_score`).
+            annotation_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
+                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
+                these filters as a disjunction (OR).
+            prediction_filters: MetadataFilter predicates. Predicates are expressed in disjunctive normal form (DNF),
+                 like [[MetadataFilter('x', '==', 0), FieldFilter('label', '==', 'pedestrian')], ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single field predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
+                these filters as a disjunction (OR).
         """
-        super().__init__(confidence_threshold)
+        super().__init__(
+            confidence_threshold, annotation_filters, prediction_filters
+        )
         assert (
             f1_method in F1_METHODS
         ), f"Invalid f1_method {f1_method}, expected one of {F1_METHODS}"

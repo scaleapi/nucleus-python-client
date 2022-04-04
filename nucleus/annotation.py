@@ -557,6 +557,7 @@ class SegmentationAnnotation(Annotation):
     annotations: List[Segment]
     reference_id: str
     annotation_id: Optional[str] = None
+    metadata: Optional[dict] = None
 
     def __post_init__(self):
         if not self.mask_url:
@@ -574,6 +575,7 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -582,6 +584,7 @@ class SegmentationAnnotation(Annotation):
             MASK_URL_KEY: self.mask_url,
             ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
             ANNOTATION_ID_KEY: self.annotation_id,
+            METADATA_KEY: self.metadata,
         }
 
         payload[REFERENCE_ID_KEY] = self.reference_id
