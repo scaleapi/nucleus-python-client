@@ -1,5 +1,8 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Dict
+from typing import Optional, TYPE_CHECKING, Dict
+
+from .constants import CAMERA_PARAMS_KEY
+from .camera_params import CameraParams
 
 if TYPE_CHECKING:
     from . import NucleusClient
@@ -31,11 +34,24 @@ class MetadataManager:
 
         self._payload = self._format_mappings()
 
+    def _extract_camera_params(self, metadata: dict) -> Optional[CameraParams]:
+        camera_params = metadata.get(CAMERA_PARAMS_KEY, None)
+        if camera_params is None:
+            return None
+        return CameraParams.from_json(camera_params)
+
     def _format_mappings(self):
-        payload = []
+        payloads = []
         for ref_id, meta in self.raw_mappings.items():
-            payload.append({"reference_id": ref_id, "metadata": meta})
-        return payload
+            payload = {"reference_id": ref_id, "metadata": meta}
+
+            if self.level.value == ExportMetadataType.DATASET_ITEMS.value:
+                camera_params = self._extract_camera_params(meta)
+                if camera_params:
+                    payload[CAMERA_PARAMS_KEY] = camera_params.to_payload()
+
+            payloads.append(payload)
+        return payloads
 
     def update(self):
         payload = {"metadata": self._payload, "level": self.level.value}
