@@ -92,15 +92,16 @@ class Model:
     endpoint, using :meth:`NucleusClient.add_model`.
     """
 
-    def __init__(self, model_id, name, reference_id, metadata, client):
+    def __init__(self, model_id, name, reference_id, metadata, bundle_id, client):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
         self.metadata = metadata
+        self.bundle_id = bundle_id
         self._client = client
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, client={self._client})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_id={}, client={self._client})"
 
     def __eq__(self, other):
         return (
@@ -108,6 +109,7 @@ class Model:
             and (self.name == other.name)
             and (self.metadata == other.metadata)
             and (self._client == other._client)
+            and (self.bundle_id == other.bundle_id)
         )
 
     def __hash__(self):
@@ -121,6 +123,7 @@ class Model:
             name=payload["name"],
             reference_id=payload["ref_id"],
             metadata=payload["metadata"] or None,
+            bundle_id=payload["bundle_id"] or None,
             client=client,
         )
 
