@@ -21,7 +21,15 @@ from .constants import (
     POSITION_KEY,
 )
 
-REQUIRED_CAMERA_PARAMS_KEYS = {POSITION_KEY, HEADING_KEY, FX_KEY, FY_KEY, CX_KEY, CY_KEY}
+REQUIRED_CAMERA_PARAMS_KEYS = {
+    POSITION_KEY,
+    HEADING_KEY,
+    FX_KEY,
+    FY_KEY,
+    CX_KEY,
+    CY_KEY,
+}
+
 
 class CameraModels(str, Enum):
     BROWN_CONRADY = "brown_conrady"
@@ -77,7 +85,9 @@ class CameraParams:
         """Instantiates camera params object from schematized JSON dict payload."""
         keys = set(payload.keys())
         if not keys.issuperset(REQUIRED_CAMERA_PARAMS_KEYS):
-            raise ValueError(f'The following fields must be present in the camera_params dictionary: {REQUIRED_CAMERA_PARAMS_KEYS}')
+            raise ValueError(
+                f"The following fields must be present in the camera_params dictionary: {REQUIRED_CAMERA_PARAMS_KEYS}"
+            )
 
         return cls(
             Point3D.from_json(payload[POSITION_KEY]),
