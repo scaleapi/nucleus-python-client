@@ -141,8 +141,8 @@ class MetadataFilter(NamedTuple):
 
 
 Filter = Union[FieldFilter, MetadataFilter, AnnotationOrPredictionFilter]
-DNFFilters = List[List[Filter]]
-DNFFilters.__doc__ = """\
+OrAndDNFFilters = List[List[Filter]]
+OrAndDNFFilters.__doc__ = """\
 Disjunctive normal form (DNF) filters.
 DNF allows arbitrary boolean logical combinations of single field predicates.
 The innermost structures each describe a single field predicate.
@@ -152,8 +152,11 @@ predicate.
 
 Finally, the most outer list combines these filters as a disjunction (OR).
 """
-ListOfOrAndFilters = Union[DNFFilters, List[List[List]]]
-ListOfOrAndFilters.__doc__ = """\
+ListOfOrAndJSONSerialized = List[List[List]]
+ListOfOrAndJSONSerialized.__doc__ = """\
+JSON serialized form of DNFFilters. The innermost list has to be trivially expandable (*list) to a
+:class:`AnnotationOrPredictionFilter`.
+
 Disjunctive normal form (DNF) filters.
 DNF allows arbitrary boolean logical combinations of single field predicates.
 The innermost structures each describe a single field predicate.
@@ -161,20 +164,22 @@ The innermost structures each describe a single field predicate.
      predicate.
     -Finally, the most outer list combines these filters as a disjunction (OR).
 
-If providing a triple nested list the innermost list has to be trivially expandable (*list) to a
-:class:`AnnotationOrPredictionFilter`
+
 """
-ListOfAndFilters = Union[
-    List[Filter],
-    List[List],
-]
-ListOfAndFilters.__doc__ = """\
+ListOfOrAndFilters = Union[OrAndDNFFilters, ListOfOrAndJSONSerialized]
+ListOfAndJSONSerialized = List[List]
+ListOfAndFilterTuple = List[Filter]
+ListOfAndFilterTuple.__doc__ = """\
 List of AND filters.
 The list of predicates is interpreted as a conjunction (AND), forming a multiple field predicate.
 
 If providing a doubly nested list the innermost list has to be trivially expandable (*list) to a
 :class:`AnnotationOrPredictionFilter`
 """
+ListOfAndFilters = Union[
+    ListOfAndFilterTuple,
+    ListOfAndJSONSerialized,
+]
 
 
 def _attribute_getter(
@@ -321,7 +326,7 @@ def apply_filters(
     return filtered
 
 
-def ensureDNFFilters(filters) -> DNFFilters:
+def ensureDNFFilters(filters) -> OrAndDNFFilters:
     """JSON encoding creates a triple nested lists from the doubly nested tuples. This function creates the
     tuple form again."""
     if isinstance(filters[0], (MetadataFilter, FieldFilter)):
