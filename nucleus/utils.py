@@ -5,6 +5,7 @@ import json
 import uuid
 from collections import defaultdict
 from typing import IO, Dict, List, Sequence, Type, Union
+import open3d as o3d
 
 import requests
 from requests.models import HTTPError
@@ -299,3 +300,8 @@ def bin_to_numpy(bin_file_path: str = None):
     '''
     np_pcd = np.fromfile(bin_file_path, dtype=np.float32).reshape(-1, 4)
     return np_pcd
+
+def read_pcd(fp):
+   pcd = o3d.io.read_point_cloud(fp)
+   points = np.asarray(pcd.points)
+   return points
