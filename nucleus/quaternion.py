@@ -1,13 +1,7 @@
 from dataclasses import dataclass
-
 from typing import Dict
 
-from .constants import (
-    W_KEY,
-    X_KEY,
-    Y_KEY,
-    Z_KEY,
-)
+from .constants import W_KEY, X_KEY, Y_KEY, Z_KEY
 
 
 @dataclass

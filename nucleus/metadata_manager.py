@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import Optional, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Optional
 
-from .constants import CAMERA_PARAMS_KEY
 from .camera_params import CameraParams
+from .constants import CAMERA_PARAMS_KEY
 
 if TYPE_CHECKING:
     from . import NucleusClient

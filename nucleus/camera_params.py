@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
-
 from typing import Any, Dict
 
-from .quaternion import Quaternion
 from .annotation import Point3D
 from .constants import (
     CAMERA_MODEL_KEY,
@@ -20,6 +18,7 @@ from .constants import (
     P2_KEY,
     POSITION_KEY,
 )
+from .quaternion import Quaternion
 
 REQUIRED_CAMERA_PARAMS_KEYS = {
     POSITION_KEY,
