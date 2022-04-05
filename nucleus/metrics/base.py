@@ -138,7 +138,10 @@ class Metric(ABC):
         return self.call_metric(annotations, predictions)
 
     def _filter_annotations(self, annotations: AnnotationList):
-        if self.annotation_filters is None or len(self.annotation_filters) > 0:
+        if (
+            self.annotation_filters is None
+            or len(self.annotation_filters) == 0
+        ):
             return annotations
         annotations.box_annotations = apply_filters(
             annotations.box_annotations, self.annotation_filters
@@ -164,7 +167,10 @@ class Metric(ABC):
         return annotations
 
     def _filter_predictions(self, predictions: PredictionList):
-        if self.prediction_filters is None or len(self.prediction_filters) > 0:
+        if (
+            self.prediction_filters is None
+            or len(self.prediction_filters) == 0
+        ):
             return predictions
         predictions.box_predictions = apply_filters(
             predictions.box_predictions, self.prediction_filters
