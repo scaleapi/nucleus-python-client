@@ -72,7 +72,7 @@ def scenario_test(CLIENT, test_slice):
     scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
-        evaluation_criteria=[CLIENT.validate.eval_functions.bbox_recall > 0.5],
+        evaluation_functions=[CLIENT.validate.eval_functions.bbox_recall],
     )
     yield scenario_test
 

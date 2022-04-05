@@ -13,7 +13,6 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
-    VIDEO_FRAME_LOCATION_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
 )
 
@@ -442,9 +441,10 @@ class VideoScene(ABC):
         attachment_type (str): The type of attachments being uploaded as a string literal.
             Currently, videos can only be uploaded as an array of frames, so the only
             accepted attachment_type is "image".
-        items (Optional[List[:class:`DatasetItem`]]): List of items to be a part of
-            the scene. A scene can be created before items have been added to it,
-            but must be non-empty when uploading to a :class:`Dataset`.
+        items (Optional[List[:class:`DatasetItem`]]): List of items representing frames,
+            to be a part of the scene. A scene can be created before items have been added
+            to it, but must be non-empty when uploading to a :class:`Dataset`. A video scene
+            can contain a maximum of 3000 items.
         metadata (Optional[Dict]): Optional metadata to include with the scene.
 
     Refer to our `guide to uploading video data
@@ -487,8 +487,11 @@ class VideoScene(ABC):
                 item, DatasetItem
             ), "Each item in a scene must be a DatasetItem object"
             assert (
-                item.video_frame_location is not None
-            ), "Each item in a scene must have a video_frame_location"
+                item.image_location is not None
+            ), "Each item in a video scene must have an image_location"
+            assert (
+                item.upload_to_scale is not False
+            ), "Skipping upload to Scale is not currently implemented for videos"
 
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
@@ -598,11 +601,5 @@ def check_all_scene_paths_remote(
             if image_location and is_local_path(image_location):
                 raise ValueError(
                     f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
-                    "local, or a remote URL type that is not supported."
-                )
-            video_frame_location = getattr(item, VIDEO_FRAME_LOCATION_KEY)
-            if video_frame_location and is_local_path(video_frame_location):
-                raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.video_frame_location} is either "
                     "local, or a remote URL type that is not supported."
                 )

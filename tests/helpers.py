@@ -16,11 +16,11 @@ TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
-DATASET_WITH_AUTOTAG = "ds_c5jwptkgfsqg0cs503z0"
+DATASET_WITH_AUTOTAG = "ds_c8jwdhy4y4f0078hzceg"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 EVAL_FUNCTION_THRESHOLD = 0.5
-EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN
+EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN_EQUAL_TO
 
 
 TEST_IMG_URLS = [
@@ -92,14 +92,14 @@ TEST_VIDEO_SCENES = {
             "frame_rate": 15,
             "frames": [
                 {
-                    "video_frame_url": TEST_IMG_URLS[0],
-                    "type": "video",
+                    "image_url": TEST_IMG_URLS[0],
+                    "type": "image",
                     "reference_id": "video_frame_0",
                     "metadata": {"time": 123, "foo": "bar"},
                 },
                 {
-                    "video_frame_url": TEST_IMG_URLS[1],
-                    "type": "video",
+                    "image_url": TEST_IMG_URLS[1],
+                    "type": "image",
                     "reference_id": "video_frame_1",
                     "metadata": {"time": 124, "foo": "bar_2"},
                 },
@@ -124,28 +124,25 @@ TEST_DATASET_ITEMS = [
 
 TEST_VIDEO_ITEMS = [
     DatasetItem(
-        None,
+        TEST_IMG_URLS[0],
         reference_id_from_url(TEST_IMG_URLS[0]),
         None,
         None,
         True,
-        TEST_IMG_URLS[0],
     ),
     DatasetItem(
-        None,
+        TEST_IMG_URLS[1],
         reference_id_from_url(TEST_IMG_URLS[1]),
         None,
         None,
         True,
-        TEST_IMG_URLS[1],
     ),
     DatasetItem(
-        None,
+        TEST_IMG_URLS[2],
         reference_id_from_url(TEST_IMG_URLS[2]),
         None,
         None,
         True,
-        TEST_IMG_URLS[2],
     ),
 ]
 
@@ -175,6 +172,24 @@ TEST_BOX_ANNOTATIONS = [
         "height": 80 + i * 10,
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Box Annotation Annotation Id{i}",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_LINE_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Line Annotation ${i}",
+        "geometry": {
+            "vertices": [
+                {
+                    "x": 10 + i * 35 + j,
+                    "y": 20 + i * 55 + j,
+                }
+                for j in range(3)
+            ],
+        },
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Line Annotation Annotation Id{i}",
     }
     for i in range(len(TEST_IMG_URLS))
 ]
@@ -286,6 +301,11 @@ TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
 
 TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
 
+this_dir = os.path.dirname(os.path.realpath(__file__))
+TEST_LOCAL_MASK_URL = os.path.join(this_dir, "testdata/000000000285.png")
+
+
+NUM_VALID_SEGMENTATIONS_IN_MAIN_DATASET = len(TEST_DATASET_ITEMS)
 TEST_SEGMENTATION_ANNOTATIONS = [
     {
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
@@ -303,6 +323,11 @@ TEST_SEGMENTATION_PREDICTIONS = TEST_SEGMENTATION_ANNOTATIONS
 TEST_BOX_MODEL_PDF = {
     box_annotation["label"]: 1 / len(TEST_BOX_ANNOTATIONS)
     for box_annotation in TEST_BOX_ANNOTATIONS
+}
+
+TEST_LINE_MODEL_PDF = {
+    line_annotation["label"]: 1 / len(TEST_LINE_ANNOTATIONS)
+    for line_annotation in TEST_LINE_ANNOTATIONS
 }
 
 TEST_POLYGON_MODEL_PDF = {
@@ -327,6 +352,20 @@ TEST_BOX_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_BOX_ANNOTATIONS))
+]
+
+TEST_LINE_PREDICTIONS = [
+    {
+        **TEST_LINE_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_LINE_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_LINE_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_LINE_ANNOTATIONS))
 ]
 
 TEST_POLYGON_PREDICTIONS = [
@@ -394,6 +433,18 @@ def assert_box_annotation_matches_dict(annotation_instance, annotation_dict):
     assert (
         annotation_instance.annotation_id == annotation_dict["annotation_id"]
     )
+
+
+def assert_line_annotation_matches_dict(annotation_instance, annotation_dict):
+    assert annotation_instance.label == annotation_dict["label"]
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
+    for instance_pt, dict_pt in zip(
+        annotation_instance.vertices, annotation_dict["geometry"]["vertices"]
+    ):
+        assert instance_pt.x == dict_pt["x"]
+        assert instance_pt.y == dict_pt["y"]
 
 
 def assert_polygon_annotation_matches_dict(
@@ -477,6 +528,11 @@ def assert_segmentation_annotation_matches_dict(
 # Useful to check prediction uploads/updates match.
 def assert_box_prediction_matches_dict(prediction_instance, prediction_dict):
     assert_box_annotation_matches_dict(prediction_instance, prediction_dict)
+    assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def assert_line_prediction_matches_dict(prediction_instance, prediction_dict):
+    assert_line_annotation_matches_dict(prediction_instance, prediction_dict)
     assert prediction_instance.confidence == prediction_dict["confidence"]
 
 

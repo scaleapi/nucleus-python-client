@@ -13,7 +13,7 @@ from tests.helpers import DATASET_WITH_AUTOTAG, running_as_nucleus_pytest_user
 def test_update_autotag(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
         job = Dataset(DATASET_WITH_AUTOTAG, CLIENT).update_autotag(
-            "tag_c5jwvzzde8c00604mkx0"
+            "tag_c8jwr0rpy1w00e134an0"
         )
         job.sleep_until_complete()
         status = job.status()
@@ -89,7 +89,7 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
 
 def test_export_slice_embeddings(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
-        test_slice = CLIENT.get_slice("slc_c6kcx5mrzr7g0c9d8cng")
+        test_slice = CLIENT.get_slice("slc_c8jwtmj372xg07g9v3k0")
         embeddings = test_slice.export_embeddings()
         assert "embedding_vector" in embeddings[0]
         assert "reference_id" in embeddings[0]
@@ -98,7 +98,7 @@ def test_export_slice_embeddings(CLIENT):
 def test_get_autotag_refinement_metrics(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
         response = CLIENT.get_autotag_refinement_metrics(
-            "tag_c5jwvzzde8c00604mkx0"
+            "tag_c8jwr0rpy1w00e134an0"
         )
         assert response["total_refinement_steps"] >= 0
         assert response["average_positives_selected_per_refinement"] >= 0

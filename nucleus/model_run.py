@@ -18,6 +18,7 @@ from typing import List, Optional, Union
 import requests
 
 from nucleus.annotation import check_all_mask_paths_remote
+from nucleus.annotation_uploader import PredictionUploader
 from nucleus.job import AsyncJob
 from nucleus.utils import (
     format_prediction_response,
@@ -114,12 +115,38 @@ class ModelRun:
                 SegmentationPrediction,
             ]
         ],
-        update: Optional[bool] = DEFAULT_ANNOTATION_UPDATE_MODE,
+        update: bool = DEFAULT_ANNOTATION_UPDATE_MODE,
         asynchronous: bool = False,
+        batch_size: int = 5000,
+        remote_files_per_upload_request: int = 20,
+        local_files_per_upload_request: int = 10,
+        local_file_upload_concurrency: int = 30,
     ) -> Union[dict, AsyncJob]:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
-        :param annotations: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+
+        Args:
+            annotations: Predictions to upload for this model run,
+            update: If True, existing predictions for the same (reference_id, annotation_id)
+                will be overwritten. If False, existing predictions will be skipped.
+            asynchronous: Whether or not to process the upload asynchronously (and
+                return an :class:`AsyncJob` object). Default is False.
+            batch_size: Number of predictions processed in each concurrent batch.
+                Default is 5000. If you get timeouts when uploading geometric annotations,
+                you can try lowering this batch size. This is only relevant for
+                asynchronous=False.
+            remote_files_per_upload_request: Number of remote files to upload in each
+                request. Segmentations have either local or remote files, if you are
+                getting timeouts while uploading segmentations with remote urls, you
+                should lower this value from its default of 20. This is only relevant for
+                asynchronous=False
+            local_files_per_upload_request: Number of local files to upload in each
+                request. Segmentations have either local or remote files, if you are
+                getting timeouts while uploading segmentations with local files, you
+                should lower this value from its default of 10. The maximum is 10.
+                This is only relevant for asynchronous=False
+            local_file_upload_concurrency: Number of concurrent local file uploads.
+                This is only relevant for asynchronous=False
         :return:
         {
             "model_run_id": str,
@@ -138,12 +165,17 @@ class ModelRun:
                 route=f"modelRun/{self.model_run_id}/predict?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        else:
-            return self._client.predict(
-                model_run_id=self.model_run_id,
-                annotations=annotations,
-                update=update,
-            )
+        uploader = PredictionUploader(
+            model_run_id=self.model_run_id, client=self._client
+        )
+        return uploader.upload(
+            annotations=annotations,
+            update=update,
+            batch_size=batch_size,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            local_file_upload_concurrency=local_file_upload_concurrency,
+        )
 
     def iloc(self, i: int):
         """

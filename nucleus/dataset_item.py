@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, Sequence
 
 from .annotation import Point3D, is_local_path
 from .constants import (
+    BACKEND_REFERENCE_ID_KEY,
+    CAMERA_MODEL_KEY,
     CAMERA_PARAMS_KEY,
     CX_KEY,
     CY_KEY,
@@ -14,20 +16,37 @@ from .constants import (
     FY_KEY,
     HEADING_KEY,
     IMAGE_URL_KEY,
+    K1_KEY,
+    K2_KEY,
+    K3_KEY,
+    K4_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
+    P1_KEY,
+    P2_KEY,
     POINTCLOUD_URL_KEY,
     POSITION_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
     UPLOAD_TO_SCALE_KEY,
     URL_KEY,
-    VIDEO_FRAME_URL_KEY,
     W_KEY,
     X_KEY,
     Y_KEY,
     Z_KEY,
 )
+
+
+class CameraModels(str, Enum):
+    BROWN_CONRADY = "brown_conrady"
+    FISHEYE = "fisheye"
+
+    def __contains__(self, item):
+        try:
+            self(item)
+        except ValueError:
+            return False
+        return True
 
 
 @dataclass
@@ -93,6 +112,20 @@ class CameraParams:
     fy: float
     cx: float
     cy: float
+    camera_model: str
+    k1: float
+    k2: float
+    k3: float
+    k4: float
+    p1: float
+    p2: float
+
+    def __post_init__(self):
+        if self.camera_model is not None:
+            if self.camera_model not in (k for k in CameraModels):
+                raise ValueError(
+                    f'Invalid Camera Model, the supported options are "{CameraModels.BROWN_CONRADY}" and "{CameraModels.FISHEYE}"'
+                )
 
     @classmethod
     def from_json(cls, payload: Dict[str, Any]):
@@ -104,11 +137,18 @@ class CameraParams:
             payload[FY_KEY],
             payload[CX_KEY],
             payload[CY_KEY],
+            payload.get(CAMERA_MODEL_KEY, None),
+            payload.get(K1_KEY, None),
+            payload.get(K2_KEY, None),
+            payload.get(K3_KEY, None),
+            payload.get(K4_KEY, None),
+            payload.get(P1_KEY, None),
+            payload.get(P2_KEY, None),
         )
 
     def to_payload(self) -> dict:
         """Serializes camera params object to schematized JSON dict."""
-        return {
+        payload = {
             POSITION_KEY: self.position.to_payload(),
             HEADING_KEY: self.heading.to_payload(),
             FX_KEY: self.fx,
@@ -116,40 +156,46 @@ class CameraParams:
             CX_KEY: self.cx,
             CY_KEY: self.cy,
         }
+        if self.k1:
+            payload[K1_KEY] = self.k1
+        if self.k2:
+            payload[K2_KEY] = self.k2
+        if self.k3:
+            payload[K3_KEY] = self.k3
+        if self.k4:
+            payload[K4_KEY] = self.k4
+        if self.p1:
+            payload[P1_KEY] = self.p1
+        if self.p2:
+            payload[P2_KEY] = self.p2
+        if self.camera_model:
+            payload[CAMERA_MODEL_KEY] = self.camera_model
+        return payload
 
 
 class DatasetItemType(Enum):
     IMAGE = "image"
     POINTCLOUD = "pointcloud"
-    VIDEO = "video"
 
 
 @dataclass  # pylint: disable=R0902
 class DatasetItem:  # pylint: disable=R0902
-    """A dataset item is an image, pointcloud or video frame that has associated metadata.
+    """A dataset item is an image or pointcloud that has associated metadata.
 
     Note: for 3D data, please include a :class:`CameraParams` object under a key named
     "camera_params" within the metadata dictionary. This will allow for projecting
     3D annotations to any image within a scene.
 
     Args:
-        image_location (Optional[str]): Required if pointcloud_location and
-          video_frame_location are not present: The location containing the image for
-          the given row of data. This can be a local path, or a remote URL. Remote
-          formats supported include any URL (``http://`` or ``https://``) or URIs for
-          AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
+        image_location (Optional[str]): Required if pointcloud_location is not present:
+          The location containing the image for the given row of data. This can be a local
+          path, or a remote URL. Remote formats supported include any URL (``http://`` or
+          ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
 
-        pointcloud_location (Optional[str]): Required if image_location and
-          video_frame_location are not present: The remote URL containing the
-          pointcloud JSON. Remote formats supported include any URL (``http://``
-          or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``,
-          ``gcs://``).
-
-        video_frame_location (Optional[str]): Required if image_location and
-          pointcloud_location are not present: The remote URL containing the
-          video frame image. Remote formats supported include any URL (``http://``
-          or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``,
-          ``gcs://``).
+        pointcloud_location (Optional[str]): Required if image_location is not present:
+          The remote URL containing the pointcloud JSON. Remote formats supported include
+          any URL (``http://`` or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e.
+          ``s3://``, ``gcs://``).
 
         reference_id (Optional[str]): A user-specified identifier to reference the
           item.
@@ -212,21 +258,15 @@ class DatasetItem:  # pylint: disable=R0902
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     upload_to_scale: Optional[bool] = True
-    video_frame_location: Optional[str] = None
 
     def __post_init__(self):
         assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
-        assert (
-            bool(self.image_location)
-            + bool(self.pointcloud_location)
-            + bool(self.video_frame_location)
-            == 1
-        ), "Must specify exactly one of the image_location, pointcloud_location, video_frame_location parameters"
-        if (
-            self.pointcloud_location or self.video_frame_location
-        ) and not self.upload_to_scale:
+        assert bool(self.image_location) != bool(
+            self.pointcloud_location
+        ), "Must specify exactly one of the image_location or pointcloud_location parameters"
+        if (self.pointcloud_location) and not self.upload_to_scale:
             raise NotImplementedError(
-                "Skipping upload to Scale is not currently implemented for pointclouds and videos."
+                "Skipping upload to Scale is not currently implemented for pointclouds."
             )
         self.local = (
             is_local_path(self.image_location) if self.image_location else None
@@ -234,11 +274,7 @@ class DatasetItem:  # pylint: disable=R0902
         self.type = (
             DatasetItemType.IMAGE
             if self.image_location
-            else (
-                DatasetItemType.POINTCLOUD
-                if self.pointcloud_location
-                else DatasetItemType.VIDEO
-            )
+            else DatasetItemType.POINTCLOUD
         )
         camera_params = (
             self.metadata.get(CAMERA_PARAMS_KEY, None)
@@ -255,10 +291,11 @@ class DatasetItem:  # pylint: disable=R0902
         image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
             ORIGINAL_IMAGE_URL_KEY, None
         )
+        if BACKEND_REFERENCE_ID_KEY in payload:
+            payload[REFERENCE_ID_KEY] = payload[BACKEND_REFERENCE_ID_KEY]
         return cls(
             image_location=image_url,
             pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),
-            video_frame_location=payload.get(VIDEO_FRAME_URL_KEY, None),
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
@@ -281,8 +318,6 @@ class DatasetItem:  # pylint: disable=R0902
                 payload[URL_KEY] = self.image_location
             elif self.pointcloud_location:
                 payload[URL_KEY] = self.pointcloud_location
-            elif self.video_frame_location:
-                payload[URL_KEY] = self.video_frame_location
             payload[TYPE_KEY] = self.type.value
             if self.camera_params:
                 payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()

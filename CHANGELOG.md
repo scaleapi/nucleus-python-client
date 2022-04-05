@@ -4,6 +4,48 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.3) - 2022-03-29
+
+### Added
+- new Validate functionality to intialize scenario tests without a threshold, and to set test thresholds based on a baseline model.
+## [0.8.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.2) - 2022-03-18
+
+### Added
+- a fix to the CameraModels enumeration to fix export of camera calibrations for 3D scenes
+
+## [0.8.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.0) - 2022-03-18
+
+### Added
+- slice.items_generator() and dataset.items_generator() to allow for export of dataset items at any scale.
+
+## [0.8.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.0) - 2022-03-16
+
+### Added
+- mask_url can now be a local file for segmentation annotations or predictions, meaning local upload is now supported for segmentations
+- Camera params for sensor fusion ingest now support additional camera params to accommodate fisheye camera, etc.
+- More detailed parameters to control for upload in case of timeouts (see dataset.upload_predictions, dataset.append, and dataset.upload_predictions)
+
+### Fixed
+- Artificially low concurrency for local uploads (all local uploads should be faster now)
+- Client no longer uses the deprecated (and now removed) segmentation-specific server endpoints
+- Fixed a bug where retries for local uploads were not working properly: should improve local upload robustness
+
+### Removed
+- client.predict, client.annotate, which have been marked as deprecated for several months.
+
+
+## [0.7.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.7.0) - 2022-03-09
+
+### Added
+- `LineAnnotation` added
+- `LinePrediction` added
+
+## [0.6.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.7) - 2021-03-08
+
+### Added
+- `get_autotag_refinement_metrics`
+- Get model using `model_run_id`
+- Video API change to require `image_location` instead of `video_frame_location` in `DatasetItems`
 ## [0.6.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.6) - 2021-02-18
 
 ### Added

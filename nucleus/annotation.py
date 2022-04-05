@@ -1,7 +1,8 @@
 import json
+import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Type, Union
 from urllib.parse import urlparse
 
 from .constants import (
@@ -16,6 +17,7 @@ from .constants import (
     INDEX_KEY,
     LABEL_KEY,
     LABELS_KEY,
+    LINE_TYPE,
     MASK_TYPE,
     MASK_URL_KEY,
     METADATA_KEY,
@@ -46,18 +48,17 @@ class Annotation:
     @classmethod
     def from_json(cls, payload: dict):
         """Instantiates annotation object from schematized JSON dict payload."""
-        if payload.get(TYPE_KEY, None) == BOX_TYPE:
-            return BoxAnnotation.from_json(payload)
-        elif payload.get(TYPE_KEY, None) == POLYGON_TYPE:
-            return PolygonAnnotation.from_json(payload)
-        elif payload.get(TYPE_KEY, None) == CUBOID_TYPE:
-            return CuboidAnnotation.from_json(payload)
-        elif payload.get(TYPE_KEY, None) == CATEGORY_TYPE:
-            return CategoryAnnotation.from_json(payload)
-        elif payload.get(TYPE_KEY, None) == MULTICATEGORY_TYPE:
-            return MultiCategoryAnnotation.from_json(payload)
-        else:
-            return SegmentationAnnotation.from_json(payload)
+        type_key_to_type: Dict[str, Type[Annotation]] = {
+            BOX_TYPE: BoxAnnotation,
+            LINE_TYPE: LineAnnotation,
+            POLYGON_TYPE: PolygonAnnotation,
+            CUBOID_TYPE: CuboidAnnotation,
+            CATEGORY_TYPE: CategoryAnnotation,
+            MULTICATEGORY_TYPE: MultiCategoryAnnotation,
+        }
+        type_key = payload.get(TYPE_KEY, None)
+        AnnotationCls = type_key_to_type.get(type_key, SegmentationAnnotation)
+        return AnnotationCls.from_json(payload)
 
     def to_payload(self) -> dict:
         """Serializes annotation object to schematized JSON dict."""
@@ -69,6 +70,15 @@ class Annotation:
     def to_json(self) -> str:
         """Serializes annotation object to schematized JSON string."""
         return json.dumps(self.to_payload(), allow_nan=False)
+
+    def has_local_files_to_upload(self) -> bool:
+        """Returns True if annotation has local files that need to be uploaded.
+
+        Nearly all subclasses have no local files, so we default this to just return
+        false. If the subclass has local files, it should override this method (but
+        that is not the only thing required to get local upload of files to work.)
+        """
+        return False
 
 
 @dataclass  # pylint: disable=R0902
@@ -175,6 +185,88 @@ class Point:
 
     def to_payload(self) -> dict:
         return {X_KEY: self.x, Y_KEY: self.y}
+
+
+@dataclass
+class LineAnnotation(Annotation):
+    """A polyline annotation consisting of an ordered list of 2D points.
+    A LineAnnotation differs from a PolygonAnnotation by not forming a closed
+    loop, and by having zero area.
+
+    ::
+
+        from nucleus import LineAnnotation
+
+        line = LineAnnotation(
+            label="face",
+            vertices=[Point(100, 100), Point(200, 300), Point(300, 200)],
+            reference_id="person_image_1",
+            annotation_id="person_image_1_line_1",
+            metadata={"camera_mode": "portrait"},
+        )
+
+    Parameters:
+        label (str): The label for this annotation.
+        vertices (List[:class:`Point`]): The list of points making up the line.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies
+            this annotation within its target dataset item. Upon ingest, a matching
+            annotation id will be ignored by default, and updated if update=True
+            for dataset.annotate.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+    """
+
+    label: str
+    vertices: List[Point]
+    reference_id: str
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self.metadata = self.metadata if self.metadata else {}
+        if len(self.vertices) > 0:
+            if not hasattr(self.vertices[0], X_KEY) or not hasattr(
+                self.vertices[0], "to_payload"
+            ):
+                try:
+                    self.vertices = [
+                        Point(x=vertex[X_KEY], y=vertex[Y_KEY])
+                        for vertex in self.vertices
+                    ]
+                except KeyError as ke:
+                    raise ValueError(
+                        "Use a point object to pass in vertices. For example, vertices=[nucleus.Point(x=1, y=2)]"
+                    ) from ke
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        geometry = payload.get(GEOMETRY_KEY, {})
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            vertices=[
+                Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
+            ],
+            reference_id=payload[REFERENCE_ID_KEY],
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+        )
+
+    def to_payload(self) -> dict:
+        payload = {
+            LABEL_KEY: self.label,
+            TYPE_KEY: LINE_TYPE,
+            GEOMETRY_KEY: {
+                VERTICES_KEY: [_.to_payload() for _ in self.vertices]
+            },
+            REFERENCE_ID_KEY: self.reference_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
+            METADATA_KEY: self.metadata,
+        }
+        return payload
 
 
 @dataclass
@@ -432,7 +524,7 @@ class SegmentationAnnotation(Annotation):
 
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
-          accessible to Scale. The mask is an HxW int8 array saved in PNG format,
+          accessible to Scale, or a local path. The mask is an HxW int8 array saved in PNG format,
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
           segmentation).
@@ -496,9 +588,30 @@ class SegmentationAnnotation(Annotation):
 
         return payload
 
+    def has_local_files_to_upload(self) -> bool:
+        """Check if the mask url is local and needs to be uploaded."""
+        if is_local_path(self.mask_url):
+            if not os.path.isfile(self.mask_url):
+                raise Exception(f"Mask file {self.mask_url} does not exist.")
+            return True
+        return False
+
+    def __eq__(self, other):
+        if not isinstance(other, SegmentationAnnotation):
+            return False
+        self.annotations = sorted(self.annotations, key=lambda x: x.index)
+        other.annotations = sorted(other.annotations, key=lambda x: x.index)
+        return (
+            (self.annotation_id == other.annotation_id)
+            and (self.annotations == other.annotations)
+            and (self.mask_url == other.mask_url)
+            and (self.reference_id == other.reference_id)
+        )
+
 
 class AnnotationTypes(Enum):
     BOX = BOX_TYPE
+    LINE = LINE_TYPE
     POLYGON = POLYGON_TYPE
     CUBOID = CUBOID_TYPE
     CATEGORY = CATEGORY_TYPE
@@ -600,6 +713,7 @@ class AnnotationList:
     """Wrapper class separating a list of annotations by type."""
 
     box_annotations: List[BoxAnnotation] = field(default_factory=list)
+    line_annotations: List[LineAnnotation] = field(default_factory=list)
     polygon_annotations: List[PolygonAnnotation] = field(default_factory=list)
     cuboid_annotations: List[CuboidAnnotation] = field(default_factory=list)
     category_annotations: List[CategoryAnnotation] = field(
@@ -620,6 +734,8 @@ class AnnotationList:
 
             if isinstance(annotation, BoxAnnotation):
                 self.box_annotations.append(annotation)
+            elif isinstance(annotation, LineAnnotation):
+                self.line_annotations.append(annotation)
             elif isinstance(annotation, PolygonAnnotation):
                 self.polygon_annotations.append(annotation)
             elif isinstance(annotation, CuboidAnnotation):
@@ -637,6 +753,7 @@ class AnnotationList:
     def __len__(self):
         return (
             len(self.box_annotations)
+            + len(self.line_annotations)
             + len(self.polygon_annotations)
             + len(self.cuboid_annotations)
             + len(self.category_annotations)
@@ -650,12 +767,12 @@ def is_local_path(path: str) -> bool:
 
 
 def check_all_mask_paths_remote(
-    annotations: Sequence[Union[Annotation]],
+    annotations: Sequence[Annotation],
 ):
     for annotation in annotations:
         if hasattr(annotation, MASK_URL_KEY):
             if is_local_path(getattr(annotation, MASK_URL_KEY)):
                 raise ValueError(
                     "Found an annotation with a local path, which is not currently"
-                    f"supported. Use a remote path instead. {annotation}"
+                    f"supported for asynchronous upload. Use a remote path instead, or try synchronous upload. {annotation}"
                 )

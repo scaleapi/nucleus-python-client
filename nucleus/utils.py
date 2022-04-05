@@ -4,8 +4,12 @@ import io
 import json
 import uuid
 from collections import defaultdict
+<<<<<<< HEAD
 from typing import IO, Dict, List, Sequence, Type, Union
 import open3d as o3d
+=======
+from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+>>>>>>> origin/master
 
 import requests
 from requests.models import HTTPError
@@ -16,10 +20,12 @@ from nucleus.annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
     SegmentationAnnotation,
 )
+from nucleus.errors import NucleusAPIError
 
 from .constants import (
     ANNOTATION_TYPES,
@@ -28,7 +34,11 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     ITEM_KEY,
+    LAST_PAGE,
+    LINE_TYPE,
     MULTICATEGORY_TYPE,
+    PAGE_SIZE,
+    PAGE_TOKEN,
     POLYGON_TYPE,
     REFERENCE_ID_KEY,
     SEGMENTATION_TYPE,
@@ -38,6 +48,7 @@ from .prediction import (
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
+    LinePrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
@@ -48,6 +59,9 @@ STRING_REPLACEMENTS = {
     "\\\\t": "\t",
     '\\\\"': '"',
 }
+
+if TYPE_CHECKING:
+    from . import NucleusClient
 
 
 class KeyErrorDict(dict):
@@ -92,6 +106,7 @@ def format_prediction_response(
         Union[
             BoxPrediction,
             PolygonPrediction,
+            LinePrediction,
             CuboidPrediction,
             CategoryPrediction,
             SegmentationPrediction,
@@ -116,12 +131,14 @@ def format_prediction_response(
         Union[
             Type[BoxPrediction],
             Type[PolygonPrediction],
+            Type[LinePrediction],
             Type[CuboidPrediction],
             Type[CategoryPrediction],
             Type[SegmentationPrediction],
         ],
     ] = {
         BOX_TYPE: BoxPrediction,
+        LINE_TYPE: LinePrediction,
         POLYGON_TYPE: PolygonPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
@@ -195,6 +212,9 @@ def convert_export_payload(api_payload):
             annotations[POLYGON_TYPE].append(
                 PolygonAnnotation.from_json(polygon)
             )
+        for line in row[LINE_TYPE]:
+            line[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[LINE_TYPE].append(LineAnnotation.from_json(line))
         for box in row[BOX_TYPE]:
             box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
@@ -287,6 +307,7 @@ def replace_double_slashes(s: str) -> str:
     return s
 
 
+<<<<<<< HEAD
 def bin_to_numpy(bin_file_path: str = None):
     '''
     Takes bin file and returns the Point Cloud
@@ -305,3 +326,27 @@ def read_pcd(fp):
    pcd = o3d.io.read_point_cloud(fp)
    points = np.asarray(pcd.points)
    return points
+=======
+def paginate_generator(
+    client: "NucleusClient",
+    endpoint: str,
+    result_key: str,
+    page_size: int = 100000,
+):
+    last_page = False
+    page_token = None
+    while not last_page:
+        try:
+            response = client.make_request(
+                {PAGE_TOKEN: page_token, PAGE_SIZE: page_size},
+                endpoint,
+                requests.post,
+            )
+        except NucleusAPIError as e:
+            if e.status_code == 503:
+                e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page_size."
+            raise e
+        page_token, last_page = response[PAGE_TOKEN], response[LAST_PAGE]
+        for json_value in response[result_key]:
+            yield json_value
+>>>>>>> origin/master

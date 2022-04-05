@@ -3,34 +3,16 @@ import copy
 import pytest
 import requests
 
-from nucleus import BoxAnnotation, Dataset, DatasetItem, NucleusClient, Slice
-from nucleus.constants import (
-    ANNOTATIONS_KEY,
-    BOX_TYPE,
-    ERROR_PAYLOAD,
-    ITEM_KEY,
-)
+from nucleus import BoxAnnotation, Dataset, NucleusClient, Slice
+from nucleus.constants import ANNOTATIONS_KEY, BOX_TYPE, ITEM_KEY
 from nucleus.job import AsyncJob
 
 from .helpers import (
-    NUCLEUS_PYTEST_USER_ID,
     TEST_BOX_ANNOTATIONS,
-    TEST_DATASET_NAME,
-    TEST_IMG_URLS,
     TEST_PROJECT_ID,
     TEST_SLICE_NAME,
     get_uuid,
-    reference_id_from_url,
 )
-
-
-@pytest.fixture()
-def dataset(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME)
-    yield ds
-
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_reprs():
@@ -42,18 +24,8 @@ def test_reprs():
     test_repr(Slice(slice_id="fake_slice_id", client=client))
 
 
-def test_slice_create_and_delete_and_list(dataset):
-    # Dataset upload
-    ds_items = []
-    for url in TEST_IMG_URLS:
-        ds_items.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-            )
-        )
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+def test_slice_create_and_delete_and_list(dataset: Dataset):
+    ds_items = dataset.items
 
     # Slice creation
     slc = dataset.create_slice(
@@ -68,13 +40,9 @@ def test_slice_create_and_delete_and_list(dataset):
     assert slc.name == TEST_SLICE_NAME
     assert slc.dataset_id == dataset.id
 
-    items = slc.items
-    assert len(items) == 2
-    for item in ds_items[:2]:
-        assert (
-            item.reference_id == items[0]["ref_id"]
-            or item.reference_id == items[1]["ref_id"]
-        )
+    assert {item.reference_id for item in slc.items} == {
+        item.reference_id for item in ds_items[:2]
+    }
 
     response = slc.info()
     assert response["name"] == TEST_SLICE_NAME
@@ -84,51 +52,45 @@ def test_slice_create_and_delete_and_list(dataset):
 
 def test_slice_create_and_export(dataset):
     # Dataset upload
-    url = TEST_IMG_URLS[0]
-    annotation_in_slice = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    ds_items = dataset.items
 
-    ds_items = [
-        DatasetItem(
-            image_location=url,
-            reference_id=reference_id_from_url(url),
-            metadata={"test": "metadata"},
-        ),
-        DatasetItem(
-            image_location=url,
-            reference_id="different_item",
-            metadata={"test": "metadata"},
-        ),
+    slice_ref_ids = [item.reference_id for item in ds_items[:1]]
+    # This test assumes one box annotation per item.
+    annotations = [
+        BoxAnnotation.from_json(json_data)
+        for json_data in TEST_BOX_ANNOTATIONS
     ]
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
-
     # Slice creation
     slc = dataset.create_slice(
         name=TEST_SLICE_NAME,
-        reference_ids=[item.reference_id for item in ds_items[:1]],
+        reference_ids=slice_ref_ids,
     )
 
-    dataset.annotate(annotations=[annotation_in_slice])
+    dataset.annotate(annotations=annotations)
 
-    expected_box_annotation = copy.deepcopy(annotation_in_slice)
+    def get_expected_box_annotation(reference_id):
+        for annotation in annotations:
+            if annotation.reference_id == reference_id:
+                return annotation
+
+    def get_expected_item(reference_id):
+        if reference_id not in slice_ref_ids:
+            raise ValueError("Got results outside the slice")
+        for item in ds_items:
+            if item.reference_id == reference_id:
+                return item
 
     exported = slc.items_and_annotations()
-    assert exported[0][ITEM_KEY] == ds_items[0]
-    assert exported[0][ANNOTATIONS_KEY][BOX_TYPE][0] == expected_box_annotation
+    for row in exported:
+        reference_id = row[ITEM_KEY].reference_id
+        assert row[ITEM_KEY] == get_expected_item(reference_id)
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][
+            0
+        ] == get_expected_box_annotation(reference_id)
 
 
 def test_slice_append(dataset):
-    # Dataset upload
-    ds_items = []
-    for url in TEST_IMG_URLS:
-        ds_items.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-            )
-        )
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+    ds_items = dataset.items
 
     # Slice creation
     slc = dataset.create_slice(
@@ -138,46 +100,19 @@ def test_slice_append(dataset):
 
     # Insert duplicate first item
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
+    slice_items = slc.items
 
-    items = slc.items
-    assert len(items) == 3
-    for item in ds_items[:3]:
-        assert (
-            item.reference_id == items[0]["ref_id"]
-            or item.reference_id == items[1]["ref_id"]
-            or item.reference_id == items[2]["ref_id"]
-        )
+    assert len(slice_items) == 3
 
-    all_stored_items = [_[ITEM_KEY] for _ in slc.items_and_annotations()]
-
-    def sort_by_reference_id(items):
-        # Remove the generated item_ids and standardize
-        #  empty metadata so we can do an equality check.
-        for item in items:
-            item.item_id = None
-            if item.metadata == {}:
-                item.metadata = None
-        return sorted(items, key=lambda x: x.reference_id)
-
-    assert sort_by_reference_id(all_stored_items) == sort_by_reference_id(
-        ds_items[:3]
-    )
+    assert {_.reference_id for _ in ds_items[:3]} == {
+        _.reference_id for _ in slice_items
+    }
 
 
 @pytest.mark.skip(reason="404 not found error")
 @pytest.mark.integration
 def test_slice_send_to_labeling(dataset):
-    # Dataset upload
-    ds_items = []
-    for url in TEST_IMG_URLS:
-        ds_items.append(
-            DatasetItem(
-                image_location=url,
-                reference_id=reference_id_from_url(url),
-            )
-        )
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+    ds_items = dataset.items
 
     # Slice creation
     slc = dataset.create_slice(
@@ -192,17 +127,10 @@ def test_slice_send_to_labeling(dataset):
     assert isinstance(response, AsyncJob)
 
 
-def test_slice_export_raw_items(dataset):
+def test_slice_export_raw_items(dataset: Dataset):
     # Dataset upload
-    orig_url = TEST_IMG_URLS[0]
-    ds_items = [
-        DatasetItem(
-            image_location=orig_url,
-            reference_id=reference_id_from_url(orig_url),
-        )
-    ]
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+    ds_items = dataset.items
+    orig_url = ds_items[0].image_location
 
     # Slice creation
     slc = dataset.create_slice(
@@ -218,3 +146,18 @@ def test_slice_export_raw_items(dataset):
     export_bytes = requests.get(export_url).content
 
     assert hash(orig_bytes) == hash(export_bytes)
+
+
+def test_slice_dataset_item_iterator(dataset):
+    all_items = dataset.items
+    test_slice = dataset.create_slice(
+        name=TEST_SLICE_NAME + get_uuid(),
+        reference_ids=[item.reference_id for item in all_items[:1]],
+    )
+    expected_items = {item.reference_id: item for item in test_slice.items}
+    actual_items = {
+        item.reference_id: item
+        for item in test_slice.items_generator(page_size=1)
+    }
+    for key in actual_items:
+        assert actual_items[key] == expected_items[key]
