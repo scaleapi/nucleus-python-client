@@ -101,7 +101,7 @@ class Model:
         self._client = client
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_id={}, client={self._client})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_id={self.bundle_id}, client={self._client})"
 
     def __eq__(self, other):
         return (
