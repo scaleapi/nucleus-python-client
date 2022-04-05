@@ -179,3 +179,22 @@ cd docs
 sphinx-autobuild . ./_build/html --watch ../nucleus
 ```
 `sphinx-autobuild` will spin up a server on localhost (port 8000 by default) that will watch for and automatically rebuild a version of the API reference based on your local docstring changes.
+
+
+## Custom Metrics used in Scale Validate
+
+To install the availalbe metrics for Scale Validate add the optional `metrics` extra.
+Note that you might need to install a local GEOS package.
+
+```bash
+#Mac OS
+brew install geos
+# Ubuntu/Debian flavors
+apt-get install libgeos-dev
+```
+
+`pip install scale-nucleus[metrics]`
+
+To develop it locally use
+
+`poetry install --extra metrics`
