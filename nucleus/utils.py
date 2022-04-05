@@ -273,6 +273,34 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
         )
 
 
+def serialize_and_write_to_presigned_urls_in_batches(
+    upload_units: Sequence[
+        Union[DatasetItem, Annotation, LidarScene, VideoScene]
+    ],
+    dataset_id: str,
+    client,
+    batch_size: int = 10000,
+):
+    """This helper function can be used to serialize a list of API objects to batches of NDJSON files."""
+    request_ids = []
+    for i in range(0, len(upload_units), batch_size):
+        upload_units_chunk = upload_units[i : i + batch_size]
+        request_id = uuid.uuid4().hex
+        response = client.make_request(
+            payload={},
+            route=f"dataset/{dataset_id}/signedUrl/{request_id}",
+            requests_command=requests.get,
+        )
+
+        strio = io.StringIO()
+        serialize_and_write(upload_units_chunk, strio)
+        strio.seek(0)
+        upload_to_presigned_url(response["signed_url"], strio)
+
+        request_ids.append(request_id)
+    return request_ids
+
+
 def serialize_and_write_to_presigned_url(
     upload_units: Sequence[
         Union[DatasetItem, Annotation, LidarScene, VideoScene]

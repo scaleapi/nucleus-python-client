@@ -20,6 +20,7 @@ from nucleus.utils import (
     format_prediction_response,
     paginate_generator,
     serialize_and_write_to_presigned_url,
+    serialize_and_write_to_presigned_urls_in_batches,
 )
 
 from .annotation import Annotation, check_all_mask_paths_remote
@@ -39,6 +40,7 @@ from .constants import (
     NAME_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    REQUEST_IDS_KEY,
     SLICE_ID_KEY,
     UPDATE_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
@@ -390,11 +392,11 @@ class Dataset:
         """
         if asynchronous:
             check_all_mask_paths_remote(annotations)
-            request_id = serialize_and_write_to_presigned_url(
+            request_ids = serialize_and_write_to_presigned_urls_in_batches(
                 annotations, self.id, self._client
             )
             response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                payload={REQUEST_IDS_KEY: request_ids, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/annotate?async=1",
             )
             return AsyncJob.from_json(response, self._client)
@@ -1384,11 +1386,11 @@ class Dataset:
         if asynchronous:
             check_all_mask_paths_remote(predictions)
 
-            request_id = serialize_and_write_to_presigned_url(
+            request_ids = serialize_and_write_to_presigned_urls_in_batches(
                 predictions, self.id, self._client
             )
             response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                payload={REQUEST_IDS_KEY: request_ids, UPDATE_KEY: update},
                 route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
             )
             return AsyncJob.from_json(response, self._client)
