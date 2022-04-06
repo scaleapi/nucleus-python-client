@@ -190,3 +190,12 @@ class Model:
             requests_command=requests.post,
         )
         return AsyncJob.from_json(response, self._client)
+    
+    def run(self, dataset_id: str) -> str:
+        response = self._client.make_request(
+            {"dataset_id": dataset_id},
+            f"nucleus/model/run/{self.id}",
+            requests_command=requests.post,
+        )
+
+        return response.json
