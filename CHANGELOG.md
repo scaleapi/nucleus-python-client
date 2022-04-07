@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Validate metrics support metadata and field filtering on input annotation and predictions
-- 3D Cuboid Recall, Precision and IOU metrics
+- 3D/Cuboid metrics: Recall, Precision, 3D IOU and birds eye 2D IOU```
 - Shapely can be used for metric development if the optional scale-nucleus[shapely] is installed
 - Full support for passing parameters to evaluation configurations
 
