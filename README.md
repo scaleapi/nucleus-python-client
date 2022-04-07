@@ -181,10 +181,14 @@ sphinx-autobuild . ./_build/html --watch ../nucleus
 `sphinx-autobuild` will spin up a server on localhost (port 8000 by default) that will watch for and automatically rebuild a version of the API reference based on your local docstring changes.
 
 
-## Custom Metrics used in Scale Validate
+## Custom Metrics using Shapely in scale-validate
 
-To install the availalbe metrics for Scale Validate add the optional `metrics` extra.
-Note that you might need to install a local GEOS package.
+Certain metrics use `shapely` which is added as an optional dependency.
+```bash
+pip install scale-nucleus[metrics]
+```
+
+Note that you might need to install a local GEOS package since Shapely doesn't provide binaries bundled with GEOS for every platform.
 
 ```bash
 #Mac OS
@@ -193,8 +197,6 @@ brew install geos
 apt-get install libgeos-dev
 ```
 
-`pip install scale-nucleus[metrics]`
-
 To develop it locally use
 
-`poetry install --extra metrics`
+`poetry install --extra shapely`
