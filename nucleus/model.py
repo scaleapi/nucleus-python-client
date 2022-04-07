@@ -191,9 +191,22 @@ class Model:
         )
         return AsyncJob.from_json(response, self._client)
     
-    def run(self, dataset_id: str) -> str:
+    def run(self, dataset_id: str, job_id: str, slice_id: Optional[str]) -> str:
+        """Runs inference on the bundle associated with the model on the dataset. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.run("ds_123456")
+        
+        Args:
+            dataset_id: id of dataset to run inference on
+            job_id: nucleus job used to track async job progress
+            slice_id: (optional) id of slice of the dataset to run inference on
+        """
         response = self._client.make_request(
-            {"dataset_id": dataset_id},
+            {"dataset_id": dataset_id, "job_id": job_id, "slice_id": slice_id},
             f"nucleus/model/run/{self.id}",
             requests_command=requests.post,
         )
