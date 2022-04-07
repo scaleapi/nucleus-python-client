@@ -29,9 +29,10 @@ def test_perfect_match_f1_score():
             )
         )
 
-    assert results
+    assert [res.value for res in results]
     aggregate_result = metric.aggregate_score(results)
-    assert aggregate_result.value == 1
+    for result_label, scalar in aggregate_result.items():
+        assert scalar.value == 1
 
 
 def test_no_match_f1_score():

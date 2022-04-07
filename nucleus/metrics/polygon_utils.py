@@ -273,7 +273,7 @@ def label_match_wrapper(metric_fn):
         annotations: List[BoxOrPolygonAnnotation],
         predictions: List[BoxOrPolygonPrediction],
         *args,
-        enforce_label_match: bool = False,
+        enforce_label_match: bool = True,
         **kwargs,
     ) -> ScalarResult:
         # Simply return the metric if we are not enforcing label matches.

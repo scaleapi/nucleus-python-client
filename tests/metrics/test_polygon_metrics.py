@@ -33,32 +33,14 @@ from tests.metrics.helpers import (
         (
             TEST_BOX_ANNOTATION_LIST,
             TEST_BOX_PREDICTION_LIST,
-            PolygonIOU,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_BOX_ANNOTATION_LIST,
-            TEST_BOX_PREDICTION_LIST,
             PolygonPrecision,
             {"enforce_label_match": True},
         ),
         (
             TEST_BOX_ANNOTATION_LIST,
             TEST_BOX_PREDICTION_LIST,
-            PolygonPrecision,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_BOX_ANNOTATION_LIST,
-            TEST_BOX_PREDICTION_LIST,
             PolygonRecall,
             {"enforce_label_match": True},
-        ),
-        (
-            TEST_BOX_ANNOTATION_LIST,
-            TEST_BOX_PREDICTION_LIST,
-            PolygonRecall,
-            {"enforce_label_match": False},
         ),
         (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonMAP, {}),
         (
@@ -70,32 +52,14 @@ from tests.metrics.helpers import (
         (
             TEST_CONVEX_POLYGON_ANNOTATION_LIST,
             TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonIOU,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
             PolygonPrecision,
             {"enforce_label_match": True},
         ),
         (
             TEST_CONVEX_POLYGON_ANNOTATION_LIST,
             TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonPrecision,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
             PolygonRecall,
             {"enforce_label_match": True},
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonRecall,
-            {"enforce_label_match": False},
         ),
         (
             TEST_CONVEX_POLYGON_ANNOTATION_LIST,
@@ -111,7 +75,8 @@ def test_perfect_match_polygon_metrics(
     # Test metrics on where annotations = predictions perfectly
     metric = metric_fn(**kwargs)
     result = metric(test_annotations, test_predictions)
-    assert_metric_eq(result, ScalarResult(1, len(test_annotations)))
+    for label, result_val in result.items():
+        assert_metric_eq(result_val, ScalarResult(1, 1))
 
 
 @pytest.mark.parametrize(
@@ -126,32 +91,14 @@ def test_perfect_match_polygon_metrics(
         (
             TEST_BOX_ANNOTATION_LIST,
             TEST_BOX_PREDICTION_LIST,
-            PolygonIOU,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_BOX_ANNOTATION_LIST,
-            TEST_BOX_PREDICTION_LIST,
             PolygonPrecision,
             {"enforce_label_match": True},
         ),
         (
             TEST_BOX_ANNOTATION_LIST,
             TEST_BOX_PREDICTION_LIST,
-            PolygonPrecision,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_BOX_ANNOTATION_LIST,
-            TEST_BOX_PREDICTION_LIST,
             PolygonRecall,
             {"enforce_label_match": True},
-        ),
-        (
-            TEST_BOX_ANNOTATION_LIST,
-            TEST_BOX_PREDICTION_LIST,
-            PolygonRecall,
-            {"enforce_label_match": False},
         ),
         (TEST_BOX_ANNOTATION_LIST, TEST_BOX_PREDICTION_LIST, PolygonMAP, {}),
         (
@@ -163,32 +110,14 @@ def test_perfect_match_polygon_metrics(
         (
             TEST_CONVEX_POLYGON_ANNOTATION_LIST,
             TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonIOU,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
             PolygonPrecision,
             {"enforce_label_match": True},
         ),
         (
             TEST_CONVEX_POLYGON_ANNOTATION_LIST,
             TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonPrecision,
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
             PolygonRecall,
             {"enforce_label_match": True},
-        ),
-        (
-            TEST_CONVEX_POLYGON_ANNOTATION_LIST,
-            TEST_CONVEX_POLYGON_PREDICTION_LIST,
-            PolygonRecall,
-            {"enforce_label_match": False},
         ),
         (
             TEST_CONVEX_POLYGON_ANNOTATION_LIST,
@@ -209,7 +138,8 @@ def test_perfect_unmatched_polygon_metrics(
         polygon.reference_id += "_bad"
     metric = metric_fn(**kwargs)
     result = metric(test_annotations, test_predictions_unmatch)
-    assert_metric_eq(result, ScalarResult(0, len(test_annotations)))
+    for label, result in result.items():
+        assert_metric_eq(result, ScalarResult(0, 1))
 
 
 @pytest.mark.parametrize(
@@ -219,56 +149,35 @@ def test_perfect_unmatched_polygon_metrics(
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonIOU,
-            ScalarResult(109.0 / 300, 3),
-            {"enforce_label_match": True},
-        ),
-        (
-            TEST_ANNOTATION_LIST,
-            TEST_PREDICTION_LIST,
-            PolygonIOU,
-            ScalarResult(109.0 / 300, 3),
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_ANNOTATION_LIST,
-            TEST_PREDICTION_LIST,
-            PolygonPrecision,
-            ScalarResult(1.0 / 3, 3),
+            {"car": ScalarResult(109.0 / 300, 3)},
             {"enforce_label_match": True},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonPrecision,
-            ScalarResult(1.0 / 3, 3),
-            {"enforce_label_match": False},
-        ),
-        (
-            TEST_ANNOTATION_LIST,
-            TEST_PREDICTION_LIST,
-            PolygonRecall,
-            ScalarResult(0.5, 2),
+            {"car": ScalarResult(1.0 / 3, 3)},
             {"enforce_label_match": True},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonRecall,
-            ScalarResult(0.5, 2),
-            {"enforce_label_match": False},
+            {"car": ScalarResult(0.5, 2)},
+            {"enforce_label_match": True},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonAveragePrecision,
-            ScalarResult(1.0 / 6, 1),
+            {"car": ScalarResult(1.0 / 6, 1)},
             {"label": "car"},
         ),
         (
             TEST_ANNOTATION_LIST,
             TEST_PREDICTION_LIST,
             PolygonMAP,
-            ScalarResult(1.0 / 6, 1),
+            {"car": ScalarResult(1.0 / 6, 1)},
             {},
         ),
     ],
@@ -279,4 +188,6 @@ def test_simple_2_boxes(
     # Test metrics on where annotations = predictions perfectly
     metric = metric_fn(**kwargs)
     result = metric(test_annotations, test_predictions)
-    assert_metric_eq(result, expected)
+    for label, value in result.items():
+        assert label in expected
+        assert_metric_eq(value, expected[label])

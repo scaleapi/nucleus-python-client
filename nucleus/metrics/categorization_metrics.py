@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 from sklearn.metrics import f1_score
 
@@ -33,16 +33,28 @@ class CategorizationResult(MetricResult):
     predictions: List[CategoryPrediction]
 
     @property
-    def value(self):
+    def results(self) -> Dict[str, float]:
         annotation_labels = to_taxonomy_labels(self.annotations)
         prediction_labels = to_taxonomy_labels(self.predictions)
 
         # TODO: Change task.py interface such that we can return label matching
-        # NOTE: Returning 1 if all taxonomy labels match else 0
-        value = f1_score(
-            list(annotation_labels), list(prediction_labels), average="macro"
-        )
-        return value
+        results = {
+            "f1_macro": f1_score(
+                list(annotation_labels),
+                list(prediction_labels),
+                average="macro",
+            )
+        }
+        return results
+
+    @property
+    def extra_info(self) -> Dict[str, str]:
+        annotation_labels = to_taxonomy_labels(self.annotations)
+        prediction_labels = to_taxonomy_labels(self.predictions)
+        return {
+            "annotations": ", ".join(annotation_labels),
+            "predictions": ", ".join(prediction_labels),
+        }
 
 
 class CategorizationMetric(Metric):
@@ -80,7 +92,7 @@ class CategorizationMetric(Metric):
         pass
 
     @abstractmethod
-    def aggregate_score(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
+    def aggregate_score(self, results: List[CategorizationResult]) -> Dict[str, ScalarResult]:  # type: ignore[override]
         pass
 
     def __call__(
@@ -190,11 +202,18 @@ class CategorizationF1(CategorizationMetric):
             annotations=annotations, predictions=predictions
         )
 
-    def aggregate_score(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
+    def aggregate_score(self, results: List[CategorizationResult]) -> Dict[str, ScalarResult]:  # type: ignore[override]
         gt = []
         predicted = []
         for result in results:
             gt.extend(list(to_taxonomy_labels(result.annotations)))
             predicted.extend(list(to_taxonomy_labels(result.predictions)))
-        value = f1_score(gt, predicted, average=self.f1_method)
-        return ScalarResult(value)
+        aggregate_scores = {}
+        aggregate_scores["macro"] = f1_score(gt, predicted, average="macro")
+        aggregate_scores["weighted"] = f1_score(
+            gt, predicted, average="weighted"
+        )
+        return {
+            result_label: ScalarResult(val)
+            for result_label, val in aggregate_scores.items()
+        }

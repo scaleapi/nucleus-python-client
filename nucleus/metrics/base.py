@@ -1,7 +1,7 @@
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Dict, Iterable, List
 
 from nucleus.annotation import AnnotationList
 from nucleus.prediction import PredictionList
@@ -9,6 +9,16 @@ from nucleus.prediction import PredictionList
 
 class MetricResult(ABC):
     """Base MetricResult class"""
+
+    @property
+    @abstractmethod
+    def results(self) -> Dict[str, float]:
+        """Interface for item results"""
+
+    @property
+    def extra_info(self) -> Dict[str, str]:
+        """Overload this to pass extra info about the item to show in the UI"""
+        return {}
 
 
 @dataclass
@@ -27,6 +37,14 @@ class ScalarResult(MetricResult):
     value: float
     weight: float = 1.0
 
+    @property
+    def results(self) -> Dict[str, float]:
+        return {"value": self.value}
+
+    @property
+    def extra_info(self) -> Dict[str, str]:
+        return {"weight:": str(self.weight)}
+
     @staticmethod
     def aggregate(results: Iterable["ScalarResult"]) -> "ScalarResult":
         """Aggregates results using a weighted average."""
@@ -35,6 +53,22 @@ class ScalarResult(MetricResult):
         total_value = sum([result.value * result.weight for result in results])
         value = total_value / max(total_weight, sys.float_info.epsilon)
         return ScalarResult(value, total_weight)
+
+
+@dataclass
+class GroupedScalarResult(MetricResult):
+    group_to_scalar: Dict[str, ScalarResult]
+
+    @property
+    def results(self) -> Dict[str, float]:
+        group_results = {
+            group: scalar.value
+            for group, scalar in self.group_to_scalar.items()
+        }
+        group_results["all_groups"] = ScalarResult.aggregate(
+            self.group_to_scalar.values()
+        ).value
+        return group_results
 
 
 class Metric(ABC):
@@ -93,7 +127,9 @@ class Metric(ABC):
         """A metric must override this method and return a metric result, given annotations and predictions."""
 
     @abstractmethod
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+    def aggregate_score(
+        self, results: List[MetricResult]
+    ) -> Dict[str, ScalarResult]:
         """A metric must define how to aggregate results from single items to a single ScalarResult.
 
         E.g. to calculate a R2 score with sklearn you could define a custom metric class ::
