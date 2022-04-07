@@ -6,10 +6,9 @@ from nucleus.validate.eval_functions.base_eval_function import (
     EvalFunctionConfig,
 )
 
+from ...metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
-
-MEAN_AVG_PRECISION_NAME = "mean_average_precision_boxes"
 
 
 class PolygonIOUConfig(EvalFunctionConfig):
@@ -18,6 +17,12 @@ class PolygonIOUConfig(EvalFunctionConfig):
         enforce_label_match: bool = False,
         iou_threshold: float = 0.0,
         confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
         **kwargs,
     ):
         """Configures a call to :class:`PolygonIOU` object.
@@ -38,6 +43,24 @@ class PolygonIOUConfig(EvalFunctionConfig):
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
             enforce_label_match=enforce_label_match,
@@ -55,6 +78,12 @@ class PolygonMAPConfig(EvalFunctionConfig):
     def __call__(
         self,
         iou_threshold: float = 0.5,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
         **kwargs,
     ):
         """Configures a call to :class:`PolygonMAP` object.
@@ -73,6 +102,24 @@ class PolygonMAPConfig(EvalFunctionConfig):
 
         Args:
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
             iou_threshold=iou_threshold,
@@ -90,6 +137,12 @@ class PolygonRecallConfig(EvalFunctionConfig):
         enforce_label_match: bool = False,
         iou_threshold: float = 0.5,
         confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
         **kwargs,
     ):
         """Configures a call to :class:`PolygonRecall` object.
@@ -110,6 +163,24 @@ class PolygonRecallConfig(EvalFunctionConfig):
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
             enforce_label_match=enforce_label_match,
@@ -129,6 +200,12 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
         enforce_label_match: bool = False,
         iou_threshold: float = 0.5,
         confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
         **kwargs,
     ):
         """Configures a call to :class:`PolygonPrecision` object.
@@ -149,6 +226,24 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
             enforce_label_match=enforce_label_match,
@@ -162,11 +257,234 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
         return "bbox_precision"
 
 
+class CuboidIOU2DConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configure a call to CuboidIOU object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            iou_2d=True,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_iou_2d"
+
+
+class CuboidIOU3DConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configure a call to CuboidIOU object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            iou_2d=False,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_iou_3d"
+
+
+class CuboidPrecisionConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configure a call to CuboidPrecision object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_precision"
+
+
+class CuboidRecallConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = True,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configure a call to a CuboidRecall object.
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            iou_2d: whether to return the BEV 2D IOU if true, or the 3D IOU if false.
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "cuboid_recall"
+
+
 class CategorizationF1Config(EvalFunctionConfig):
     def __call__(
         self,
         confidence_threshold: Optional[float] = None,
         f1_method: Optional[str] = None,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
         **kwargs,
     ):
         """ Configure an evaluation of :class:`CategorizationF1`.
@@ -210,6 +528,24 @@ class CategorizationF1Config(EvalFunctionConfig):
                 Calculate metrics for each instance, and find their average (only
                 meaningful for multilabel classification where this differs from
                 :func:`accuracy_score`).
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
             confidence_threshold=confidence_threshold, f1_method=f1_method
@@ -273,6 +609,10 @@ EvalFunction = Union[
     PolygonMAPConfig,
     PolygonPrecisionConfig,
     PolygonRecallConfig,
+    CuboidRecallConfig,
+    CuboidIOU2DConfig,
+    CuboidIOU3DConfig,
+    CuboidPrecisionConfig,
     CategorizationF1Config,
     CustomEvalFunction,
     EvalFunctionNotAvailable,
@@ -324,6 +664,10 @@ class AvailableEvalFunctions:
         self.cat_f1: CategorizationF1Config = self._assign_eval_function_if_defined(
             CategorizationF1Config  # type: ignore
         )
+        self.cuboid_iou_2d: CuboidIOU2DConfig = self._assign_eval_function_if_defined(CuboidIOU2DConfig)  # type: ignore
+        self.cuboid_iou_3d: CuboidIOU3DConfig = self._assign_eval_function_if_defined(CuboidIOU3DConfig)  # type: ignore
+        self.cuboid_precision: CuboidPrecisionConfig = self._assign_eval_function_if_defined(CuboidPrecisionConfig)  # type: ignore
+        self.cuboid_recall: CuboidRecallConfig = self._assign_eval_function_if_defined(CuboidRecallConfig)  # type: ignore
 
         # Add public entries that have not been implemented as an attribute on this class
         for func_entry in self._public_func_entries.values():

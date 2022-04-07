@@ -120,6 +120,7 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
 

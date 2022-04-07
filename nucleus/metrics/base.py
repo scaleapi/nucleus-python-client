@@ -1,9 +1,14 @@
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Iterable, List, Optional, Union
 
 from nucleus.annotation import AnnotationList
+from nucleus.metrics.filtering import (
+    ListOfAndFilters,
+    ListOfOrAndFilters,
+    apply_filters,
+)
 from nucleus.prediction import PredictionList
 
 
@@ -86,11 +91,106 @@ class Metric(ABC):
         metric(annotations, predictions)
     """
 
+    def __init__(
+        self,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+    ):
+        """
+        Args:
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        self.annotation_filters = annotation_filters
+        self.prediction_filters = prediction_filters
+
     @abstractmethod
-    def __call__(
+    def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
     ) -> MetricResult:
         """A metric must override this method and return a metric result, given annotations and predictions."""
+
+    def __call__(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ) -> MetricResult:
+        annotations = self._filter_annotations(annotations)
+        predictions = self._filter_predictions(predictions)
+        return self.call_metric(annotations, predictions)
+
+    def _filter_annotations(self, annotations: AnnotationList):
+        if (
+            self.annotation_filters is None
+            or len(self.annotation_filters) == 0
+        ):
+            return annotations
+        annotations.box_annotations = apply_filters(
+            annotations.box_annotations, self.annotation_filters
+        )
+        annotations.line_annotations = apply_filters(
+            annotations.line_annotations, self.annotation_filters
+        )
+        annotations.polygon_annotations = apply_filters(
+            annotations.polygon_annotations, self.annotation_filters
+        )
+        annotations.cuboid_annotations = apply_filters(
+            annotations.cuboid_annotations, self.annotation_filters
+        )
+        annotations.category_annotations = apply_filters(
+            annotations.category_annotations, self.annotation_filters
+        )
+        annotations.multi_category_annotations = apply_filters(
+            annotations.multi_category_annotations, self.annotation_filters
+        )
+        annotations.segmentation_annotations = apply_filters(
+            annotations.segmentation_annotations, self.annotation_filters
+        )
+        return annotations
+
+    def _filter_predictions(self, predictions: PredictionList):
+        if (
+            self.prediction_filters is None
+            or len(self.prediction_filters) == 0
+        ):
+            return predictions
+        predictions.box_predictions = apply_filters(
+            predictions.box_predictions, self.prediction_filters
+        )
+        predictions.line_predictions = apply_filters(
+            predictions.line_predictions, self.prediction_filters
+        )
+        predictions.polygon_predictions = apply_filters(
+            predictions.polygon_predictions, self.prediction_filters
+        )
+        predictions.cuboid_predictions = apply_filters(
+            predictions.cuboid_predictions, self.prediction_filters
+        )
+        predictions.category_predictions = apply_filters(
+            predictions.category_predictions, self.prediction_filters
+        )
+        predictions.segmentation_predictions = apply_filters(
+            predictions.segmentation_predictions, self.prediction_filters
+        )
+        return predictions
 
     @abstractmethod
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
