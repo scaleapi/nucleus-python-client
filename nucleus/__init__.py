@@ -59,6 +59,7 @@ from .annotation import (
     Segment,
     SegmentationAnnotation,
 )
+from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -97,7 +98,7 @@ from .constants import (
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
 from .dataset import Dataset
-from .dataset_item import CameraParams, DatasetItem, Quaternion
+from .dataset_item import DatasetItem
 from .deprecation_warning import deprecated
 from .errors import (
     DatasetItemRetrievalError,
@@ -126,6 +127,7 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
+from .quaternion import Quaternion
 from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice

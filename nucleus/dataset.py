@@ -1561,11 +1561,14 @@ class Dataset:
         The backed will join the specified mapping metadata to the exisiting metadata.
         If there is a key-collision, the value given in the mapping will take precedence.
 
+        This method may also be used to udpate the `camera_params` for a particular set of items.
+        Just specify the key `camera_params` in the metadata for each reference_id along with all the necessary fields.
+
         Args:
             mapping: key-value pair of <reference_id>: <metadata>
 
         Examples:
-            >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123}}
+            >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123, "camera_params": {...}}}
             >>> dataset.update_item_metadata(mapping)
 
         Returns:

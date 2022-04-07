@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shapely can be used for metric development if the optional scale-nucleus[shapely] is installed
 - Full support for passing parameters to evaluation configurations
 
+## [0.8.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.4) - 2022-04-06
+- Changing `camera_params` of dataset items can now be done through the dataset method `update_items_metadata`
+
 ## [0.8.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.3) - 2022-03-29
 
 ### Added
