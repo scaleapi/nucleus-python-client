@@ -6,7 +6,7 @@ from pyquaternion import Quaternion
 class Transform:
     """Transform object represent a rigid transformation matrix (rotation and translation).
 
-    Transform is a 4x4 matrix, although it could be instance using (16,1), (3,4), (3,3) or (3,1) matrixes.
+    Transform is a 4x4 matrix, although it could be instance using (16,1), (3,4), (3,3) or (3,1) matrices.
     **Note**: not all the methods from Transform will work using scaled/small matrixes
 
     .. highlight:: python
