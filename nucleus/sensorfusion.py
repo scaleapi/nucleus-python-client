@@ -32,7 +32,7 @@ class RawPointCloud:
             self.points = transform.apply(points)
 
 
-class CamCalibration:
+class CameraCalibration:
     '''
     CamCalibration solely holds the pose of the camera
     This CamCalibration will inevitably be transformed by the device_pose
