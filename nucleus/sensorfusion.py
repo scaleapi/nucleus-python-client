@@ -105,7 +105,8 @@ class RawScene:
               to pointcloud and camera calibrations. Each frame of a lidar scene must contain exactly one
               pointcloud and any number of camera calibrations
     '''
-    def __init__(self, frames: [RawFrame] = None):
+from typing import List
+    def __init__(self, frames: List[RawFrame] = []):
         if frames is None:
             self.frames = []
         else:
