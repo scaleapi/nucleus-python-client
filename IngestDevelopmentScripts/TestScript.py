@@ -15,7 +15,7 @@ updated_extrinsics = np.load("sdk-sample-data/extrinsics_seq000-003_11042021.npz
 wnsl_extrinsics = updated_extrinsics['camera_WindshieldNarrowStereoLeft_lidar_extrinsic']
 print(f"Camera Extrinsics: \n{wnsl_extrinsics}")
 
-cam_1_calib = CamCalibration(extrinsic_matrix=wnsl_extrinsics)
+cam_1_calib = CameraCalibration(extrinsic_matrix=wnsl_extrinsics)
 print(f"Original Camera Pose:{cam_1_calib.pose}")
 
 RawScene = RawScene()
@@ -33,7 +33,7 @@ for idx,npz_fp in enumerate(npz_files):
     frame_pose = Transform(frame_npz['vehicle_local_tf'])
     print(f"Frame Pose: {frame_pose}")
 
-    raw_frame = RawFrame(lidar=pointcloud, cam1=cam_1_calib, dev_pose=frame_pose)
+    raw_frame = RawFrame(lidar=pointcloud, cam1=cam_1_calib, device_pose=frame_pose)
     RawScene.add_frame(raw_frame)
 
 print(f"Frame 5, Point1 PreTransform: {RawScene.frames[4].items['lidar'].points[0]}")

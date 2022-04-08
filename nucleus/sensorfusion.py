@@ -1,21 +1,41 @@
 import numpy as np
 from nucleus.transform import Transform
-from nucleus.utils import read_pcd
 import copy
+from typing import List
+from dataclasses import dataclass
 
+from sensorfusion_utils import read_pcd
+
+@dataclass
 class RawPointCloud:
     '''
     RawPointClouds are containers for raw point cloud data. This structure contains Point Clouds as (N,3) or (N,4) numpy arrays
     Point cloud data is assumed to be in ego coordinates.
-    If the point cloud is in World Coordinates, one can provide the inverse pose as the "transform" argument. If this argument
-    is present, the point cloud will be transformed back into ego coordinates
+
+    If the point cloud is in world coordinates, one can provide the inverse pose as the "transform" argument. If this argument
+    is present, the point cloud will be transformed back into ego coordinates by:
+
+        transform.apply(points)
+
+    or in the extended implementation:
+
+        points_4d = np.hstack([points[:, :3], np.ones((points.shape[0], 1))])
+        transformed_4d = points_4d.dot(self.matrix.T)
+        return np.hstack([transformed_4d[:, :3], points[:, 3:]])
+
+
     Args:
         points (np.array): Point cloud data represented as (N,3) or (N,4) numpy arrays
         transform (:class:`Transform`): If in World Coordinate, the transformation used to transform lidar points into ego coordinates
     '''
+    points: np.array
 
     def __init__(self, points: np.array = None, transform: Transform = None):
         self.points = points
+
+        if points is not None and (len(self.points.shape) != 2 or self.points.shape[1] not in [3, 4]):
+            raise Exception(f'numpy array has unexpected shape{self.points.shape}. Please convert to (N,3) or (N,4) numpy array where each row is [x,y,z] or [x,y,z,i]')
+
         if transform is not None:
             self.points = transform.apply(points)
 
@@ -34,8 +54,8 @@ class RawPointCloud:
 
 class CameraCalibration:
     '''
-    CamCalibration solely holds the pose of the camera
-    This CamCalibration will inevitably be transformed by the device_pose
+    CameraCalibration solely holds the pose of the camera
+    This CameraCalibration will inevitably be transformed by the device_pose
     Args:
             extrinsic_matrix (np.array): (4,4) extrinsic transformation matrix representing device_to_lidar
     '''
@@ -65,16 +85,16 @@ class RawFrame:
     RawFrames are containers for point clouds, image extrinsics, and device pose.
     These objects most notably are leveraged to transform point clouds and image extrinsic matrices to the world coordinate frame.
     Args:
-            dev_pose (:class:`Transform`): World Coordinate transformation for frame
+            device_pose (:class:`Transform`): World Coordinate transformation for frame
             **kwargs (Dict[str, :class:`RawPointCloud, :class: CameraCalibration`]): Mappings from sensor name
               to pointcloud and camera calibrations. Each frame of a lidar scene must contain exactly one
               pointcloud and any number of camera calibrations
     '''
     def __init__(self, device_pose: Transform = None, **kwargs):
-        self.dev_pose = dev_pose
+        self.device_pose = device_pose
         self.items = {}
         for key, value in kwargs.items():
-            if isinstance(value, CamCalibration):
+            if isinstance(value, CameraCalibration):
                 self.items[key] = copy.copy(value)
             else:
                 self.items[key] = value
@@ -88,7 +108,7 @@ class RawFrame:
             if isinstance(self.items[item], RawPointCloud):
                 return np.hstack(
                     [
-                        self.dev_pose @ self.items[item][:, :3],
+                        self.device_pose @ self.items[item][:, :3],
                         self.items[item][:, 3:4],
                         self.items[item][:, 4:5]
                     ]
@@ -98,28 +118,24 @@ class RawFrame:
 class RawScene:
     '''
     RawsScenes are containers for frames
-    These objects most notably are leveraged to transform point clouds and image extrinsic matrices to the world coordinate frame.
     Args:
-            dev_pose (:class:`Transform`): World Coordinate transformation for frame
-            **kwargs (Dict[str, :class:`RawPointCloud, :class: CameraCalibration`]): Mappings from sensor name
-              to pointcloud and camera calibrations. Each frame of a lidar scene must contain exactly one
-              pointcloud and any number of camera calibrations
+            frames (:class:`RawFrame`): Indexed sequential frame objects composing the scene
     '''
-from typing import List
+
     def __init__(self, frames: List[RawFrame] = []):
         if frames is None:
             self.frames = []
         else:
             self.frames = frames
 
-    def add_frame(self, frame: RawFrame = None):
+    def add_frame(self, frame: RawFrame):
         self.frames.append(frame)
 
     def make_transforms_relative(self):
         """Make all the frame transform relative to the first transform/frame. This will set the first transform to position (0,0,0) and heading (1,0,0,0)"""
-        offset = self.frames[0].dev_pose.inverse
+        offset = self.frames[0].device_pose.inverse
         for frame in self.frames:
-            frame.dev_pose = offset @ frame.dev_pose
+            frame.device_pose = offset @ frame.device_pose
 
     def apply_transforms(self, relative: bool = False):
         if relative:
@@ -129,11 +145,11 @@ from typing import List
                 if isinstance(frame.items[item], RawPointCloud):
                     frame.items[item].points = np.hstack(
                         [
-                            frame.dev_pose @ frame.items[item].points[:, :3],
+                            frame.device_pose @ frame.items[item].points[:, :3],
                             frame.items[item].points[:, 3:4],
                             frame.items[item].points[:, 4:5],
                         ]
                     )
                 else:
-                    wct = frame.dev_pose @ frame.items[item].pose
+                    wct = frame.device_pose @ frame.items[item].pose
                     frame.items[item].pose = wct
