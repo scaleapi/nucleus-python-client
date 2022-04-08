@@ -128,6 +128,8 @@ class RawScene:
         else:
             self.frames = frames
 
+        self.transformed = False
+
     def add_frame(self, frame: RawFrame):
         self.frames.append(frame)
 
@@ -138,8 +140,12 @@ class RawScene:
             frame.device_pose = offset @ frame.device_pose
 
     def apply_transforms(self, relative: bool = False):
+        if self.transformed:
+            raise Exception("apply_transforms was called more than once. Raw Scene has already been transformed!")
+
         if relative:
             self.make_transforms_relative()
+
         for frame in self.frames:
             for item in frame.items:
                 if isinstance(frame.items[item], RawPointCloud):
@@ -153,3 +159,4 @@ class RawScene:
                 else:
                     wct = frame.device_pose @ frame.items[item].pose
                     frame.items[item].pose = wct
+        self.transformed = True
