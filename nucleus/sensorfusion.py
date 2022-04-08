@@ -70,7 +70,7 @@ class RawFrame:
               to pointcloud and camera calibrations. Each frame of a lidar scene must contain exactly one
               pointcloud and any number of camera calibrations
     '''
-    def __init__(self, dev_pose: Transform = None, **kwargs):
+    def __init__(self, device_pose: Transform = None, **kwargs):
         self.dev_pose = dev_pose
         self.items = {}
         for key, value in kwargs.items():
