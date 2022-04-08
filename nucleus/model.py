@@ -191,7 +191,7 @@ class Model:
         )
         return AsyncJob.from_json(response, self._client)
     
-    def run(self, dataset_id: str, job_id: str, slice_id: Optional[str]) -> str:
+    def run(self, dataset_id: str, slice_id: Optional[str]) -> str:
         """Runs inference on the bundle associated with the model on the dataset. ::
 
             import nucleus
