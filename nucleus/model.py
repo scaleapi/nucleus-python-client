@@ -206,7 +206,7 @@ class Model:
             slice_id: (optional) id of slice of the dataset to run inference on
         """
         response = self._client.make_request(
-            {"dataset_id": dataset_id, "job_id": job_id, "slice_id": slice_id},
+            {"dataset_id": dataset_id, "slice_id": slice_id},
             f"nucleus/model/run/{self.id}",
             requests_command=requests.post,
         )
