@@ -471,7 +471,7 @@ class NucleusClient:
         return self.create_model(name, reference_id, metadata)
 
     def create_model(
-        self, name: str, reference_id: str, metadata: Optional[Dict] = None, bundle_id: Optional[str] = None,
+        self, name: str, reference_id: str, metadata: Optional[Dict] = None, bundle_name: Optional[str] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -488,14 +488,14 @@ class NucleusClient:
             :class:`Model`: The newly created model as an object.
         """
         response = self.make_request(
-            construct_model_creation_payload(name, reference_id, metadata, bundle_id),
+            construct_model_creation_payload(name, reference_id, metadata, bundle_name),
             "models/add",
         )
         model_id = response.get("model_id", None)
         if not model_id:
             raise ModelCreationError(response.get("error"))
 
-        return Model(model_id, name, reference_id, metadata, bundle_id, self)
+        return Model(model_id, name, reference_id, metadata, bundle_name, self)
 
     @deprecated(
         "Model runs have been deprecated and will be removed. Use a Model instead"

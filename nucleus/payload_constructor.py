@@ -15,7 +15,7 @@ from .constants import (
     ITEMS_KEY,
     LABELS_KEY,
     METADATA_KEY,
-    MODEL_BUNDLE_ID_KEY,
+    MODEL_BUNDLE_NAME_KEY,
     MODEL_ID_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
@@ -123,13 +123,13 @@ def construct_box_predictions_payload(
 
 
 def construct_model_creation_payload(
-    name: str, reference_id: str, metadata: Optional[Dict], bundle_id: Optional[str],
+    name: str, reference_id: str, metadata: Optional[Dict], bundle_name: Optional[str],
 ) -> dict:
     return {
         NAME_KEY: name,
         REFERENCE_ID_KEY: reference_id,
         METADATA_KEY: metadata if metadata else {},
-        MODEL_BUNDLE_ID_KEY: bundle_id if bundle_id else None,
+        MODEL_BUNDLE_NAME_KEY: bundle_name if bundle_name else None,
     }
 
 
