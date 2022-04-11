@@ -207,7 +207,7 @@ class Model:
         """
         response = self._client.make_request(
             {"dataset_id": dataset_id, "slice_id": slice_id},
-            f"nucleus/model/run/{self.id}/",
+            f"model/run/{self.id}/",
             requests_command=requests.post,
         )
 
