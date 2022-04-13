@@ -561,7 +561,7 @@ def test_dataset_item_iterator(dataset):
 @pytest.mark.integration
 def test_dataset_get_continuous_indexing_status(dataset):
     dataset.set_continuous_indexing(True)
-    
+
     items = make_dataset_items()
     dataset.append(items)
 
