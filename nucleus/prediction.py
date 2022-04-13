@@ -182,7 +182,7 @@ class BoxPrediction(BoxAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
-            embedding_vector=embedding_vector
+            embedding_vector=embedding_vector,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf

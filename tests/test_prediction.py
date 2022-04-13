@@ -120,6 +120,27 @@ def test_box_pred_upload(model_run):
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
 
+def test_box_pred_upload_embedding(CLIENT, model_run):
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    assert response["customObjectIndexingJobId"]
+    job = CLIENT.get_job(response["customObjectIndexingJobId"])
+    assert job.job_last_known_status
+
+    response = model_run.refloc(prediction.reference_id)["box"]
+    single_prediction = model_run.prediction_loc(
+        prediction.reference_id, prediction.annotation_id
+    )
+    assert response[0] == single_prediction
+    assert len(response) == 1
+    assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
+
+
 def test_line_pred_upload(model_run):
     prediction = LinePrediction.from_json(TEST_LINE_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])

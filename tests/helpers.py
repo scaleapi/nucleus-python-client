@@ -177,6 +177,13 @@ TEST_BOX_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+
+TEST_BOX_ANNOTATIONS_EMBEDDINGS = [
+    {**ann, "embedding_vector": [i, i, i]}
+    for i, ann in enumerate(TEST_BOX_ANNOTATIONS)
+]
+
+
 TEST_LINE_ANNOTATIONS = [
     {
         "label": f"[Pytest] Line Annotation ${i}",
