@@ -14,6 +14,7 @@ from nucleus.constants import (
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
+    VIDEO_URL_KEY,
 )
 
 from .annotation import is_local_path
@@ -437,6 +438,7 @@ class VideoScene(ABC):
 
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
+        video_url
         frame_rate (int): Frame rate of the video.
         attachment_type (str): The type of attachments being uploaded as a string literal.
             Currently, videos can only be uploaded as an array of frames, so the only
@@ -454,13 +456,14 @@ class VideoScene(ABC):
     reference_id: str
     frame_rate: int
     attachment_type: _VideoUploadType
-    items: List[DatasetItem] = field(default_factory=list)
+    video_location: Optional[str] = None
+    items: Optional[List[DatasetItem]] = None
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
-        assert (
-            self.attachment_type != _VideoUploadType.IMAGE
-        ), "Videos can currently only be uploaded from frames"
+        assert bool(self.video_location) != bool(
+            self.items
+        ), "Must specify exactly one of the video_location or items parameters"
         if self.metadata is None:
             self.metadata = {}
 
@@ -469,10 +472,12 @@ class VideoScene(ABC):
             [
                 self.reference_id == other.reference_id,
                 self.items == other.items,
+                self.video_location == other.video_location,
                 self.metadata == other.metadata,
             ]
         )
 
+    # TODO: What is desired behavior if uploaded an MP4 ?
     @property
     def length(self) -> int:
         """Number of items in the scene."""
@@ -481,7 +486,11 @@ class VideoScene(ABC):
     def validate(self):
         # TODO: make private
         assert self.frame_rate > 0, "Frame rate must be at least 1"
-        assert self.length > 0, "Must have at least 1 item in a scene"
+        assert (
+            self.items and self.length > 0
+        ) or self.video_location, (
+            "Must have a video location or at least 1 item in a scene"
+        )
         for item in self.items:
             assert isinstance(
                 item, DatasetItem
@@ -493,6 +502,7 @@ class VideoScene(ABC):
                 item.upload_to_scale is not False
             ), "Skipping upload to Scale is not currently implemented for videos"
 
+    # TODO: What is desired behavior if uploaded an MP4 ?
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
     ) -> None:
@@ -514,6 +524,7 @@ class VideoScene(ABC):
         else:
             self.items.append(item)
 
+    # TODO: What is desired behavior if uploaded an MP4 ?
     def get_item(self, index: int) -> DatasetItem:
         """Fetches the DatasetItem at the specified index.
 
@@ -528,6 +539,7 @@ class VideoScene(ABC):
             )
         return self.items[index]
 
+    # TODO: What is desired behavior if uploaded an MP4 ?
     def get_items(self) -> List[DatasetItem]:
         """Fetches a sorted list of DatasetItems of the scene.
 
@@ -536,6 +548,7 @@ class VideoScene(ABC):
         """
         return self.items
 
+    # TODO: What is desired behavior if uploaded an MP4 should we return video location?
     def info(self):
         """Fetches information about the scene.
 
@@ -554,6 +567,7 @@ class VideoScene(ABC):
             LENGTH_KEY: self.length,
         }
 
+    # TODO: What is desired behavior if uploaded an MP4 ?
     @classmethod
     def from_json(cls, payload: dict):
         """Instantiates scene object from schematized JSON dict payload."""
@@ -570,15 +584,20 @@ class VideoScene(ABC):
     def to_payload(self) -> dict:
         """Serializes scene object to schematized JSON dict."""
         self.validate()
-        items_payload = [item.to_payload(is_scene=True) for item in self.items]
         payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
             VIDEO_UPLOAD_TYPE_KEY: self.attachment_type,
             FRAME_RATE_KEY: self.frame_rate,
-            FRAMES_KEY: items_payload,
         }
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
+        if self.video_location:
+            payload[VIDEO_URL_KEY] = self.video_location
+        if self.items:
+            items_payload = [
+                item.to_payload(is_scene=True) for item in self.items
+            ]
+            payload[FRAMES_KEY] = items_payload
         return payload
 
     def to_json(self) -> str:

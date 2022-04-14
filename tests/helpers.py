@@ -39,6 +39,8 @@ TEST_POINTCLOUD_URLS = [
     "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-4.json",
 ]
 
+TEST_VIDEO_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/video.mp4"
+
 TEST_LIDAR_SCENES = {
     "scenes": [
         {
@@ -105,7 +107,14 @@ TEST_VIDEO_SCENES = {
                 },
             ],
             "metadata": {"timestamp": "1234", "weather": "rainy"},
-        }
+        },
+        {
+            "reference_id": "scene_2",
+            "video_upload_type": "video",
+            "frame_rate": 1,
+            "video_url": TEST_VIDEO_URL,
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
     ],
     "update": False,
 }

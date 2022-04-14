@@ -268,6 +268,7 @@ def test_scene_add_frame():
     }
 
 
+# TODO Update this
 def test_video_scene_property_methods():
     payload = TEST_VIDEO_SCENES
     expected_frame_rate = TEST_VIDEO_SCENES["scenes"][0]["frame_rate"]
@@ -283,6 +284,7 @@ def test_video_scene_property_methods():
     }
 
 
+# TODO Update this?
 def test_video_scene_add_item():
     scene_ref_id = "scene_1"
     frame_rate = 20
@@ -589,8 +591,8 @@ def test_video_scene_upload_async(dataset_scene):
             }
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": len(scenes),
+        "total_steps": len(scenes),
     }
 
     uploaded_scenes = dataset_scene.scenes
@@ -631,8 +633,8 @@ def test_video_scene_upload_and_update(dataset_scene):
             }
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": len(scenes),
+        "total_steps": len(scenes),
     }
 
     uploaded_scenes = dataset_scene.scenes
@@ -664,8 +666,8 @@ def test_video_scene_upload_and_update(dataset_scene):
             }
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": len(scenes),
+        "total_steps": len(scenes),
     }
 
 
