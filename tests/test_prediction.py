@@ -19,6 +19,7 @@ from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_PREDICTIONS,
+    TEST_BOX_PREDICTIONS_EMBEDDINGS,
     TEST_CATEGORY_PREDICTIONS,
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_PREDICTIONS,
@@ -121,7 +122,7 @@ def test_box_pred_upload(model_run):
 
 
 def test_box_pred_upload_embedding(CLIENT, model_run):
-    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS[0])
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id

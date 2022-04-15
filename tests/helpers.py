@@ -362,6 +362,20 @@ TEST_BOX_PREDICTIONS = [
     for i in range(len(TEST_BOX_ANNOTATIONS))
 ]
 
+TEST_BOX_PREDICTIONS_EMBEDDINGS = [
+    {
+        **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_BOX_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_BOX_ANNOTATIONS_EMBEDDINGS))
+]
+
 TEST_LINE_PREDICTIONS = [
     {
         **TEST_LINE_ANNOTATIONS[i],
