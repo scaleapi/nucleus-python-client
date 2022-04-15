@@ -457,13 +457,10 @@ class VideoScene(ABC):
     frame_rate: int
     attachment_type: _VideoUploadType
     video_location: Optional[str] = None
-    items: Optional[List[DatasetItem]] = None
+    items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
-        assert bool(self.video_location) != bool(
-            self.items
-        ), "Must specify exactly one of the video_location or items parameters"
         if self.metadata is None:
             self.metadata = {}
 
@@ -481,17 +478,18 @@ class VideoScene(ABC):
     @property
     def length(self) -> int:
         """Number of items in the scene."""
-        assert self.items, "Videos uploaded as an mp4 have no length"
+        assert (
+            self.video_location is None
+        ), "Videos uploaded as an mp4 have no length"
         return len(self.items)
 
     def validate(self):
         # TODO: make private
         assert self.frame_rate > 0, "Frame rate must be at least 1"
-        assert (
-            self.items and self.length > 0
-        ) or self.video_location, (
-            "Must have a video location or at least 1 item in a scene"
-        )
+        assert (self.items and self.length > 0) != bool(
+            self.video_location
+        ), "Must have exactly one of a video location or a list of items of length at least 1 in a scene"
+
         for item in self.items:
             assert isinstance(
                 item, DatasetItem
@@ -515,7 +513,9 @@ class VideoScene(ABC):
             update: Whether to overwrite the item at the specified index, if it
               exists. Default is False.
         """
-        assert self.items, "Cannot add item to a video uploaded as an mp4"
+        assert (
+            self.video_location is None
+        ), "Cannot add item to a video uploaded as an mp4"
         if index is None:
             index = len(self.items)
         assert (
@@ -535,7 +535,9 @@ class VideoScene(ABC):
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
-        assert self.items, "Cannot get item from a video uploaded as an mp4"
+        assert (
+            self.video_location is None
+        ), "Cannot get item from a video uploaded as an mp4"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -549,7 +551,9 @@ class VideoScene(ABC):
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
-        assert self.items, "Cannot get items from a video uploaded as an mp4"
+        assert (
+            self.video_location is None
+        ), "Cannot get items from a video uploaded as an mp4"
         return self.items
 
     # TODO: What is desired behavior if uploaded an MP4 should we return video location?
