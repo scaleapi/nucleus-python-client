@@ -477,10 +477,11 @@ class VideoScene(ABC):
             ]
         )
 
-    # TODO: What is desired behavior if uploaded an MP4 ?
+    # TODO: Is this desired behavior
     @property
     def length(self) -> int:
         """Number of items in the scene."""
+        assert self.items, "Videos uploaded as an mp4 have no length"
         return len(self.items)
 
     def validate(self):
@@ -514,6 +515,7 @@ class VideoScene(ABC):
             update: Whether to overwrite the item at the specified index, if it
               exists. Default is False.
         """
+        assert self.items, "Cannot add item to a video uploaded as an mp4"
         if index is None:
             index = len(self.items)
         assert (
@@ -524,7 +526,7 @@ class VideoScene(ABC):
         else:
             self.items.append(item)
 
-    # TODO: What is desired behavior if uploaded an MP4 ?
+    # TODO: What is desired behavior if uploaded an MP4 ? unclear
     def get_item(self, index: int) -> DatasetItem:
         """Fetches the DatasetItem at the specified index.
 
@@ -533,6 +535,7 @@ class VideoScene(ABC):
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
+        assert self.items, "Cannot get item from a video uploaded as an mp4"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -546,6 +549,7 @@ class VideoScene(ABC):
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
+        assert self.items, "Cannot get items from a video uploaded as an mp4"
         return self.items
 
     # TODO: What is desired behavior if uploaded an MP4 should we return video location?
