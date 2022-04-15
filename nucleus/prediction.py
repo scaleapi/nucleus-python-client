@@ -154,7 +154,7 @@ class BoxPrediction(BoxAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
+        embedding_vectorOptional[List]): Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
     """
@@ -303,7 +303,7 @@ class PolygonPrediction(PolygonAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
+        embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
     """
