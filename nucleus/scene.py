@@ -557,9 +557,8 @@ class VideoScene(ABC):
         ), "Cannot get items from a video uploaded as an mp4"
         return self.items
 
-    # TODO: What is desired behavior if uploaded an MP4 should we return video location?
     def info(self):
-        """Fetches information about the scene.
+        """Fetches information about the video scene.
 
         Returns:
             Payload containing::
@@ -567,13 +566,15 @@ class VideoScene(ABC):
                 {
                     "reference_id": str,
                     "length": int,
-                    "num_sensors": int
+                    "frame_rate": int,
+                    "video_url": Optional[str],
                 }
         """
         return {
             REFERENCE_ID_KEY: self.reference_id,
             FRAME_RATE_KEY: self.frame_rate,
             LENGTH_KEY: self.length,
+            VIDEO_URL_KEY: self.video_location,
         }
 
     # TODO: What is desired behavior if uploaded an MP4 ?

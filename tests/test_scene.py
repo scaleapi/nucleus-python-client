@@ -715,3 +715,18 @@ def test_video_scene_metadata_update(dataset_scene):
     updated_scene = dataset_scene.get_scene(scene_ref_id)
     actual_metadata = updated_scene.metadata
     assert expected_new_metadata == actual_metadata
+
+
+@pytest.mark.integration
+def test_video_scene_upload_and_export(dataset_scene):
+    payload = TEST_VIDEO_SCENES
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+
+    for scene in scenes:
+        get_scene_result = dataset_scene.get_scene(scene.reference_id)
+        assert scene.to_payload() == get_scene_result.to_payload()
