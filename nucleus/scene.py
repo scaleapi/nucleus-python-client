@@ -13,6 +13,7 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
+    VIDEO_LOCATION_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
     VIDEO_URL_KEY,
 )
@@ -587,6 +588,7 @@ class VideoScene(ABC):
             attachment_type=payload[VIDEO_UPLOAD_TYPE_KEY],
             items=items,
             metadata=payload.get(METADATA_KEY, {}),
+            video_location=payload.get(VIDEO_URL_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -617,16 +619,24 @@ def check_all_scene_paths_remote(
     scenes: Union[List[LidarScene], List[VideoScene]]
 ):
     for scene in scenes:
-        for item in scene.get_items():
-            pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
-            if pointcloud_location and is_local_path(pointcloud_location):
+        if isinstance(scene, VideoScene) and scene.video_location:
+            video_location = getattr(scene, VIDEO_LOCATION_KEY)
+            if video_location and is_local_path(video_location):
                 raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                    f"All paths for videos must be remote, but {scene.video_location} is either "
                     "local, or a remote URL type that is not supported."
                 )
-            image_location = getattr(item, IMAGE_LOCATION_KEY)
-            if image_location and is_local_path(image_location):
-                raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
-                    "local, or a remote URL type that is not supported."
-                )
+        else:
+            for item in scene.get_items():
+                pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
+                if pointcloud_location and is_local_path(pointcloud_location):
+                    raise ValueError(
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                        "local, or a remote URL type that is not supported."
+                    )
+                image_location = getattr(item, IMAGE_LOCATION_KEY)
+                if image_location and is_local_path(image_location):
+                    raise ValueError(
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
+                        "local, or a remote URL type that is not supported."
+                    )
