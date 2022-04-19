@@ -41,6 +41,7 @@ DATASET_SLICES_KEY = "slice_ids"
 DEFAULT_ANNOTATION_UPDATE_MODE = False
 DEFAULT_NETWORK_TIMEOUT_SEC = 120
 DIMENSIONS_KEY = "dimensions"
+EMBEDDING_VECTOR_KEY = "embedding_vector"
 EMBEDDINGS_URL_KEY = "embeddings_urls"
 EMBEDDING_DIMENSION_KEY = "embedding_dimension"
 ERRORS_KEY = "errors"

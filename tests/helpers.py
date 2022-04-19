@@ -177,6 +177,13 @@ TEST_BOX_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+
+TEST_BOX_ANNOTATIONS_EMBEDDINGS = [
+    {**ann, "embedding_vector": [i, i, i]}
+    for i, ann in enumerate(TEST_BOX_ANNOTATIONS)
+]
+
+
 TEST_LINE_ANNOTATIONS = [
     {
         "label": f"[Pytest] Line Annotation ${i}",
@@ -353,6 +360,20 @@ TEST_BOX_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_BOX_ANNOTATIONS))
+]
+
+TEST_BOX_PREDICTIONS_EMBEDDINGS = [
+    {
+        **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_BOX_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_BOX_ANNOTATIONS_EMBEDDINGS))
 ]
 
 TEST_LINE_PREDICTIONS = [

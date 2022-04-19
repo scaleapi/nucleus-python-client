@@ -19,6 +19,7 @@ from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_PREDICTIONS,
+    TEST_BOX_PREDICTIONS_EMBEDDINGS,
     TEST_CATEGORY_PREDICTIONS,
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_PREDICTIONS,
@@ -110,6 +111,27 @@ def test_box_pred_upload(model_run):
     assert response["model_run_id"] == model_run.model_run_id
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["box"]
+    single_prediction = model_run.prediction_loc(
+        prediction.reference_id, prediction.annotation_id
+    )
+    assert response[0] == single_prediction
+    assert len(response) == 1
+    assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
+
+
+def test_box_pred_upload_embedding(CLIENT, model_run):
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    assert response["customObjectIndexingJobId"]
+    job = CLIENT.get_job(response["customObjectIndexingJobId"])
+    assert job.job_last_known_status
 
     response = model_run.refloc(prediction.reference_id)["box"]
     single_prediction = model_run.prediction_loc(
@@ -610,3 +632,13 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     assert status["job_id"] == job.job_id
     assert status["status"] == "Errored"
     assert status["job_progress"] == "0.00"
+
+
+@pytest.mark.integration
+def test_box_pred_upload_embedding_async(CLIENT, model_run):
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
+    job = model_run.predict(annotations=[prediction], asynchronous=True)
+
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Running"
