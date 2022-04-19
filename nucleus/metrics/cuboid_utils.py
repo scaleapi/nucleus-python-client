@@ -314,6 +314,8 @@ def recall_precision(
         threshold_in_overlap_ratio=threshold_in_overlap_ratio,
     )
 
+    print("mapping: ", mapping)
+
     for pred_id, gt_id in mapping:
         if fn[gt_id] == 0:
             continue
