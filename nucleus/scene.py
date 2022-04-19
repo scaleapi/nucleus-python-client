@@ -475,10 +475,9 @@ class VideoScene(ABC):
             ]
         )
 
-    # TODO: Is this desired behavior
     @property
     def length(self) -> int:
-        """Number of items in the scene."""
+        """Gets number of items in the scene for videos uploaded as an array of images."""
         assert (
             self.video_location is None
         ), "Videos uploaded as an mp4 have no length"
@@ -502,11 +501,10 @@ class VideoScene(ABC):
                 item.upload_to_scale is not False
             ), "Skipping upload to Scale is not currently implemented for videos"
 
-    # TODO: What is desired behavior if uploaded an MP4 ?
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
     ) -> None:
-        """Adds DatasetItem to the specified index.
+        """Adds DatasetItem to the specified index for videos uploaded as an array of images.
 
         Parameters:
             item (:class:`DatasetItem`): Video item to add.
@@ -527,9 +525,8 @@ class VideoScene(ABC):
         else:
             self.items.append(item)
 
-    # TODO: What is desired behavior if uploaded an MP4 ? unclear
     def get_item(self, index: int) -> DatasetItem:
-        """Fetches the DatasetItem at the specified index.
+        """Fetches the DatasetItem at the specified index for videos uploaded as an array of images.
 
         Parameters:
             index: Serial index for which to retrieve the DatasetItem.
@@ -545,9 +542,8 @@ class VideoScene(ABC):
             )
         return self.items[index]
 
-    # TODO: What is desired behavior if uploaded an MP4 ?
     def get_items(self) -> List[DatasetItem]:
-        """Fetches a sorted list of DatasetItems of the scene.
+        """Fetches a sorted list of DatasetItems of the scene for videos uploaded as an array of images.
 
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
@@ -565,19 +561,22 @@ class VideoScene(ABC):
 
                 {
                     "reference_id": str,
-                    "length": int,
+                    "length": Optional[int],
                     "frame_rate": int,
                     "video_url": Optional[str],
                 }
         """
-        return {
+        payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
             FRAME_RATE_KEY: self.frame_rate,
-            LENGTH_KEY: self.length,
-            VIDEO_URL_KEY: self.video_location,
         }
+        if self.video_location:
+            payload[VIDEO_URL_KEY] = self.video_location
+        if self.items:
+            payload[LENGTH_KEY] = self.length
 
-    # TODO: What is desired behavior if uploaded an MP4 ?
+        return payload
+
     @classmethod
     def from_json(cls, payload: dict):
         """Instantiates scene object from schematized JSON dict payload."""

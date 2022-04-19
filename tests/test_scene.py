@@ -27,6 +27,7 @@ from nucleus.constants import (
     UPDATE_KEY,
     URL_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
+    VIDEO_URL_KEY,
 )
 from nucleus.scene import flatten
 
@@ -268,23 +269,28 @@ def test_scene_add_frame():
     }
 
 
-# TODO Update this
 def test_video_scene_property_methods():
-    payload = TEST_VIDEO_SCENES
-    expected_frame_rate = TEST_VIDEO_SCENES["scenes"][0]["frame_rate"]
-    scene_json = payload[SCENES_KEY][0]
-    scene = VideoScene.from_json(scene_json)
+    for scene_json in TEST_VIDEO_SCENES["scenes"]:
 
-    expected_length = len(scene_json[FRAMES_KEY])
-    assert scene.length == expected_length
-    assert scene.info() == {
-        REFERENCE_ID_KEY: scene_json[REFERENCE_ID_KEY],
-        LENGTH_KEY: expected_length,
-        FRAME_RATE_KEY: expected_frame_rate,
-    }
+        scene = VideoScene.from_json(scene_json)
+
+        expected_frame_rate = scene_json["frame_rate"]
+        expected_reference_id = scene_json["reference_id"]
+        expected_length = len(scene_json.get("frames", []))
+        expected_video_url = scene_json.get("video_url", None)
+
+        info = scene.info()
+
+        assert info[REFERENCE_ID_KEY] == expected_reference_id
+        assert info[FRAME_RATE_KEY] == expected_frame_rate
+
+        if scene.items and len(scene.items) > 0:
+            info[LENGTH_KEY] == expected_length
+            assert scene.length == expected_length
+        else:
+            assert info[VIDEO_URL_KEY] == expected_video_url
 
 
-# TODO Update this?
 def test_video_scene_add_item():
     scene_ref_id = "scene_1"
     frame_rate = 20
