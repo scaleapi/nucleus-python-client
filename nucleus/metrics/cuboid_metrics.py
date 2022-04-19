@@ -58,7 +58,6 @@ class CuboidMetric(Metric):
                 (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
                 these filters as a disjunction (OR).
         """
-        print("confidence threshold: ", confidence_threshold)
         if not confidence_threshold:
             confidence_threshold = DEFAULT_CONFIDENCE_THRESHOLD
             warnings.warn(
@@ -162,13 +161,15 @@ class CuboidIOU(CuboidMetric):
         iou_3d_metric, iou_2d_metric = detection_iou(
             predictions,
             annotations,
-            threshold_in_overlap_ratio=self.iou_threshold,
+            self.iou_threshold,
+            self.enforce_label_match,
         )
 
-        weight = max(len(annotations), len(predictions))
         if self.iou_2d:
+            weight = len(iou_2d_metric)
             avg_iou = iou_2d_metric.sum() / max(weight, sys.float_info.epsilon)
         else:
+            weight = len(iou_3d_metric)
             avg_iou = iou_3d_metric.sum() / max(weight, sys.float_info.epsilon)
 
         return ScalarResult(avg_iou, weight)
@@ -231,9 +232,10 @@ class CuboidPrecision(CuboidMetric):
         stats = recall_precision(
             predictions,
             annotations,
-            threshold_in_overlap_ratio=self.iou_threshold,
+            self.iou_threshold,
+            self.confidence_threshold,
+            self.enforce_label_match,
         )
-        print(stats)
         weight = stats["tp_sum"] + stats["fp_sum"]
         precision = stats["tp_sum"] / max(weight, sys.float_info.epsilon)
         return ScalarResult(precision, weight)
@@ -286,7 +288,9 @@ class CuboidRecall(CuboidMetric):
         stats = recall_precision(
             predictions,
             annotations,
-            threshold_in_overlap_ratio=self.iou_threshold,
+            self.iou_threshold,
+            self.confidence_threshold,
+            self.enforce_label_match,
         )
         weight = stats["tp_sum"] + stats["fn_sum"]
         recall = stats["tp_sum"] / max(weight, sys.float_info.epsilon)

@@ -101,18 +101,25 @@ def label_match_wrapper(metric_fn):
     return wrapper
 
 
-def process_dataitem(dataitem):
+def process_dataitem(item_list, confidence_threshold=None):
+    if confidence_threshold:
+        item_list = [
+            item
+            for item in item_list
+            if item.confidence >= confidence_threshold
+        ]
     processed_item = {}
     processed_item["xyz"] = np.array(
-        [[ann.position.x, ann.position.y, ann.position.z] for ann in dataitem]
+        [[ann.position.x, ann.position.y, ann.position.z] for ann in item_list]
     )
     processed_item["wlh"] = np.array(
         [
             [ann.dimensions.x, ann.dimensions.y, ann.dimensions.z]
-            for ann in dataitem
+            for ann in item_list
         ]
     )
-    processed_item["yaw"] = np.array([ann.yaw for ann in dataitem])
+    processed_item["yaw"] = np.array([ann.yaw for ann in item_list])
+    processed_item["labels"] = [ann.label for ann in item_list]
     return processed_item
 
 
@@ -278,6 +285,8 @@ def recall_precision(
     prediction: List[CuboidPrediction],
     groundtruth: List[CuboidAnnotation],
     threshold_in_overlap_ratio: float,
+    confidence_threshold: float,
+    enforce_label_match: bool,
 ) -> Dict[str, float]:
     """
     Calculates the precision and recall of each lidar frame.
@@ -295,7 +304,7 @@ def recall_precision(
     num_instances = 0
 
     gt_items = process_dataitem(groundtruth)
-    pred_items = process_dataitem(prediction)
+    pred_items = process_dataitem(prediction, confidence_threshold)
 
     num_predicted += pred_items["xyz"].shape[0]
     num_instances += gt_items["xyz"].shape[0]
@@ -314,10 +323,12 @@ def recall_precision(
         threshold_in_overlap_ratio=threshold_in_overlap_ratio,
     )
 
-    print("mapping: ", mapping)
-
     for pred_id, gt_id in mapping:
         if fn[gt_id] == 0:
+            continue
+        if enforce_label_match and not (
+            gt_items["labels"][gt_id] == pred_items["labels"][pred_id]
+        ):
             continue
         tp[pred_id] = 1
         fp[pred_id] = 0
@@ -342,6 +353,7 @@ def detection_iou(
     prediction: List[CuboidPrediction],
     groundtruth: List[CuboidAnnotation],
     threshold_in_overlap_ratio: float,
+    enforce_label_match: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Calculates the 2D IOU and 3D IOU overlap between predictions and groundtruth.
@@ -372,8 +384,13 @@ def detection_iou(
     )
 
     for i, m in enumerate(iou_3d.max(axis=1)):
+        j = iou_3d[i].argmax()
+        if (
+            enforce_label_match
+            and gt_items["labels"][i] != pred_items["labels"][j]
+        ):
+            continue
         if m >= threshold_in_overlap_ratio:
-            j = iou_3d[i].argmax()
             meter_3d.append(iou_3d[i, j])
             meter_2d.append(iou_2d[i, j])
 

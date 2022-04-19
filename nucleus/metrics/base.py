@@ -11,6 +11,8 @@ from nucleus.metrics.filtering import (
 )
 from nucleus.prediction import PredictionList
 
+EPSILON = 10 ** -4  # 0.0001
+
 
 class MetricResult(ABC):
     """Base MetricResult class"""
@@ -40,6 +42,14 @@ class ScalarResult(MetricResult):
         total_value = sum([result.value * result.weight for result in results])
         value = total_value / max(total_weight, sys.float_info.epsilon)
         return ScalarResult(value, total_weight)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return (
+            abs(self.value - other.value) < EPSILON
+            and self.weight == other.weight
+        )
 
 
 class Metric(ABC):
