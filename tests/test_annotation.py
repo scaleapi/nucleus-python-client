@@ -783,3 +783,21 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     }
 
     assert_partial_equality(expected, result)
+
+
+@pytest.mark.integration
+def test_box_gt_upload_embedding_async(CLIENT, dataset):
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS_EMBEDDINGS[0])
+    job = dataset.annotate(annotations=[annotation], asynchronous=True)
+    job.sleep_until_complete()
+
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Completed"
+    assert status["job_progress"] == "1.00"
+
+    indexing_job_id = status["message"]["custom_object_indexing_job_id"]
+    assert indexing_job_id
+
+    job = CLIENT.get_job(indexing_job_id)
+    assert job.job_last_known_status
