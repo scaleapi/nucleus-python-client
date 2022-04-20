@@ -464,7 +464,7 @@ class KeypointsAnnotation(Annotation):
     embedding_vector: Optional[list] = None
 
     def __post_init__(self):
-        self.metadata = self.metadata if self.metadata else {}
+        self.metadata = self.metadata or {}
         if len(self.keypoints) != len(self.names):
             raise ValueError(
                 "The list of keypoints must be the same length as the list of names"
