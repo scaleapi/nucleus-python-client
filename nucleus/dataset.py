@@ -714,7 +714,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -740,7 +742,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Option[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -766,7 +770,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -788,7 +794,9 @@ class Dataset:
         Returns:
             Union[\
                 :class:`BoxAnnotation`, \
+                :class:`LineAnnotation`, \
                 :class:`PolygonAnnotation`, \
+                :class:`KeypointsAnnotation`, \
                 :class:`CuboidAnnotation`, \
                 :class:`SegmentationAnnotation` \
                 :class:`CategoryAnnotation` \
@@ -1111,7 +1119,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }

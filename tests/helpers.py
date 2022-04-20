@@ -238,6 +238,25 @@ TEST_CONVEX_POLYGON_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+NUM_KEYPOINTS = 10
+TEST_KEYPOINTS_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Keypoints Annotation ${i}",
+        "geometry": {
+            "keypoints": [
+                {"x": i * 10, "y": j * 20, "visible": i % 2 == j % 2}
+                for j in range(NUM_KEYPOINTS)
+            ]
+            + [{"visible": False}],
+            "names": [str(j) for j in range(NUM_KEYPOINTS)],
+            "skeleton": [[j, j + 1] for j in range(NUM_KEYPOINTS - 1)],
+        },
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "annotation_id": f"[Pytest] Keypoints Annotation Id{i}",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
 TEST_CUBOID_ANNOTATIONS = [
     {
         "label": f"[Pytest] Cuboid Annotation #{i}",
@@ -343,6 +362,11 @@ TEST_POLYGON_MODEL_PDF = {
     for polygon_annotation in TEST_POLYGON_ANNOTATIONS
 }
 
+TEST_KEYPOINTS_MODEL_PDF = {
+    keypoints_annotation["label"]: 1 / len(TEST_KEYPOINTS_ANNOTATIONS)
+    for keypoints_annotation in TEST_KEYPOINTS_ANNOTATIONS
+}
+
 TEST_CATEGORY_MODEL_PDF = {
     category_annotation["label"]: 1 / len(TEST_CATEGORY_ANNOTATIONS)
     for category_annotation in TEST_CATEGORY_ANNOTATIONS
@@ -402,6 +426,20 @@ TEST_POLYGON_PREDICTIONS = [
         "confidence": 0.10 * i,
     }
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
+]
+
+TEST_KEYPOINTS_PREDICTIONS = [
+    {
+        **TEST_KEYPOINTS_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_KEYPOINTS_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_KEYPOINTS_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_KEYPOINTS_ANNOTATIONS))
 ]
 
 TEST_CATEGORY_PREDICTIONS = [
@@ -483,6 +521,24 @@ def assert_polygon_annotation_matches_dict(
         assert instance_pt.y == dict_pt["y"]
 
 
+def assert_keypoints_annotation_matches_dict(
+    annotation_instance, annotation_dict
+):
+    assert annotation_instance.label == annotation_dict["label"]
+    assert (
+        annotation_instance.annotation_id == annotation_dict["annotation_id"]
+    )
+    for instance_pt, dict_pt in zip(
+        annotation_instance.keypoints, annotation_dict["geometry"]["keypoints"]
+    ):
+        assert instance_pt.x == dict_pt["x"]
+        assert instance_pt.y == dict_pt["y"]
+        assert instance_pt.visible == dict_pt["visible"]
+
+    assert annotation_instance.names == annotation_dict["names"]
+    assert annotation_instance.skeleton == annotation_dict["skeleton"]
+
+
 def assert_cuboid_annotation_matches_dict(
     annotation_instance, annotation_dict
 ):
@@ -562,6 +618,15 @@ def assert_polygon_prediction_matches_dict(
     prediction_instance, prediction_dict
 ):
     assert_polygon_annotation_matches_dict(
+        prediction_instance, prediction_dict
+    )
+    assert prediction_instance.confidence == prediction_dict["confidence"]
+
+
+def assert_keypoints_prediction_matches_dict(
+    prediction_instance, prediction_dict
+):
+    assert_keypoints_annotation_matches_dict(
         prediction_instance, prediction_dict
     )
     assert prediction_instance.confidence == prediction_dict["confidence"]
