@@ -32,6 +32,7 @@ from .constants import (
     KEYPOINTS_TYPE,
     LAST_PAGE,
     LINE_TYPE,
+    MAX_PAYLOAD_SIZE,
     MULTICATEGORY_TYPE,
     PAGE_SIZE,
     PAGE_TOKEN,
@@ -247,6 +248,13 @@ def serialize_and_write(
     ],
     file_pointer,
 ):
+    """Helper function serialize and write payload to file
+
+    Args:
+        upload_units: Sequence of items, annotations or scenes
+        file_pointer: Pointer of the file to write to
+    """
+    bytes_written = 0
     if len(upload_units) == 0:
         raise ValueError(
             "Expecting at least one object when serializing objects to upload, but got zero.  Please try again."
@@ -256,9 +264,9 @@ def serialize_and_write(
             if isinstance(
                 unit, (DatasetItem, Annotation, LidarScene, VideoScene)
             ):
-                file_pointer.write(unit.to_json() + "\n")
+                bytes_written += file_pointer.write(unit.to_json() + "\n")
             else:
-                file_pointer.write(json.dumps(unit) + "\n")
+                bytes_written += file_pointer.write(json.dumps(unit) + "\n")
         except TypeError as e:
             type_name = type(unit).__name__
             message = (
@@ -273,6 +281,10 @@ def serialize_and_write(
             )
             message += f"The specific error was {e}"
             raise ValueError(message) from e
+    if bytes_written > MAX_PAYLOAD_SIZE:
+        raise ValueError(
+            f"Payload of {bytes_written} bytes exceed maximum payload size of {MAX_PAYLOAD_SIZE} bytes. Please reduce payload size and try again."
+        )
 
 
 def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
