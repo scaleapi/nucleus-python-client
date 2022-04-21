@@ -132,6 +132,7 @@ def format_prediction_response(
             Type[LinePrediction],
             Type[CuboidPrediction],
             Type[CategoryPrediction],
+            Type[KeypointsPrediction],
             Type[SegmentationPrediction],
         ],
     ] = {
@@ -140,6 +141,7 @@ def format_prediction_response(
         POLYGON_TYPE: PolygonPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
+        KEYPOINTS_TYPE: KeypointsPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
     for type_key in annotation_payload:

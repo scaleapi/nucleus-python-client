@@ -430,7 +430,6 @@ class KeypointsAnnotation(Annotation):
             reference_id="image_2",
             annotation_id="image_2_face_keypoints_1",
             metadata={"face_direction": "forward"},
-            embedding_vector=[0.1423, 1.432, ...3.829],
         )
 
     Parameters:
@@ -449,9 +448,6 @@ class KeypointsAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
-        embedding_vector: Custom embedding vector for this object annotation.
-            If any custom object embeddings have been uploaded previously to this dataset,
-            this vector must match the dimensions of the previously ingested vectors.
     """
 
     label: str
@@ -461,7 +457,6 @@ class KeypointsAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
-    embedding_vector: Optional[list] = None
 
     def __post_init__(self):
         self.metadata = self.metadata or {}
@@ -483,12 +478,11 @@ class KeypointsAnnotation(Annotation):
             keypoints=[
                 Keypoint.from_json(_) for _ in geometry.get(KEYPOINTS_KEY, [])
             ],
-            names=payload[KEYPOINTS_NAMES_KEY],
-            skeleton=payload[KEYPOINTS_SKELETON_KEY],
+            names=geometry[KEYPOINTS_NAMES_KEY],
+            skeleton=geometry[KEYPOINTS_SKELETON_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -503,7 +497,6 @@ class KeypointsAnnotation(Annotation):
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
-            EMBEDDING_VECTOR_KEY: self.embedding_vector,
         }
         return payload
 

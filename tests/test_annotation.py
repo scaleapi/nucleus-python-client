@@ -182,7 +182,9 @@ def test_keypoints_gt_upload(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]["line"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "keypoints"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_keypoints_annotation_matches_dict(

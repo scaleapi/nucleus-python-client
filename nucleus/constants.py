@@ -10,12 +10,14 @@ POLYGON_TYPE = "polygon"
 MASK_TYPE = "mask"
 SEGMENTATION_TYPE = "segmentation"
 CUBOID_TYPE = "cuboid"
+KEYPOINTS_TYPE = "keypoints"
 CATEGORY_TYPE = "category"
 MULTICATEGORY_TYPE = "multicategory"
 ANNOTATION_TYPES = (
     BOX_TYPE,
     LINE_TYPE,
     POLYGON_TYPE,
+    KEYPOINTS_TYPE,
     SEGMENTATION_TYPE,
     CUBOID_TYPE,
     CATEGORY_TYPE,
@@ -79,7 +81,6 @@ JOB_CREATION_TIME_KEY = "job_creation_time"
 KEYPOINTS_KEY = "keypoints"
 KEYPOINTS_NAMES_KEY = "names"
 KEYPOINTS_SKELETON_KEY = "skeleton"
-KEYPOINTS_TYPE = "keypoints"
 LAST_PAGE = "lastPage"
 LABEL_KEY = "label"
 LABELS_KEY = "labels"

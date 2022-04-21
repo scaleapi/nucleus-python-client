@@ -181,7 +181,7 @@ def test_keypoints_pred_upload(model_run):
     assert response["predictions_processed"] == 1
     assert response["predictions_ignored"] == 0
 
-    response = model_run.refloc(prediction.reference_id)["polygon"]
+    response = model_run.refloc(prediction.reference_id)["keypoints"]
     assert len(response) == 1
     assert_keypoints_prediction_matches_dict(
         response[0], TEST_KEYPOINTS_PREDICTIONS[0]

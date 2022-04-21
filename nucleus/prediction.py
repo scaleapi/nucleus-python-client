@@ -161,7 +161,7 @@ class BoxPrediction(BoxAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        embedding_vectorOptional[List]): Custom embedding vector for this object annotation.
+        embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
     """
@@ -387,9 +387,6 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        embedding_vector: Custom embedding vector for this object annotation.
-            If any custom object embeddings have been uploaded previously to this dataset,
-            this vector must match the dimensions of the previously ingested vectors.
     """
 
     def __init__(
@@ -403,7 +400,6 @@ class KeypointsPrediction(KeypointsAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
-        embedding_vector: Optional[list] = None,
     ):
         super().__init__(
             label=label,
@@ -413,7 +409,6 @@ class KeypointsPrediction(KeypointsAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
-            embedding_vector=embedding_vector,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -435,14 +430,13 @@ class KeypointsPrediction(KeypointsAnnotation):
             keypoints=[
                 Keypoint.from_json(_) for _ in geometry.get(KEYPOINTS_KEY, [])
             ],
-            names=payload[KEYPOINTS_NAMES_KEY],
-            skeleton=payload[KEYPOINTS_SKELETON_KEY],
+            names=geometry[KEYPOINTS_NAMES_KEY],
+            skeleton=geometry[KEYPOINTS_SKELETON_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
-            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
 

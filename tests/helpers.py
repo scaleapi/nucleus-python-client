@@ -248,8 +248,8 @@ TEST_KEYPOINTS_ANNOTATIONS = [
                 for j in range(NUM_KEYPOINTS)
             ]
             + [{"visible": False}],
-            "names": [str(j) for j in range(NUM_KEYPOINTS)],
-            "skeleton": [[j, j + 1] for j in range(NUM_KEYPOINTS - 1)],
+            "names": [str(j) for j in range(NUM_KEYPOINTS + 1)],
+            "skeleton": [[j, j + 1] for j in range(NUM_KEYPOINTS)],
         },
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Keypoints Annotation Id{i}",
@@ -531,12 +531,16 @@ def assert_keypoints_annotation_matches_dict(
     for instance_pt, dict_pt in zip(
         annotation_instance.keypoints, annotation_dict["geometry"]["keypoints"]
     ):
-        assert instance_pt.x == dict_pt["x"]
-        assert instance_pt.y == dict_pt["y"]
+        assert instance_pt.x == dict_pt.get("x")
+        assert instance_pt.y == dict_pt.get("y")
         assert instance_pt.visible == dict_pt["visible"]
 
-    assert annotation_instance.names == annotation_dict["names"]
-    assert annotation_instance.skeleton == annotation_dict["skeleton"]
+    assert "names" in annotation_dict["geometry"]
+    assert "skeleton" in annotation_dict["geometry"]
+    assert annotation_instance.names == annotation_dict["geometry"]["names"]
+    assert (
+        annotation_instance.skeleton == annotation_dict["geometry"]["skeleton"]
+    )
 
 
 def assert_cuboid_annotation_matches_dict(
