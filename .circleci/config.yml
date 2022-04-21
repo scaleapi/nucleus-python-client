@@ -98,6 +98,10 @@ jobs:
                 exit 1
             fi
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
+      - run:
+          name: Publish Github Release
+          command: |
+
 workflows:
   nightly_build_test:
     triggers:
