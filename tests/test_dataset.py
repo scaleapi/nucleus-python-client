@@ -37,6 +37,7 @@ from .helpers import (
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    assert_partial_equality,
     reference_id_from_url,
 )
 
@@ -341,17 +342,20 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     assert status["job_progress"] == "0.80"
     assert status["completed_steps"] == 4
     assert status["total_steps"] == 5
-    assert status["message"] == {
-        "PayloadUrl": "",
-        "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
-        "ingest_to_reupload_queue": {
-            "epoch": 1,
-            "total": 5,
-            "datasetId": f"{dataset.id}",
-            "processed": 5,
+    assert_partial_equality(
+        {
+            "PayloadUrl": "",
+            "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
+            "ingest_to_reupload_queue": {
+                "epoch": 1,
+                "total": 5,
+                "datasetId": f"{dataset.id}",
+                "processed": 5,
+            },
+            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
         },
-        "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
-    }
+        status["message"],
+    )
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
     assert (
         'Failure when processing the image "https://looks.ok.but.is.not.accessible"'
@@ -398,28 +402,31 @@ def test_annotate_async(dataset: Dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "epoch": 1,
-                "total": 4,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 4,
+    assert_partial_equality(
+        {
+            "job_id": job.job_id,
+            "status": "Completed",
+            "message": {
+                "annotation_upload": {
+                    "epoch": 1,
+                    "total": 4,
+                    "errored": 0,
+                    "ignored": 0,
+                    "datasetId": dataset.id,
+                    "processed": 4,
+                },
+                "segmentation_upload": {
+                    "ignored": 0,
+                    "n_errors": 0,
+                    "processed": 1,
+                },
             },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
+            "job_progress": "1.00",
+            "completed_steps": 5,
+            "total_steps": 5,
         },
-        "job_progress": "1.00",
-        "completed_steps": 5,
-        "total_steps": 5,
-    }
+        job.status(),
+    )
 
 
 @pytest.mark.integration
@@ -439,29 +446,31 @@ def test_annotate_async_with_error(dataset: Dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
-
-    assert job.status() == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "epoch": 1,
-                "total": 4,
-                "errored": 1,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 3,
+    assert_partial_equality(
+        {
+            "job_id": job.job_id,
+            "status": "Completed",
+            "message": {
+                "annotation_upload": {
+                    "epoch": 1,
+                    "total": 4,
+                    "errored": 1,
+                    "ignored": 0,
+                    "datasetId": dataset.id,
+                    "processed": 3,
+                },
+                "segmentation_upload": {
+                    "ignored": 0,
+                    "n_errors": 0,
+                    "processed": 1,
+                },
             },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
+            "job_progress": "1.00",
+            "completed_steps": 5,
+            "total_steps": 5,
         },
-        "job_progress": "1.00",
-        "completed_steps": 5,
-        "total_steps": 5,
-    }
+        job.status(),
+    )
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
 
