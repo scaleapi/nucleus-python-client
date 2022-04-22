@@ -10,12 +10,14 @@ POLYGON_TYPE = "polygon"
 MASK_TYPE = "mask"
 SEGMENTATION_TYPE = "segmentation"
 CUBOID_TYPE = "cuboid"
+KEYPOINTS_TYPE = "keypoints"
 CATEGORY_TYPE = "category"
 MULTICATEGORY_TYPE = "multicategory"
 ANNOTATION_TYPES = (
     BOX_TYPE,
     LINE_TYPE,
     POLYGON_TYPE,
+    KEYPOINTS_TYPE,
     SEGMENTATION_TYPE,
     CUBOID_TYPE,
     CATEGORY_TYPE,
@@ -76,10 +78,14 @@ JOB_STATUS_KEY = "job_status"
 JOB_LAST_KNOWN_STATUS_KEY = "job_last_known_status"
 JOB_TYPE_KEY = "job_type"
 JOB_CREATION_TIME_KEY = "job_creation_time"
+KEYPOINTS_KEY = "keypoints"
+KEYPOINTS_NAMES_KEY = "names"
+KEYPOINTS_SKELETON_KEY = "skeleton"
 LAST_PAGE = "lastPage"
 LABEL_KEY = "label"
 LABELS_KEY = "labels"
 MASK_URL_KEY = "mask_url"
+MAX_PAYLOAD_SIZE = 0x1FFFFFE8  # Set to max string size since we currently convert payloads to strings for processing on the server-side
 MESSAGE_KEY = "message"
 METADATA_KEY = "metadata"
 MODEL_ID_KEY = "model_id"
@@ -117,6 +123,7 @@ UPDATE_KEY = "update"
 UPLOAD_TO_SCALE_KEY = "upload_to_scale"
 URL_KEY = "url"
 VERTICES_KEY = "vertices"
+VISIBLE_KEY = "visible"
 VIDEO_UPLOAD_TYPE_KEY = "video_upload_type"
 WIDTH_KEY = "width"
 YAW_KEY = "yaw"
