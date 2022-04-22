@@ -2,10 +2,7 @@ from typing import List
 
 from nucleus.prediction import PredictionList
 
-from .polygon_utils import (
-    BoxOrPolygonAnnoOrPred,
-    polygon_annotation_to_geometry,
-)
+from .polygon_utils import BoxOrPolygonAnnoOrPred, polygon_annotation_to_shape
 
 
 def polygon_area_filter(
@@ -13,7 +10,7 @@ def polygon_area_filter(
 ) -> List[BoxOrPolygonAnnoOrPred]:
     filter_fn = (
         lambda polygon: min_area
-        <= polygon_annotation_to_geometry(polygon).signed_area
+        <= polygon_annotation_to_shape(polygon)
         <= max_area
     )
     return list(filter(filter_fn, polygons))
