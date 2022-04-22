@@ -10,6 +10,9 @@ from ...metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
 
+# TODO(gunnar) split up into modules
+# pylint: disable=too-many-lines
+
 
 class PolygonIOUConfig(EvalFunctionConfig):
     def __call__(
@@ -66,6 +69,8 @@ class PolygonIOUConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -123,6 +128,8 @@ class PolygonMAPConfig(EvalFunctionConfig):
         """
         return super().__call__(
             iou_threshold=iou_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -186,6 +193,8 @@ class PolygonRecallConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -249,6 +258,8 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -312,6 +323,8 @@ class BoundingBoxIOUConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -369,6 +382,8 @@ class BoundingBoxMAPConfig(EvalFunctionConfig):
         """
         return super().__call__(
             iou_threshold=iou_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -432,6 +447,8 @@ class BoundingBoxRecallConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -495,6 +512,8 @@ class BoundingBoxPrecisionConfig(EvalFunctionConfig):
             enforce_label_match=enforce_label_match,
             iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
             **kwargs,
         )
 
@@ -794,7 +813,10 @@ class CategorizationF1Config(EvalFunctionConfig):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
-            confidence_threshold=confidence_threshold, f1_method=f1_method
+            confidence_threshold=confidence_threshold,
+            f1_method=f1_method,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
         )
 
     @classmethod
