@@ -5,10 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.10.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.2) - 2022-04-22
+## [0.10.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.3) - 2022-04-22
 
 ### Fixed
 - Polygon and bounding box matching uses Shapely again providing faster evaluations
+- Evaluation function passing fixed for Polygon and Boundingbox configurations
 
 ## [0.10.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.1) - 2022-04-21
 
