@@ -10,12 +10,15 @@ from ...metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
 
+DEFAULT_2D_IOU_THRESHOLD = 0.5
+DEFAULT_3D_IOU_THRESHOLD = 0.1
+
 
 class PolygonIOUConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = False,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = DEFAULT_2D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -77,7 +80,7 @@ class PolygonIOUConfig(EvalFunctionConfig):
 class PolygonMAPConfig(EvalFunctionConfig):
     def __call__(
         self,
-        iou_threshold: float = 0.5,
+        iou_threshold: float = DEFAULT_2D_IOU_THRESHOLD,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -135,7 +138,7 @@ class PolygonRecallConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = False,
-        iou_threshold: float = 0.5,
+        iou_threshold: float = DEFAULT_2D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -198,7 +201,7 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = False,
-        iou_threshold: float = 0.5,
+        iou_threshold: float = DEFAULT_2D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -261,7 +264,7 @@ class CuboidIOU2DConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = DEFAULT_2D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -315,7 +318,7 @@ class CuboidIOU3DConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = DEFAULT_3D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -370,7 +373,7 @@ class CuboidPrecisionConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = DEFAULT_3D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -424,7 +427,7 @@ class CuboidRecallConfig(EvalFunctionConfig):
     def __call__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
+        iou_threshold: float = DEFAULT_3D_IOU_THRESHOLD,
         confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]

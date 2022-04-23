@@ -31,6 +31,7 @@ class CuboidMetric(Metric):
 
     def __init__(
         self,
+        iou_threshold: float,
         enforce_label_match: bool = False,
         confidence_threshold: Optional[float] = None,
         annotation_filters: Optional[
@@ -148,6 +149,7 @@ class CuboidIOU(CuboidMetric):
         self.iou_2d = iou_2d
         super().__init__(
             enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
@@ -162,15 +164,15 @@ class CuboidIOU(CuboidMetric):
             predictions,
             annotations,
             self.iou_threshold,
-            self.enforce_label_match,
         )
 
+        # If there are zero IoU matches, avg_iou defaults to value 0
         if self.iou_2d:
             weight = len(iou_2d_metric)
-            avg_iou = iou_2d_metric.sum() / max(weight, sys.float_info.epsilon)
+            avg_iou = iou_2d_metric.sum() / weight if weight > 0 else 0.0
         else:
             weight = len(iou_3d_metric)
-            avg_iou = iou_3d_metric.sum() / max(weight, sys.float_info.epsilon)
+            avg_iou = iou_3d_metric.sum() / weight if weight > 0 else 0.0
 
         return ScalarResult(avg_iou, weight)
 
@@ -219,6 +221,7 @@ class CuboidPrecision(CuboidMetric):
         self.iou_threshold = iou_threshold
         super().__init__(
             enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
@@ -275,6 +278,7 @@ class CuboidRecall(CuboidMetric):
         self.iou_threshold = iou_threshold
         super().__init__(
             enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
