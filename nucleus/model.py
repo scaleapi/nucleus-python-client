@@ -211,4 +211,4 @@ class Model:
             requests_command=requests.post,
         )
 
-        return response.json
+        return response
