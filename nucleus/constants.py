@@ -123,12 +123,9 @@ UPDATE_KEY = "update"
 UPLOAD_TO_SCALE_KEY = "upload_to_scale"
 URL_KEY = "url"
 VERTICES_KEY = "vertices"
-<<<<<<< HEAD
 VIDEO_LOCATION_KEY = "video_location"
 VIDEO_URL_KEY = "video_url"
-=======
 VISIBLE_KEY = "visible"
->>>>>>> master
 VIDEO_UPLOAD_TYPE_KEY = "video_upload_type"
 WIDTH_KEY = "width"
 YAW_KEY = "yaw"
