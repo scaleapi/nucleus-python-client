@@ -117,6 +117,7 @@ class SegmentationPrediction(SegmentationAnnotation):
           is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     @classmethod
@@ -166,6 +167,7 @@ class BoxPrediction(BoxAnnotation):
         embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -247,6 +249,7 @@ class LinePrediction(LineAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -321,6 +324,7 @@ class PolygonPrediction(PolygonAnnotation):
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -398,6 +402,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -476,6 +481,7 @@ class CuboidPrediction(CuboidAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -547,6 +553,7 @@ class CategoryPrediction(CategoryAnnotation):
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our `metadata guide
             <https://nucleus.scale.com/docs/upload-metadata>`_.
+        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(

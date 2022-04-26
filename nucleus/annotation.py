@@ -134,6 +134,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
@@ -236,6 +237,7 @@ class LineAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
@@ -322,6 +324,7 @@ class PolygonAnnotation(Annotation):
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
@@ -456,6 +459,7 @@ class KeypointsAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
@@ -565,6 +569,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
           annotation.  Strings, floats and ints are supported best by querying
           and insights features within Nucleus. For more details see our `metadata
           guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
@@ -632,6 +637,7 @@ class Segment:
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
@@ -715,6 +721,7 @@ class SegmentationAnnotation(Annotation):
           is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     mask_url: str
@@ -812,6 +819,7 @@ class CategoryAnnotation(Annotation):
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
+        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
     """
 
     label: str
