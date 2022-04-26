@@ -31,6 +31,7 @@ from .constants import (
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    ID_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
     KEYPOINTS_SKELETON_KEY,
@@ -128,6 +129,7 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            id=payload.get(ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
@@ -179,6 +181,7 @@ class BoxPrediction(BoxAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
+        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -190,6 +193,7 @@ class BoxPrediction(BoxAnnotation):
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
+            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -218,6 +222,7 @@ class BoxPrediction(BoxAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
 
@@ -253,6 +258,7 @@ class LinePrediction(LineAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -260,6 +266,7 @@ class LinePrediction(LineAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -286,6 +293,7 @@ class LinePrediction(LineAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
 
@@ -325,6 +333,7 @@ class PolygonPrediction(PolygonAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
+        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -333,6 +342,7 @@ class PolygonPrediction(PolygonAnnotation):
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
+            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -360,6 +370,7 @@ class PolygonPrediction(PolygonAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
 
@@ -400,6 +411,7 @@ class KeypointsPrediction(KeypointsAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -409,6 +421,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -437,6 +450,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
 
@@ -475,6 +489,7 @@ class CuboidPrediction(CuboidAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -484,6 +499,7 @@ class CuboidPrediction(CuboidAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -510,6 +526,7 @@ class CuboidPrediction(CuboidAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
 
@@ -540,12 +557,14 @@ class CategoryPrediction(CategoryAnnotation):
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
             reference_id=reference_id,
             metadata=metadata,
+            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -568,6 +587,7 @@ class CategoryPrediction(CategoryAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
 

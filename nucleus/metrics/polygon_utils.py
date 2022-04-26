@@ -113,8 +113,8 @@ def _iou_assignments_for_same_reference_id(
         logging.warning(
             "Invalid polygons for dataset items: %s Annotations:%s, predictions: %s",
             invalid_dataset_ids,
-            [a.annotation_id for a in invalid_anns],
-            [p.annotation_id for p in invalid_preds],
+            [a.id for a in invalid_anns],
+            [p.id for p in invalid_preds],
         )
 
     # Compute IoU matrix and set IoU values below the threshold to 0.

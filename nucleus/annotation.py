@@ -15,6 +15,7 @@ from .constants import (
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    ID_KEY,
     INDEX_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
@@ -50,6 +51,7 @@ class Annotation:
     """
 
     reference_id: str
+    id: Optional[str]
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -143,6 +145,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -162,6 +165,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -239,6 +243,7 @@ class LineAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -267,6 +272,7 @@ class LineAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -324,6 +330,7 @@ class PolygonAnnotation(Annotation):
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -353,6 +360,7 @@ class PolygonAnnotation(Annotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -457,6 +465,7 @@ class KeypointsAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata or {}
@@ -483,6 +492,7 @@ class KeypointsAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -564,6 +574,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -579,6 +590,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -709,6 +721,7 @@ class SegmentationAnnotation(Annotation):
     annotations: List[Segment]
     reference_id: str
     annotation_id: Optional[str] = None
+    id: Optional[str] = None
     # metadata: Optional[dict] = None # TODO(sc: 422637)
 
     def __post_init__(self):
@@ -727,6 +740,7 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            id=payload.get(ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
@@ -804,6 +818,7 @@ class CategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -815,6 +830,7 @@ class CategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -838,6 +854,7 @@ class MultiCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
+    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -849,6 +866,7 @@ class MultiCategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
