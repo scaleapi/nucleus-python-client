@@ -602,6 +602,7 @@ def test_video_scene_upload_async(dataset_scene):
     }
 
     uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
         u["reference_id"] == o.reference_id
@@ -624,7 +625,6 @@ def test_video_scene_upload_and_update(dataset_scene):
     job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
-
     assert status == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -644,6 +644,7 @@ def test_video_scene_upload_and_update(dataset_scene):
     }
 
     uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
         u["reference_id"] == o.reference_id
@@ -689,6 +690,7 @@ def test_video_scene_deletion(dataset_scene):
     job.sleep_until_complete()
 
     uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
         u["reference_id"] == o.reference_id
