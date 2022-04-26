@@ -421,16 +421,17 @@ class _VideoUploadType(Enum):
 
 @dataclass
 class VideoScene(ABC):
-    """
-    Nucleus video datasets are comprised of VideoScenes, which are in turn
-    comprised of a sequence of :class:`DatasetItems <DatasetItem>` which are
-    equivalent to frames.
+    """Video or sequence of images over time.
+
+    Nucleus video datasets are comprised of VideoScenes. These can be
+    comprised of a single video, or a sequence of :class:`DatasetItems <DatasetItem>`
+    which are equivalent to frames.
 
     VideoScenes are uploaded to a :class:`Dataset` with any accompanying
     metadata. Each of :class:`DatasetItems <DatasetItem>` representing a frame
     also accepts metadata.
 
-    Note: Uploads with different items will error out (only on scenes that
+    Note: Updates with different items will error out (only on scenes that
     now differ). Existing video are expected to retain the same frames, and only
     metadata can be updated. If a video definition is changed (for example,
     additional frames added) the update operation will be ignored. If you would
