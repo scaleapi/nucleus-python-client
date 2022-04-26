@@ -458,8 +458,8 @@ class VideoScene(ABC):
     """
 
     reference_id: str
-    frame_rate: int
     attachment_type: _VideoUploadType
+    frame_rate: Optional[int] = None
     video_location: Optional[str] = None
     items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
