@@ -91,7 +91,8 @@ def test_new_model_endpoints(CLIENT, dataset: Dataset):
 
     dataset.upload_predictions(model, predictions=predictions)
 
-    dataset.calculate_evaluation_metrics(model)
+    # Skip this until we have a way of avoiding launching pyspark jobs as a consequence of CI.
+    # dataset.calculate_evaluation_metrics(model)
 
     predictions_export = dataset.export_predictions(model)
 

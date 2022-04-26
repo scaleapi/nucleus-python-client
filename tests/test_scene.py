@@ -39,6 +39,7 @@ from .helpers import (
     TEST_VIDEO_ITEMS,
     TEST_VIDEO_SCENES,
     assert_cuboid_annotation_matches_dict,
+    assert_partial_equality,
 )
 
 
@@ -411,23 +412,26 @@ def test_scene_upload_async(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
-    assert status == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": len(scenes),
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": 0,
-            }
+    assert_partial_equality(
+        {
+            "job_id": job.job_id,
+            "status": "Completed",
+            "message": {
+                "scene_upload_progress": {
+                    "errors": [],
+                    "dataset_id": dataset_scene.id,
+                    "new_scenes": len(scenes),
+                    "ignored_scenes": 0,
+                    "scenes_errored": 0,
+                    "updated_scenes": 0,
+                }
+            },
+            "job_progress": "1.00",
+            "completed_steps": 1,
+            "total_steps": 1,
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+        status,
+    )
 
     uploaded_scenes = dataset_scene.scenes
     assert len(uploaded_scenes) == len(scenes)
@@ -453,23 +457,26 @@ def test_scene_upload_and_update(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
-    assert status == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": len(scenes),
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": 0,
-            }
+    assert_partial_equality(
+        {
+            "job_id": job.job_id,
+            "status": "Completed",
+            "message": {
+                "scene_upload_progress": {
+                    "errors": [],
+                    "dataset_id": dataset_scene.id,
+                    "new_scenes": len(scenes),
+                    "ignored_scenes": 0,
+                    "scenes_errored": 0,
+                    "updated_scenes": 0,
+                }
+            },
+            "job_progress": "1.00",
+            "completed_steps": 1,
+            "total_steps": 1,
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+        status,
+    )
 
     uploaded_scenes = dataset_scene.scenes
     assert len(uploaded_scenes) == len(scenes)
@@ -486,23 +493,26 @@ def test_scene_upload_and_update(dataset_scene):
     job2.sleep_until_complete()
     status2 = job2.status()
 
-    assert status2 == {
-        "job_id": job2.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": 0,
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": len(scenes),
-            }
+    assert_partial_equality(
+        {
+            "job_id": job2.job_id,
+            "status": "Completed",
+            "message": {
+                "scene_upload_progress": {
+                    "errors": [],
+                    "dataset_id": dataset_scene.id,
+                    "new_scenes": 0,
+                    "ignored_scenes": 0,
+                    "scenes_errored": 0,
+                    "updated_scenes": len(scenes),
+                }
+            },
+            "job_progress": "1.00",
+            "completed_steps": 1,
+            "total_steps": 1,
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+        status2,
+    )
 
 
 @pytest.mark.integration
@@ -575,23 +585,26 @@ def test_video_scene_upload_async(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
-    assert status == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": len(scenes),
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": 0,
-            }
+    assert_partial_equality(
+        {
+            "job_id": job.job_id,
+            "status": "Completed",
+            "message": {
+                "scene_upload_progress": {
+                    "errors": [],
+                    "dataset_id": dataset_scene.id,
+                    "new_scenes": len(scenes),
+                    "ignored_scenes": 0,
+                    "scenes_errored": 0,
+                    "updated_scenes": 0,
+                }
+            },
+            "job_progress": "1.00",
+            "completed_steps": 1,
+            "total_steps": 1,
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+        status,
+    )
 
     uploaded_scenes = dataset_scene.scenes
     assert len(uploaded_scenes) == len(scenes)
@@ -617,23 +630,26 @@ def test_video_scene_upload_and_update(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
-    assert status == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": len(scenes),
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": 0,
-            }
+    assert_partial_equality(
+        {
+            "job_id": job.job_id,
+            "status": "Completed",
+            "message": {
+                "scene_upload_progress": {
+                    "errors": [],
+                    "dataset_id": dataset_scene.id,
+                    "new_scenes": len(scenes),
+                    "ignored_scenes": 0,
+                    "scenes_errored": 0,
+                    "updated_scenes": 0,
+                }
+            },
+            "job_progress": "1.00",
+            "completed_steps": 1,
+            "total_steps": 1,
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+        status,
+    )
 
     uploaded_scenes = dataset_scene.scenes
     assert len(uploaded_scenes) == len(scenes)
@@ -650,23 +666,26 @@ def test_video_scene_upload_and_update(dataset_scene):
     job2.sleep_until_complete()
     status2 = job2.status()
 
-    assert status2 == {
-        "job_id": job2.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": 0,
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": len(scenes),
-            }
+    assert_partial_equality(
+        {
+            "job_id": job2.job_id,
+            "status": "Completed",
+            "message": {
+                "scene_upload_progress": {
+                    "errors": [],
+                    "dataset_id": dataset_scene.id,
+                    "new_scenes": 0,
+                    "ignored_scenes": 0,
+                    "scenes_errored": 0,
+                    "updated_scenes": len(scenes),
+                }
+            },
+            "job_progress": "1.00",
+            "completed_steps": 1,
+            "total_steps": 1,
         },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-    }
+        status2,
+    )
 
 
 @pytest.mark.integration
