@@ -109,11 +109,12 @@ def _iou_assignments_for_same_reference_id(
         invalid_dataset_ids = set(
             ann.reference_id for ann in invalid_anns
         ).union(set(pred.reference_id for pred in invalid_preds))
+        # TODO(gunnar): change to .id once field is surfaced)
         logging.warning(
             "Invalid polygons for dataset items: %s Annotations:%s, predictions: %s",
             invalid_dataset_ids,
             [a.annotation_id for a in invalid_anns],
-            [p.reference_id for p in invalid_preds],
+            [p.annotation_id for p in invalid_preds],
         )
 
     # Compute IoU matrix and set IoU values below the threshold to 0.
