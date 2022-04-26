@@ -1,8 +1,27 @@
 # Changelog
+
 All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/nucleus-python-client) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.10.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.3) - 2022-04-22
+
+### Fixed
+- Polygon and bounding box matching uses Shapely again providing faster evaluations
+- Evaluation function passing fixed for Polygon and Boundingbox configurations
+
+## [0.10.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.1) - 2022-04-21
+
+### Added
+- Added check for payload size
+
+## [0.10.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.0)) - 2022-04-21
+
+### Added
+
+- `KeypointsAnnotation` added
+- `KeypointsPrediction` added
 
 ## [0.9.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.9.0) - 2022-04-07
 
@@ -14,58 +33,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full support for passing parameters to evaluation configurations
 
 ## [0.8.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.4) - 2022-04-06
+
 - Changing `camera_params` of dataset items can now be done through the dataset method `update_items_metadata`
 
 ## [0.8.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.3) - 2022-03-29
 
 ### Added
+
 - new Validate functionality to intialize scenario tests without a threshold, and to set test thresholds based on a baseline model.
+
 ## [0.8.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.2) - 2022-03-18
 
 ### Added
+
 - a fix to the CameraModels enumeration to fix export of camera calibrations for 3D scenes
 
 ## [0.8.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.0) - 2022-03-18
 
 ### Added
+
 - slice.items_generator() and dataset.items_generator() to allow for export of dataset items at any scale.
 
 ## [0.8.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.8.0) - 2022-03-16
 
 ### Added
+
 - mask_url can now be a local file for segmentation annotations or predictions, meaning local upload is now supported for segmentations
 - Camera params for sensor fusion ingest now support additional camera params to accommodate fisheye camera, etc.
 - More detailed parameters to control for upload in case of timeouts (see dataset.upload_predictions, dataset.append, and dataset.upload_predictions)
 
 ### Fixed
+
 - Artificially low concurrency for local uploads (all local uploads should be faster now)
 - Client no longer uses the deprecated (and now removed) segmentation-specific server endpoints
 - Fixed a bug where retries for local uploads were not working properly: should improve local upload robustness
 
 ### Removed
-- client.predict, client.annotate, which have been marked as deprecated for several months.
 
+- client.predict, client.annotate, which have been marked as deprecated for several months.
 
 ## [0.7.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.7.0) - 2022-03-09
 
 ### Added
+
 - `LineAnnotation` added
 - `LinePrediction` added
 
 ## [0.6.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.7) - 2021-03-08
 
 ### Added
+
 - `get_autotag_refinement_metrics`
 - Get model using `model_run_id`
 - Video API change to require `image_location` instead of `video_frame_location` in `DatasetItems`
+
 ## [0.6.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.6) - 2021-02-18
 
 ### Added
+
 - Video upload support
 
 ## [0.6.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.5) - 2021-02-16
 
 ### Fixed
+
 - `Dataset.update_autotag` docstring formatting
 - `BoxPrediction` dataclass parameter typing
 - `validate.scenario_test_evaluation` typo
@@ -73,88 +104,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.4) - 2021-02-16
 
 ### Fixes
+
 - Categorization metrics are patched to run properly on Validate evaluation service
 
 ## [0.6.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.3) - 2021-02-15
 
 ### Added
+
 - Add categorization f1 score to metrics
- 
+
 ## [0.6.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.1) - 2021-02-08
 
 ### Added
+
 - Adapt scipy and click dependencies to allow Google COLAB usage without update
- 
+
 ## [0.6.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.6.0) - 2021-02-07
 
 ### Added
+
 - Nucleus CLI interface `nu`. Installation instructions are in the `README.md`.
 
 ## [0.5.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.4) - 2022-01-28
 
 ### Added
+
 - Add `NucleusClient.get_job` to retrieve `AsyncJob`s by job ID
 
 ## [0.5.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.3) - 2022-01-25
 
 ### Added
+
 - Add average precision to polygon metrics
 - Add mean average precision to polygon metrics
 
 ## [0.5.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.2) - 2022-01-20
 
 ### Added
+
 - Add `Dataset.delete_scene`
 
 ### Fixed
+
 - Removed `Shapely` dependency
 
 ## [0.5.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.1) - 2022-01-11
 
 ### Fixed
+
 - Updated dependencies for full Python 3.6 compatibility
 
 ## [0.5.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.5.0) - 2022-01-10
 
 ### Added
+
 - `nucleus.metrics` module for computing metrics between Nucleus `Annotation` and `Prediction` objects.
 
 ## [0.4.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.5) - 2022-01-07
 
 ### Added
+
 - `Dataset.scenes` property that fetches the Scale-generated ID, reference ID, type, and metadata of all scenes in the Dataset.
 
 ## [0.4.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.4) - 2022-01-04
 
 ### Added
+
 - `Slice.export_raw_items()` method that fetches accessible (signed) URLs for all items in the Slice.
 
 ## [0.4.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.3) - 2022-01-03
 
 ### Added
+
 - Improved error messages for categorization
 
 ### Changed
+
 - Category taxonomies are now updatable
 
 ## [0.4.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.2) - 2021-12-16
 
 ### Added
+
 - `Slice.name` property that fetches the Slice's user-defined name.
   - The Slice's items are no longer fetched unnecessarily; this used to cause considerable latency.
 - `Slice.items` property that fetches all items contained in the Slice.
 
 ### Changed
+
 - `Slice.info()` now only retrieves the Slice's `name`, `slice_id`, and `dataset_id`.
   - The Slice's items are no longer fetched unnecessarily; this used to cause considerable latency.
   - This method issues a warning to use `Slice.items` when attempting to `items`.
 
 [###](###) Deprecated
+
 - `NucleusClient.slice_info(..)` is deprecated in favor of `Slice.info()`.
 
 ## [0.4.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.1) - 2021-12-13
 
 ### Changed
+
 - Datasets in Nucleus now fall under two categories: scene or item.
   - Scene Datasets can only have scenes uploaded to them.
   - Item Datasets can only have items uploaded to them.
@@ -163,6 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.4.0) - 2021-08-12
 
 ### Added
+
 - `NucleusClient.modelci` client extension that houses all features related to Model CI, a continuous integration and testing framework for evaluation machine learning models.
 - `NucleusClient.modelci.UnitTest`- class to represent a Model CI unit test.
 - `NucleusClient.modelci.UnitTestEvaluation`- class to represent an evaluation result of a Model CI unit test.
@@ -172,12 +222,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.3.0) - 2021-11-23
 
 ### Added
+
 - `NucleusClient.datasets` property that lists Datasets in a human friendlier manner than `NucleusClient.list_datasets()`
 - `NucleusClient.models` property, this is preferred over the deprecated `list_models`
 - `NucleusClient.jobs` property. `NucleusClient.list_jobs` is still the preferred method to use if you filter jobs on access.
 - Deprecated method access now produces a deprecation warning in the logs.
 
 ### Deprecated
+
 - Model runs have been deprecated and will be removed in the near future. Use a Model directly instead. The following
   functions have all been deprecated as a part of that.
   - `NucleusClient.get_model_run(..)`
