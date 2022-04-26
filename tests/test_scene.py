@@ -274,7 +274,7 @@ def test_video_scene_property_methods():
 
         scene = VideoScene.from_json(scene_json)
 
-        expected_frame_rate = scene_json["frame_rate"]
+        expected_frame_rate = scene_json.get("frame_rate", None)
         expected_reference_id = scene_json["reference_id"]
         expected_length = len(scene_json.get("frames", []))
         expected_video_url = scene_json.get("video_url", None)
@@ -282,11 +282,11 @@ def test_video_scene_property_methods():
         info = scene.info()
 
         assert info[REFERENCE_ID_KEY] == expected_reference_id
-        assert info[FRAME_RATE_KEY] == expected_frame_rate
 
         if scene.items and len(scene.items) > 0:
             info[LENGTH_KEY] == expected_length
             assert scene.length == expected_length
+            assert info[FRAME_RATE_KEY] == expected_frame_rate
         else:
             assert info[VIDEO_URL_KEY] == expected_video_url
 

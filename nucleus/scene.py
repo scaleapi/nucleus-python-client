@@ -439,15 +439,17 @@ class VideoScene(ABC):
 
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
-        video_url
-        frame_rate (int): Frame rate of the video.
+        video_location (str): Required if attachment_type is "video". The remote URL
+            containing the video MP4. Remote formats supported include any URL (``http://``
+            or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
+        frame_rate (int): Required if attachment_type is "image". Frame rate of the video.
         attachment_type (str): The type of attachments being uploaded as a string literal.
-            Currently, videos can only be uploaded as an array of frames, so the only
-            accepted attachment_type is "image".
-        items (Optional[List[:class:`DatasetItem`]]): List of items representing frames,
-            to be a part of the scene. A scene can be created before items have been added
-            to it, but must be non-empty when uploading to a :class:`Dataset`. A video scene
-            can contain a maximum of 3000 items.
+            If the video is uploaded as an array of frames, the attachment_type is "image".
+            If the video is uploaded as an MP4, the attachment_type is "video".
+        items (Optional[List[:class:`DatasetItem`]]): Required if attachment_type is "image".
+            List of items representing frames, to be a part of the scene. A scene can be created
+            before items have been added to it, but must be non-empty when uploading to
+            a :class:`Dataset`. A video scene can contain a maximum of 3000 items.
         metadata (Optional[Dict]): Optional metadata to include with the scene.
 
     Refer to our `guide to uploading video data
@@ -485,21 +487,39 @@ class VideoScene(ABC):
 
     def validate(self):
         # TODO: make private
-        assert self.frame_rate > 0, "Frame rate must be at least 1"
-        assert (self.items and self.length > 0) != bool(
-            self.video_location
-        ), "Must have exactly one of a video location or a list of items of length at least 1 in a scene"
-
-        for item in self.items:
-            assert isinstance(
-                item, DatasetItem
-            ), "Each item in a scene must be a DatasetItem object"
+        assert (
+            self.attachment_type == "image" or self.attachment_type == "video"
+        )
+        if self.attachment_type == "image":
             assert (
-                item.image_location is not None
-            ), "Each item in a video scene must have an image_location"
+                self.frame_rate > 0
+            ), "When attachment_type='image' frame rate must be at least 1"
             assert (
-                item.upload_to_scale is not False
-            ), "Skipping upload to Scale is not currently implemented for videos"
+                self.items and self.length > 0
+            ), "When attachment_type='image' scene must have a list of items of length at least 1"
+            assert (
+                not self.video_location
+            ), "No video location is accepted when attachment_type='image'"
+            for item in self.items:
+                assert isinstance(
+                    item, DatasetItem
+                ), "Each item in a scene must be a DatasetItem object"
+                assert (
+                    item.image_location is not None
+                ), "Each item in a video scene must have an image_location"
+                assert (
+                    item.upload_to_scale is not False
+                ), "Skipping upload to Scale is not currently implemented for videos"
+        if self.attachment_type == "video":
+            assert (
+                self.video_location
+            ), "When attachment_type='video' a video_location is required"
+            assert (
+                not self.frame_rate
+            ), "No frame rate is accepted when attachment_type='video'"
+            assert (
+                not self.items
+            ), "No list of items is accepted when attachment_type='video'"
 
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
@@ -568,8 +588,9 @@ class VideoScene(ABC):
         """
         payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
-            FRAME_RATE_KEY: self.frame_rate,
         }
+        if self.frame_rate:
+            payload[FRAME_RATE_KEY] = self.frame_rate
         if self.video_location:
             payload[VIDEO_URL_KEY] = self.video_location
         if self.items:
@@ -584,7 +605,7 @@ class VideoScene(ABC):
         items = [DatasetItem.from_json(item) for item in items_payload]
         return cls(
             reference_id=payload[REFERENCE_ID_KEY],
-            frame_rate=payload[FRAME_RATE_KEY],
+            frame_rate=payload.get(FRAME_RATE_KEY, None),
             attachment_type=payload[VIDEO_UPLOAD_TYPE_KEY],
             items=items,
             metadata=payload.get(METADATA_KEY, {}),
@@ -597,8 +618,9 @@ class VideoScene(ABC):
         payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
             VIDEO_UPLOAD_TYPE_KEY: self.attachment_type,
-            FRAME_RATE_KEY: self.frame_rate,
         }
+        if self.frame_rate:
+            payload[FRAME_RATE_KEY] = self.frame_rate
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
         if self.video_location:

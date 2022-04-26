@@ -111,7 +111,6 @@ TEST_VIDEO_SCENES = {
         {
             "reference_id": "scene_2",
             "video_upload_type": "video",
-            "frame_rate": 1,
             "video_url": TEST_VIDEO_URL,
             "metadata": {"timestamp": "1234", "weather": "rainy"},
         },
