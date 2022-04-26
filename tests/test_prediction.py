@@ -7,6 +7,7 @@ from nucleus import (
     BoxPrediction,
     CategoryPrediction,
     DatasetItem,
+    KeypointsPrediction,
     LinePrediction,
     ModelRun,
     Point,
@@ -19,10 +20,12 @@ from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_PREDICTIONS,
+    TEST_BOX_PREDICTIONS_EMBEDDINGS,
     TEST_CATEGORY_PREDICTIONS,
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_PREDICTIONS,
     TEST_IMG_URLS,
+    TEST_KEYPOINTS_PREDICTIONS,
     TEST_LINE_PREDICTIONS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
@@ -31,6 +34,7 @@ from .helpers import (
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
+    assert_keypoints_prediction_matches_dict,
     assert_line_prediction_matches_dict,
     assert_polygon_prediction_matches_dict,
     assert_segmentation_annotation_matches_dict,
@@ -120,6 +124,27 @@ def test_box_pred_upload(model_run):
     assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
 
 
+def test_box_pred_upload_embedding(CLIENT, model_run):
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    assert response["customObjectIndexingJobId"]
+    job = CLIENT.get_job(response["customObjectIndexingJobId"])
+    assert job.job_last_known_status
+
+    response = model_run.refloc(prediction.reference_id)["box"]
+    single_prediction = model_run.prediction_loc(
+        prediction.reference_id, prediction.annotation_id
+    )
+    assert response[0] == single_prediction
+    assert len(response) == 1
+    assert_box_prediction_matches_dict(response[0], TEST_BOX_PREDICTIONS[0])
+
+
 def test_line_pred_upload(model_run):
     prediction = LinePrediction.from_json(TEST_LINE_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
@@ -145,6 +170,21 @@ def test_polygon_pred_upload(model_run):
     assert len(response) == 1
     assert_polygon_prediction_matches_dict(
         response[0], TEST_POLYGON_PREDICTIONS[0]
+    )
+
+
+def test_keypoints_pred_upload(model_run):
+    prediction = KeypointsPrediction.from_json(TEST_KEYPOINTS_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["keypoints"]
+    assert len(response) == 1
+    assert_keypoints_prediction_matches_dict(
+        response[0], TEST_KEYPOINTS_PREDICTIONS[0]
     )
 
 
@@ -357,6 +397,63 @@ def test_polygon_pred_upload_ignore(model_run):
     )
 
 
+def test_keypoints_pred_upload_update(model_run):
+    prediction = KeypointsPrediction.from_json(TEST_KEYPOINTS_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["predictions_processed"] == 1
+
+    # Copy so we don't modify the original.
+    prediction_update_params = dict(TEST_KEYPOINTS_PREDICTIONS[1])
+    prediction_update_params["annotation_id"] = TEST_KEYPOINTS_PREDICTIONS[0][
+        "annotation_id"
+    ]
+    prediction_update_params["reference_id"] = TEST_KEYPOINTS_PREDICTIONS[0][
+        "reference_id"
+    ]
+
+    prediction_update = KeypointsPrediction.from_json(prediction_update_params)
+    response = model_run.predict(annotations=[prediction_update], update=True)
+
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["keypoints"]
+    assert len(response) == 1
+    assert_keypoints_prediction_matches_dict(
+        response[0], prediction_update_params
+    )
+
+
+def test_keypoints_pred_upload_ignore(model_run):
+    prediction = KeypointsPrediction.from_json(TEST_KEYPOINTS_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["predictions_processed"] == 1
+
+    # Copy so we don't modify the original.
+    prediction_update_params = dict(TEST_KEYPOINTS_PREDICTIONS[1])
+    prediction_update_params["annotation_id"] = TEST_KEYPOINTS_PREDICTIONS[0][
+        "annotation_id"
+    ]
+    prediction_update_params["reference_id"] = TEST_KEYPOINTS_PREDICTIONS[0][
+        "reference_id"
+    ]
+
+    prediction_update = KeypointsPrediction.from_json(prediction_update_params)
+    # Default behavior is ignore.
+    response = model_run.predict(annotations=[prediction_update])
+
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 1
+
+    response = model_run.refloc(prediction.reference_id)["keypoints"]
+    assert len(response) == 1
+    assert_keypoints_prediction_matches_dict(
+        response[0], TEST_KEYPOINTS_PREDICTIONS[0]
+    )
+
+
 def test_category_pred_upload_update(model_run):
     prediction = CategoryPrediction.from_json(TEST_CATEGORY_PREDICTIONS[0])
     response = model_run.predict(annotations=[prediction])
@@ -471,6 +568,9 @@ def test_mixed_pred_upload(model_run: ModelRun):
     prediction_polygon = PolygonPrediction.from_json(
         TEST_POLYGON_PREDICTIONS[0]
     )
+    prediction_keypoints = KeypointsPrediction.from_json(
+        TEST_KEYPOINTS_PREDICTIONS[0]
+    )
     prediction_category = CategoryPrediction.from_json(
         TEST_CATEGORY_PREDICTIONS[0]
     )
@@ -480,13 +580,14 @@ def test_mixed_pred_upload(model_run: ModelRun):
             prediction_semseg,
             prediction_line,
             prediction_polygon,
+            prediction_keypoints,
             prediction_category,
             prediction_bbox,
         ]
     )
 
     assert response["model_run_id"] == model_run.model_run_id
-    assert response["predictions_processed"] == 5
+    assert response["predictions_processed"] == 6
     assert response["predictions_ignored"] == 0
 
     all_predictions = model_run.ungrouped_export()
@@ -498,6 +599,9 @@ def test_mixed_pred_upload(model_run: ModelRun):
     )
     assert_polygon_prediction_matches_dict(
         all_predictions["polygon"][0], TEST_POLYGON_PREDICTIONS[0]
+    )
+    assert_keypoints_prediction_matches_dict(
+        all_predictions["keypoints"][0], TEST_KEYPOINTS_PREDICTIONS[0]
     )
     assert_segmentation_annotation_matches_dict(
         all_predictions["segmentation"][0], TEST_SEGMENTATION_PREDICTIONS[0]
@@ -612,3 +716,13 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     assert status["total_steps"] == 1
     # Not sure why the following assertion fails, the value is actually 1.
     # assert status["job_progress"] == "0.00"
+
+
+@pytest.mark.integration
+def test_box_pred_upload_embedding_async(CLIENT, model_run):
+    prediction = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
+    job = model_run.predict(annotations=[prediction], asynchronous=True)
+
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Running"

@@ -6,6 +6,7 @@ from nucleus import (
     BoxAnnotation,
     CategoryAnnotation,
     DatasetItem,
+    KeypointsAnnotation,
     LineAnnotation,
     MultiCategoryAnnotation,
     Point,
@@ -18,11 +19,13 @@ from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,
+    TEST_BOX_ANNOTATIONS_EMBEDDINGS,
     TEST_CATEGORY_ANNOTATIONS,
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_ANNOTATIONS,
     TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
+    TEST_KEYPOINTS_ANNOTATIONS,
     TEST_LINE_ANNOTATIONS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
@@ -30,6 +33,7 @@ from .helpers import (
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
     assert_category_annotation_matches_dict,
+    assert_keypoints_annotation_matches_dict,
     assert_line_annotation_matches_dict,
     assert_multicategory_annotation_matches_dict,
     assert_partial_equality,
@@ -111,6 +115,31 @@ def test_box_gt_upload(dataset):
     )
 
 
+def test_box_gt_upload_embedding(CLIENT, dataset):
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS_EMBEDDINGS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    assert response["customObjectIndexingJobId"]
+    job = CLIENT.get_job(response["customObjectIndexingJobId"])
+    assert job.job_last_known_status
+
+    response = dataset.refloc(annotation.reference_id)["annotations"]["box"]
+    single_annotation_response = dataset.ground_truth_loc(
+        annotation.reference_id, annotation.annotation_id
+    )
+
+    assert response[0] == single_annotation_response
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_box_annotation_matches_dict(
+        response_annotation, TEST_BOX_ANNOTATIONS[0]
+    )
+
+
 def test_line_gt_upload(dataset):
     annotation = LineAnnotation.from_json(TEST_LINE_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
@@ -142,6 +171,24 @@ def test_polygon_gt_upload(dataset):
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
         response_annotation, TEST_POLYGON_ANNOTATIONS[0]
+    )
+
+
+def test_keypoints_gt_upload(dataset):
+    annotation = KeypointsAnnotation.from_json(TEST_KEYPOINTS_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "keypoints"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_keypoints_annotation_matches_dict(
+        response_annotation, TEST_KEYPOINTS_ANNOTATIONS[0]
     )
 
 
@@ -757,3 +804,12 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     }
 
     assert_partial_equality(expected, result)
+
+
+@pytest.mark.integration
+def test_box_gt_upload_embedding_async(CLIENT, dataset):
+    annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS_EMBEDDINGS[0])
+    job = dataset.annotate(annotations=[annotation], asynchronous=True)
+    status = job.status()
+    assert status["job_id"] == job.job_id
+    assert status["status"] == "Running"
