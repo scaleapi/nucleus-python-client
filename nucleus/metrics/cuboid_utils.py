@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import wraps
 from typing import Dict, List, Tuple
 
@@ -33,6 +34,14 @@ from nucleus.annotation import CuboidAnnotation
 from nucleus.prediction import CuboidPrediction
 
 from .base import ScalarResult
+
+
+@dataclass
+class ProcessedCuboids:
+    xyz: np.array
+    wlh: np.array
+    yaw: np.array
+    labels: List[str]
 
 
 def group_cuboids_by_label(
@@ -101,19 +110,19 @@ def label_match_wrapper(metric_fn):
     return wrapper
 
 
-def process_dataitem(dataitem):
-    processed_item = {}
-    processed_item["xyz"] = np.array(
-        [[ann.position.x, ann.position.y, ann.position.z] for ann in dataitem]
+def process_cuboids(item_list):
+    xyz = np.array(
+        [[ann.position.x, ann.position.y, ann.position.z] for ann in item_list]
     )
-    processed_item["wlh"] = np.array(
+    wlh = np.array(
         [
             [ann.dimensions.x, ann.dimensions.y, ann.dimensions.z]
-            for ann in dataitem
+            for ann in item_list
         ]
     )
-    processed_item["yaw"] = np.array([ann.yaw for ann in dataitem])
-    return processed_item
+    yaw = np.array([ann.yaw for ann in item_list])
+    labels = [ann.label for ann in item_list]
+    return ProcessedCuboids(xyz, wlh, yaw, labels)
 
 
 def compute_outer_iou(
@@ -178,7 +187,6 @@ def compute_outer_iou(
                     .intersection(polygon_1)
                     .area
                 )
-
     intersection = height_intersection * area_intersection
     area_0 = wlh_0[:, 0] * wlh_0[:, 1]
     area_1 = wlh_1[:, 0] * wlh_1[:, 1]
@@ -294,23 +302,23 @@ def recall_precision(
     num_predicted = 0
     num_instances = 0
 
-    gt_items = process_dataitem(groundtruth)
-    pred_items = process_dataitem(prediction)
+    gt_items = process_cuboids(groundtruth)
+    pred_items = process_cuboids(prediction)
 
-    num_predicted += pred_items["xyz"].shape[0]
-    num_instances += gt_items["xyz"].shape[0]
+    num_predicted += pred_items.xyz.shape[0]
+    num_instances += gt_items.xyz.shape[0]
 
-    tp = np.zeros(pred_items["xyz"].shape[0])
-    fp = np.ones(pred_items["xyz"].shape[0])
-    fn = np.ones(gt_items["xyz"].shape[0])
+    tp = np.zeros(pred_items.xyz.shape[0])
+    fp = np.ones(pred_items.xyz.shape[0])
+    fn = np.ones(gt_items.xyz.shape[0])
 
     mapping = associate_cuboids_on_iou(
-        pred_items["xyz"],
-        pred_items["wlh"],
-        pred_items["yaw"] + np.pi / 2,
-        gt_items["xyz"],
-        gt_items["wlh"],
-        gt_items["yaw"] + np.pi / 2,
+        pred_items.xyz,
+        pred_items.wlh,
+        pred_items.yaw + np.pi / 2,
+        gt_items.xyz,
+        gt_items.wlh,
+        gt_items.yaw + np.pi / 2,
         threshold_in_overlap_ratio=threshold_in_overlap_ratio,
     )
 
@@ -351,27 +359,27 @@ def detection_iou(
         :param threshold: IOU threshold to consider detection as valid. Must be in [0, 1].
     """
 
-    gt_items = process_dataitem(groundtruth)
-    pred_items = process_dataitem(prediction)
+    gt_items = process_cuboids(groundtruth)
+    pred_items = process_cuboids(prediction)
 
     meter_2d = []
     meter_3d = []
 
-    if gt_items["xyz"].shape[0] == 0 or pred_items["xyz"].shape[0] == 0:
+    if gt_items.xyz.shape[0] == 0 or pred_items.xyz.shape[0] == 0:
         return np.array([0.0]), np.array([0.0])
 
     iou_3d, iou_2d = compute_outer_iou(
-        gt_items["xyz"],
-        gt_items["wlh"],
-        gt_items["yaw"],
-        pred_items["xyz"],
-        pred_items["wlh"],
-        pred_items["yaw"],
+        gt_items.xyz,
+        gt_items.wlh,
+        gt_items.yaw,
+        pred_items.xyz,
+        pred_items.wlh,
+        pred_items.yaw,
     )
 
     for i, m in enumerate(iou_3d.max(axis=1)):
+        j = iou_3d[i].argmax()
         if m >= threshold_in_overlap_ratio:
-            j = iou_3d[i].argmax()
             meter_3d.append(iou_3d[i, j])
             meter_2d.append(iou_2d[i, j])
 
