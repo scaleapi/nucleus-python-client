@@ -45,13 +45,16 @@ from .constants import (
 
 class Annotation:
     """Internal base class, not to be used directly.
-
     .. todo ::
         Inherit common constructor parameters from here
     """
 
     reference_id: str
-    id: Optional[str]
+    _nucleus_id: Optional[str] = None
+
+    @property
+    def id(self) -> Optional[str]:
+        return self._nucleus_id
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -67,7 +70,12 @@ class Annotation:
         }
         type_key = payload.get(TYPE_KEY, None)
         AnnotationCls = type_key_to_type.get(type_key, SegmentationAnnotation)
-        return AnnotationCls.from_json(payload)
+        instance = AnnotationCls.from_json(payload)
+        # NOTE: Accessing protected var of sub-class looks like the cleanest way for a common classmethod functionality
+        instance._nucleus_id = payload.get(  # pylint: disable=protected-access
+            ID_KEY, None
+        )
+        return instance
 
     def to_payload(self) -> dict:
         """Serializes annotation object to schematized JSON dict."""
@@ -82,7 +90,6 @@ class Annotation:
 
     def has_local_files_to_upload(self) -> bool:
         """Returns True if annotation has local files that need to be uploaded.
-
         Nearly all subclasses have no local files, so we default this to just return
         false. If the subclass has local files, it should override this method (but
         that is not the only thing required to get local upload of files to work.)
@@ -93,11 +100,8 @@ class Annotation:
 @dataclass  # pylint: disable=R0902
 class BoxAnnotation(Annotation):  # pylint: disable=R0902
     """A bounding box annotation.
-
     ::
-
         from nucleus import BoxAnnotation
-
         box = BoxAnnotation(
             label="car",
             x=0,
@@ -109,7 +113,6 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             metadata={"vehicle_color": "red"},
             embedding_vector=[0.1423, 1.432, ...3.829],
         )
-
     Parameters:
         label (str): The label for this annotation.
         x (Union[float, int]): The distance, in pixels, between the left border
@@ -134,7 +137,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
@@ -146,7 +149,6 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -166,7 +168,6 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -189,7 +190,6 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
 @dataclass
 class Point:
     """A point in 2D space.
-
     Parameters:
         x (float): The x coordinate of the point.
         y (float): The y coordinate of the point.
@@ -211,11 +211,8 @@ class LineAnnotation(Annotation):
     """A polyline annotation consisting of an ordered list of 2D points.
     A LineAnnotation differs from a PolygonAnnotation by not forming a closed
     loop, and by having zero area.
-
     ::
-
         from nucleus import LineAnnotation
-
         line = LineAnnotation(
             label="face",
             vertices=[Point(100, 100), Point(200, 300), Point(300, 200)],
@@ -223,7 +220,6 @@ class LineAnnotation(Annotation):
             annotation_id="person_image_1_line_1",
             metadata={"camera_mode": "portrait"},
         )
-
     Parameters:
         label (str): The label for this annotation.
         vertices (List[:class:`Point`]): The list of points making up the line.
@@ -237,7 +233,7 @@ class LineAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
@@ -245,7 +241,6 @@ class LineAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -274,7 +269,6 @@ class LineAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -294,11 +288,8 @@ class LineAnnotation(Annotation):
 @dataclass
 class PolygonAnnotation(Annotation):
     """A polygon annotation consisting of an ordered list of 2D points.
-
     ::
-
         from nucleus import PolygonAnnotation
-
         polygon = PolygonAnnotation(
             label="bus",
             vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
@@ -307,7 +298,6 @@ class PolygonAnnotation(Annotation):
             metadata={"vehicle_color": "yellow"},
             embedding_vector=[0.1423, 1.432, ...3.829],
         )
-
     Parameters:
         label (str): The label for this annotation.
         vertices (List[:class:`Point`]): The list of points making up the polygon.
@@ -324,7 +314,7 @@ class PolygonAnnotation(Annotation):
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
@@ -333,7 +323,6 @@ class PolygonAnnotation(Annotation):
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -363,7 +352,6 @@ class PolygonAnnotation(Annotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -384,13 +372,11 @@ class PolygonAnnotation(Annotation):
 @dataclass
 class Keypoint:
     """A 2D point that has an additional visibility flag.
-
     Keypoints are intended to be part of a larger collection, and connected
     via a pre-defined skeleton. A keypoint in this skeleton may be visible
     or not-visible, and may be unlabeled and not visible. Because of this,
     the x, y coordinates may be optional, assuming that the keypoint is not
     visible, and would not be shown as part of the combined label.
-
     Parameters:
         x (Optional[float]): The x coordinate of the point.
         y (Optional[float]): The y coordinate of the point.
@@ -428,11 +414,8 @@ class KeypointsAnnotation(Annotation):
     """A keypoints annotation containing a list of keypoints and the structure
     of those keypoints: the naming of each point and the skeleton that connects
     those keypoints.
-
     ::
-
         from nucleus import KeypointsAnnotation
-
         keypoints = KeypointsAnnotation(
             label="face",
             keypoints=[Keypoint(100, 100), Keypoint(120, 120), Keypoint(visible=False), Keypoint(0, 0)],
@@ -442,7 +425,6 @@ class KeypointsAnnotation(Annotation):
             annotation_id="image_2_face_keypoints_1",
             metadata={"face_direction": "forward"},
         )
-
     Parameters:
         label (str): The label for this annotation.
         keypoints (List[:class:`Keypoint`]): The list of keypoints objects.
@@ -459,7 +441,7 @@ class KeypointsAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
@@ -469,7 +451,6 @@ class KeypointsAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata or {}
@@ -496,7 +477,6 @@ class KeypointsAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -518,7 +498,6 @@ class KeypointsAnnotation(Annotation):
 @dataclass
 class Point3D:
     """A point in 3D space.
-
     Parameters:
         x (float): The x coordinate of the point.
         y (float): The y coordinate of the point.
@@ -540,11 +519,8 @@ class Point3D:
 @dataclass  # pylint: disable=R0902
 class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     """A 3D Cuboid annotation.
-
     ::
-
         from nucleus import CuboidAnnotation
-
         cuboid = CuboidAnnotation(
             label="car",
             position=Point3D(100, 100, 10),
@@ -554,7 +530,6 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             annotation_id="pointcloud_1_car_cuboid_1",
             metadata={"vehicle_color": "green"}
         )
-
     Parameters:
         label (str): The label for this annotation.
         position (:class:`Point3D`): The point at the center of the cuboid
@@ -569,7 +544,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
           annotation.  Strings, floats and ints are supported best by querying
           and insights features within Nucleus. For more details see our `metadata
           guide <https://nucleus.scale.com/docs/upload-metadata>`_.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
@@ -579,7 +554,6 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -595,7 +569,6 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -613,22 +586,17 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             payload[ANNOTATION_ID_KEY] = self.annotation_id
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
-
         return payload
 
 
 @dataclass
 class Segment:
     """Segment represents either a class or an instance depending on the task type.
-
     For semantic segmentation, this object should store the mapping between a single
     class index and the string label.
-
     For instance segmentation, you can use this class to store the label of a single
     instance, whose extent in the image is represented by the value of ``index``.
-
     In both cases, additional metadata can be attached to the segment.
-
     Parameters:
         label (str): The label name of the class for the class or instance
           represented by index in the associated mask.
@@ -637,7 +605,7 @@ class Segment:
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
@@ -665,21 +633,16 @@ class Segment:
 @dataclass
 class SegmentationAnnotation(Annotation):
     """A segmentation mask on a 2D image.
-
     When uploading a mask annotation, Nucleus expects the mask file to be in
     PNG format with each pixel being a 0-255 uint8. Currently, Nucleus only
     supports uploading masks from URL.
-
     Nucleus automatically enforces the constraint that each DatasetItem can
     have at most one ground truth segmentation mask. As a consequence, if
     during upload a duplicate mask is detected for a given image, by default it
     will be ignored. You can change this behavior by setting ``update = True``,
     which will replace the existing segmentation mask with the new mask.
-
     ::
-
         from nucleus import SegmentationAnnotation
-
         segmentation = SegmentationAnnotation(
             mask_url="s3://your-bucket-name/segmentation-masks/image_2_mask_id1.png",
             annotations=[
@@ -691,19 +654,16 @@ class SegmentationAnnotation(Annotation):
             reference_id="image_2",
             annotation_id="image_2_mask_1",
         )
-
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
           accessible to Scale, or a local path. The mask is an HxW int8 array saved in PNG format,
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
           segmentation).
-
           The height and width of the mask must be the same as the
           original image. One example for semantic segmentation: the mask is 0
           for pixels where there is background, 1 where there is a car, and 2
           where there is a pedestrian.
-
           Another example for instance segmentation: the mask is 0 for one car,
           1 for another car, 2 for a motorcycle and 3 for another motorcycle.
           The class name for each value in the mask is stored in the list of
@@ -721,14 +681,13 @@ class SegmentationAnnotation(Annotation):
           is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     mask_url: str
     annotations: List[Segment]
     reference_id: str
     annotation_id: Optional[str] = None
-    id: Optional[str] = None
     # metadata: Optional[dict] = None # TODO(sc: 422637)
 
     def __post_init__(self):
@@ -747,7 +706,6 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
-            id=payload.get(ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
@@ -759,9 +717,7 @@ class SegmentationAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             # METADATA_KEY: self.metadata,  # TODO(sc: 422637)
         }
-
         payload[REFERENCE_ID_KEY] = self.reference_id
-
         return payload
 
     def has_local_files_to_upload(self) -> bool:
@@ -798,18 +754,14 @@ class AnnotationTypes(Enum):
 @dataclass
 class CategoryAnnotation(Annotation):
     """A category annotation.
-
     ::
-
         from nucleus import CategoryAnnotation
-
         category = CategoryAnnotation(
             label="dress",
             reference_id="image_1",
             taxonomy_name="clothing_type",
             metadata={"dress_color": "navy"}
         )
-
     Parameters:
         label (str): The label for this annotation.
         reference_id (str): User-defined ID of the image to which to apply this annotation.
@@ -819,14 +771,13 @@ class CategoryAnnotation(Annotation):
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
-        id: Unique Nucleus generated ID. This field is populated when loading Annotations from the server.
+
     """
 
     label: str
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -838,7 +789,6 @@ class CategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -862,7 +812,6 @@ class MultiCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
-    id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -874,7 +823,6 @@ class MultiCategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            id=payload.get(ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -916,7 +864,6 @@ class AnnotationList:
             assert isinstance(
                 annotation, Annotation
             ), "Expected annotation to be of type 'Annotation"
-
             if isinstance(annotation, BoxAnnotation):
                 self.box_annotations.append(annotation)
             elif isinstance(annotation, LineAnnotation):

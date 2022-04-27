@@ -31,7 +31,6 @@ from .constants import (
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
-    ID_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
     KEYPOINTS_SKELETON_KEY,
@@ -70,11 +69,8 @@ def from_json(payload: dict):
 
 class SegmentationPrediction(SegmentationAnnotation):
     """Predicted segmentation mask on a 2D image.
-
     ::
-
         from nucleus import SegmentationPrediction
-
         segmentation = SegmentationPrediction(
             mask_url="s3://your-bucket-name/pred-seg-masks/image_2_pred_mask_id1.png",
             annotations=[
@@ -86,7 +82,6 @@ class SegmentationPrediction(SegmentationAnnotation):
             reference_id="image_2",
             annotation_id="image_2_pred_mask_1",
         )
-
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
           accessible to Scale. This URL can be a path to a local file.
@@ -94,12 +89,10 @@ class SegmentationPrediction(SegmentationAnnotation):
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
           segmentation).
-
           The height and width of the mask must be the same as the
           original image. One example for semantic segmentation: the mask is 0
           for pixels where there is background, 1 where there is a car, and 2
           where there is a pedestrian.
-
           Another example for instance segmentation: the mask is 0 for one car,
           1 for another car, 2 for a motorcycle and 3 for another motorcycle.
           The class name for each value in the mask is stored in the list of
@@ -117,7 +110,6 @@ class SegmentationPrediction(SegmentationAnnotation):
           is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     @classmethod
@@ -130,14 +122,12 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
-            id=payload.get(ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
 
 class BoxPrediction(BoxAnnotation):
     """Prediction of a bounding box.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
         x (Union[float, int]): The distance, in pixels, between the left border
@@ -167,7 +157,6 @@ class BoxPrediction(BoxAnnotation):
         embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -183,7 +172,6 @@ class BoxPrediction(BoxAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
-        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -195,7 +183,6 @@ class BoxPrediction(BoxAnnotation):
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
-            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -206,7 +193,6 @@ class BoxPrediction(BoxAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -224,13 +210,11 @@ class BoxPrediction(BoxAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
 
 class LinePrediction(LineAnnotation):
     """Prediction of a line.
-
     Parameters:
         label (str): The label for this prediction (e.g. car, pedestrian, bicycle).
         vertices List[:class:`Point`]: The list of points making up the line.
@@ -249,7 +233,6 @@ class LinePrediction(LineAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -261,7 +244,6 @@ class LinePrediction(LineAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
-        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -269,7 +251,6 @@ class LinePrediction(LineAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
-            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -280,7 +261,6 @@ class LinePrediction(LineAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -296,13 +276,11 @@ class LinePrediction(LineAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
 
 class PolygonPrediction(PolygonAnnotation):
     """Prediction of a polygon.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
         vertices List[:class:`Point`]: The list of points making up the polygon.
@@ -324,7 +302,6 @@ class PolygonPrediction(PolygonAnnotation):
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -337,7 +314,6 @@ class PolygonPrediction(PolygonAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
-        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -346,7 +322,6 @@ class PolygonPrediction(PolygonAnnotation):
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
-            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -357,7 +332,6 @@ class PolygonPrediction(PolygonAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -374,13 +348,11 @@ class PolygonPrediction(PolygonAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
 
 class KeypointsPrediction(KeypointsAnnotation):
     """Prediction of keypoints.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
         keypoints (List[:class:`Keypoint`]): The list of keypoints objects.
@@ -402,7 +374,6 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -416,7 +387,6 @@ class KeypointsPrediction(KeypointsAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
-        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -426,7 +396,6 @@ class KeypointsPrediction(KeypointsAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
-            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -437,7 +406,6 @@ class KeypointsPrediction(KeypointsAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -455,13 +423,11 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
 
 class CuboidPrediction(CuboidAnnotation):
     """A prediction of 3D cuboid.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
         position (:class:`Point3D`): The point at the center of the cuboid
@@ -481,7 +447,6 @@ class CuboidPrediction(CuboidAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -495,7 +460,6 @@ class CuboidPrediction(CuboidAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
-        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
@@ -505,7 +469,6 @@ class CuboidPrediction(CuboidAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
-            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -516,7 +479,6 @@ class CuboidPrediction(CuboidAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -532,13 +494,11 @@ class CuboidPrediction(CuboidAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
 
 class CategoryPrediction(CategoryAnnotation):
     """A prediction of a category.
-
     Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle).
         reference_id: The reference ID of the image you wish to apply this annotation to.
@@ -553,7 +513,6 @@ class CategoryPrediction(CategoryAnnotation):
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our `metadata guide
             <https://nucleus.scale.com/docs/upload-metadata>`_.
-        id: Unique Nucleus generated ID. This field is populated when loading Predictions from the server.
     """
 
     def __init__(
@@ -564,14 +523,12 @@ class CategoryPrediction(CategoryAnnotation):
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
-        id: Optional[str] = None,  # pylint: disable=redefined-builtin
     ):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
             reference_id=reference_id,
             metadata=metadata,
-            id=id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -582,7 +539,6 @@ class CategoryPrediction(CategoryAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -594,7 +550,6 @@ class CategoryPrediction(CategoryAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
-            id=payload.get(ID_KEY, None),
         )
 
 
