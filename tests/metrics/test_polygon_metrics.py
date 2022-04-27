@@ -9,7 +9,7 @@ from nucleus.metrics import (
     PolygonPrecision,
     PolygonRecall,
 )
-from nucleus.metrics.base import Metric, ScalarResult
+from nucleus.metrics.base import ScalarResult
 from tests.metrics.helpers import (
     TEST_ANNOTATION_LIST,
     TEST_BOX_ANNOTATION_LIST,

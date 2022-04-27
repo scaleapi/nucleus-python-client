@@ -69,11 +69,8 @@ def from_json(payload: dict):
 
 class SegmentationPrediction(SegmentationAnnotation):
     """Predicted segmentation mask on a 2D image.
-
     ::
-
         from nucleus import SegmentationPrediction
-
         segmentation = SegmentationPrediction(
             mask_url="s3://your-bucket-name/pred-seg-masks/image_2_pred_mask_id1.png",
             annotations=[
@@ -85,7 +82,6 @@ class SegmentationPrediction(SegmentationAnnotation):
             reference_id="image_2",
             annotation_id="image_2_pred_mask_1",
         )
-
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
           accessible to Scale. This URL can be a path to a local file.
@@ -93,12 +89,10 @@ class SegmentationPrediction(SegmentationAnnotation):
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
           segmentation).
-
           The height and width of the mask must be the same as the
           original image. One example for semantic segmentation: the mask is 0
           for pixels where there is background, 1 where there is a car, and 2
           where there is a pedestrian.
-
           Another example for instance segmentation: the mask is 0 for one car,
           1 for another car, 2 for a motorcycle and 3 for another motorcycle.
           The class name for each value in the mask is stored in the list of
@@ -134,7 +128,6 @@ class SegmentationPrediction(SegmentationAnnotation):
 
 class BoxPrediction(BoxAnnotation):
     """Prediction of a bounding box.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
         x (Union[float, int]): The distance, in pixels, between the left border
@@ -200,7 +193,6 @@ class BoxPrediction(BoxAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -223,7 +215,6 @@ class BoxPrediction(BoxAnnotation):
 
 class LinePrediction(LineAnnotation):
     """Prediction of a line.
-
     Parameters:
         label (str): The label for this prediction (e.g. car, pedestrian, bicycle).
         vertices List[:class:`Point`]: The list of points making up the line.
@@ -270,7 +261,6 @@ class LinePrediction(LineAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -291,7 +281,6 @@ class LinePrediction(LineAnnotation):
 
 class PolygonPrediction(PolygonAnnotation):
     """Prediction of a polygon.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
         vertices List[:class:`Point`]: The list of points making up the polygon.
@@ -343,7 +332,6 @@ class PolygonPrediction(PolygonAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -365,7 +353,6 @@ class PolygonPrediction(PolygonAnnotation):
 
 class KeypointsPrediction(KeypointsAnnotation):
     """Prediction of keypoints.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
         keypoints (List[:class:`Keypoint`]): The list of keypoints objects.
@@ -419,7 +406,6 @@ class KeypointsPrediction(KeypointsAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -442,7 +428,6 @@ class KeypointsPrediction(KeypointsAnnotation):
 
 class CuboidPrediction(CuboidAnnotation):
     """A prediction of 3D cuboid.
-
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle)
         position (:class:`Point3D`): The point at the center of the cuboid
@@ -494,7 +479,6 @@ class CuboidPrediction(CuboidAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
@@ -515,7 +499,6 @@ class CuboidPrediction(CuboidAnnotation):
 
 class CategoryPrediction(CategoryAnnotation):
     """A prediction of a category.
-
     Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle).
         reference_id: The reference ID of the image you wish to apply this annotation to.
@@ -556,7 +539,6 @@ class CategoryPrediction(CategoryAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
-
         return payload
 
     @classmethod
