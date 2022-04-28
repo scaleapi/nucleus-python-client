@@ -341,22 +341,8 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     assert status["job_progress"] == "0.80"
     assert status["completed_steps"] == 4
     assert status["total_steps"] == 5
-    assert status["message"] == {
-        "PayloadUrl": "",
-        "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
-        "ingest_to_reupload_queue": {
-            "epoch": 1,
-            "total": 5,
-            "datasetId": f"{dataset.id}",
-            "processed": 5,
-        },
-        "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
-    }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
-    assert (
-        'Failure when processing the image "https://looks.ok.but.is.not.accessible"'
-        in str(job.errors())
-    )
+    assert '"https://looks.ok.but.is.not.accessible"' in str(job.errors())
 
 
 def test_dataset_list_autotags(CLIENT, dataset):
