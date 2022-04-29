@@ -118,6 +118,70 @@ TEST_VIDEO_SCENES = {
     "update": False,
 }
 
+TEST_VIDEO_SCENES_REPEAT_REF_IDS = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "video_upload_type": "image",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "image_url": TEST_IMG_URLS[0],
+                    "type": "image",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "image_url": TEST_IMG_URLS[1],
+                    "type": "image",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+    ],
+    "update": False,
+}
+
+TEST_VIDEO_SCENES_INVALID_URLS = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "video_upload_type": "image",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "image_url": TEST_VIDEO_URL,
+                    "type": "image",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "image_url": TEST_VIDEO_URL,
+                    "type": "image",
+                    "reference_id": "video_frame_1",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+        {
+            "reference_id": "scene_2",
+            "video_upload_type": "video",
+            "video_url": TEST_IMG_URLS[0],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+        {
+            "reference_id": "scene_3",
+            "video_upload_type": "video",
+            "video_url": TEST_VIDEO_URL + "nonsense",
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+    ],
+    "update": False,
+}
+
 
 def reference_id_from_url(url):
     return Path(url).name

@@ -1,3 +1,4 @@
+from ast import excepthandler
 import copy
 import time
 
@@ -30,7 +31,7 @@ from nucleus.constants import (
     VIDEO_URL_KEY,
 )
 from nucleus.scene import flatten
-
+from nucleus.job import JobError
 from .helpers import (
     TEST_CUBOID_ANNOTATIONS,
     TEST_DATASET_3D_NAME,
@@ -39,6 +40,8 @@ from .helpers import (
     TEST_LIDAR_SCENES,
     TEST_VIDEO_ITEMS,
     TEST_VIDEO_SCENES,
+    TEST_VIDEO_SCENES_REPEAT_REF_IDS,
+    TEST_VIDEO_SCENES_INVALID_URLS,
     assert_cuboid_annotation_matches_dict,
 )
 
@@ -612,6 +615,60 @@ def test_video_scene_upload_async(dataset_scene):
         u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
         for u, o in zip(uploaded_scenes, scenes)
     )
+
+
+@pytest.mark.integration
+def test_repeat_refid_video_scene_upload_async(dataset_scene):
+    payload = TEST_VIDEO_SCENES_REPEAT_REF_IDS
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+
+    try:
+        job.sleep_until_complete()
+    except JobError:
+        status = job.status()
+        sceneUploadProgress = status["message"]["scene_upload_progress"]
+        assert status["job_id"] == job.job_id
+        assert status["status"] == "Errored"
+        assert status["message"]["scene_upload_progress"]["new_scenes"] == 0
+        assert sceneUploadProgress["ignored_scenes"] == 0
+        assert sceneUploadProgress["updated_scenes"] == 0
+        assert sceneUploadProgress["scenes_errored"] == len(scenes)
+        assert status["job_progress"] == "1.00"
+        assert status["completed_steps"] == len(scenes)
+        assert status["total_steps"] == len(scenes)
+        assert len(job.errors()) == len(scenes)
+        assert (
+            "Duplicate frames found across different videos" in job.errors()[0]
+        )
+
+
+@pytest.mark.integration
+def test_invalid_url_video_scene_upload_async(dataset_scene):
+    payload = TEST_VIDEO_SCENES_INVALID_URLS
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    try:
+        job.sleep_until_complete()
+    except JobError:
+        status = job.status()
+        sceneUploadProgress = status["message"]["scene_upload_progress"]
+        assert status["job_id"] == job.job_id
+        assert status["status"] == "Errored"
+        assert status["message"]["scene_upload_progress"]["new_scenes"] == 0
+        assert sceneUploadProgress["ignored_scenes"] == 0
+        assert sceneUploadProgress["updated_scenes"] == 0
+        assert sceneUploadProgress["scenes_errored"] == len(scenes)
+        assert status["job_progress"] == "1.00"
+        assert status["completed_steps"] == len(scenes)
+        assert status["total_steps"] == len(scenes)
+        assert len(job.errors()) == len(scenes) + 1
 
 
 @pytest.mark.integration
