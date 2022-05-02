@@ -440,13 +440,13 @@ class VideoScene(ABC):
 
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
-        video_location (str): Required if attachment_type is "video". The remote URL
-            containing the video MP4. Remote formats supported include any URL (``http://``
-            or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
-        frame_rate (int): Required if attachment_type is "image". Frame rate of the video.
         attachment_type (str): The type of attachments being uploaded as a string literal.
             If the video is uploaded as an array of frames, the attachment_type is "image".
             If the video is uploaded as an MP4, the attachment_type is "video".
+        frame_rate (Optional[int]): Required if attachment_type is "image". Frame rate of the video.
+        video_location (Optional[str]): Required if attachment_type is "video". The remote URL
+            containing the video MP4. Remote formats supported include any URL (``http://``
+            or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
         items (Optional[List[:class:`DatasetItem`]]): Required if attachment_type is "image".
             List of items representing frames, to be a part of the scene. A scene can be created
             before items have been added to it, but must be non-empty when uploading to
@@ -461,7 +461,7 @@ class VideoScene(ABC):
     attachment_type: _VideoUploadType
     frame_rate: Optional[int] = None
     video_location: Optional[str] = None
-    items: List[DatasetItem] = field(default_factory=list)
+    items: Optional[List[DatasetItem]] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
