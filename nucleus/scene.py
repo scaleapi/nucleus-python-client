@@ -488,9 +488,7 @@ class VideoScene(ABC):
 
     def validate(self):
         # TODO: make private
-        assert (
-            self.attachment_type in ("image", "video")
-        )
+        assert self.attachment_type in ("image", "video")
         if self.attachment_type == "image":
             assert (
                 self.frame_rate > 0
