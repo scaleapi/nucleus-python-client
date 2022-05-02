@@ -489,7 +489,7 @@ class VideoScene(ABC):
     def validate(self):
         # TODO: make private
         assert (
-            self.attachment_type == "image" or self.attachment_type == "video"
+            self.attachment_type in ("image", "video")
         )
         if self.attachment_type == "image":
             assert (
