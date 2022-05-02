@@ -1,6 +1,6 @@
-from ast import excepthandler
 import copy
 import time
+from ast import excepthandler
 
 import pytest
 
@@ -30,8 +30,9 @@ from nucleus.constants import (
     VIDEO_UPLOAD_TYPE_KEY,
     VIDEO_URL_KEY,
 )
-from nucleus.scene import flatten
 from nucleus.job import JobError
+from nucleus.scene import flatten
+
 from .helpers import (
     TEST_CUBOID_ANNOTATIONS,
     TEST_DATASET_3D_NAME,
@@ -40,8 +41,8 @@ from .helpers import (
     TEST_LIDAR_SCENES,
     TEST_VIDEO_ITEMS,
     TEST_VIDEO_SCENES,
-    TEST_VIDEO_SCENES_REPEAT_REF_IDS,
     TEST_VIDEO_SCENES_INVALID_URLS,
+    TEST_VIDEO_SCENES_REPEAT_REF_IDS,
     assert_cuboid_annotation_matches_dict,
 )
 
