@@ -8,12 +8,11 @@ from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
 from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
 
 from .base import Metric, ScalarResult
+from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
 from .filtering import ListOfAndFilters, ListOfOrAndFilters
 from .filters import confidence_filter, polygon_label_filter
 from .metric_utils import compute_average_precision
 from .polygon_utils import (
-    BoxOrPolygonAnnotation,
-    BoxOrPolygonPrediction,
     get_true_false_positives_confidences,
     group_boxes_or_polygons_by_label,
     iou_assignments,

@@ -1,30 +1,24 @@
 import sys
 from functools import wraps
-from typing import Dict, List, Tuple, TypeVar
+from typing import Dict, List, Tuple
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from shapely.geometry import Polygon
 
 from nucleus.annotation import BoxAnnotation, PolygonAnnotation
-from nucleus.prediction import BoxPrediction, PolygonPrediction
+
+from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
+
+try:
+    from shapely.geometry import Polygon
+except ModuleNotFoundError:
+    from .shapely_not_installed import ShapelyNotInstalled
+
+    Polygon = ShapelyNotInstalled
+
 
 from .base import ScalarResult
 from .errors import PolygonAnnotationTypeError
-
-BoxOrPolygonPrediction = TypeVar(
-    "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
-)
-BoxOrPolygonAnnotation = TypeVar(
-    "BoxOrPolygonAnnotation", BoxAnnotation, PolygonAnnotation
-)
-BoxOrPolygonAnnoOrPred = TypeVar(
-    "BoxOrPolygonAnnoOrPred",
-    BoxAnnotation,
-    PolygonAnnotation,
-    BoxPrediction,
-    PolygonPrediction,
-)
 
 
 def polygon_annotation_to_shape(
