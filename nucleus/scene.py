@@ -461,7 +461,7 @@ class VideoScene(ABC):
     attachment_type: _VideoUploadType
     frame_rate: Optional[int] = None
     video_location: Optional[str] = None
-    items: Optional[List[DatasetItem]] = field(default_factory=list)
+    items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
 
     def __post_init__(self):
