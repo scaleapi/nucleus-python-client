@@ -15,3 +15,4 @@ from .polygon_metrics import (
     PolygonPrecision,
     PolygonRecall,
 )
+from .segmentation_metrics import SegmentationMaskToPolyMetric
