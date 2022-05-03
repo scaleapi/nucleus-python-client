@@ -92,7 +92,9 @@ class Model:
     endpoint, using :meth:`NucleusClient.add_model`.
     """
 
-    def __init__(self, model_id, name, reference_id, metadata, bundle_name, client):
+    def __init__(
+        self, model_id, name, reference_id, metadata, bundle_name, client
+    ):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
@@ -199,7 +201,7 @@ class Model:
             model = client.list_models()[0]
 
             model.run("ds_123456")
-        
+
         Args:
             dataset_id: id of dataset to run inference on
             job_id: nucleus job used to track async job progress
