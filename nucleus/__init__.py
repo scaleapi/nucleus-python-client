@@ -488,7 +488,8 @@ class NucleusClient:
             :class:`Model`: The newly created model as an object.
         """
         response = self.make_request(
-            construct_model_creation_payload(name, reference_id, metadata, bundle_name),
+            construct_model_creation_payload(
+                name, reference_id, metadata, bundle_name),
             "models/add",
         )
         model_id = response.get("model_id", None)
@@ -811,7 +812,8 @@ class NucleusClient:
             payload = {}
         if requests_command is requests.get:
             payload = None
-        return self._connection.make_request(payload, route, requests_command)  # type: ignore
+        # type: ignore
+        return self._connection.make_request(payload, route, requests_command)
 
     def handle_bad_response(
         self,

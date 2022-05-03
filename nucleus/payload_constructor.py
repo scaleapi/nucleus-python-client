@@ -123,7 +123,10 @@ def construct_box_predictions_payload(
 
 
 def construct_model_creation_payload(
-    name: str, reference_id: str, metadata: Optional[Dict], bundle_name: Optional[str],
+    name: str, 
+    reference_id: str, 
+    metadata: Optional[Dict], 
+    bundle_name: Optional[str],
 ) -> dict:
     return {
         NAME_KEY: name,
