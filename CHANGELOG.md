@@ -5,10 +5,17 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.10.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.4) - 2022-04-26
+## [0.10.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.5) - 2022-04-26
 
 ### Fixed
 - Invalid polygons are dropped form PolygonMetric iou matching
+
+## [0.10.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.4)) - 2022-05-02
+
+### Added
+
+- Additional check added for KeypointsAnnotation names validation
+- MP4 video upload
 
 ## [0.10.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.3) - 2022-04-22
 

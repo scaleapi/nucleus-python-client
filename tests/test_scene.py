@@ -1,5 +1,6 @@
 import copy
 import time
+from ast import excepthandler
 
 import pytest
 
@@ -27,7 +28,9 @@ from nucleus.constants import (
     UPDATE_KEY,
     URL_KEY,
     VIDEO_UPLOAD_TYPE_KEY,
+    VIDEO_URL_KEY,
 )
+from nucleus.job import JobError
 from nucleus.scene import flatten
 
 from .helpers import (
@@ -38,6 +41,8 @@ from .helpers import (
     TEST_LIDAR_SCENES,
     TEST_VIDEO_ITEMS,
     TEST_VIDEO_SCENES,
+    TEST_VIDEO_SCENES_INVALID_URLS,
+    TEST_VIDEO_SCENES_REPEAT_REF_IDS,
     assert_cuboid_annotation_matches_dict,
 )
 
@@ -269,25 +274,32 @@ def test_scene_add_frame():
 
 
 def test_video_scene_property_methods():
-    payload = TEST_VIDEO_SCENES
-    expected_frame_rate = TEST_VIDEO_SCENES["scenes"][0]["frame_rate"]
-    scene_json = payload[SCENES_KEY][0]
-    scene = VideoScene.from_json(scene_json)
+    for scene_json in TEST_VIDEO_SCENES["scenes"]:
 
-    expected_length = len(scene_json[FRAMES_KEY])
-    assert scene.length == expected_length
-    assert scene.info() == {
-        REFERENCE_ID_KEY: scene_json[REFERENCE_ID_KEY],
-        LENGTH_KEY: expected_length,
-        FRAME_RATE_KEY: expected_frame_rate,
-    }
+        scene = VideoScene.from_json(scene_json)
+
+        expected_frame_rate = scene_json.get("frame_rate", None)
+        expected_reference_id = scene_json["reference_id"]
+        expected_length = len(scene_json.get("frames", []))
+        expected_video_url = scene_json.get("video_url", None)
+
+        info = scene.info()
+
+        assert info[REFERENCE_ID_KEY] == expected_reference_id
+
+        if scene.items and len(scene.items) > 0:
+            info[LENGTH_KEY] == expected_length
+            assert scene.length == expected_length
+            assert info[FRAME_RATE_KEY] == expected_frame_rate
+        else:
+            assert info[VIDEO_URL_KEY] == expected_video_url
 
 
 def test_video_scene_add_item():
     scene_ref_id = "scene_1"
     frame_rate = 20
     video_upload_type = "image"
-    scene = VideoScene(scene_ref_id, frame_rate, video_upload_type)
+    scene = VideoScene(scene_ref_id, video_upload_type, frame_rate)
     scene.add_item(TEST_VIDEO_ITEMS[0])
     scene.add_item(TEST_VIDEO_ITEMS[1], index=1)
     scene.add_item(TEST_VIDEO_ITEMS[2], index=0, update=True)
@@ -299,7 +311,6 @@ def test_video_scene_add_item():
         TEST_VIDEO_ITEMS[2],
         TEST_VIDEO_ITEMS[1],
     ]
-
     assert scene.to_payload() == {
         REFERENCE_ID_KEY: scene_ref_id,
         VIDEO_UPLOAD_TYPE_KEY: video_upload_type,
@@ -589,11 +600,12 @@ def test_video_scene_upload_async(dataset_scene):
             }
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": len(scenes),
+        "total_steps": len(scenes),
     }
 
     uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
         u["reference_id"] == o.reference_id
@@ -606,13 +618,66 @@ def test_video_scene_upload_async(dataset_scene):
 
 
 @pytest.mark.integration
+def test_repeat_refid_video_scene_upload_async(dataset_scene):
+    payload = TEST_VIDEO_SCENES_REPEAT_REF_IDS
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+
+    try:
+        job.sleep_until_complete()
+    except JobError:
+        status = job.status()
+        sceneUploadProgress = status["message"]["scene_upload_progress"]
+        assert status["job_id"] == job.job_id
+        assert status["status"] == "Errored"
+        assert status["message"]["scene_upload_progress"]["new_scenes"] == 0
+        assert sceneUploadProgress["ignored_scenes"] == 0
+        assert sceneUploadProgress["updated_scenes"] == 0
+        assert sceneUploadProgress["scenes_errored"] == len(scenes)
+        assert status["job_progress"] == "1.00"
+        assert status["completed_steps"] == len(scenes)
+        assert status["total_steps"] == len(scenes)
+        assert len(job.errors()) == len(scenes)
+        assert (
+            "Duplicate frames found across different videos" in job.errors()[0]
+        )
+
+
+@pytest.mark.integration
+def test_invalid_url_video_scene_upload_async(dataset_scene):
+    payload = TEST_VIDEO_SCENES_INVALID_URLS
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    try:
+        job.sleep_until_complete()
+    except JobError:
+        status = job.status()
+        sceneUploadProgress = status["message"]["scene_upload_progress"]
+        assert status["job_id"] == job.job_id
+        assert status["status"] == "Errored"
+        assert status["message"]["scene_upload_progress"]["new_scenes"] == 0
+        assert sceneUploadProgress["ignored_scenes"] == 0
+        assert sceneUploadProgress["updated_scenes"] == 0
+        assert sceneUploadProgress["scenes_errored"] == len(scenes)
+        assert status["job_progress"] == "1.00"
+        assert status["completed_steps"] == len(scenes)
+        assert status["total_steps"] == len(scenes)
+        assert len(job.errors()) == len(scenes) + 1
+
+
+@pytest.mark.integration
 def test_video_scene_upload_and_update(dataset_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-
     job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
@@ -631,11 +696,12 @@ def test_video_scene_upload_and_update(dataset_scene):
             }
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": len(scenes),
+        "total_steps": len(scenes),
     }
 
     uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
         u["reference_id"] == o.reference_id
@@ -664,8 +730,8 @@ def test_video_scene_upload_and_update(dataset_scene):
             }
         },
         "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
+        "completed_steps": len(scenes),
+        "total_steps": len(scenes),
     }
 
 
@@ -681,6 +747,7 @@ def test_video_scene_deletion(dataset_scene):
     job.sleep_until_complete()
 
     uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
         u["reference_id"] == o.reference_id
@@ -713,3 +780,18 @@ def test_video_scene_metadata_update(dataset_scene):
     updated_scene = dataset_scene.get_scene(scene_ref_id)
     actual_metadata = updated_scene.metadata
     assert expected_new_metadata == actual_metadata
+
+
+@pytest.mark.integration
+def test_video_scene_upload_and_export(dataset_scene):
+    payload = TEST_VIDEO_SCENES
+    scenes = [
+        VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+
+    for scene in scenes:
+        get_scene_result = dataset_scene.get_scene(scene.reference_id)
+        assert scene.to_payload() == get_scene_result.to_payload()
