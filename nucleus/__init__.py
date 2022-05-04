@@ -501,7 +501,14 @@ class NucleusClient:
         if not model_id:
             raise ModelCreationError(response.get("error"))
 
-        return Model(model_id, name, reference_id, metadata, bundle_name, self)
+        return Model(
+            model_id=model_id,
+            name=name,
+            reference_id=reference_id,
+            metadata=metadata,
+            bundle_name=bundle_name,
+            client=self,
+        )
 
     @deprecated(
         "Model runs have been deprecated and will be removed. Use a Model instead"

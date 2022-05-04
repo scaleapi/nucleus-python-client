@@ -93,7 +93,7 @@ class Model:
     """
 
     def __init__(
-        self, model_id, name, reference_id, metadata, bundle_name, client
+        self, model_id, name, reference_id, metadata, client, bundle_name=None
     ):
         self.id = model_id
         self.name = name
@@ -125,7 +125,6 @@ class Model:
             name=payload["name"],
             reference_id=payload["ref_id"],
             metadata=payload["metadata"] or None,
-            bundle_name=payload["bundle_name"] or None,
             client=client,
         )
 
