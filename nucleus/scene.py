@@ -479,10 +479,10 @@ class VideoScene(ABC):
 
     @property
     def length(self) -> int:
-        """Gets number of items in the scene for videos uploaded as an array of images."""
+        """Gets number of items in the scene for videos uploaded with an array of images."""
         assert (
-            self.video_location is None
-        ), "Videos uploaded as an mp4 have no length"
+            not self.upload_to_scale or not self.video_location
+        ), "Only videos with items have a length"
         return len(self.items)
 
     def validate(self):
@@ -547,8 +547,8 @@ class VideoScene(ABC):
               exists. Default is False.
         """
         assert (
-            self.video_location is None
-        ), "Cannot add item to a video uploaded as an mp4"
+            not self.upload_to_scale or not self.video_location
+        ), "Cannot add item to a video without items"
         if index is None:
             index = len(self.items)
         assert (
@@ -568,8 +568,8 @@ class VideoScene(ABC):
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
         assert (
-            self.video_location is None
-        ), "Cannot get item from a video uploaded as an mp4"
+            not self.upload_to_scale or not self.video_location
+        ), "Cannot add item to a video without items"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -583,8 +583,8 @@ class VideoScene(ABC):
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
         assert (
-            self.video_location is None
-        ), "Cannot get items from a video uploaded as an mp4"
+            not self.upload_to_scale or not self.video_location
+        ), "Cannot add item to a video without items"
         return self.items
 
     def info(self):
@@ -609,6 +609,8 @@ class VideoScene(ABC):
             payload[VIDEO_URL_KEY] = self.video_location
         if self.items:
             payload[LENGTH_KEY] = self.length
+        if self.upload_to_scale:
+            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
 
         return payload
 
@@ -643,6 +645,8 @@ class VideoScene(ABC):
                 item.to_payload(is_scene=True) for item in self.items
             ]
             payload[FRAMES_KEY] = items_payload
+        if self.upload_to_scale is not None:
+            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
         return payload
 
     def to_json(self) -> str:
@@ -661,7 +665,7 @@ def check_all_scene_paths_remote(
                     f"All paths for videos must be remote, but {scene.video_location} is either "
                     "local, or a remote URL type that is not supported."
                 )
-        else:
+        if isinstance(scene, LidarScene) or scene.items:
             for item in scene.get_items():
                 pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
                 if pointcloud_location and is_local_path(pointcloud_location):

@@ -26,6 +26,7 @@ from nucleus.constants import (
     SCENES_KEY,
     TYPE_KEY,
     UPDATE_KEY,
+    UPLOAD_TO_SCALE_KEY,
     URL_KEY,
     VIDEO_URL_KEY,
 )
@@ -326,6 +327,7 @@ def test_video_scene_add_item():
                 METADATA_KEY: TEST_VIDEO_ITEMS[1].metadata or {},
             },
         ],
+        UPLOAD_TO_SCALE_KEY: True,
     }
 
 
@@ -578,6 +580,7 @@ def test_video_scene_upload_async(dataset_scene):
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
+
     update = payload[UPDATE_KEY]
     job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
