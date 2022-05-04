@@ -42,7 +42,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
     UPDATE_KEY,
-    VIDEO_LOCATION_KEY,
+    VIDEO_URL_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -1197,7 +1197,7 @@ class Dataset:
             route=f"dataset/{self.id}/scene/{reference_id}",
             requests_command=requests.get,
         )
-        if FRAME_RATE_KEY in response or VIDEO_LOCATION_KEY in response:
+        if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
             return VideoScene.from_json(response)
         return LidarScene.from_json(response)
 

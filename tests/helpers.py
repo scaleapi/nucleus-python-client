@@ -41,6 +41,13 @@ TEST_POINTCLOUD_URLS = [
 
 TEST_VIDEO_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/video.mp4"
 
+TEST_INACCESSIBLE_VIDEO_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/video.mp4/fake-for-privacy-mode"
+
+TEST_INACCESSIBLE_IMG_URLS = [
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg/fake-for-privacy-mode",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/arctichare.jpeg/fake-for-privacy-mode",
+]
+
 TEST_LIDAR_SCENES = {
     "scenes": [
         {
@@ -114,17 +121,17 @@ TEST_VIDEO_SCENES = {
         },
         {
             "reference_id": "scene_3",
-            "video_url": TEST_VIDEO_URL,
+            "video_url": TEST_INACCESSIBLE_VIDEO_URL,
             "frame_rate": 15,
             "frames": [
                 {
-                    "image_url": TEST_IMG_URLS[2],
+                    "image_url": TEST_INACCESSIBLE_IMG_URLS[0],
                     "type": "image",
                     "reference_id": "video_frame_2",
                     "metadata": {"time": 123, "foo": "bar"},
                 },
                 {
-                    "image_url": TEST_IMG_URLS[3],
+                    "image_url": TEST_INACCESSIBLE_IMG_URLS[1],
                     "type": "image",
                     "reference_id": "video_frame_3",
                     "metadata": {"time": 124, "foo": "bar_2"},
