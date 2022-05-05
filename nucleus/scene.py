@@ -19,7 +19,11 @@ from nucleus.constants import (
 )
 
 from .annotation import is_local_path
-from .dataset_item import DatasetItem, DatasetItemType, check_for_duplicate_reference_ids
+from .dataset_item import (
+    DatasetItem,
+    DatasetItemType,
+    check_for_duplicate_reference_ids,
+)
 
 
 class Frame:
