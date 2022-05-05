@@ -195,13 +195,14 @@ def check_all_paths_remote(dataset_items: Sequence[DatasetItem]):
 def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
     ref_ids = []
     for dataset_item in dataset_items:
-        if dataset_item.reference_id is not None:
-            ref_ids.append(dataset_item.reference_id)
+        if dataset_item.reference_id is None:
+            raise ValueError(f"Reference ID cannot be None")
+        ref_ids.append(dataset_item.reference_id)
     if len(ref_ids) != len(set(ref_ids)):
         duplicates = {
             f"{key}": f"Count: {value}"
-            for key, value in Counter(ref_ids).items()
+            for key, value in Counter(ref_ids).items() if value > 1
         }
         raise ValueError(
-            f"Duplicate reference ids found among dataset_items: {duplicates}"
+            f"Duplicate reference IDs found among dataset_items: {duplicates}"
         )
