@@ -13,13 +13,15 @@ except ModuleNotFoundError:
     geometry = ShapelyNotInstalled
 
 
-def instance_mask_to_polys(mask: np.ndarray, background_code=None):
+def instance_mask_to_polys(instance_mask: np.ndarray, background_code=None):
     mask_values = []
     all_polygons = []
-    mask = (mask != background_code) if background_code else None
+    not_background_mask = (
+        (instance_mask != background_code) if background_code else None
+    )
     for shape, value in features.shapes(
-        mask.astype(np.int16),
-        mask=mask,
+        instance_mask.astype(np.int16),
+        mask=not_background_mask,
     ):
         poly = geometry.shape(shape)
         all_polygons.append(poly)
