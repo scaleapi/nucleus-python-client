@@ -33,7 +33,7 @@ class Frame:
     one pointcloud with any number of camera images.
 
     Parameters:
-        **kwargs (Dict[fstr, :class:`DatasetItem`]): Mappings from sensor name
+        **kwargs (Dict[str, :class:`DatasetItem`]): Mappings from sensor name
           to dataset item. Each frame of a lidar scene must contain exactly one
           pointcloud and any number of images (e.g. from different angles).
 
