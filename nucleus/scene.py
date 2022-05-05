@@ -45,7 +45,9 @@ class Frame:
         self.items: Dict[str, DatasetItem] = {}
         for key, value in kwargs.items():
             assert isinstance(key, str), "All keys must be names of sensors"
-            assert isinstance(value, DatasetItem), f"All values must be DatasetItems, instead got type {type(value)}"
+            assert isinstance(
+                value, DatasetItem
+            ), f"All values must be DatasetItems, instead got type {type(value)}"
             self.items[key] = value
 
         check_for_duplicate_reference_ids(list(self.items.values()))
