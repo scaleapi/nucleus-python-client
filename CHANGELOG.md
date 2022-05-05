@@ -5,6 +5,13 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.10.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.6) - 2022-05-05
+
+### Fixed
+- Add checks for duplicate reference IDs
+
+
 ## [0.10.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.5) - 2022-05-04
 
 ### Fixed
