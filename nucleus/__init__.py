@@ -742,12 +742,21 @@ class NucleusClient:
         )
 
     @deprecated("Prefer calling Dataset.delete_custom_index instead.")
-    def delete_custom_index(self, dataset_id: str):
+    def delete_custom_index(self, dataset_id: str, image: bool):
         # TODO: deprecate in favor of Dataset.delete_custom_index invocation
         return self.make_request(
-            {},
+            {"image": image},
             f"indexing/{dataset_id}",
             requests_command=requests.delete,
+        )
+
+    @deprecated("Prefer calling Dataset.set_primary_index instead.")
+    def set_primary_index(self, dataset_id: str, image: bool, custom: bool):
+        # TODO: deprecate in favor of Dataset.set_primary_index invocation
+        return self.make_request(
+            {"image": image, "custom": custom},
+            f"indexing/{dataset_id}/setPrimary",
+            requests_command=requests.post,
         )
 
     @deprecated("Prefer calling Dataset.set_continuous_indexing instead.")
