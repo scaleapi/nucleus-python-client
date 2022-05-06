@@ -944,7 +944,7 @@ class Dataset:
             self._client,
         )
 
-    def delete_custom_index(self):
+    def delete_custom_index(self, image: bool = True):
         """Deletes the custom index uploaded to the dataset.
 
         Returns:
@@ -956,7 +956,18 @@ class Dataset:
                     "message": str
                 }
         """
-        return self._client.delete_custom_index(self.id)
+        return self._client.delete_custom_index(self.id, image)
+
+    def set_primary_index(self, image: bool = True, custom: bool = False):
+        """Sets the primary index used for Autotag and Similarity Search on this dataset.
+
+        Returns:
+
+            {
+                "success": bool,
+            }
+        """
+        return self._client.set_primary_index(self.id, image, custom)
 
     def set_continuous_indexing(self, enable: bool = True):
         """Toggle whether embeddings are automatically generated for new data.
@@ -985,9 +996,10 @@ class Dataset:
             MESSAGE_KEY: preprocessed_response[MESSAGE_KEY],
         }
         if enable:
-            response[BACKFILL_JOB_KEY] = (
-                AsyncJob.from_json(preprocessed_response, self._client),
+            response[BACKFILL_JOB_KEY] = AsyncJob.from_json(
+                preprocessed_response, self._client
             )
+
         return response
 
     def create_image_index(self):
