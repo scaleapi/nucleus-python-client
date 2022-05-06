@@ -352,7 +352,7 @@ def test_raises_error_for_duplicate():
         )
     assert (
         str(error.value)
-        == "Duplicate reference ids found among dataset_items:"
+        == "Duplicate reference IDs found among dataset_items:"
         " {'duplicate': 'Count: 2'}"
     )
 

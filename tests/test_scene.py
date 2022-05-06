@@ -161,9 +161,8 @@ def test_scene_property_methods():
 
 def test_scene_add_item():
     scene_ref_id = "scene_1"
-    scene = LidarScene(scene_ref_id)
+    scene = LidarScene(scene_ref_id, frames=[TEST_LIDAR_ITEMS[0]])
     scene.add_item(0, "camera", TEST_DATASET_ITEMS[0])
-    scene.add_item(0, "lidar", TEST_LIDAR_ITEMS[0])
     scene.add_item(1, "lidar", TEST_LIDAR_ITEMS[1])
 
     assert set(scene.get_sensors()) == set(["camera", "lidar"])
