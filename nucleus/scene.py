@@ -1,7 +1,6 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from nucleus.constants import (
@@ -490,7 +489,7 @@ class VideoScene(ABC):
         assert (
             self.items or self.video_location
         ), "Please upload either a video_location or an array of dataset items representing frames"
-        if self.upload_to_scale == False:
+        if self.upload_to_scale is False:
             assert (
                 self.frame_rate > 0
             ), "When using privacy mode frame rate must be at least 1"
