@@ -26,8 +26,8 @@ from nucleus.constants import (
     SCENES_KEY,
     TYPE_KEY,
     UPDATE_KEY,
+    UPLOAD_TO_SCALE_KEY,
     URL_KEY,
-    VIDEO_UPLOAD_TYPE_KEY,
     VIDEO_URL_KEY,
 )
 from nucleus.job import JobError
@@ -298,8 +298,7 @@ def test_video_scene_property_methods():
 def test_video_scene_add_item():
     scene_ref_id = "scene_1"
     frame_rate = 20
-    video_upload_type = "image"
-    scene = VideoScene(scene_ref_id, video_upload_type, frame_rate)
+    scene = VideoScene(scene_ref_id, frame_rate)
     scene.add_item(TEST_VIDEO_ITEMS[0])
     scene.add_item(TEST_VIDEO_ITEMS[1], index=1)
     scene.add_item(TEST_VIDEO_ITEMS[2], index=0, update=True)
@@ -313,7 +312,6 @@ def test_video_scene_add_item():
     ]
     assert scene.to_payload() == {
         REFERENCE_ID_KEY: scene_ref_id,
-        VIDEO_UPLOAD_TYPE_KEY: video_upload_type,
         FRAME_RATE_KEY: frame_rate,
         FRAMES_KEY: [
             {
@@ -329,6 +327,7 @@ def test_video_scene_add_item():
                 METADATA_KEY: TEST_VIDEO_ITEMS[1].metadata or {},
             },
         ],
+        UPLOAD_TO_SCALE_KEY: True,
     }
 
 
@@ -581,6 +580,7 @@ def test_video_scene_upload_async(dataset_scene):
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
+
     update = payload[UPDATE_KEY]
     job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
