@@ -196,7 +196,9 @@ def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
     ref_ids = []
     for dataset_item in dataset_items:
         if dataset_item.reference_id is None:
-            raise ValueError(f"Reference ID cannot be None! Encountered DatasetItem with no reference ID:\n{dataset_item}")
+            raise ValueError(
+                f"Reference ID cannot be None. Encountered DatasetItem with no reference ID:\n{dataset_item}"
+            )
         ref_ids.append(dataset_item.reference_id)
     if len(ref_ids) != len(set(ref_ids)):
         duplicates = {
