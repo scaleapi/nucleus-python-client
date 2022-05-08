@@ -5,16 +5,26 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-## [0.10.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.6) - 2022-05-05
+## [0.10.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.7) - 2022-05-09
 
 ### Fixed
 - Add checks for duplicate reference IDs
 
 
+## [0.10.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.6) - 2022-05-06
+
+### Added
+
+- Video privacy mode
+
+### Changed
+
+- Removed attachment_type argument in video upload API
+
 ## [0.10.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.5) - 2022-05-04
 
 ### Fixed
+
 - Invalid polygons are dropped from PolygonMetric iou matching
 
 ## [0.10.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.4)) - 2022-05-02
@@ -27,12 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.3) - 2022-04-22
 
 ### Fixed
+
 - Polygon and bounding box matching uses Shapely again providing faster evaluations
 - Evaluation function passing fixed for Polygon and Boundingbox configurations
 
 ## [0.10.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.1) - 2022-04-21
 
 ### Added
+
 - Added check for payload size
 
 ## [0.10.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.0)) - 2022-04-21

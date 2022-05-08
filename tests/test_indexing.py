@@ -2,6 +2,7 @@ import pytest
 
 from nucleus import DatasetItem
 from nucleus.constants import (
+    BACKFILL_JOB_KEY,
     ERROR_PAYLOAD,
     JOB_ID_KEY,
     MESSAGE_KEY,
@@ -38,7 +39,31 @@ def dataset(CLIENT):
 
 
 @pytest.mark.integration
-def test_index_integration(dataset):
+def test_set_continuous_indexing(dataset):
+    resp = dataset.set_continuous_indexing(True)
+    job = resp[BACKFILL_JOB_KEY]
+    print(job)
+    assert job
+    assert job.job_id
+    assert job.job_last_known_status
+    assert job.job_type
+    assert job.job_creation_time
+
+    job_status_response = job.status()
+    assert STATUS_KEY in job_status_response
+    assert JOB_ID_KEY in job_status_response
+    assert MESSAGE_KEY in job_status_response
+
+
+@pytest.mark.integration
+def test_set_primary_index(dataset):
+    dataset.set_continuous_indexing()
+    resp = dataset.set_primary_index(image=True, custom=False)
+    assert resp["success"]
+
+
+@pytest.mark.integration
+def test_create_custom_index(dataset):
     signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
     job = dataset.create_custom_index([signed_embeddings_url], embedding_dim=3)
     assert job.job_id
@@ -50,6 +75,21 @@ def test_index_integration(dataset):
     assert STATUS_KEY in job_status_response
     assert JOB_ID_KEY in job_status_response
     assert MESSAGE_KEY in job_status_response
+
+
+@pytest.mark.integration
+def test_create_and_delete_custom_index(dataset):
+    # Creates image index
+    resp = dataset.set_continuous_indexing(True)
+
+    # Starts custom indexing job
+    signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
+    dataset.create_custom_index([signed_embeddings_url], embedding_dim=3)
+
+    resp = dataset.set_primary_index(image=True, custom=True)
+    assert resp["success"]
+
+    dataset.delete_custom_index(image=True)
 
 
 @pytest.mark.skip(reason="Times out consistently")
