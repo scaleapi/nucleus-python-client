@@ -554,6 +554,9 @@ class Dataset:
         ]
         lidar_scenes = [item for item in items if isinstance(item, LidarScene)]
         video_scenes = [item for item in items if isinstance(item, VideoScene)]
+
+        check_for_duplicate_reference_ids(dataset_items)
+
         if dataset_items and (lidar_scenes or video_scenes):
             raise Exception(
                 "You must append either DatasetItems or Scenes to the dataset."
@@ -572,8 +575,6 @@ class Dataset:
             return self._append_video_scenes(
                 video_scenes, update, asynchronous
             )
-
-        check_for_duplicate_reference_ids(dataset_items)
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(

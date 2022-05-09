@@ -18,13 +18,17 @@ from nucleus.constants import (
 )
 
 from .annotation import is_local_path
-from .dataset_item import DatasetItem, DatasetItemType
+from .dataset_item import (
+    DatasetItem,
+    DatasetItemType,
+    check_for_duplicate_reference_ids,
+)
 
 
 class Frame:
-    """Collection of sensor data pertaining to a single timestep.
+    """Collection of sensor data pertaining to a single time step.
 
-    For 3D data, each Frame hosues a sensor-to-data mapping and must have exactly
+    For 3D data, each Frame houses a sensor-to-data mapping and must have exactly
     one pointcloud with any number of camera images.
 
     Parameters:
@@ -37,16 +41,15 @@ class Frame:
     """
 
     def __init__(self, **kwargs):
-        self.items = {}
+        self.items: Dict[str, DatasetItem] = {}
         for key, value in kwargs.items():
-            self.items[key] = value
-
-    def __post_init__(self):
-        for key, value in self.items.items():
             assert isinstance(key, str), "All keys must be names of sensors"
             assert isinstance(
                 value, DatasetItem
-            ), "All values must be DatasetItems"
+            ), f"All values must be DatasetItems, instead got type {type(value)}"
+            self.items[key] = value
+
+        check_for_duplicate_reference_ids(list(self.items.values()))
 
     def __repr__(self) -> str:
         return f"Frame(items={self.items})"
@@ -129,6 +132,8 @@ class Scene(ABC):
         if self.metadata is None:
             self.metadata = {}
 
+        self.validate()
+
     def __eq__(self, other):
         return all(
             [
@@ -151,10 +156,14 @@ class Scene(ABC):
     def validate(self):
         # TODO: make private
         assert self.length > 0, "Must have at least 1 frame in a scene"
+        all_items = []
         for frame in self.frames_dict.values():
             assert isinstance(
                 frame, Frame
             ), "Each frame in a scene must be a Frame object"
+            all_items.extend(frame.get_items())
+
+        check_for_duplicate_reference_ids(all_items)
 
     def add_item(
         self, index: int, sensor_name: str, item: DatasetItem
