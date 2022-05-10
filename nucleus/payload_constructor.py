@@ -128,12 +128,16 @@ def construct_model_creation_payload(
     metadata: Optional[Dict],
     bundle_name: Optional[str],
 ) -> dict:
-    return {
+    payload = {
         NAME_KEY: name,
         REFERENCE_ID_KEY: reference_id,
         METADATA_KEY: metadata if metadata else {},
-        MODEL_BUNDLE_NAME_KEY: bundle_name if bundle_name else None,
     }
+
+    if bundle_name:
+        payload[MODEL_BUNDLE_NAME_KEY] = bundle_name
+    
+    return payload
 
 
 def construct_model_run_creation_payload(
