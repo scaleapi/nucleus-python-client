@@ -4,7 +4,10 @@ import pytest
 
 from nucleus.dataset import Dataset
 from nucleus.errors import NucleusAPIError
-from tests.helpers import DATASET_WITH_AUTOTAG, running_as_nucleus_pytest_user
+from tests.helpers import (
+    DATASET_WITH_EMBEDDINGS,
+    running_as_nucleus_pytest_user,
+)
 
 # TODO: Test delete_autotag once API support for autotag creation is added.
 
@@ -12,7 +15,7 @@ from tests.helpers import DATASET_WITH_AUTOTAG, running_as_nucleus_pytest_user
 @pytest.mark.integration
 def test_update_autotag(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
-        job = Dataset(DATASET_WITH_AUTOTAG, CLIENT).update_autotag(
+        job = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT).update_autotag(
             "tag_c8jwr0rpy1w00e134an0"
         )
         job.sleep_until_complete()
@@ -24,12 +27,12 @@ def test_dataset_export_autotag_training_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
     if running_as_nucleus_pytest_user(CLIENT):
-        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
+        dataset = CLIENT.get_dataset(DATASET_WITH_EMBEDDINGS)
 
         with pytest.raises(NucleusAPIError) as api_error:
             dataset.autotag_training_items(autotag_name="NONSENSE_GARBAGE")
         assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
+            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_EMBEDDINGS}"
             in str(api_error.value)
         )
 
@@ -52,7 +55,9 @@ def test_dataset_export_autotag_training_items(CLIENT):
 
 def test_export_embeddings(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
-        embeddings = Dataset(DATASET_WITH_AUTOTAG, CLIENT).export_embeddings()
+        embeddings = Dataset(
+            DATASET_WITH_EMBEDDINGS, CLIENT
+        ).export_embeddings()
         assert "embedding_vector" in embeddings[0]
         assert "reference_id" in embeddings[0]
 
@@ -61,12 +66,12 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.
     if running_as_nucleus_pytest_user(CLIENT):
-        dataset = CLIENT.get_dataset(DATASET_WITH_AUTOTAG)
+        dataset = CLIENT.get_dataset(DATASET_WITH_EMBEDDINGS)
 
         with pytest.raises(NucleusAPIError) as api_error:
             dataset.autotag_items(autotag_name="NONSENSE_GARBAGE")
         assert (
-            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_AUTOTAG}"
+            f"The autotag NONSENSE_GARBAGE was not found in dataset {DATASET_WITH_EMBEDDINGS}"
             in str(api_error.value)
         )
 

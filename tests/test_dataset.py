@@ -29,6 +29,7 @@ from nucleus.constants import (
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
+    DATASET_WITH_EMBEDDINGS,
     LOCAL_FILENAME,
     TEST_BOX_ANNOTATIONS,
     TEST_CATEGORY_ANNOTATIONS,
@@ -559,13 +560,20 @@ def test_dataset_item_iterator(dataset):
 
 
 @pytest.mark.integration
-def test_dataset_get_continuous_indexing_status(dataset):
-    dataset.set_continuous_indexing(True)
+def test_dataset_get_image_indexing_status(CLIENT):
+    dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
+    resp = dataset.get_image_indexing_status()
+    assert resp["embedding_count"]
+    assert resp["image_count"]
+    assert not resp["object_count"]
+    assert resp["percent_indexed"]
 
-    items = make_dataset_items()
-    dataset.append(items)
 
-    response = dataset.get_continuous_indexing_status()
-    assert response["total_images"] == len(items)
-    assert response["indexed_images"] <= len(items)
-    assert response["percent_indexed"] >= 0
+@pytest.mark.integration
+def test_dataset_get_object_indexing_status(CLIENT):
+    dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
+    resp = dataset.get_object_indexing_status()
+    assert resp["embedding_count"]
+    assert resp["object_count"]
+    assert not resp["image_count"]
+    assert resp["percent_indexed"]
