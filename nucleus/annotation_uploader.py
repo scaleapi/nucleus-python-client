@@ -215,8 +215,7 @@ class AnnotationUploader:
 
         # some annotations like CategoryAnnotation do not have annotation_id attribute, and as such, we allow duplicates
         tuple_ids = [
-            # type: ignore
-            (ann.reference_id, ann.annotation_id)
+            (ann.reference_id, ann.annotation_id)  # type: ignore
             for ann in annotations
             if hasattr(ann, "annotation_id")
         ]
