@@ -212,11 +212,13 @@ class AnnotationUploader:
     @staticmethod
     def check_for_duplicate_ids(annotations: Iterable[Annotation]):
         """Do not allow annotations to have the same (annotation_id, reference_id) tuple"""
-        tuple_ids = [(ann.reference_id, ann.annotation_id) for ann in annotations if hasattr(ann, 'annotation_id')]
+        tuple_ids = [
+            (ann.reference_id, ann.annotation_id)
+            for ann in annotations
+            if hasattr(ann, "annotation_id")
+        ]
         tuple_count = Counter(tuple_ids)
-        duplicates = {
-            key for key, value in tuple_count.items() if value > 1
-        }
+        duplicates = {key for key, value in tuple_count.items() if value > 1}
         if len(duplicates) > 0:
             raise ValueError(
                 f"Duplicate annotations with the same (reference_id, annotation_id) properties found.\n"
@@ -224,6 +226,7 @@ class AnnotationUploader:
                 f"To fix this, avoid duplicate annotations, or specify a different annotation_id attribute "
                 f"for the failing items."
             )
+
 
 class PredictionUploader(AnnotationUploader):
     def __init__(
