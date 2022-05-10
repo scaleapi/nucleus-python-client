@@ -136,7 +136,7 @@ def construct_model_creation_payload(
 
     if bundle_name:
         payload[MODEL_BUNDLE_NAME_KEY] = bundle_name
-    
+
     return payload
 
 
