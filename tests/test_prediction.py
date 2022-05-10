@@ -1,4 +1,3 @@
-import os
 import time
 
 import pytest
@@ -10,9 +9,7 @@ from nucleus import (
     KeypointsPrediction,
     LinePrediction,
     ModelRun,
-    Point,
     PolygonPrediction,
-    Segment,
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
@@ -724,3 +721,14 @@ def test_box_pred_upload_embedding_async(CLIENT, model_run):
     status = job.status()
     assert status["job_id"] == job.job_id
     assert status["status"] == "Running"
+
+
+def test_prediction_duplicate_ids_fail(dataset, model_run):
+    box_pred = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
+    predictions = [box_pred, box_pred]
+
+    with pytest.raises(ValueError):
+        dataset.upload_predictions(annotations=predictions)
+
+    with pytest.raises(ValueError):
+        model_run.predict(annotations=predictions)

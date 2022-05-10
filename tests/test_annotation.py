@@ -819,4 +819,4 @@ def test_annotation_duplicate_ids_fail(dataset):
     box_ann = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     annotations = [box_ann, box_ann]
     with pytest.raises(ValueError):
-        dataset.annotate(annotations=[annotations])
+        dataset.annotate(annotations=annotations)
