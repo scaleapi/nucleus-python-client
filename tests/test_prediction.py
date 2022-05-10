@@ -723,12 +723,12 @@ def test_box_pred_upload_embedding_async(CLIENT, model_run):
     assert status["status"] == "Running"
 
 
-def test_prediction_duplicate_ids_fail(dataset, model_run):
+def test_prediction_duplicate_ids_fail(dataset, model, model_run):
     box_pred = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
     predictions = [box_pred, box_pred]
 
     with pytest.raises(ValueError):
-        dataset.upload_predictions(annotations=predictions)
+        dataset.upload_predictions(model, predictions=predictions)
 
     with pytest.raises(ValueError):
         model_run.predict(annotations=predictions)
