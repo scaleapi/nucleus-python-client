@@ -17,10 +17,11 @@ jobs:
       - run:
           name: Install Environment Dependencies
           command: | # install dependencies
-            apt-get -y install curl
-            pip install --upgrade pip 
+            apt-get update
+            apt-get -y install curl libgeos-dev
+            pip install --upgrade pip
             pip install poetry
-            poetry install
+            poetry install -E shapely
 
       - run:
           name: Black Formatting Check # Only validation, without re-formatting

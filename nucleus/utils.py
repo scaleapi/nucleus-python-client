@@ -14,6 +14,7 @@ from nucleus.annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    KeypointsAnnotation,
     LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
@@ -28,8 +29,10 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     ITEM_KEY,
+    KEYPOINTS_TYPE,
     LAST_PAGE,
     LINE_TYPE,
+    MAX_PAYLOAD_SIZE,
     MULTICATEGORY_TYPE,
     PAGE_SIZE,
     PAGE_TOKEN,
@@ -42,6 +45,7 @@ from .prediction import (
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
+    KeypointsPrediction,
     LinePrediction,
     PolygonPrediction,
     SegmentationPrediction,
@@ -101,6 +105,7 @@ def format_prediction_response(
             BoxPrediction,
             PolygonPrediction,
             LinePrediction,
+            KeypointsPrediction,
             CuboidPrediction,
             CategoryPrediction,
             SegmentationPrediction,
@@ -128,6 +133,7 @@ def format_prediction_response(
             Type[LinePrediction],
             Type[CuboidPrediction],
             Type[CategoryPrediction],
+            Type[KeypointsPrediction],
             Type[SegmentationPrediction],
         ],
     ] = {
@@ -136,6 +142,7 @@ def format_prediction_response(
         POLYGON_TYPE: PolygonPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
+        KEYPOINTS_TYPE: KeypointsPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
     for type_key in annotation_payload:
@@ -209,6 +216,11 @@ def convert_export_payload(api_payload):
         for line in row[LINE_TYPE]:
             line[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[LINE_TYPE].append(LineAnnotation.from_json(line))
+        for keypoints in row[KEYPOINTS_TYPE]:
+            keypoints[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[KEYPOINTS_TYPE].append(
+                KeypointsAnnotation.from_json(keypoints)
+            )
         for box in row[BOX_TYPE]:
             box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
@@ -236,6 +248,13 @@ def serialize_and_write(
     ],
     file_pointer,
 ):
+    """Helper function serialize and write payload to file
+
+    Args:
+        upload_units: Sequence of items, annotations or scenes
+        file_pointer: Pointer of the file to write to
+    """
+    bytes_written = 0
     if len(upload_units) == 0:
         raise ValueError(
             "Expecting at least one object when serializing objects to upload, but got zero.  Please try again."
@@ -245,9 +264,9 @@ def serialize_and_write(
             if isinstance(
                 unit, (DatasetItem, Annotation, LidarScene, VideoScene)
             ):
-                file_pointer.write(unit.to_json() + "\n")
+                bytes_written += file_pointer.write(unit.to_json() + "\n")
             else:
-                file_pointer.write(json.dumps(unit) + "\n")
+                bytes_written += file_pointer.write(json.dumps(unit) + "\n")
         except TypeError as e:
             type_name = type(unit).__name__
             message = (
@@ -262,6 +281,10 @@ def serialize_and_write(
             )
             message += f"The specific error was {e}"
             raise ValueError(message) from e
+    if bytes_written > MAX_PAYLOAD_SIZE:
+        raise ValueError(
+            f"Payload of {bytes_written} bytes exceed maximum payload size of {MAX_PAYLOAD_SIZE} bytes. Please reduce payload size and try again."
+        )
 
 
 def upload_to_presigned_url(presigned_url: str, file_pointer: IO):

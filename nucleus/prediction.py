@@ -10,6 +10,8 @@ from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    Keypoint,
+    KeypointsAnnotation,
     LineAnnotation,
     Point,
     Point3D,
@@ -26,8 +28,13 @@ from .constants import (
     CONFIDENCE_KEY,
     CUBOID_TYPE,
     DIMENSIONS_KEY,
+    EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    KEYPOINTS_KEY,
+    KEYPOINTS_NAMES_KEY,
+    KEYPOINTS_SKELETON_KEY,
+    KEYPOINTS_TYPE,
     LABEL_KEY,
     LINE_TYPE,
     MASK_URL_KEY,
@@ -51,6 +58,7 @@ def from_json(payload: dict):
         BOX_TYPE: BoxPrediction,
         LINE_TYPE: LinePrediction,
         POLYGON_TYPE: PolygonPrediction,
+        KEYPOINTS_TYPE: KeypointsPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
     }
@@ -120,6 +128,7 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
 
@@ -152,6 +161,9 @@ class BoxPrediction(BoxAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
+            If any custom object embeddings have been uploaded previously to this dataset,
+            this vector must match the dimensions of the previously ingested vectors.
     """
 
     def __init__(
@@ -166,6 +178,7 @@ class BoxPrediction(BoxAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        embedding_vector: Optional[list] = None,
     ):
         super().__init__(
             label=label,
@@ -176,6 +189,7 @@ class BoxPrediction(BoxAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            embedding_vector=embedding_vector,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -203,6 +217,7 @@ class BoxPrediction(BoxAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
 
@@ -295,6 +310,9 @@ class PolygonPrediction(PolygonAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        embedding_vector: Custom embedding vector for this object annotation.
+            If any custom object embeddings have been uploaded previously to this dataset,
+            this vector must match the dimensions of the previously ingested vectors.
     """
 
     def __init__(
@@ -306,6 +324,7 @@ class PolygonPrediction(PolygonAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        embedding_vector: Optional[list] = None,
     ):
         super().__init__(
             label=label,
@@ -313,6 +332,7 @@ class PolygonPrediction(PolygonAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            embedding_vector=embedding_vector,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -334,6 +354,84 @@ class PolygonPrediction(PolygonAnnotation):
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
+            reference_id=payload[REFERENCE_ID_KEY],
+            confidence=payload.get(CONFIDENCE_KEY, None),
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+            class_pdf=payload.get(CLASS_PDF_KEY, None),
+            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+        )
+
+
+class KeypointsPrediction(KeypointsAnnotation):
+    """Prediction of keypoints.
+
+    Parameters:
+        label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
+        keypoints (List[:class:`Keypoint`]): The list of keypoints objects.
+        names (List[str]): A list that corresponds to the names of each keypoint.
+        skeleton (List[List[int]]): A list of 2-length lists indicating a beginning
+            and ending index for each line segment in the skeleton of this keypoint label.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        confidence: 0-1 indicating the confidence of the prediction.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies
+            this annotation within its target dataset item. Upon ingest, a matching
+            annotation id will be ignored by default, and updated if update=True
+            for dataset.annotate.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        class_pdf: An optional complete class probability distribution on this
+            annotation. Each value should be between 0 and 1 (inclusive), and sum up to
+            1 as a complete distribution. This can be useful for computing entropy to
+            surface places where the model is most uncertain.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        keypoints: List[Keypoint],
+        names: List[str],
+        skeleton: List[List[int]],
+        reference_id: str,
+        confidence: Optional[float] = None,
+        annotation_id: Optional[str] = None,
+        metadata: Optional[Dict] = None,
+        class_pdf: Optional[Dict] = None,
+    ):
+        super().__init__(
+            label=label,
+            keypoints=keypoints,
+            names=names,
+            skeleton=skeleton,
+            reference_id=reference_id,
+            annotation_id=annotation_id,
+            metadata=metadata,
+        )
+        self.confidence = confidence
+        self.class_pdf = class_pdf
+
+    def to_payload(self) -> dict:
+        payload = super().to_payload()
+        if self.confidence is not None:
+            payload[CONFIDENCE_KEY] = self.confidence
+        if self.class_pdf is not None:
+            payload[CLASS_PDF_KEY] = self.class_pdf
+
+        return payload
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        geometry = payload.get(GEOMETRY_KEY, {})
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            keypoints=[
+                Keypoint.from_json(_) for _ in geometry.get(KEYPOINTS_KEY, [])
+            ],
+            names=geometry[KEYPOINTS_NAMES_KEY],
+            skeleton=geometry[KEYPOINTS_SKELETON_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
@@ -477,6 +575,7 @@ Prediction = Union[
     BoxPrediction,
     LinePrediction,
     PolygonPrediction,
+    KeypointsPrediction,
     CuboidPrediction,
     CategoryPrediction,
     SegmentationPrediction,
@@ -490,6 +589,9 @@ class PredictionList:
     box_predictions: List[BoxPrediction] = field(default_factory=list)
     line_predictions: List[LinePrediction] = field(default_factory=list)
     polygon_predictions: List[PolygonPrediction] = field(default_factory=list)
+    keypoints_predictions: List[KeypointsPrediction] = field(
+        default_factory=list
+    )
     cuboid_predictions: List[CuboidPrediction] = field(default_factory=list)
     category_predictions: List[CategoryPrediction] = field(
         default_factory=list
@@ -506,6 +608,8 @@ class PredictionList:
                 self.line_predictions.append(prediction)
             elif isinstance(prediction, PolygonPrediction):
                 self.polygon_predictions.append(prediction)
+            elif isinstance(prediction, KeypointsPrediction):
+                self.keypoints_predictions.append(prediction)
             elif isinstance(prediction, CuboidPrediction):
                 self.cuboid_predictions.append(prediction)
             elif isinstance(prediction, CategoryPrediction):
@@ -521,6 +625,7 @@ class PredictionList:
             len(self.box_predictions)
             + len(self.line_predictions)
             + len(self.polygon_predictions)
+            + len(self.keypoints_predictions)
             + len(self.cuboid_predictions)
             + len(self.category_predictions)
             + len(self.segmentation_predictions)

@@ -14,6 +14,9 @@ __all__ = [
     "DatasetItem",
     "DatasetItemRetrievalError",
     "Frame",
+    "Keypoint",
+    "KeypointsAnnotation",
+    "KeypointsPrediction",
     "LidarScene",
     "LineAnnotation",
     "LinePrediction",
@@ -51,6 +54,8 @@ from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
+    Keypoint,
+    KeypointsAnnotation,
     LineAnnotation,
     MultiCategoryAnnotation,
     Point,
@@ -59,6 +64,7 @@ from .annotation import (
     Segment,
     SegmentationAnnotation,
 )
+from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
@@ -97,7 +103,7 @@ from .constants import (
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
 from .dataset import Dataset
-from .dataset_item import CameraParams, DatasetItem, Quaternion
+from .dataset_item import DatasetItem
 from .deprecation_warning import deprecated
 from .errors import (
     DatasetItemRetrievalError,
@@ -122,10 +128,12 @@ from .prediction import (
     BoxPrediction,
     CategoryPrediction,
     CuboidPrediction,
+    KeypointsPrediction,
     LinePrediction,
     PolygonPrediction,
     SegmentationPrediction,
 )
+from .quaternion import Quaternion
 from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
@@ -747,12 +755,21 @@ class NucleusClient:
         )
 
     @deprecated("Prefer calling Dataset.delete_custom_index instead.")
-    def delete_custom_index(self, dataset_id: str):
+    def delete_custom_index(self, dataset_id: str, image: bool):
         # TODO: deprecate in favor of Dataset.delete_custom_index invocation
         return self.make_request(
-            {},
+            {"image": image},
             f"indexing/{dataset_id}",
             requests_command=requests.delete,
+        )
+
+    @deprecated("Prefer calling Dataset.set_primary_index instead.")
+    def set_primary_index(self, dataset_id: str, image: bool, custom: bool):
+        # TODO: deprecate in favor of Dataset.set_primary_index invocation
+        return self.make_request(
+            {"image": image, "custom": custom},
+            f"indexing/{dataset_id}/setPrimary",
+            requests_command=requests.post,
         )
 
     @deprecated("Prefer calling Dataset.set_continuous_indexing instead.")
@@ -820,6 +837,7 @@ class NucleusClient:
         Returns:
             Response payload as JSON dict.
         """
+        print(payload, route)
         if payload is None:
             payload = {}
         if requests_command is requests.get:

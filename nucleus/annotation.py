@@ -12,9 +12,14 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     DIMENSIONS_KEY,
+    EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
     INDEX_KEY,
+    KEYPOINTS_KEY,
+    KEYPOINTS_NAMES_KEY,
+    KEYPOINTS_SKELETON_KEY,
+    KEYPOINTS_TYPE,
     LABEL_KEY,
     LABELS_KEY,
     LINE_TYPE,
@@ -28,6 +33,7 @@ from .constants import (
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
+    VISIBLE_KEY,
     WIDTH_KEY,
     X_KEY,
     Y_KEY,
@@ -52,6 +58,7 @@ class Annotation:
             BOX_TYPE: BoxAnnotation,
             LINE_TYPE: LineAnnotation,
             POLYGON_TYPE: PolygonAnnotation,
+            KEYPOINTS_TYPE: KeypointsAnnotation,
             CUBOID_TYPE: CuboidAnnotation,
             CATEGORY_TYPE: CategoryAnnotation,
             MULTICATEGORY_TYPE: MultiCategoryAnnotation,
@@ -97,7 +104,8 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             height=10,
             reference_id="image_1",
             annotation_id="image_1_car_box_1",
-            metadata={"vehicle_color": "red"}
+            metadata={"vehicle_color": "red"},
+            embedding_vector=[0.1423, 1.432, ...3.829],
         )
 
     Parameters:
@@ -121,6 +129,9 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        embedding_vector: Custom embedding vector for this object annotation.
+            If any custom object embeddings have been uploaded previously to this dataset,
+            this vector must match the dimensions of the previously ingested vectors.
     """
 
     label: str
@@ -131,6 +142,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    embedding_vector: Optional[list] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -149,6 +161,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -164,6 +177,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
+            EMBEDDING_VECTOR_KEY: self.embedding_vector,
         }
 
 
@@ -282,7 +296,8 @@ class PolygonAnnotation(Annotation):
             vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
             reference_id="image_2",
             annotation_id="image_2_bus_polygon_1",
-            metadata={"vehicle_color": "yellow"}
+            metadata={"vehicle_color": "yellow"},
+            embedding_vector=[0.1423, 1.432, ...3.829],
         )
 
     Parameters:
@@ -298,6 +313,9 @@ class PolygonAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        embedding_vector: Custom embedding vector for this object annotation.
+            If any custom object embeddings have been uploaded previously to this dataset,
+            this vector must match the dimensions of the previously ingested vectors.
     """
 
     label: str
@@ -305,6 +323,7 @@ class PolygonAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    embedding_vector: Optional[list] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -333,6 +352,7 @@ class PolygonAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -341,6 +361,147 @@ class PolygonAnnotation(Annotation):
             TYPE_KEY: POLYGON_TYPE,
             GEOMETRY_KEY: {
                 VERTICES_KEY: [_.to_payload() for _ in self.vertices]
+            },
+            REFERENCE_ID_KEY: self.reference_id,
+            ANNOTATION_ID_KEY: self.annotation_id,
+            METADATA_KEY: self.metadata,
+            EMBEDDING_VECTOR_KEY: self.embedding_vector,
+        }
+        return payload
+
+
+@dataclass
+class Keypoint:
+    """A 2D point that has an additional visibility flag.
+
+    Keypoints are intended to be part of a larger collection, and connected
+    via a pre-defined skeleton. A keypoint in this skeleton may be visible
+    or not-visible, and may be unlabeled and not visible. Because of this,
+    the x, y coordinates may be optional, assuming that the keypoint is not
+    visible, and would not be shown as part of the combined label.
+
+    Parameters:
+        x (Optional[float]): The x coordinate of the point.
+        y (Optional[float]): The y coordinate of the point.
+        visible (bool): The visibility of the point.
+    """
+
+    x: Optional[float] = None
+    y: Optional[float] = None
+    visible: bool = True
+
+    def __post_init__(self):
+        if self.visible and (self.x is None or self.y is None):
+            raise ValueError(
+                "Visible keypoints must have non-None x and y coordinates"
+            )
+
+    @classmethod
+    def from_json(cls, payload: Dict[str, Union[float, bool]]):
+        return cls(
+            payload.get(X_KEY, None),
+            payload.get(Y_KEY, None),
+            bool(payload[VISIBLE_KEY]),
+        )
+
+    def to_payload(self) -> dict:
+        return {
+            X_KEY: self.x,
+            Y_KEY: self.y,
+            VISIBLE_KEY: self.visible,
+        }
+
+
+@dataclass
+class KeypointsAnnotation(Annotation):
+    """A keypoints annotation containing a list of keypoints and the structure
+    of those keypoints: the naming of each point and the skeleton that connects
+    those keypoints.
+
+    ::
+
+        from nucleus import KeypointsAnnotation
+
+        keypoints = KeypointsAnnotation(
+            label="face",
+            keypoints=[Keypoint(100, 100), Keypoint(120, 120), Keypoint(visible=False), Keypoint(0, 0)],
+            names=["point1", "point2", "point3", "point4"],
+            skeleton=[[0, 1], [1, 2], [1, 3], [2, 4]],
+            reference_id="image_2",
+            annotation_id="image_2_face_keypoints_1",
+            metadata={"face_direction": "forward"},
+        )
+
+    Parameters:
+        label (str): The label for this annotation.
+        keypoints (List[:class:`Keypoint`]): The list of keypoints objects.
+        names (List[str]): A list that corresponds to the names of each keypoint.
+        skeleton (List[List[int]]): A list of 2-length lists indicating a beginning and ending
+            index for each line segment in the skeleton of this keypoint label.
+        reference_id (str): User-defined ID of the image to which to apply this
+            annotation.
+        annotation_id (Optional[str]): The annotation ID that uniquely identifies
+            this annotation within its target dataset item. Upon ingest, a matching
+            annotation id will be ignored by default, and updated if update=True
+            for dataset.annotate.
+        metadata (Optional[Dict]): Arbitrary key/value dictionary of info to
+            attach to this annotation.  Strings, floats and ints are supported best
+            by querying and insights features within Nucleus. For more details see
+            our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+    """
+
+    label: str
+    keypoints: List[Keypoint]
+    names: List[str]
+    skeleton: List[List[int]]
+    reference_id: str
+    annotation_id: Optional[str] = None
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        self.metadata = self.metadata or {}
+        if len(self.keypoints) != len(self.names):
+            raise ValueError(
+                "The list of keypoints must be the same length as the list of names"
+            )
+        if len(set(self.names)) != len(self.names):
+            seen = set()
+            for name in self.names:
+                if name in seen:
+                    raise ValueError(
+                        f"The keypoint name '{name}' is repeated in the list of names"
+                    )
+                seen.add(name)
+
+        for segment in self.skeleton:
+            if len(segment) != 2:
+                raise ValueError(
+                    "The keypoints skeleton must contain a list of line segments with exactly 2 indices"
+                )
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        geometry = payload.get(GEOMETRY_KEY, {})
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            keypoints=[
+                Keypoint.from_json(_) for _ in geometry.get(KEYPOINTS_KEY, [])
+            ],
+            names=geometry[KEYPOINTS_NAMES_KEY],
+            skeleton=geometry[KEYPOINTS_SKELETON_KEY],
+            reference_id=payload[REFERENCE_ID_KEY],
+            annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+        )
+
+    def to_payload(self) -> dict:
+        payload = {
+            LABEL_KEY: self.label,
+            TYPE_KEY: KEYPOINTS_TYPE,
+            GEOMETRY_KEY: {
+                KEYPOINTS_KEY: [_.to_payload() for _ in self.keypoints],
+                KEYPOINTS_NAMES_KEY: self.names,
+                KEYPOINTS_SKELETON_KEY: self.skeleton,
             },
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
@@ -557,6 +718,7 @@ class SegmentationAnnotation(Annotation):
     annotations: List[Segment]
     reference_id: str
     annotation_id: Optional[str] = None
+    # metadata: Optional[dict] = None # TODO(sc: 422637)
 
     def __post_init__(self):
         if not self.mask_url:
@@ -574,6 +736,7 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
     def to_payload(self) -> dict:
@@ -582,6 +745,7 @@ class SegmentationAnnotation(Annotation):
             MASK_URL_KEY: self.mask_url,
             ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
             ANNOTATION_ID_KEY: self.annotation_id,
+            # METADATA_KEY: self.metadata,  # TODO(sc: 422637)
         }
 
         payload[REFERENCE_ID_KEY] = self.reference_id
@@ -613,6 +777,7 @@ class AnnotationTypes(Enum):
     BOX = BOX_TYPE
     LINE = LINE_TYPE
     POLYGON = POLYGON_TYPE
+    KEYPOINTS = KEYPOINTS_TYPE
     CUBOID = CUBOID_TYPE
     CATEGORY = CATEGORY_TYPE
     MULTICATEGORY = MULTICATEGORY_TYPE
@@ -715,6 +880,9 @@ class AnnotationList:
     box_annotations: List[BoxAnnotation] = field(default_factory=list)
     line_annotations: List[LineAnnotation] = field(default_factory=list)
     polygon_annotations: List[PolygonAnnotation] = field(default_factory=list)
+    keypoints_annotations: List[KeypointsAnnotation] = field(
+        default_factory=list
+    )
     cuboid_annotations: List[CuboidAnnotation] = field(default_factory=list)
     category_annotations: List[CategoryAnnotation] = field(
         default_factory=list
@@ -740,6 +908,8 @@ class AnnotationList:
                 self.polygon_annotations.append(annotation)
             elif isinstance(annotation, CuboidAnnotation):
                 self.cuboid_annotations.append(annotation)
+            elif isinstance(annotation, KeypointsAnnotation):
+                self.keypoints_annotations.append(annotation)
             elif isinstance(annotation, CategoryAnnotation):
                 self.category_annotations.append(annotation)
             elif isinstance(annotation, MultiCategoryAnnotation):
@@ -755,6 +925,7 @@ class AnnotationList:
             len(self.box_annotations)
             + len(self.line_annotations)
             + len(self.polygon_annotations)
+            + len(self.keypoints_annotations)
             + len(self.cuboid_annotations)
             + len(self.category_annotations)
             + len(self.multi_category_annotations)

@@ -33,6 +33,7 @@ from .constants import (
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     EXPORTED_ROWS,
+    FRAME_RATE_KEY,
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
@@ -41,7 +42,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
     UPDATE_KEY,
-    VIDEO_UPLOAD_TYPE_KEY,
+    VIDEO_URL_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -553,6 +554,9 @@ class Dataset:
         ]
         lidar_scenes = [item for item in items if isinstance(item, LidarScene)]
         video_scenes = [item for item in items if isinstance(item, VideoScene)]
+
+        check_for_duplicate_reference_ids(dataset_items)
+
         if dataset_items and (lidar_scenes or video_scenes):
             raise Exception(
                 "You must append either DatasetItems or Scenes to the dataset."
@@ -571,8 +575,6 @@ class Dataset:
             return self._append_video_scenes(
                 video_scenes, update, asynchronous
             )
-
-        check_for_duplicate_reference_ids(dataset_items)
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
@@ -714,7 +716,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -740,7 +744,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Option[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -766,7 +772,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -788,7 +796,9 @@ class Dataset:
         Returns:
             Union[\
                 :class:`BoxAnnotation`, \
+                :class:`LineAnnotation`, \
                 :class:`PolygonAnnotation`, \
+                :class:`KeypointsAnnotation`, \
                 :class:`CuboidAnnotation`, \
                 :class:`SegmentationAnnotation` \
                 :class:`CategoryAnnotation` \
@@ -936,7 +946,7 @@ class Dataset:
             self._client,
         )
 
-    def delete_custom_index(self):
+    def delete_custom_index(self, image: bool = True):
         """Deletes the custom index uploaded to the dataset.
 
         Returns:
@@ -948,7 +958,18 @@ class Dataset:
                     "message": str
                 }
         """
-        return self._client.delete_custom_index(self.id)
+        return self._client.delete_custom_index(self.id, image)
+
+    def set_primary_index(self, image: bool = True, custom: bool = False):
+        """Sets the primary index used for Autotag and Similarity Search on this dataset.
+
+        Returns:
+
+            {
+                "success": bool,
+            }
+        """
+        return self._client.set_primary_index(self.id, image, custom)
 
     def set_continuous_indexing(self, enable: bool = True):
         """Toggle whether embeddings are automatically generated for new data.
@@ -977,9 +998,10 @@ class Dataset:
             MESSAGE_KEY: preprocessed_response[MESSAGE_KEY],
         }
         if enable:
-            response[BACKFILL_JOB_KEY] = (
-                AsyncJob.from_json(preprocessed_response, self._client),
+            response[BACKFILL_JOB_KEY] = AsyncJob.from_json(
+                preprocessed_response, self._client
             )
+
         return response
 
     def create_image_index(self):
@@ -1111,7 +1133,9 @@ class Dataset:
                     "annotations": {
                         "box": Optional[List[BoxAnnotation]],
                         "cuboid": Optional[List[CuboidAnnotation]],
+                        "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
                     }
@@ -1186,7 +1210,7 @@ class Dataset:
             route=f"dataset/{self.id}/scene/{reference_id}",
             requests_command=requests.get,
         )
-        if VIDEO_UPLOAD_TYPE_KEY in response:
+        if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
             return VideoScene.from_json(response)
         return LidarScene.from_json(response)
 
@@ -1561,11 +1585,14 @@ class Dataset:
         The backed will join the specified mapping metadata to the exisiting metadata.
         If there is a key-collision, the value given in the mapping will take precedence.
 
+        This method may also be used to udpate the `camera_params` for a particular set of items.
+        Just specify the key `camera_params` in the metadata for each reference_id along with all the necessary fields.
+
         Args:
             mapping: key-value pair of <reference_id>: <metadata>
 
         Examples:
-            >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123}}
+            >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123, "camera_params": {...}}}
             >>> dataset.update_item_metadata(mapping)
 
         Returns:

@@ -1,7 +1,6 @@
 import json
 from abc import ABC
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from nucleus.constants import (
@@ -13,17 +12,23 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
-    VIDEO_UPLOAD_TYPE_KEY,
+    UPLOAD_TO_SCALE_KEY,
+    VIDEO_LOCATION_KEY,
+    VIDEO_URL_KEY,
 )
 
 from .annotation import is_local_path
-from .dataset_item import DatasetItem, DatasetItemType
+from .dataset_item import (
+    DatasetItem,
+    DatasetItemType,
+    check_for_duplicate_reference_ids,
+)
 
 
 class Frame:
-    """Collection of sensor data pertaining to a single timestep.
+    """Collection of sensor data pertaining to a single time step.
 
-    For 3D data, each Frame hosues a sensor-to-data mapping and must have exactly
+    For 3D data, each Frame houses a sensor-to-data mapping and must have exactly
     one pointcloud with any number of camera images.
 
     Parameters:
@@ -36,16 +41,15 @@ class Frame:
     """
 
     def __init__(self, **kwargs):
-        self.items = {}
+        self.items: Dict[str, DatasetItem] = {}
         for key, value in kwargs.items():
-            self.items[key] = value
-
-    def __post_init__(self):
-        for key, value in self.items.items():
             assert isinstance(key, str), "All keys must be names of sensors"
             assert isinstance(
                 value, DatasetItem
-            ), "All values must be DatasetItems"
+            ), f"All values must be DatasetItems, instead got type {type(value)}"
+            self.items[key] = value
+
+        check_for_duplicate_reference_ids(list(self.items.values()))
 
     def __repr__(self) -> str:
         return f"Frame(items={self.items})"
@@ -128,6 +132,8 @@ class Scene(ABC):
         if self.metadata is None:
             self.metadata = {}
 
+        self.validate()
+
     def __eq__(self, other):
         return all(
             [
@@ -150,10 +156,14 @@ class Scene(ABC):
     def validate(self):
         # TODO: make private
         assert self.length > 0, "Must have at least 1 frame in a scene"
+        all_items = []
         for frame in self.frames_dict.values():
             assert isinstance(
                 frame, Frame
             ), "Each frame in a scene must be a Frame object"
+            all_items.extend(frame.get_items())
+
+        check_for_duplicate_reference_ids(all_items)
 
     def add_item(
         self, index: int, sensor_name: str, item: DatasetItem
@@ -412,23 +422,19 @@ def flatten(t):
     return [item for sublist in t for item in sublist]
 
 
-class _VideoUploadType(Enum):
-    IMAGE = "image"
-    VIDEO = "video"
-
-
 @dataclass
 class VideoScene(ABC):
-    """
-    Nucleus video datasets are comprised of VideoScenes, which are in turn
-    comprised of a sequence of :class:`DatasetItems <DatasetItem>` which are
-    equivalent to frames.
+    """Video or sequence of images over time.
+
+    Nucleus video datasets are comprised of VideoScenes. These can be
+    comprised of a single video, or a sequence of :class:`DatasetItems <DatasetItem>`
+    which are equivalent to frames.
 
     VideoScenes are uploaded to a :class:`Dataset` with any accompanying
     metadata. Each of :class:`DatasetItems <DatasetItem>` representing a frame
     also accepts metadata.
 
-    Note: Uploads with different items will error out (only on scenes that
+    Note: Updates with different items will error out (only on scenes that
     now differ). Existing video are expected to retain the same frames, and only
     metadata can be updated. If a video definition is changed (for example,
     additional frames added) the update operation will be ignored. If you would
@@ -437,30 +443,35 @@ class VideoScene(ABC):
 
     Parameters:
         reference_id (str): User-specified identifier to reference the scene.
-        frame_rate (int): Frame rate of the video.
-        attachment_type (str): The type of attachments being uploaded as a string literal.
-            Currently, videos can only be uploaded as an array of frames, so the only
-            accepted attachment_type is "image".
-        items (Optional[List[:class:`DatasetItem`]]): List of items representing frames,
-            to be a part of the scene. A scene can be created before items have been added
-            to it, but must be non-empty when uploading to a :class:`Dataset`. A video scene
-            can contain a maximum of 3000 items.
+        frame_rate (Optional[int]): Required if uploading items. Frame rate of the video.
+        video_location (Optional[str]): Required if not uploading items. The remote URL
+            containing the video MP4. Remote formats supported include any URL (``http://``
+            or ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
+        items (Optional[List[:class:`DatasetItem`]]): Required if not uploading video_location.
+            List of items representing frames, to be a part of the scene. A scene can be created
+            before items have been added to it, but must be non-empty when uploading to
+            a :class:`Dataset`. A video scene can contain a maximum of 3000 items.
         metadata (Optional[Dict]): Optional metadata to include with the scene.
+        upload_to_scale (Optional[bool]): Set this to false in order to use
+            `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_. If using privacy mode
+            you must upload both a video_location and items to the VideoScene.
+
+            Setting this to false means the actual data within the video scene will not be
+            uploaded to scale meaning that you can send in links that are only accessible
+            to certain users, and not to Scale.
 
     Refer to our `guide to uploading video data
     <https://nucleus.scale.com/docs/uploading-video-data>`_ for more info!
     """
 
     reference_id: str
-    frame_rate: int
-    attachment_type: _VideoUploadType
+    frame_rate: Optional[int] = None
+    video_location: Optional[str] = None
     items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
+    upload_to_scale: Optional[bool] = True
 
     def __post_init__(self):
-        assert (
-            self.attachment_type != _VideoUploadType.IMAGE
-        ), "Videos can currently only be uploaded from frames"
         if self.metadata is None:
             self.metadata = {}
 
@@ -469,34 +480,73 @@ class VideoScene(ABC):
             [
                 self.reference_id == other.reference_id,
                 self.items == other.items,
+                self.video_location == other.video_location,
                 self.metadata == other.metadata,
             ]
         )
 
     @property
     def length(self) -> int:
-        """Number of items in the scene."""
+        """Gets number of items in the scene for videos uploaded with an array of images."""
+        assert (
+            not self.upload_to_scale or not self.video_location
+        ), "Only videos with items have a length"
         return len(self.items)
 
     def validate(self):
         # TODO: make private
-        assert self.frame_rate > 0, "Frame rate must be at least 1"
-        assert self.length > 0, "Must have at least 1 item in a scene"
-        for item in self.items:
-            assert isinstance(
-                item, DatasetItem
-            ), "Each item in a scene must be a DatasetItem object"
+        assert (
+            self.items or self.video_location
+        ), "Please upload either a video_location or an array of dataset items representing frames"
+        if self.upload_to_scale is False:
             assert (
-                item.image_location is not None
-            ), "Each item in a video scene must have an image_location"
+                self.frame_rate > 0
+            ), "When using privacy mode frame rate must be at least 1"
             assert (
-                item.upload_to_scale is not False
-            ), "Skipping upload to Scale is not currently implemented for videos"
+                self.items and self.length > 0
+            ), "When using privacy mode scene must have a list of items of length at least 1"
+            for item in self.items:
+                assert isinstance(
+                    item, DatasetItem
+                ), "Each item in a scene must be a DatasetItem object"
+                assert (
+                    item.image_location is not None
+                ), "Each item in a video scene must have an image_location"
+                assert (
+                    item.upload_to_scale is not False
+                ), "Please specify whether to upload to scale in the VideoScene for videos"
+        elif self.items:
+            assert (
+                self.frame_rate > 0
+            ), "When uploading an array of items frame rate must be at least 1"
+            assert (
+                self.length > 0
+            ), "When uploading an array of items scene must have a list of items of length at least 1"
+            assert (
+                not self.video_location
+            ), "No video location is accepted when uploading an array of items unless you are using privacy mode"
+            for item in self.items:
+                assert isinstance(
+                    item, DatasetItem
+                ), "Each item in a scene must be a DatasetItem object"
+                assert (
+                    item.image_location is not None
+                ), "Each item in a video scene must have an image_location"
+                assert (
+                    item.upload_to_scale is not False
+                ), "Please specify whether to upload to scale in the VideoScene for videos"
+        else:
+            assert (
+                not self.frame_rate
+            ), "No frame rate is accepted when uploading a video_location"
+            assert (
+                not self.items
+            ), "No list of items is accepted when uploading a video_location unless you are using privacy mode"
 
     def add_item(
         self, item: DatasetItem, index: int = None, update: bool = False
     ) -> None:
-        """Adds DatasetItem to the specified index.
+        """Adds DatasetItem to the specified index for videos uploaded as an array of images.
 
         Parameters:
             item (:class:`DatasetItem`): Video item to add.
@@ -504,6 +554,9 @@ class VideoScene(ABC):
             update: Whether to overwrite the item at the specified index, if it
               exists. Default is False.
         """
+        assert (
+            not self.upload_to_scale or not self.video_location
+        ), "Cannot add item to a video without items"
         if index is None:
             index = len(self.items)
         assert (
@@ -515,13 +568,16 @@ class VideoScene(ABC):
             self.items.append(item)
 
     def get_item(self, index: int) -> DatasetItem:
-        """Fetches the DatasetItem at the specified index.
+        """Fetches the DatasetItem at the specified index for videos uploaded as an array of images.
 
         Parameters:
             index: Serial index for which to retrieve the DatasetItem.
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
+        assert (
+            not self.upload_to_scale or not self.video_location
+        ), "Cannot add item to a video without items"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -529,30 +585,42 @@ class VideoScene(ABC):
         return self.items[index]
 
     def get_items(self) -> List[DatasetItem]:
-        """Fetches a sorted list of DatasetItems of the scene.
+        """Fetches a sorted list of DatasetItems of the scene for videos uploaded as an array of images.
 
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
+        assert (
+            not self.upload_to_scale or not self.video_location
+        ), "Cannot add item to a video without items"
         return self.items
 
     def info(self):
-        """Fetches information about the scene.
+        """Fetches information about the video scene.
 
         Returns:
             Payload containing::
 
                 {
                     "reference_id": str,
-                    "length": int,
-                    "num_sensors": int
+                    "length": Optional[int],
+                    "frame_rate": int,
+                    "video_url": Optional[str],
                 }
         """
-        return {
+        payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
-            FRAME_RATE_KEY: self.frame_rate,
-            LENGTH_KEY: self.length,
         }
+        if self.frame_rate:
+            payload[FRAME_RATE_KEY] = self.frame_rate
+        if self.video_location:
+            payload[VIDEO_URL_KEY] = self.video_location
+        if self.items:
+            payload[LENGTH_KEY] = self.length
+        if self.upload_to_scale:
+            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
+
+        return payload
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -561,24 +629,32 @@ class VideoScene(ABC):
         items = [DatasetItem.from_json(item) for item in items_payload]
         return cls(
             reference_id=payload[REFERENCE_ID_KEY],
-            frame_rate=payload[FRAME_RATE_KEY],
-            attachment_type=payload[VIDEO_UPLOAD_TYPE_KEY],
+            frame_rate=payload.get(FRAME_RATE_KEY, None),
             items=items,
             metadata=payload.get(METADATA_KEY, {}),
+            video_location=payload.get(VIDEO_URL_KEY, None),
+            upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
         )
 
     def to_payload(self) -> dict:
         """Serializes scene object to schematized JSON dict."""
         self.validate()
-        items_payload = [item.to_payload(is_scene=True) for item in self.items]
         payload: Dict[str, Any] = {
             REFERENCE_ID_KEY: self.reference_id,
-            VIDEO_UPLOAD_TYPE_KEY: self.attachment_type,
-            FRAME_RATE_KEY: self.frame_rate,
-            FRAMES_KEY: items_payload,
         }
+        if self.frame_rate:
+            payload[FRAME_RATE_KEY] = self.frame_rate
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
+        if self.video_location:
+            payload[VIDEO_URL_KEY] = self.video_location
+        if self.items:
+            items_payload = [
+                item.to_payload(is_scene=True) for item in self.items
+            ]
+            payload[FRAMES_KEY] = items_payload
+        if self.upload_to_scale is not None:
+            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
         return payload
 
     def to_json(self) -> str:
@@ -590,16 +666,24 @@ def check_all_scene_paths_remote(
     scenes: Union[List[LidarScene], List[VideoScene]]
 ):
     for scene in scenes:
-        for item in scene.get_items():
-            pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
-            if pointcloud_location and is_local_path(pointcloud_location):
+        if isinstance(scene, VideoScene) and scene.video_location:
+            video_location = getattr(scene, VIDEO_LOCATION_KEY)
+            if video_location and is_local_path(video_location):
                 raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                    f"All paths for videos must be remote, but {scene.video_location} is either "
                     "local, or a remote URL type that is not supported."
                 )
-            image_location = getattr(item, IMAGE_LOCATION_KEY)
-            if image_location and is_local_path(image_location):
-                raise ValueError(
-                    f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
-                    "local, or a remote URL type that is not supported."
-                )
+        if isinstance(scene, LidarScene) or scene.items:
+            for item in scene.get_items():
+                pointcloud_location = getattr(item, POINTCLOUD_LOCATION_KEY)
+                if pointcloud_location and is_local_path(pointcloud_location):
+                    raise ValueError(
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.pointcloud_location} is either "
+                        "local, or a remote URL type that is not supported."
+                    )
+                image_location = getattr(item, IMAGE_LOCATION_KEY)
+                if image_location and is_local_path(image_location):
+                    raise ValueError(
+                        f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
+                        "local, or a remote URL type that is not supported."
+                    )
