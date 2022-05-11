@@ -541,8 +541,11 @@ class PolygonAveragePrecision(PolygonMetric):
         ) = get_true_false_positives_confidences(
             annotations_filtered, predictions_filtered, self.iou_threshold
         )
-        idxes = np.argsort(-confidences)
-        true_false_positives_sorted = true_false_positives[idxes]
+        if np.all(confidences):
+            idxes = np.argsort(-confidences)
+            true_false_positives_sorted = true_false_positives[idxes]
+        else:
+            true_false_positives_sorted = true_false_positives
         cumulative_true_positives = np.cumsum(true_false_positives_sorted)
         total_predictions = np.arange(1, len(true_false_positives) + 1)
         precisions = cumulative_true_positives / total_predictions
