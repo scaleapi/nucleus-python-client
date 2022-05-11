@@ -563,17 +563,22 @@ def test_dataset_item_iterator(dataset):
 def test_dataset_get_image_indexing_status(CLIENT):
     dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
     resp = dataset.get_image_indexing_status()
-    assert resp["embedding_count"]
-    assert resp["image_count"]
-    assert not resp["object_count"]
-    assert resp["percent_indexed"]
+    print(resp)
+    assert resp["embedding_count"] == 170
+    assert resp["image_count"] == 170
+    assert "object_count" not in resp
+    assert round(resp["percent_indexed"], 2) == round(
+        resp["image_count"] / resp["embedding_count"], 2
+    )
 
 
 @pytest.mark.integration
 def test_dataset_get_object_indexing_status(CLIENT):
     dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
     resp = dataset.get_object_indexing_status()
-    assert resp["embedding_count"]
-    assert resp["object_count"]
-    assert not resp["image_count"]
-    assert resp["percent_indexed"]
+    assert resp["embedding_count"] == 422
+    assert resp["object_count"] == 423
+    assert "image_count" not in resp
+    assert round(resp["percent_indexed"], 2) == round(
+        resp["object_count"] / resp["embedding_count"], 2
+    )
