@@ -9,7 +9,9 @@ from nucleus import (
     KeypointsPrediction,
     LinePrediction,
     ModelRun,
+    Point,
     PolygonPrediction,
+    Segment,
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD

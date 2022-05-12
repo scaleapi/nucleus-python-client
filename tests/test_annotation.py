@@ -9,7 +9,9 @@ from nucleus import (
     KeypointsAnnotation,
     LineAnnotation,
     MultiCategoryAnnotation,
+    Point,
     PolygonAnnotation,
+    Segment,
     SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
