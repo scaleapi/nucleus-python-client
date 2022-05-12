@@ -13,6 +13,7 @@ from nucleus import (
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.errors import DuplicateIDsError
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
@@ -727,8 +728,8 @@ def test_prediction_duplicate_ids_fail(dataset, model, model_run):
     box_pred = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
     predictions = [box_pred, box_pred]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(DuplicateIDsError):
         dataset.upload_predictions(model, predictions=predictions)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(DuplicateIDsError):
         model_run.predict(annotations=predictions)

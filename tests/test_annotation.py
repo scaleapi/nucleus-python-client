@@ -9,12 +9,11 @@ from nucleus import (
     KeypointsAnnotation,
     LineAnnotation,
     MultiCategoryAnnotation,
-    Point,
     PolygonAnnotation,
-    Segment,
     SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.errors import DuplicateIDsError
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
@@ -818,5 +817,5 @@ def test_box_gt_upload_embedding_async(CLIENT, dataset):
 def test_annotation_duplicate_ids_fail(dataset):
     box_ann = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     annotations = [box_ann, box_ann]
-    with pytest.raises(ValueError):
+    with pytest.raises(DuplicateIDsError):
         dataset.annotate(annotations=annotations)
