@@ -92,15 +92,18 @@ class Model:
     endpoint, using :meth:`NucleusClient.add_model`.
     """
 
-    def __init__(self, model_id, name, reference_id, metadata, client):
+    def __init__(
+        self, model_id, name, reference_id, metadata, client, bundle_name=None
+    ):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
         self.metadata = metadata
+        self.bundle_name = bundle_name
         self._client = client
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, client={self._client})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, client={self._client})"
 
     def __eq__(self, other):
         return (
@@ -108,6 +111,7 @@ class Model:
             and (self.name == other.name)
             and (self.metadata == other.metadata)
             and (self._client == other._client)
+            and (self.bundle_name == other.bundle_name)
         )
 
     def __hash__(self):
@@ -187,3 +191,25 @@ class Model:
             requests_command=requests.post,
         )
         return AsyncJob.from_json(response, self._client)
+
+    def run(self, dataset_id: str, slice_id: Optional[str]) -> str:
+        """Runs inference on the bundle associated with the model on the dataset. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.run("ds_123456")
+
+        Args:
+            dataset_id: id of dataset to run inference on
+            job_id: nucleus job used to track async job progress
+            slice_id: (optional) id of slice of the dataset to run inference on
+        """
+        response = self._client.make_request(
+            {"dataset_id": dataset_id, "slice_id": slice_id},
+            f"model/run/{self.id}/",
+            requests_command=requests.post,
+        )
+
+        return response
