@@ -313,6 +313,7 @@ def test_dataset_append_async_with_local_path(dataset: Dataset):
     with pytest.raises(ValueError):
         dataset.append(ds_items, asynchronous=True)
 
+
 # TODO(Jean): Fix and remove skip, this is a flaky test
 @pytest.mark.skip(reason="Flaky test")
 def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
