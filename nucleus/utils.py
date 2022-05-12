@@ -273,7 +273,7 @@ def serialize_and_write(
                 f"The following {type_name} could not be serialized: {unit}\n"
             )
             message += (
-                "This is usally an issue with a custom python object being "
+                "This is usually an issue with a custom python object being "
                 "present in the metadata. Please inspect this error and adjust the "
                 "metadata so it is json-serializable: only python primitives such as "
                 "strings, ints, floats, lists, and dicts. For example, you must "
