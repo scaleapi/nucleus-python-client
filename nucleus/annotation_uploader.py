@@ -9,7 +9,7 @@ from nucleus.async_utils import (
     make_many_form_data_requests_concurrently,
 )
 from nucleus.constants import MASK_TYPE, SERIALIZED_REQUEST_KEY
-from nucleus.errors import DuplicateIDsError
+from nucleus.errors import DuplicateIDError
 from nucleus.payload_constructor import (
     construct_annotation_payload,
     construct_segmentation_payload,
@@ -223,7 +223,7 @@ class AnnotationUploader:
         tuple_count = Counter(tuple_ids)
         duplicates = {key for key, value in tuple_count.items() if value > 1}
         if len(duplicates) > 0:
-            raise DuplicateIDsError(
+            raise DuplicateIDError(
                 f"Duplicate annotations with the same (reference_id, annotation_id) properties found.\n"
                 f"Duplicates: {duplicates}\n"
                 f"To fix this, avoid duplicate annotations, or specify a different annotation_id attribute "
