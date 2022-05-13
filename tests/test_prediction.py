@@ -1,4 +1,3 @@
-import os
 import time
 
 import pytest
@@ -16,6 +15,7 @@ from nucleus import (
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.errors import DuplicateIDError
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
@@ -724,3 +724,14 @@ def test_box_pred_upload_embedding_async(CLIENT, model_run):
     status = job.status()
     assert status["job_id"] == job.job_id
     assert status["status"] == "Running"
+
+
+def test_prediction_duplicate_ids_fail(dataset, model, model_run):
+    box_pred = BoxPrediction(**TEST_BOX_PREDICTIONS_EMBEDDINGS[0])
+    predictions = [box_pred, box_pred]
+
+    with pytest.raises(DuplicateIDError):
+        dataset.upload_predictions(model, predictions=predictions)
+
+    with pytest.raises(DuplicateIDError):
+        model_run.predict(annotations=predictions)

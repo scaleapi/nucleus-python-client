@@ -389,6 +389,9 @@ class Dataset:
 
             Otherwise, returns an :class:`AsyncJob` object.
         """
+        uploader = AnnotationUploader(dataset_id=self.id, client=self._client)
+        uploader.check_for_duplicate_ids(annotations)
+
         if asynchronous:
             check_all_mask_paths_remote(annotations)
             request_id = serialize_and_write_to_presigned_url(
@@ -399,7 +402,7 @@ class Dataset:
                 route=f"dataset/{self.id}/annotate?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        uploader = AnnotationUploader(dataset_id=self.id, client=self._client)
+
         return uploader.upload(
             annotations=annotations,
             update=update,
@@ -1405,6 +1408,14 @@ class Dataset:
                     "predictions_ignored": int,
                 }
         """
+        uploader = PredictionUploader(
+            model_run_id=None,
+            dataset_id=self.id,
+            model_id=model.id,
+            client=self._client,
+        )
+        uploader.check_for_duplicate_ids(predictions)
+
         if asynchronous:
             check_all_mask_paths_remote(predictions)
 
@@ -1416,21 +1427,15 @@ class Dataset:
                 route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        else:
-            uploader = PredictionUploader(
-                model_run_id=None,
-                dataset_id=self.id,
-                model_id=model.id,
-                client=self._client,
-            )
-            return uploader.upload(
-                annotations=predictions,
-                batch_size=batch_size,
-                update=update,
-                remote_files_per_upload_request=remote_files_per_upload_request,
-                local_files_per_upload_request=local_files_per_upload_request,
-                local_file_upload_concurrency=local_file_upload_concurrency,
-            )
+
+        return uploader.upload(
+            annotations=predictions,
+            batch_size=batch_size,
+            update=update,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            local_file_upload_concurrency=local_file_upload_concurrency,
+        )
 
     def predictions_iloc(self, model, index):
         """Fetches all predictions of a dataset item by its absolute index.
