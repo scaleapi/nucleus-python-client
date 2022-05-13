@@ -522,6 +522,55 @@ class SegmentationToPolyPrecisionConfig(EvalFunctionConfig):
         return "segmentation_to_poly_precision"
 
 
+class SegmentationToPolyAveragePrecisionConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        label: str = "label",
+        iou_threshold: float = 0.5,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Initializes SegmentationToPolyAveragePrecision object.
+
+        Args:
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            label=label,
+            iou_threshold=iou_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "segmentation_to_poly_ap"
+
+
 class BoundingBoxIOUConfig(EvalFunctionConfig):
     def __call__(
         self,
@@ -1147,6 +1196,7 @@ EvalFunction = Union[
     SegmentationToPolyIOUConfig,
     SegmentationToPolyMAPConfig,
     SegmentationToPolyPrecisionConfig,
+    SegmentationToPolyAveragePrecisionConfig,
 ]
 
 
@@ -1225,6 +1275,9 @@ class AvailableEvalFunctions:
         )
         self.segmentation_to_poly_map: SegmentationToPolyMAPConfig = self._assign_eval_function_if_defined(
             SegmentationToPolyMAPConfig  # type: ignore
+        )
+        self.segmentation_to_poly_ap: SegmentationToPolyAveragePrecisionConfig = self._assign_eval_function_if_defined(
+            SegmentationToPolyAveragePrecisionConfig  # type: ignore
         )
 
         # Add public entries that have not been implemented as an attribute on this class
