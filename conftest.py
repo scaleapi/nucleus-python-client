@@ -1,4 +1,6 @@
 import os
+import random
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -34,7 +36,12 @@ def dataset(CLIENT: "NucleusClient"):
 
 @pytest.fixture()
 def model(CLIENT):
-    model = CLIENT.create_model(TEST_DATASET_NAME, "fake_reference_id")
+    # Randomly generate an integer between 0 and maximum integer so reference ids
+    # do not collide during parallel test rusn.
+    random_postfix = str(random.randint(0, sys.maxsize))
+    model = CLIENT.create_model(
+        TEST_DATASET_NAME, "fake_reference_id_" + random_postfix
+    )
     yield model
     CLIENT.delete_model(model.id)
 
