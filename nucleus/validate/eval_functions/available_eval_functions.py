@@ -268,6 +268,260 @@ class PolygonPrecisionConfig(EvalFunctionConfig):
         return "poly_precision"
 
 
+class SegmentationToPolyIOUConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonIOU` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            poly_iou: BoundingBoxIOU = client.validate.eval_functions.poly_iou
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[poly_iou(confidence_threshold=0.8) > 0.5]
+            )
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "segmentation_to_poly_iou"
+
+
+class SegmentationToPolyMAPConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        iou_threshold: float = 0.5,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonMAP` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            poly_map: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.poly_map
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[poly_map(iou_threshold=0.6) > 0.8]
+            )
+
+        Args:
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            iou_threshold=iou_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "segmentation_to_poly_map"
+
+
+class SegmentationToPolyRecallConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.5,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonRecall` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            poly_recall: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.poly_recall
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[poly_recall(iou_threshold=0.6, confidence_threshold=0.4) > 0.9]
+            )
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "segmentation_to_poly_recall"
+
+
+class SegmentationToPolyPrecisionConfig(EvalFunctionConfig):
+    def __call__(
+        self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.5,
+        confidence_threshold: float = 0.0,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        **kwargs,
+    ):
+        """Configures a call to :class:`PolygonPrecision` object.
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            poly_precision: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.poly_precision
+            slice_id = "slc_<your_slice>"
+            scenario_test = client.validate.create_scenario_test(
+                "Example test",
+                slice_id=slice_id,
+                evaluation_criteria=[poly_precision(iou_threshold=0.6, confidence_threshold=0.4) > 0.9]
+            )
+
+        Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        return super().__call__(
+            enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
+            confidence_threshold=confidence_threshold,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+            **kwargs,
+        )
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "segmentation_to_poly_precision"
+
+
 class BoundingBoxIOUConfig(EvalFunctionConfig):
     def __call__(
         self,
@@ -889,6 +1143,10 @@ EvalFunction = Union[
     PolygonIOUConfig,
     PolygonRecallConfig,
     PolygonPrecisionConfig,
+    SegmentationToPolyRecallConfig,
+    SegmentationToPolyIOUConfig,
+    SegmentationToPolyMAPConfig,
+    SegmentationToPolyPrecisionConfig,
 ]
 
 
@@ -923,7 +1181,9 @@ class AvailableEvalFunctions:
             for f in available_functions
             if not f.is_public
         }
-        self.bbox_iou: BoundingBoxIOUConfig = self._assign_eval_function_if_defined(BoundingBoxIOUConfig)  # type: ignore
+        self.bbox_iou: BoundingBoxIOUConfig = (
+            self._assign_eval_function_if_defined(BoundingBoxIOUConfig)
+        )  # type: ignore
         self.bbox_precision: BoundingBoxPrecisionConfig = self._assign_eval_function_if_defined(
             BoundingBoxPrecisionConfig  # type: ignore
         )
@@ -938,8 +1198,12 @@ class AvailableEvalFunctions:
         )
         self.cuboid_iou_2d: CuboidIOU2DConfig = self._assign_eval_function_if_defined(CuboidIOU2DConfig)  # type: ignore
         self.cuboid_iou_3d: CuboidIOU3DConfig = self._assign_eval_function_if_defined(CuboidIOU3DConfig)  # type: ignore
-        self.cuboid_precision: CuboidPrecisionConfig = self._assign_eval_function_if_defined(CuboidPrecisionConfig)  # type: ignore
-        self.cuboid_recall: CuboidRecallConfig = self._assign_eval_function_if_defined(CuboidRecallConfig)  # type: ignore
+        self.cuboid_precision: CuboidPrecisionConfig = (
+            self._assign_eval_function_if_defined(CuboidPrecisionConfig)
+        )  # type: ignore
+        self.cuboid_recall: CuboidRecallConfig = (
+            self._assign_eval_function_if_defined(CuboidRecallConfig)
+        )  # type: ignore
         self.poly_iou: PolygonIOUConfig = self._assign_eval_function_if_defined(PolygonIOUConfig)  # type: ignore
         self.poly_precision: PolygonPrecisionConfig = self._assign_eval_function_if_defined(
             PolygonPrecisionConfig  # type: ignore
@@ -949,6 +1213,18 @@ class AvailableEvalFunctions:
         )
         self.poly_map: PolygonMAPConfig = self._assign_eval_function_if_defined(
             PolygonMAPConfig  # type: ignore
+        )
+        self.segmentation_to_poly_iou: SegmentationToPolyIOUConfig = (
+            self._assign_eval_function_if_defined(SegmentationToPolyIOUConfig)
+        )  # type: ignore
+        self.segmentation_to_poly_precision: SegmentationToPolyPrecisionConfig = self._assign_eval_function_if_defined(
+            SegmentationToPolyPrecisionConfig  # type: ignore
+        )
+        self.segmentation_to_poly_recall: SegmentationToPolyRecallConfig = self._assign_eval_function_if_defined(
+            SegmentationToPolyRecallConfig  # type: ignore
+        )
+        self.segmentation_to_poly_map: SegmentationToPolyMAPConfig = self._assign_eval_function_if_defined(
+            SegmentationToPolyMAPConfig  # type: ignore
         )
 
         # Add public entries that have not been implemented as an attribute on this class

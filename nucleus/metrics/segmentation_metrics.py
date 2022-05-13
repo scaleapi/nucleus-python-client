@@ -1,83 +1,41 @@
-import sys
-from abc import abstractmethod
+import abc
 from typing import List, Optional, Union
 
+import fsspec
 import numpy as np
+from PIL import Image
+from s3fs import S3FileSystem
 
-from nucleus.annotation import AnnotationList, BoxAnnotation, PolygonAnnotation
-from nucleus.prediction import BoxPrediction, PolygonPrediction, PredictionList
+from nucleus.annotation import AnnotationList
+from nucleus.metrics.base import MetricResult
+from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
+from nucleus.metrics.segmentation_utils import (
+    instance_mask_to_polys,
+    transform_poly_codes_to_poly_preds,
+)
+from nucleus.prediction import PredictionList
 
 from .base import Metric, ScalarResult
-from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
-from .filtering import ListOfAndFilters, ListOfOrAndFilters
-from .filters import confidence_filter, polygon_label_filter
-from .metric_utils import compute_average_precision
-from .polygon_utils import (
-    get_true_false_positives_confidences,
-    group_boxes_or_polygons_by_label,
-    iou_assignments,
-    label_match_wrapper,
-    num_true_positives,
+from .polygon_metrics import (
+    PolygonAveragePrecision,
+    PolygonIOU,
+    PolygonMAP,
+    PolygonPrecision,
+    PolygonRecall,
 )
 
 
-class PolygonMetric(Metric):
-    """Abstract class for metrics of box and polygons.
+class SegmentationMaskLoader:
+    def __init__(self, fs: fsspec):
+        self.fs = fs
 
-    The PolygonMetric class automatically filters incoming annotations and
-    predictions for only box and polygon annotations. It also filters
-    predictions whose confidence is less than the provided confidence_threshold.
-    Finally, it provides support for enforcing matching labels. If
-    `enforce_label_match` is set to True, then annotations and predictions will
-    only be matched if they have the same label.
+    def fetch(self, url: str):
+        with self.fs.open(url) as fh:
+            img = Image.open(fh)
+        return img
 
-    To create a new concrete PolygonMetric, override the `eval` function
-    with logic to define a metric between box/polygon annotations and predictions.
-    ::
 
-        from typing import List
-        from nucleus import BoxAnnotation, Point, PolygonPrediction
-        from nucleus.annotation import AnnotationList
-        from nucleus.prediction import PredictionList
-        from nucleus.metrics import ScalarResult, PolygonMetric
-        from nucleus.metrics.polygon_utils import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
-
-        class MyPolygonMetric(PolygonMetric):
-            def eval(
-                self,
-                annotations: List[BoxOrPolygonAnnotation],
-                predictions: List[BoxOrPolygonPrediction],
-            ) -> ScalarResult:
-                value = (len(annotations) - len(predictions)) ** 2
-                weight = len(annotations)
-                return ScalarResult(value, weight)
-
-        box_anno = BoxAnnotation(
-            label="car",
-            x=0,
-            y=0,
-            width=10,
-            height=10,
-            reference_id="image_1",
-            annotation_id="image_1_car_box_1",
-            metadata={"vehicle_color": "red"}
-        )
-
-        polygon_pred = PolygonPrediction(
-            label="bus",
-            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
-            reference_id="image_2",
-            annotation_id="image_2_bus_polygon_1",
-            confidence=0.8,
-            metadata={"vehicle_color": "yellow"}
-        )
-
-        annotations = AnnotationList(box_annotations=[box_anno])
-        predictions = PredictionList(polygon_predictions=[polygon_pred])
-        metric = MyPolygonMetric()
-        metric(annotations, predictions)
-    """
-
+class SegmentationMaskToPolyMetric(Metric):
     def __init__(
         self,
         enforce_label_match: bool = False,
@@ -117,78 +75,35 @@ class PolygonMetric(Metric):
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
-
-    @abstractmethod
-    def eval(
-        self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        # Main evaluation function that subclasses must override.
-        pass
-
-    def aggregate_score(self, results: List[ScalarResult]) -> ScalarResult:  # type: ignore[override]
-        return ScalarResult.aggregate(results)
+        self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
 
     def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> ScalarResult:
-        if self.confidence_threshold > 0:
-            predictions = confidence_filter(
-                predictions, self.confidence_threshold
-            )
-        polygon_annotations: List[Union[BoxAnnotation, PolygonAnnotation]] = []
-        polygon_annotations.extend(annotations.box_annotations)
-        polygon_annotations.extend(annotations.polygon_annotations)
-        polygon_predictions: List[Union[BoxPrediction, PolygonPrediction]] = []
-        polygon_predictions.extend(predictions.box_predictions)
-        polygon_predictions.extend(predictions.polygon_predictions)
-
-        eval_fn = label_match_wrapper(self.eval)
-        result = eval_fn(
-            polygon_annotations,
-            polygon_predictions,
-            enforce_label_match=self.enforce_label_match,
+    ) -> MetricResult:
+        assert (
+            len(predictions.segmentation_predictions) <= 1
+        ), f"Expected only one segmentation mask, got {predictions.segmentation_predictions}"
+        prediction = predictions.segmentation_predictions[0]
+        pred_img = self.loader.fetch(prediction.mask_url)
+        pred_value, pred_polys = instance_mask_to_polys(
+            np.asarray(pred_img)
+        )  # typing: ignore
+        code_to_label = {s.index: s.label for s in prediction.annotations}
+        poly_predictions = transform_poly_codes_to_poly_preds(
+            prediction.reference_id, pred_value, pred_polys, code_to_label
         )
-        return result
-
-
-class PolygonIOU(PolygonMetric):
-    """Calculates the average IOU between box or polygon annotations and predictions.
-    ::
-
-        from nucleus import BoxAnnotation, Point, PolygonPrediction
-        from nucleus.annotation import AnnotationList
-        from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonIOU
-
-        box_anno = BoxAnnotation(
-            label="car",
-            x=0,
-            y=0,
-            width=10,
-            height=10,
-            reference_id="image_1",
-            annotation_id="image_1_car_box_1",
-            metadata={"vehicle_color": "red"}
+        return self.call_poly_metric(
+            annotations, PredictionList(polygon_predictions=poly_predictions)
         )
 
-        polygon_pred = PolygonPrediction(
-            label="bus",
-            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
-            reference_id="image_2",
-            annotation_id="image_2_bus_polygon_1",
-            confidence=0.8,
-            metadata={"vehicle_color": "yellow"}
-        )
+    @abc.abstractmethod
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        pass
 
-        annotations = AnnotationList(box_annotations=[box_anno])
-        predictions = PredictionList(polygon_predictions=[polygon_pred])
-        metric = PolygonIOU()
-        metric(annotations, predictions)
-    """
 
-    # TODO: Remove defaults once these are surfaced more cleanly to users.
+class SegmentationToPolyIOU(SegmentationMaskToPolyMetric):
     def __init__(
         self,
         enforce_label_match: bool = False,
@@ -236,56 +151,24 @@ class PolygonIOU(PolygonMetric):
             annotation_filters,
             prediction_filters,
         )
-
-    def eval(
-        self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        iou_assigns = iou_assignments(
-            annotations, predictions, self.iou_threshold
-        )
-        weight = max(len(annotations), len(predictions))
-        avg_iou = iou_assigns.sum() / max(weight, sys.float_info.epsilon)
-        return ScalarResult(avg_iou, weight)
-
-
-class PolygonPrecision(PolygonMetric):
-    """Calculates the precision between box or polygon annotations and predictions.
-    ::
-
-        from nucleus import BoxAnnotation, Point, PolygonPrediction
-        from nucleus.annotation import AnnotationList
-        from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonPrecision
-
-        box_anno = BoxAnnotation(
-            label="car",
-            x=0,
-            y=0,
-            width=10,
-            height=10,
-            reference_id="image_1",
-            annotation_id="image_1_car_box_1",
-            metadata={"vehicle_color": "red"}
+        self.metric = PolygonIOU(
+            self.enforce_label_match,
+            self.iou_threshold,
+            self.confidence_threshold,
+            self.annotation_filters,
+            self.prediction_filters,
         )
 
-        polygon_pred = PolygonPrediction(
-            label="bus",
-            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
-            reference_id="image_2",
-            annotation_id="image_2_bus_polygon_1",
-            confidence=0.8,
-            metadata={"vehicle_color": "yellow"}
-        )
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        return self.metric(annotations, predictions)
 
-        annotations = AnnotationList(box_annotations=[box_anno])
-        predictions = PredictionList(polygon_predictions=[polygon_pred])
-        metric = PolygonPrecision()
-        metric(annotations, predictions)
-    """
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        return self.metric.aggregate_score(results)  # type: ignore
 
-    # TODO: Remove defaults once these are surfaced more cleanly to users.
+
+class SegmentationToPolyPrecision(SegmentationMaskToPolyMetric):
     def __init__(
         self,
         enforce_label_match: bool = False,
@@ -298,7 +181,7 @@ class PolygonPrecision(PolygonMetric):
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
     ):
-        """Initializes PolygonPrecision object.
+        """Initializes SegmentationToPolyPrecision object.
 
         Args:
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
@@ -333,22 +216,24 @@ class PolygonPrecision(PolygonMetric):
             annotation_filters,
             prediction_filters,
         )
-
-    def eval(
-        self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        true_positives = num_true_positives(
-            annotations, predictions, self.iou_threshold
-        )
-        weight = len(predictions)
-        return ScalarResult(
-            true_positives / max(weight, sys.float_info.epsilon), weight
+        self.metric = PolygonPrecision(
+            self.enforce_label_match,
+            self.iou_threshold,
+            self.confidence_threshold,
+            self.annotation_filters,
+            self.prediction_filters,
         )
 
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        return self.metric(annotations, predictions)
 
-class PolygonRecall(PolygonMetric):
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        return self.metric.aggregate_score(results)  # type: ignore
+
+
+class SegmentationToPolyRecall(SegmentationMaskToPolyMetric):
     """Calculates the recall between box or polygon annotations and predictions.
     ::
 
@@ -431,22 +316,24 @@ class PolygonRecall(PolygonMetric):
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
         )
-
-    def eval(
-        self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        true_positives = num_true_positives(
-            annotations, predictions, self.iou_threshold
-        )
-        weight = len(annotations) + sys.float_info.epsilon
-        return ScalarResult(
-            true_positives / max(weight, sys.float_info.epsilon), weight
+        self.metric = PolygonRecall(
+            self.enforce_label_match,
+            self.iou_threshold,
+            self.confidence_threshold,
+            self.annotation_filters,
+            self.prediction_filters,
         )
 
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        return self.metric(annotations, predictions)
 
-class PolygonAveragePrecision(PolygonMetric):
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        return self.metric.aggregate_score(results)  # type: ignore
+
+
+class SegmentationToPolyAveragePrecision(SegmentationMaskToPolyMetric):
     """Calculates the average precision between box or polygon annotations and predictions.
     ::
 
@@ -527,35 +414,23 @@ class PolygonAveragePrecision(PolygonMetric):
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
         )
-
-    def eval(
-        self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        annotations_filtered = polygon_label_filter(annotations, self.label)
-        predictions_filtered = polygon_label_filter(predictions, self.label)
-        (
-            true_false_positives,
-            confidences,
-        ) = get_true_false_positives_confidences(
-            annotations_filtered, predictions_filtered, self.iou_threshold
+        self.metric = PolygonAveragePrecision(
+            self.label,
+            self.iou_threshold,
+            self.annotation_filters,
+            self.prediction_filters,
         )
-        if np.all(confidences):
-            idxes = np.argsort(-confidences)
-            true_false_positives_sorted = true_false_positives[idxes]
-        else:
-            true_false_positives_sorted = true_false_positives
-        cumulative_true_positives = np.cumsum(true_false_positives_sorted)
-        total_predictions = np.arange(1, len(true_false_positives) + 1)
-        precisions = cumulative_true_positives / total_predictions
-        recalls = cumulative_true_positives / len(annotations)
-        average_precision = compute_average_precision(precisions, recalls)
-        weight = 1
-        return ScalarResult(average_precision, weight)
+
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        return self.metric(annotations, predictions)
+
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        return self.metric.aggregate_score(results)  # type: ignore
 
 
-class PolygonMAP(PolygonMetric):
+class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
     """Calculates the mean average precision between box or polygon annotations and predictions.
     ::
 
@@ -634,20 +509,16 @@ class PolygonMAP(PolygonMetric):
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
         )
-
-    def eval(
-        self,
-        annotations: List[BoxOrPolygonAnnotation],
-        predictions: List[BoxOrPolygonPrediction],
-    ) -> ScalarResult:
-        grouped_inputs = group_boxes_or_polygons_by_label(
-            annotations, predictions
+        self.metric = PolygonMAP(
+            self.iou_threshold,
+            self.annotation_filters,
+            self.prediction_filters,
         )
-        results: List[ScalarResult] = []
-        for label, group in grouped_inputs.items():
-            annotations_group, predictions_group = group
-            metric = PolygonAveragePrecision(label)
-            result = metric.eval(annotations_group, predictions_group)
-            results.append(result)
-        average_result = ScalarResult.aggregate(results)
-        return average_result
+
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        return self.metric(annotations, predictions)
+
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        return self.metric.aggregate_score(results)  # type: ignore

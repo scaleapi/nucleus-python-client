@@ -6,7 +6,7 @@ import numpy as np
 try:
     from shapely.geometry import Polygon
 except ModuleNotFoundError:
-    from .shapely_not_installed import ShapelyNotInstalled
+    from ..shapely_not_installed import ShapelyNotInstalled
 
     Polygon = ShapelyNotInstalled
 
