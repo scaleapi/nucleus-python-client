@@ -314,7 +314,8 @@ def test_dataset_append_async_with_local_path(dataset: Dataset):
         dataset.append(ds_items, asynchronous=True)
 
 
-@pytest.mark.integration
+# TODO(Jean): Fix and remove skip, this is a flaky test
+@pytest.mark.skip(reason="Flaky test")
 def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     ds_items = make_dataset_items()
     ds_items[0].image_location = "https://looks.ok.but.is.not.accessible"
