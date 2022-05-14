@@ -1007,6 +1007,45 @@ class Dataset:
 
         return response
 
+    def get_image_indexing_status(self):
+        """Gets the primary image index progress for the dataset.
+
+        Returns:
+            Response payload::
+
+                {
+                    "embedding_count": int
+                    "image_count": int
+                    "percent_indexed": float
+                    "additional_context": str
+                }
+        """
+        return self._client.make_request(
+            {"image": True},
+            f"dataset/{self.id}/indexingStatus",
+            requests_command=requests.post,
+        )
+
+    def get_object_indexing_status(self, model_run_id=None):
+        """Gets the primary object index progress of the dataset.
+        If model_run_id is not specified, this endpoint will retrieve the indexing progress of the ground truth objects.
+
+        Returns:
+            Response payload::
+
+                {
+                    "embedding_count": int
+                    "object_count": int
+                    "percent_indexed": float
+                    "additional_context": str
+                }
+        """
+        return self._client.make_request(
+            {"image": False, "model_run_id": model_run_id},
+            f"dataset/{self.id}/indexingStatus",
+            requests_command=requests.post,
+        )
+
     def create_image_index(self):
         """Creates or updates image index by generating embeddings for images that do not already have embeddings.
 

@@ -841,6 +841,10 @@ class NucleusClient:
         if payload is None:
             payload = {}
         if requests_command is requests.get:
+            if payload:
+                print(
+                    "Received defined payload with GET request! Will ignore payload"
+                )
             payload = None
         return self._connection.make_request(payload, route, requests_command)  # type: ignore
 
