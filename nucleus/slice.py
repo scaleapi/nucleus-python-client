@@ -234,6 +234,34 @@ class Slice:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
+    def items_and_predictions(
+        self, model
+    ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Provides a list of all DatasetItems and Annotations in the Slice.
+
+        Returns:
+            List where each element is a dict containing the DatasetItem
+            and all of its associated Annotations, grouped by type (e.g. box).
+            ::
+
+                List[{
+                    "item": DatasetItem,
+                    "annotations": {
+                        "box": List[BoxAnnotation],
+                        "polygon": List[PolygonAnnotation],
+                        "cuboid": List[CuboidAnnotation],
+                        "segmentation": List[SegmentationAnnotation],
+                        "category": List[CategoryAnnotation],
+                    }
+                }]
+        """
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.id}/{model.id}/exportForTraining",
+            requests_command=requests.get,
+        )
+        return convert_export_payload(api_payload[EXPORTED_ROWS])
+
     def send_to_labeling(self, project_id: str):
         """Send items in the Slice as tasks to a Scale labeling project.
 

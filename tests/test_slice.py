@@ -3,16 +3,36 @@ import copy
 import pytest
 import requests
 
-from nucleus import BoxAnnotation, Dataset, NucleusClient, Slice
-from nucleus.constants import ANNOTATIONS_KEY, BOX_TYPE, ITEM_KEY
+from nucleus import BoxAnnotation, BoxPrediction, Dataset, NucleusClient, Slice
+from nucleus.constants import (
+    ANNOTATIONS_KEY,
+    BOX_TYPE,
+    ITEM_KEY,
+    PREDICTIONS_KEY,
+)
 from nucleus.job import AsyncJob
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,
+    TEST_BOX_PREDICTIONS,
     TEST_PROJECT_ID,
     TEST_SLICE_NAME,
     get_uuid,
 )
+
+
+@pytest.fixture()
+def slc(CLIENT, dataset):
+    slice_ref_ids = [item.reference_id for item in dataset.items[:1]]
+    # Slice creation
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=slice_ref_ids,
+    )
+
+    yield slc
+
+    CLIENT.delete_slice(slc.id)
 
 
 def test_reprs():
@@ -87,6 +107,39 @@ def test_slice_create_and_export(dataset):
         assert row[ANNOTATIONS_KEY][BOX_TYPE][
             0
         ] == get_expected_box_annotation(reference_id)
+
+
+def test_slice_create_and_prediction_export(dataset, slc, model):
+    # Dataset upload
+    ds_items = dataset.items
+
+    predictions = [
+        BoxPrediction(**pred_raw) for pred_raw in TEST_BOX_PREDICTIONS
+    ]
+    response = dataset.upload_predictions(model, predictions)
+
+    assert response
+
+    def get_expected_box_prediction(reference_id):
+        for prediction in predictions:
+            if prediction.reference_id == reference_id:
+                return prediction
+
+    def get_expected_item(reference_id):
+        if reference_id not in slc.items:
+            raise ValueError("Got results outside the slice")
+        for item in ds_items:
+            if item.reference_id == reference_id:
+                return item
+
+    exported = slc.items_and_predictions(model)
+    print(exported)
+    for row in exported:
+        reference_id = row[ITEM_KEY].reference_id
+        assert row[ITEM_KEY] == get_expected_item(reference_id)
+        assert row[PREDICTIONS_KEY][BOX_TYPE][
+            0
+        ] == get_expected_box_prediction(reference_id)
 
 
 def test_slice_append(dataset):
