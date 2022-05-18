@@ -519,12 +519,13 @@ class NucleusClient:
             client=self,
         )
 
-    def create_launch_model(self,
-                            name: str,
-                            reference_id: str,
-                            bundle_args: Dict[str, any],
-                            metadata: Optional[Dict] = None,
-                            ) -> Model:
+    def create_launch_model(
+        self,
+        name: str,
+        reference_id: str,
+        bundle_args: Dict[str, any],
+        metadata: Optional[Dict] = None,
+    ) -> Model:
         launch_client = LaunchClient(api_key=self.api_key)
         bundle = launch_client.create_model_bundle(**bundle_args)
         return self.create_model(
@@ -534,14 +535,17 @@ class NucleusClient:
             bundle.bundle_name,
         )
 
-    def create_launch_model_from_dir(self,
-                                     name: str,
-                                     reference_id: str,
-                                     bundle_from_dir_args: Dict[str, any],
-                                     metadata: Optional[Dict] = None,
-                                     ) -> Model:
+    def create_launch_model_from_dir(
+        self,
+        name: str,
+        reference_id: str,
+        bundle_from_dir_args: Dict[str, any],
+        metadata: Optional[Dict] = None,
+    ) -> Model:
         launch_client = LaunchClient(api_key=self.api_key)
-        bundle = launch_client.create_model_bundle_from_dir(**bundle_from_dir_args)
+        bundle = launch_client.create_model_bundle_from_dir(
+            **bundle_from_dir_args
+        )
         return self.create_model(
             name,
             reference_id,
