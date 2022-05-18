@@ -537,9 +537,12 @@ class NucleusClient:
                 "Bundle with the given name already exists, please try a different name"
             )
 
-        bundle = launch_client.create_model_bundle(
-            model_bundle_name=name + "-nucleus-autogen", **bundle_args
-        )
+        kwargs = {
+            "model_bundle_name": name + "-nucleus-autogen",
+            **bundle_args,
+        }
+
+        bundle = launch_client.create_model_bundle(**kwargs)
         return self.create_model(
             name,
             reference_id,
@@ -565,9 +568,13 @@ class NucleusClient:
                 "Bundle with the given name already exists, please try a different name"
             )
 
-        bundle = launch_client.create_model_bundle_from_dir(
-            model_bundle_name=name + "-nucleus-autogen" ** bundle_from_dir_args
-        )
+        kwargs = {
+            "model_bundle_name": name + "-nucleus-autogen",
+            **bundle_from_dir_args,
+        }
+
+        bundle = launch_client.create_model_bundle_from_dir(**kwargs)
+
         return self.create_model(
             name,
             reference_id,
