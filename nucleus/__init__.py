@@ -529,9 +529,11 @@ class NucleusClient:
         launch_client = LaunchClient(api_key=self.api_key)
 
         model_exists = any(model.name == name for model in self.list_models())
-        bundle_exists = launch_client.get_model_bundle(
-            name + "-nucleus-autogen"
+        bundle_exists = any(
+            bundle.name == name + "-nucleus-autogen"
+            for bundle in launch_client.list_model_bundles
         )
+
         if bundle_exists or model_exists:
             raise ModelCreationError(
                 "Bundle with the given name already exists, please try a different name"
@@ -560,9 +562,11 @@ class NucleusClient:
         launch_client = LaunchClient(api_key=self.api_key)
 
         model_exists = any(model.name == name for model in self.list_models())
-        bundle_exists = launch_client.get_model_bundle(
-            name + "-nucleus-autogen"
+        bundle_exists = any(
+            bundle.name == name + "-nucleus-autogen"
+            for bundle in launch_client.list_model_bundles
         )
+
         if bundle_exists or model_exists:
             raise ModelCreationError(
                 "Bundle with the given name already exists, please try a different name"
