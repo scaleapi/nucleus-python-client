@@ -237,16 +237,19 @@ class Slice:
     def items_and_predictions(
         self, model
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Provides a list of all DatasetItems and Annotations in the Slice.
+        """Provides a list of all DatasetItems and Predictions in the Slice for the given Model.
+
+        Parameters:
+            model (Model): the nucleus model objects representing the model for which to export predictions.
 
         Returns:
             List where each element is a dict containing the DatasetItem
-            and all of its associated Annotations, grouped by type (e.g. box).
+            and all of its associated Predictions, grouped by type (e.g. box).
             ::
 
                 List[{
                     "item": DatasetItem,
-                    "annotations": {
+                    "predicions": {
                         "box": List[BoxAnnotation],
                         "polygon": List[PolygonAnnotation],
                         "cuboid": List[CuboidAnnotation],

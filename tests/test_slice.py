@@ -133,7 +133,6 @@ def test_slice_create_and_prediction_export(dataset, slc, model):
                 return item
 
     exported = slc.items_and_predictions(model)
-    print(exported)
     for row in exported:
         reference_id = row[ITEM_KEY].reference_id
         assert row[ITEM_KEY] == get_expected_item(reference_id)
