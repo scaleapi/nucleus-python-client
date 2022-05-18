@@ -180,6 +180,19 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             EMBEDDING_VECTOR_KEY: self.embedding_vector,
         }
 
+    def __eq__(self, other):
+        return (
+            self.label == other.label
+            and self.x == other.x
+            and self.y == other.y
+            and self.width == other.width
+            and self.height == other.height
+            and self.reference_id == other.reference_id
+            and self.annotation_id == other.annotation_id
+            and sorted(self.metadata.items()) == sorted(other.metadata.items())
+            and self.embedding_vector == other.embedding_vector
+        )
+
 
 @dataclass
 class Point:

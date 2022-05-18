@@ -263,7 +263,8 @@ class Slice:
             route=f"slice/{self.id}/{model.id}/exportForTraining",
             requests_command=requests.get,
         )
-        return convert_export_payload(api_payload[EXPORTED_ROWS])
+        print(api_payload)
+        return convert_export_payload(api_payload[EXPORTED_ROWS], model.id)
 
     def send_to_labeling(self, project_id: str):
         """Send items in the Slice as tasks to a Scale labeling project.

@@ -120,13 +120,15 @@ def test_slice_create_and_prediction_export(dataset, slc, model):
 
     assert response
 
+    slice_reference_ids = [item.reference_id for item in slc.items]
+
     def get_expected_box_prediction(reference_id):
         for prediction in predictions:
             if prediction.reference_id == reference_id:
                 return prediction
 
     def get_expected_item(reference_id):
-        if reference_id not in slc.items:
+        if reference_id not in slice_reference_ids:
             raise ValueError("Got results outside the slice")
         for item in ds_items:
             if item.reference_id == reference_id:
