@@ -531,7 +531,7 @@ class NucleusClient:
         model_exists = any(model.name == name for model in self.list_models())
         bundle_exists = any(
             bundle.name == name + "-nucleus-autogen"
-            for bundle in launch_client.list_model_bundles
+            for bundle in launch_client.list_model_bundles()
         )
 
         if bundle_exists or model_exists:
@@ -564,7 +564,7 @@ class NucleusClient:
         model_exists = any(model.name == name for model in self.list_models())
         bundle_exists = any(
             bundle.name == name + "-nucleus-autogen"
-            for bundle in launch_client.list_model_bundles
+            for bundle in launch_client.list_model_bundles()
         )
 
         if bundle_exists or model_exists:
