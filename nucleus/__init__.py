@@ -538,7 +538,7 @@ class NucleusClient:
             )
 
         bundle = launch_client.create_model_bundle(
-            name=name + "-nucleus-autogen", **bundle_args
+            model_bundle_name=name + "-nucleus-autogen", **bundle_args
         )
         return self.create_model(
             name,
@@ -566,7 +566,7 @@ class NucleusClient:
             )
 
         bundle = launch_client.create_model_bundle_from_dir(
-            name=name + "-nucleus-autogen" ** bundle_from_dir_args
+            model_bundle_name=name + "-nucleus-autogen" ** bundle_from_dir_args
         )
         return self.create_model(
             name,
