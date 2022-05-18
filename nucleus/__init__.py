@@ -48,6 +48,7 @@ import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
 
+from launch import LaunchClient
 from nucleus.url_utils import sanitize_string_args
 
 from .annotation import (
@@ -139,7 +140,6 @@ from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
 from .upload_response import UploadResponse
 from .validate import Validate
-from launch import LaunchClient
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
