@@ -527,12 +527,24 @@ class NucleusClient:
         metadata: Optional[Dict] = None,
     ) -> Model:
         launch_client = LaunchClient(api_key=self.api_key)
-        bundle = launch_client.create_model_bundle(**bundle_args)
+
+        model_exists = any(model.name == name for model in self.list_models())
+        bundle_exists = launch_client.get_model_bundle(
+            name + "-nucleus-autogen"
+        )
+        if bundle_exists or model_exists:
+            raise ModelCreationError(
+                "Bundle with the given name already exists, please try a different name"
+            )
+
+        bundle = launch_client.create_model_bundle(
+            name=name + "-nucleus-autogen", **bundle_args
+        )
         return self.create_model(
             name,
             reference_id,
             metadata,
-            bundle.bundle_name,
+            bundle.name,
         )
 
     def create_launch_model_from_dir(
@@ -543,14 +555,24 @@ class NucleusClient:
         metadata: Optional[Dict] = None,
     ) -> Model:
         launch_client = LaunchClient(api_key=self.api_key)
+
+        model_exists = any(model.name == name for model in self.list_models())
+        bundle_exists = launch_client.get_model_bundle(
+            name + "-nucleus-autogen"
+        )
+        if bundle_exists or model_exists:
+            raise ModelCreationError(
+                "Bundle with the given name already exists, please try a different name"
+            )
+
         bundle = launch_client.create_model_bundle_from_dir(
-            **bundle_from_dir_args
+            name=name + "-nucleus-autogen" ** bundle_from_dir_args
         )
         return self.create_model(
             name,
             reference_id,
             metadata,
-            bundle.bundle_name,
+            bundle.name,
         )
 
     @deprecated(
