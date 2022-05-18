@@ -139,6 +139,7 @@ from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
 from .upload_response import UploadResponse
 from .validate import Validate
+from launch import LaunchClient
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -516,6 +517,36 @@ class NucleusClient:
             metadata=metadata,
             bundle_name=bundle_name,
             client=self,
+        )
+
+    def create_launch_model(self,
+                            name: str,
+                            reference_id: str,
+                            bundle_args: Dict[str, any],
+                            metadata: Optional[Dict] = None,
+                            ) -> Model:
+        launch_client = LaunchClient(api_key=self.api_key)
+        bundle = launch_client.create_model_bundle(**bundle_args)
+        return self.create_model(
+            name,
+            reference_id,
+            metadata,
+            bundle.bundle_name,
+        )
+
+    def create_launch_model_from_dir(self,
+                                     name: str,
+                                     reference_id: str,
+                                     bundle_from_dir_args: Dict[str, any],
+                                     metadata: Optional[Dict] = None,
+                                     ) -> Model:
+        launch_client = LaunchClient(api_key=self.api_key)
+        bundle = launch_client.create_model_bundle_from_dir(**bundle_from_dir_args)
+        return self.create_model(
+            name,
+            reference_id,
+            metadata,
+            bundle.bundle_name,
         )
 
     @deprecated(
