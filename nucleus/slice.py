@@ -234,7 +234,7 @@ class Slice:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
-    def items_and_predictions(
+    def export_predictions(
         self, model
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a list of all DatasetItems and Predictions in the Slice for the given Model.
@@ -263,8 +263,7 @@ class Slice:
             route=f"slice/{self.id}/{model.id}/exportForTraining",
             requests_command=requests.get,
         )
-        print(api_payload)
-        return convert_export_payload(api_payload[EXPORTED_ROWS], model.id)
+        return convert_export_payload(api_payload[EXPORTED_ROWS], True)
 
     def send_to_labeling(self, project_id: str):
         """Send items in the Slice as tasks to a Scale labeling project.

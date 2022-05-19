@@ -188,7 +188,7 @@ def format_dataset_item_response(response: dict) -> dict:
     }
 
 
-def convert_export_payload(api_payload, model_id: str = None):
+def convert_export_payload(api_payload, has_predictions: bool = False):
     """Helper function to convert raw JSON to API objects
 
     Args:
@@ -239,7 +239,7 @@ def convert_export_payload(api_payload, model_id: str = None):
                 MultiCategoryAnnotation.from_json(multicategory)
             )
         return_payload_row[
-            ANNOTATIONS_KEY if not model_id else PREDICTIONS_KEY
+            ANNOTATIONS_KEY if not has_predictions else PREDICTIONS_KEY
         ] = annotations
         return_payload.append(return_payload_row)
     return return_payload
