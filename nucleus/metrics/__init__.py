@@ -16,6 +16,14 @@ from .polygon_metrics import (
     PolygonRecall,
 )
 from .segmentation_metrics import (
+    SegmentationAveragePrecision,
+    SegmentationAverageRecall,
+    SegmentationFWAVACC,
+    SegmentationIOU,
+    SegmentationMAP,
+    SegmentationMaskMetric,
+)
+from .segmentation_to_poly_metrics import (
     SegmentationMaskToPolyMetric,
     SegmentationToPolyAveragePrecision,
     SegmentationToPolyIOU,
