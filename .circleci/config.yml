@@ -9,7 +9,7 @@ jobs:
     docker:
       # Important: Don't change this otherwise we will stop testing the earliest
       # python version we have to support.
-      - image: python:3.7-buster
+      - image: python:3.6-buster
     resource_class: small
     parallelism: 6
     steps:
