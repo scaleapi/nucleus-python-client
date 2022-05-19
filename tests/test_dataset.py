@@ -29,6 +29,7 @@ from nucleus.constants import (
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
+    DATASET_WITH_EMBEDDINGS,
     LOCAL_FILENAME,
     TEST_BOX_ANNOTATIONS,
     TEST_CATEGORY_ANNOTATIONS,
@@ -37,6 +38,7 @@ from .helpers import (
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    assert_partial_equality,
     reference_id_from_url,
 )
 
@@ -294,26 +296,14 @@ def test_dataset_append_async(dataset: Dataset):
     job = dataset.append(make_dataset_items(), asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
-    status["message"]["PayloadUrl"] = ""
-    print(status)
-    assert status == {
+    expected = {
         "job_id": job.job_id,
         "status": "Completed",
-        "message": {
-            "PayloadUrl": "",
-            "image_upload_step": {"errored": 0, "pending": 0, "completed": 5},
-            "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
-            "ingest_to_reupload_queue": {
-                "epoch": 1,
-                "total": 5,
-                "datasetId": f"{dataset.id}",
-                "processed": 5,
-            },
-        },
         "job_progress": "1.00",
         "completed_steps": 5,
         "total_steps": 5,
     }
+    assert_partial_equality(expected, status)
 
 
 def test_dataset_append_async_with_local_path(dataset: Dataset):
@@ -325,7 +315,8 @@ def test_dataset_append_async_with_local_path(dataset: Dataset):
         dataset.append(ds_items, asynchronous=True)
 
 
-@pytest.mark.integration
+# TODO(Jean): Fix and remove skip, this is a flaky test
+@pytest.mark.skip(reason="Flaky test")
 def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     ds_items = make_dataset_items()
     ds_items[0].image_location = "https://looks.ok.but.is.not.accessible"
@@ -341,22 +332,8 @@ def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     assert status["job_progress"] == "0.80"
     assert status["completed_steps"] == 4
     assert status["total_steps"] == 5
-    assert status["message"] == {
-        "PayloadUrl": "",
-        "image_upload_step": {"errored": 1, "pending": 0, "completed": 4},
-        "ingest_to_reupload_queue": {
-            "epoch": 1,
-            "total": 5,
-            "datasetId": f"{dataset.id}",
-            "processed": 5,
-        },
-        "started_image_processing": f"Dataset: {dataset.id}, Job: {job.job_id}",
-    }
     # The error is fairly detailed and subject to change. What's important is we surface which URLs failed.
-    assert (
-        'Failure when processing the image "https://looks.ok.but.is.not.accessible"'
-        in str(job.errors())
-    )
+    assert '"https://looks.ok.but.is.not.accessible"' in str(job.errors())
 
 
 def test_dataset_list_autotags(CLIENT, dataset):
@@ -377,7 +354,7 @@ def test_raises_error_for_duplicate():
         )
     assert (
         str(error.value)
-        == "Duplicate reference ids found among dataset_items:"
+        == "Duplicate reference IDs found among dataset_items:"
         " {'duplicate': 'Count: 2'}"
     )
 
@@ -398,7 +375,8 @@ def test_annotate_async(dataset: Dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
-    assert job.status() == {
+    status = job.status()
+    expected = {
         "job_id": job.job_id,
         "status": "Completed",
         "message": {
@@ -420,6 +398,7 @@ def test_annotate_async(dataset: Dataset):
         "completed_steps": 5,
         "total_steps": 5,
     }
+    assert_partial_equality(expected, status)
 
 
 @pytest.mark.integration
@@ -439,8 +418,8 @@ def test_annotate_async_with_error(dataset: Dataset):
         asynchronous=True,
     )
     job.sleep_until_complete()
-
-    assert job.status() == {
+    status = job.status()
+    expected = {
         "job_id": job.job_id,
         "status": "Completed",
         "message": {
@@ -462,6 +441,7 @@ def test_annotate_async_with_error(dataset: Dataset):
         "completed_steps": 5,
         "total_steps": 5,
     }
+    assert_partial_equality(expected, status)
 
     assert "Item with id fake_garbage doesn" in str(job.errors())
 
@@ -577,3 +557,28 @@ def test_dataset_item_iterator(dataset):
     }
     for key in expected_items:
         assert actual_items[key] == expected_items[key]
+
+
+@pytest.mark.integration
+def test_dataset_get_image_indexing_status(CLIENT):
+    dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
+    resp = dataset.get_image_indexing_status()
+    print(resp)
+    assert resp["embedding_count"] == 170
+    assert resp["image_count"] == 170
+    assert "object_count" not in resp
+    assert round(resp["percent_indexed"], 2) == round(
+        resp["image_count"] / resp["embedding_count"], 2
+    )
+
+
+@pytest.mark.integration
+def test_dataset_get_object_indexing_status(CLIENT):
+    dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
+    resp = dataset.get_object_indexing_status()
+    assert resp["embedding_count"] == 422
+    assert resp["object_count"] == 423
+    assert "image_count" not in resp
+    assert round(resp["percent_indexed"], 2) == round(
+        resp["object_count"] / resp["embedding_count"], 2
+    )

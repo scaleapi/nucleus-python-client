@@ -1,6 +1,13 @@
 import numpy as np
 import pytest
-from shapely.geometry import LineString, Polygon
+
+try:
+    from shapely.geometry import LineString, Polygon
+except ModuleNotFoundError:
+    pytest.skip(
+        "Shapely not installed, skipping (install with poetry install -E shapely)",
+        allow_module_level=True,
+    )
 
 RECTANGLE1 = Polygon(
     [

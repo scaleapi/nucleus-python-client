@@ -15,6 +15,7 @@ from nucleus import (
     SegmentationAnnotation,
 )
 from nucleus.constants import ERROR_PAYLOAD
+from nucleus.errors import DuplicateIDError
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
@@ -813,3 +814,10 @@ def test_box_gt_upload_embedding_async(CLIENT, dataset):
     status = job.status()
     assert status["job_id"] == job.job_id
     assert status["status"] == "Running"
+
+
+def test_annotation_duplicate_ids_fail(dataset):
+    box_ann = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    annotations = [box_ann, box_ann]
+    with pytest.raises(DuplicateIDError):
+        dataset.annotate(annotations=annotations)

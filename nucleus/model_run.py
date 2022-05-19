@@ -154,6 +154,11 @@ class ModelRun:
             "predictions_ignored": int,
         }
         """
+        uploader = PredictionUploader(
+            model_run_id=self.model_run_id, client=self._client
+        )
+        uploader.check_for_duplicate_ids(annotations)
+
         if asynchronous:
             check_all_mask_paths_remote(annotations)
 
@@ -165,9 +170,7 @@ class ModelRun:
                 route=f"modelRun/{self.model_run_id}/predict?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        uploader = PredictionUploader(
-            model_run_id=self.model_run_id, client=self._client
-        )
+
         return uploader.upload(
             annotations=annotations,
             update=update,
