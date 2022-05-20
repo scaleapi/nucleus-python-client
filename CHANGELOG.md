@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Address Failing Tests
 
+## [0.11.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.1) - 2022-05-19
+
+### Added
+
+- Exporting model predictions from a slice
 
 ## [0.11.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.0) - 2022-05-13
 
