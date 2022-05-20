@@ -5,10 +5,10 @@ from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics import ScalarResult
 from nucleus.metrics.segmentation_metrics import (
     SegmentationAveragePrecision,
-    SegmentationAverageRecall,
     SegmentationFWAVACC,
     SegmentationIOU,
     SegmentationMAP,
+    SegmentationRecall, SegmentationPrecision,
 )
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
@@ -95,7 +95,7 @@ def test_segmentation_recall():
         prediction.mask_url: prediction_img,
     }
 
-    metric = SegmentationAverageRecall()
+    metric = SegmentationRecall()
     metric.loader = FakeLoader(url_to_img)
     result: ScalarResult = metric(
         AnnotationList(segmentation_annotations=[annotation]),
@@ -103,8 +103,35 @@ def test_segmentation_recall():
     )
     assert result.value == 0.8
 
-
 def test_segmentation_precision():
+    annotation = SegmentationAnnotation(
+        "s3://fake_ann_url",
+        annotations=[Segment("one", 1)],
+        reference_id="item_1",
+    )
+    prediction = SegmentationPrediction(
+        "s3://fake_pred_url",
+        annotations=annotation.annotations,
+        reference_id=annotation.reference_id,
+    )
+    ground_truth_img = np.ones((5, 5))
+    prediction_img = np.ones((5, 5))
+    prediction_img[:, 0:1] = 0
+    url_to_img = {
+        annotation.mask_url: ground_truth_img,
+        prediction.mask_url: prediction_img,
+    }
+
+    metric = SegmentationPrecision()
+    metric.loader = FakeLoader(url_to_img)
+    result: ScalarResult = metric(  # type: ignore
+        AnnotationList(segmentation_annotations=[annotation]),
+        PredictionList(segmentation_predictions=[prediction]),
+    )
+    # One class has precision 1.0, the other 0 -> 0.5
+    assert result.value == 0.5
+
+def test_segmentation_avg_precision():
     annotation = SegmentationAnnotation(
         "s3://fake_ann_url",
         annotations=[Segment("one", 1)],
@@ -129,8 +156,7 @@ def test_segmentation_precision():
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    # One class has precision 1.0, the other 0 -> 0.5
-    assert result.value == 0.5
+    assert result.value == 0.8
 
 
 def test_segmentation_fwavacc():

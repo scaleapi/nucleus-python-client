@@ -14,6 +14,8 @@ from nucleus.prediction import PredictionList, SegmentationPrediction
 from .base import Metric, ScalarResult
 from .metric_utils import compute_average_precision
 
+# pylint: disable=useless-super-delegation
+
 
 def _fast_hist(label_true, label_pred, n_class):
     """Calculates confusion matrix - fast!"""
@@ -38,8 +40,6 @@ class SegmentationMaskLoader:
 class SegmentationMaskMetric(Metric):
     def __init__(
         self,
-        enforce_label_match: bool = False,
-        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -50,8 +50,6 @@ class SegmentationMaskMetric(Metric):
         """Initializes PolygonMetric abstract object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Default False
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -71,10 +69,8 @@ class SegmentationMaskMetric(Metric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        # TODO -> add custom filtering to Segmentation(Annotation|Prediction).annotations.(metadata|label)
         super().__init__(annotation_filters, prediction_filters)
-        self.enforce_label_match = enforce_label_match
-        assert 0 <= confidence_threshold <= 1
-        self.confidence_threshold = confidence_threshold
         self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
         # NOTE: We store histogram for re-use in subsequently calculated metrics
         self.confusion: Optional[np.ndarray] = None
@@ -112,20 +108,23 @@ class SegmentationMaskMetric(Metric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ):
         pass
 
     def _calculate_confusion_matrix(
         self, annotation, annotation_img, prediction, prediction_img
     ):
+        # NOTE: This creates a max(class_index) * max(class_index) MAT. If we have np.int16 this could become
+        #  huge. We could probably use a sparse matrix instead or change the logic to only create count(index) ** 2
+        #  matrix (we only need to keep track of available indexes)
         num_classes = (
             max(
                 max((a.index for a in annotation.annotations)),
                 max((a.index for a in prediction.annotations)),
             )
-            + 1
+            + 1  # to include 0
         )
         confusion = (
             _fast_hist(annotation_img, prediction_img, num_classes)
@@ -138,9 +137,6 @@ class SegmentationMaskMetric(Metric):
 class SegmentationIOU(SegmentationMaskMetric):
     def __init__(
         self,
-        enforce_label_match: bool = False,
-        iou_threshold: float = 0.0,
-        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -151,9 +147,6 @@ class SegmentationIOU(SegmentationMaskMetric):
         """Initializes PolygonIOU object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
-            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -173,13 +166,7 @@ class SegmentationIOU(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        assert (
-            0 <= iou_threshold <= 1
-        ), "IoU threshold must be between 0 and 1."
-        self.iou_threshold = iou_threshold
         super().__init__(
-            enforce_label_match,
-            confidence_threshold,
             annotation_filters,
             prediction_filters,
         )
@@ -188,21 +175,24 @@ class SegmentationIOU(SegmentationMaskMetric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ) -> ScalarResult:
+        if annotation is None or prediction is None:
+            # TODO: Throw error when we wrap each item in try catch
+            return ScalarResult(0, weight=0)
+
         self.confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            true_pos = np.diag(self.confusion)
-            false_pos = np.sum(self.confusion, axis=0) - true_pos
-            false_neg = np.sum(self.confusion, axis=1) - true_pos
-            mean_iou = true_pos / (false_neg + false_pos - true_pos)
-        return ScalarResult(
-            value=np.nanmean(mean_iou), weight=annotation_img.size
-        )
+            iou = np.diag(self.confusion) / (
+                self.confusion.sum(axis=1)
+                + self.confusion.sum(axis=0)
+                - np.diag(self.confusion)
+            )
+        return ScalarResult(value=np.nanmean(iou), weight=annotation_img.size)
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return self.metric.aggregate_score(results)  # type: ignore
@@ -211,9 +201,6 @@ class SegmentationIOU(SegmentationMaskMetric):
 class SegmentationPrecision(SegmentationMaskMetric):
     def __init__(
         self,
-        enforce_label_match: bool = False,
-        iou_threshold: float = 0.5,
-        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -224,9 +211,6 @@ class SegmentationPrecision(SegmentationMaskMetric):
         """Calculates mean per-class precision
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
-            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -246,13 +230,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        assert (
-            0 <= iou_threshold <= 1
-        ), "IoU threshold must be between 0 and 1."
-        self.iou_threshold = iou_threshold
         super().__init__(
-            enforce_label_match,
-            confidence_threshold,
             annotation_filters,
             prediction_filters,
         )
@@ -261,9 +239,13 @@ class SegmentationPrecision(SegmentationMaskMetric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ) -> ScalarResult:
+        if annotation is None or prediction is None:
+            # TODO: Throw error when we wrap each item in try catch
+            return ScalarResult(0, weight=0)
+
         self.confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )
@@ -281,9 +263,6 @@ class SegmentationPrecision(SegmentationMaskMetric):
 class SegmentationAveragePrecision(SegmentationMaskMetric):
     def __init__(
         self,
-        enforce_label_match: bool = False,
-        iou_threshold: float = 0.5,
-        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -291,12 +270,9 @@ class SegmentationAveragePrecision(SegmentationMaskMetric):
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
     ):
-        """Initializes SegmentationPrecision object.
+        """Initializes SegmentationAveragePrecision object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
-            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -316,13 +292,7 @@ class SegmentationAveragePrecision(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        assert (
-            0 <= iou_threshold <= 1
-        ), "IoU threshold must be between 0 and 1."
-        self.iou_threshold = iou_threshold
         super().__init__(
-            enforce_label_match,
-            confidence_threshold,
             annotation_filters,
             prediction_filters,
         )
@@ -331,9 +301,13 @@ class SegmentationAveragePrecision(SegmentationMaskMetric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ) -> ScalarResult:
+        if annotation is None or prediction is None:
+            # TODO: Throw error when we wrap each item in try catch
+            return ScalarResult(0, weight=0)
+
         self.confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )
@@ -351,47 +325,12 @@ class SegmentationAveragePrecision(SegmentationMaskMetric):
         return self.metric.aggregate_score(results)  # type: ignore
 
 
-class SegmentationAverageRecall(SegmentationMaskMetric):
-    """Calculates the recall between box or polygon annotations and predictions.
-    ::
-
-        from nucleus import BoxAnnotation, Point, PolygonPrediction
-        from nucleus.annotation import AnnotationList
-        from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonRecall
-
-        box_anno = BoxAnnotation(
-            label="car",
-            x=0,
-            y=0,
-            width=10,
-            height=10,
-            reference_id="image_1",
-            annotation_id="image_1_car_box_1",
-            metadata={"vehicle_color": "red"}
-        )
-
-        polygon_pred = PolygonPrediction(
-            label="bus",
-            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
-            reference_id="image_2",
-            annotation_id="image_2_bus_polygon_1",
-            confidence=0.8,
-            metadata={"vehicle_color": "yellow"}
-        )
-
-        annotations = AnnotationList(box_annotations=[box_anno])
-        predictions = PredictionList(polygon_predictions=[polygon_pred])
-        metric = PolygonRecall()
-        metric(annotations, predictions)
-    """
+class SegmentationRecall(SegmentationMaskMetric):
+    """Calculates the recall for a segmentation mask"""
 
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
-        enforce_label_match: bool = False,
-        iou_threshold: float = 0.5,
-        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -402,9 +341,6 @@ class SegmentationAverageRecall(SegmentationMaskMetric):
         """Initializes PolygonRecall object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
-            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -424,13 +360,7 @@ class SegmentationAverageRecall(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        assert (
-            0 <= iou_threshold <= 1
-        ), "IoU threshold must be between 0 and 1."
-        self.iou_threshold = iou_threshold
         super().__init__(
-            enforce_label_match,
-            confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
         )
@@ -439,9 +369,13 @@ class SegmentationAverageRecall(SegmentationMaskMetric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ) -> ScalarResult:
+        if annotation is None or prediction is None:
+            # TODO: Throw error when we wrap each item in try catch
+            return ScalarResult(0, weight=0)
+
         self.confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )
@@ -493,7 +427,6 @@ class SegmentationMAP(SegmentationMaskMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
-        iou_threshold: float = 0.5,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -504,7 +437,6 @@ class SegmentationMAP(SegmentationMaskMetric):
         """Initializes PolygonRecall object.
 
         Args:
-            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -524,13 +456,7 @@ class SegmentationMAP(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        assert (
-            0 <= iou_threshold <= 1
-        ), "IoU threshold must be between 0 and 1."
-        self.iou_threshold = iou_threshold
         super().__init__(
-            enforce_label_match=False,
-            confidence_threshold=0,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
         )
@@ -539,15 +465,19 @@ class SegmentationMAP(SegmentationMaskMetric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ) -> ScalarResult:
+        if annotation is None or prediction is None:
+            # TODO: Throw error when we wrap each item in try catch
+            return ScalarResult(0, weight=0)
+
         self.confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )
         label_to_index = {a.label: a.index for a in annotation.annotations}
         num_classes = len(label_to_index.keys())
-        ap_per_class = np.ndarray((num_classes))
+        ap_per_class = np.ndarray(num_classes)
         with np.errstate(divide="ignore", invalid="ignore"):
             for class_idx, (_, index) in enumerate(label_to_index.items()):
                 true_pos = self.confusion[index, index]
@@ -606,9 +536,6 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
-        enforce_label_match: bool = False,
-        iou_threshold: float = 0.5,
-        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -616,12 +543,9 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
     ):
-        """Initializes PolygonRecall object.
+        """Initializes SegmentationFWAVACC object.
 
         Args:
-            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
-            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
-            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -641,13 +565,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        assert (
-            0 <= iou_threshold <= 1
-        ), "IoU threshold must be between 0 and 1."
-        self.iou_threshold = iou_threshold
         super().__init__(
-            enforce_label_match,
-            confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
         )
@@ -656,9 +574,13 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
         self,
         annotation_img: np.ndarray,
         prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
+        annotation: Optional[SegmentationAnnotation],
+        prediction: Optional[SegmentationPrediction],
     ) -> ScalarResult:
+        if annotation is None or prediction is None:
+            # TODO: Throw error when we wrap each item in try catch
+            return ScalarResult(0, weight=0)
+
         self.confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )

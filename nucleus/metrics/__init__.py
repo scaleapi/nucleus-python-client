@@ -17,11 +17,12 @@ from .polygon_metrics import (
 )
 from .segmentation_metrics import (
     SegmentationAveragePrecision,
-    SegmentationAverageRecall,
     SegmentationFWAVACC,
     SegmentationIOU,
     SegmentationMAP,
     SegmentationMaskMetric,
+    SegmentationPrecision,
+    SegmentationRecall,
 )
 from .segmentation_to_poly_metrics import (
     SegmentationMaskToPolyMetric,
