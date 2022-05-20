@@ -8,7 +8,8 @@ from nucleus.metrics.segmentation_metrics import (
     SegmentationFWAVACC,
     SegmentationIOU,
     SegmentationMAP,
-    SegmentationRecall, SegmentationPrecision,
+    SegmentationRecall,
+    SegmentationPrecision,
 )
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
@@ -103,6 +104,7 @@ def test_segmentation_recall():
     )
     assert result.value == 0.8
 
+
 def test_segmentation_precision():
     annotation = SegmentationAnnotation(
         "s3://fake_ann_url",
@@ -130,6 +132,7 @@ def test_segmentation_precision():
     )
     # One class has precision 1.0, the other 0 -> 0.5
     assert result.value == 0.5
+
 
 def test_segmentation_avg_precision():
     annotation = SegmentationAnnotation(

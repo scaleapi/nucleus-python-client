@@ -192,10 +192,10 @@ class SegmentationIOU(SegmentationMaskMetric):
                 + self.confusion.sum(axis=0)
                 - np.diag(self.confusion)
             )
-        return ScalarResult(value=np.nanmean(iou), weight=annotation_img.size)
+        return ScalarResult(value=np.nanmean(iou), weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return self.metric.aggregate_score(results)  # type: ignore
+        return ScalarResult.aggregate(results)  # type: ignore
 
 
 class SegmentationPrecision(SegmentationMaskMetric):
@@ -257,7 +257,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
         return ScalarResult(value=mean_precision, weight=1)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return self.metric.aggregate_score(results)  # type: ignore
+        return ScalarResult.aggregate(results)  # type: ignore
 
 
 class SegmentationAveragePrecision(SegmentationMaskMetric):
@@ -322,7 +322,7 @@ class SegmentationAveragePrecision(SegmentationMaskMetric):
         return ScalarResult(value=average_precision, weight=1)
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return self.metric.aggregate_score(results)  # type: ignore
+        return ScalarResult.aggregate(results)  # type: ignore
 
 
 class SegmentationRecall(SegmentationMaskMetric):
@@ -383,10 +383,10 @@ class SegmentationRecall(SegmentationMaskMetric):
         with np.errstate(divide="ignore", invalid="ignore"):
             true_pos = np.diag(self.confusion)
             recall = np.nanmean(true_pos / np.sum(self.confusion, axis=1))
-        return ScalarResult(value=recall, weight=annotation_img.size)
+        return ScalarResult(value=recall, weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return self.metric.aggregate_score(results)  # type: ignore
+        return ScalarResult.aggregate(results)  # type: ignore
 
 
 class SegmentationMAP(SegmentationMaskMetric):
@@ -477,7 +477,7 @@ class SegmentationMAP(SegmentationMaskMetric):
         )
         label_to_index = {a.label: a.index for a in annotation.annotations}
         num_classes = len(label_to_index.keys())
-        ap_per_class = np.ndarray(num_classes)
+        ap_per_class = np.ndarray(num_classes)  # type: ignore
         with np.errstate(divide="ignore", invalid="ignore"):
             for class_idx, (_, index) in enumerate(label_to_index.items()):
                 true_pos = self.confusion[index, index]
@@ -495,7 +495,7 @@ class SegmentationMAP(SegmentationMaskMetric):
             return ScalarResult(0, weight=0)
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return self.metric.aggregate_score(results)  # type: ignore
+        return ScalarResult.aggregate(results)  # type: ignore
 
 
 class SegmentationFWAVACC(SegmentationMaskMetric):
@@ -592,7 +592,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
             )
             freq = self.confusion.sum(axis=1) / self.confusion.sum()
             fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
-        return ScalarResult(value=np.nanmean(fwavacc), weight=1)
+        return ScalarResult(value=np.nanmean(fwavacc), weight=1)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return self.metric.aggregate_score(results)  # type: ignore
+        return ScalarResult.aggregate(results)  # type: ignore
