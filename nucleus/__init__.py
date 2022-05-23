@@ -47,8 +47,8 @@ import pydantic
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
-
 from launch import LaunchClient
+
 from nucleus.url_utils import sanitize_string_args
 
 from .annotation import (
