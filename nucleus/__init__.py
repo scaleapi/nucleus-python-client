@@ -40,7 +40,7 @@ __all__ = [
 
 import os
 import warnings
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pkg_resources
 import pydantic
@@ -523,7 +523,7 @@ class NucleusClient:
         self,
         name: str,
         reference_id: str,
-        bundle_args: Dict[str, any],
+        bundle_args: Dict[str, Any],
         metadata: Optional[Dict] = None,
     ) -> Model:
         """
@@ -604,7 +604,7 @@ class NucleusClient:
         self,
         name: str,
         reference_id: str,
-        bundle_from_dir_args: Dict[str, any],
+        bundle_from_dir_args: Dict[str, Any],
         metadata: Optional[Dict] = None,
     ) -> Model:
         """
