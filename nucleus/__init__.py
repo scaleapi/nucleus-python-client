@@ -47,7 +47,6 @@ import pydantic
 import requests
 import tqdm
 import tqdm.notebook as tqdm_notebook
-from launch import LaunchClient
 
 from nucleus.url_utils import sanitize_string_args
 
@@ -574,6 +573,8 @@ class NucleusClient:
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             globals_copy: Dictionary of the global symbol table. Normally provided by `globals()` built-in function.
         """
+        from launch import LaunchClient
+
         launch_client = LaunchClient(api_key=self.api_key)
 
         model_exists = any(model.name == name for model in self.list_models())
@@ -678,6 +679,8 @@ class NucleusClient:
                 the function located at load_predict_fn_module_path.
             app_config: Either a Dictionary that represents a YAML file contents or a local path to a YAML file.
         """
+        from launch import LaunchClient
+
         launch_client = LaunchClient(api_key=self.api_key)
 
         model_exists = any(model.name == name for model in self.list_models())
