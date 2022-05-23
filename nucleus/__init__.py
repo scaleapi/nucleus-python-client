@@ -1027,7 +1027,6 @@ class NucleusClient:
         Returns:
             Response payload as JSON dict.
         """
-        print(payload, route)
         if payload is None:
             payload = {}
         if requests_command is requests.get:
