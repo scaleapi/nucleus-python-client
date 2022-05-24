@@ -1,4 +1,5 @@
 import json
+import warnings
 from abc import ABC
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -470,8 +471,14 @@ class VideoScene(ABC):
     items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
     upload_to_scale: Optional[bool] = True
+    attachment_type: Optional[str] = None
 
     def __post_init__(self):
+        if self.attachment_type:
+            warnings.warn(
+                "The attachment_type parameter is no longer required and will be deprecated soon.",
+                DeprecationWarning,
+            )
         if self.metadata is None:
             self.metadata = {}
 
