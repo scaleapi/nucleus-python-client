@@ -1,30 +1,25 @@
+import logging
 import sys
 from functools import wraps
-from typing import Dict, List, Tuple, TypeVar
+from typing import Dict, List, Tuple
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from shapely.geometry import Polygon
 
 from nucleus.annotation import BoxAnnotation, PolygonAnnotation
-from nucleus.prediction import BoxPrediction, PolygonPrediction
+
+from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
+
+try:
+    from shapely.geometry import Polygon
+except ModuleNotFoundError:
+    from ..shapely_not_installed import ShapelyNotInstalled
+
+    Polygon = ShapelyNotInstalled
+
 
 from .base import ScalarResult
 from .errors import PolygonAnnotationTypeError
-
-BoxOrPolygonPrediction = TypeVar(
-    "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
-)
-BoxOrPolygonAnnotation = TypeVar(
-    "BoxOrPolygonAnnotation", BoxAnnotation, PolygonAnnotation
-)
-BoxOrPolygonAnnoOrPred = TypeVar(
-    "BoxOrPolygonAnnoOrPred",
-    BoxAnnotation,
-    PolygonAnnotation,
-    BoxPrediction,
-    PolygonPrediction,
-)
 
 
 def polygon_annotation_to_shape(
@@ -81,6 +76,40 @@ def _iou_assignments_for_same_reference_id(
     # Convert annotation and predictions to shapely.geometry.Polygon objects
     polygon_annotations = list(map(polygon_annotation_to_shape, annotations))
     polygon_predictions = list(map(polygon_annotation_to_shape, predictions))
+
+    invalid_anns = [
+        ann
+        for ann, poly in zip(annotations, polygon_annotations)
+        if not poly.is_valid
+    ]
+    invalid_preds = [
+        pred
+        for pred, poly in zip(predictions, polygon_predictions)
+        if not poly.is_valid
+    ]
+
+    if invalid_anns or invalid_preds:
+        # Filter out invalid polys
+        polygon_annotations = [
+            poly
+            for ann, poly in zip(annotations, polygon_annotations)
+            if poly.is_valid
+        ]
+        polygon_predictions = [
+            poly
+            for pred, poly in zip(predictions, polygon_predictions)
+            if poly.is_valid
+        ]
+        invalid_dataset_ids = set(
+            ann.reference_id for ann in invalid_anns
+        ).union(set(pred.reference_id for pred in invalid_preds))
+        # TODO(gunnar): change to .id once field is surfaced)
+        logging.warning(
+            "Invalid polygons for dataset items: %s Annotations:%s, predictions: %s",
+            invalid_dataset_ids,
+            [a.annotation_id for a in invalid_anns],
+            [p.annotation_id for p in invalid_preds],
+        )
 
     # Compute IoU matrix and set IoU values below the threshold to 0.
     iou_matrix = _iou_matrix(polygon_annotations, polygon_predictions)

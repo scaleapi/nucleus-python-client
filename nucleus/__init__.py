@@ -479,7 +479,11 @@ class NucleusClient:
         return self.create_model(name, reference_id, metadata)
 
     def create_model(
-        self, name: str, reference_id: str, metadata: Optional[Dict] = None
+        self,
+        name: str,
+        reference_id: str,
+        metadata: Optional[Dict] = None,
+        bundle_name: Optional[str] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -496,14 +500,23 @@ class NucleusClient:
             :class:`Model`: The newly created model as an object.
         """
         response = self.make_request(
-            construct_model_creation_payload(name, reference_id, metadata),
+            construct_model_creation_payload(
+                name, reference_id, metadata, bundle_name
+            ),
             "models/add",
         )
         model_id = response.get("model_id", None)
         if not model_id:
             raise ModelCreationError(response.get("error"))
 
-        return Model(model_id, name, reference_id, metadata, self)
+        return Model(
+            model_id=model_id,
+            name=name,
+            reference_id=reference_id,
+            metadata=metadata,
+            bundle_name=bundle_name,
+            client=self,
+        )
 
     @deprecated(
         "Model runs have been deprecated and will be removed. Use a Model instead"
@@ -742,12 +755,21 @@ class NucleusClient:
         )
 
     @deprecated("Prefer calling Dataset.delete_custom_index instead.")
-    def delete_custom_index(self, dataset_id: str):
+    def delete_custom_index(self, dataset_id: str, image: bool):
         # TODO: deprecate in favor of Dataset.delete_custom_index invocation
         return self.make_request(
-            {},
+            {"image": image},
             f"indexing/{dataset_id}",
             requests_command=requests.delete,
+        )
+
+    @deprecated("Prefer calling Dataset.set_primary_index instead.")
+    def set_primary_index(self, dataset_id: str, image: bool, custom: bool):
+        # TODO: deprecate in favor of Dataset.set_primary_index invocation
+        return self.make_request(
+            {"image": image, "custom": custom},
+            f"indexing/{dataset_id}/setPrimary",
+            requests_command=requests.post,
         )
 
     @deprecated("Prefer calling Dataset.set_continuous_indexing instead.")
@@ -818,6 +840,10 @@ class NucleusClient:
         if payload is None:
             payload = {}
         if requests_command is requests.get:
+            if payload:
+                print(
+                    "Received defined payload with GET request! Will ignore payload"
+                )
             payload = None
         return self._connection.make_request(payload, route, requests_command)  # type: ignore
 

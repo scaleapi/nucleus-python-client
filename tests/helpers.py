@@ -16,7 +16,7 @@ TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
-DATASET_WITH_AUTOTAG = "ds_c8jwdhy4y4f0078hzceg"
+DATASET_WITH_EMBEDDINGS = "ds_c8jwdhy4y4f0078hzceg"
 NUCLEUS_PYTEST_USER_ID = "60ad648c85db770026e9bf77"
 
 EVAL_FUNCTION_THRESHOLD = 0.5
@@ -37,6 +37,15 @@ TEST_POINTCLOUD_URLS = [
     "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-2.json",
     "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-3.json",
     "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-4.json",
+]
+
+TEST_VIDEO_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/video.mp4"
+
+TEST_INACCESSIBLE_VIDEO_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/video.mp4/fake-for-privacy-mode"
+
+TEST_INACCESSIBLE_IMG_URLS = [
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg/fake-for-privacy-mode",
+    "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/arctichare.jpeg/fake-for-privacy-mode",
 ]
 
 TEST_LIDAR_SCENES = {
@@ -88,7 +97,6 @@ TEST_VIDEO_SCENES = {
     "scenes": [
         {
             "reference_id": "scene_1",
-            "video_upload_type": "image",
             "frame_rate": 15,
             "frames": [
                 {
@@ -105,7 +113,93 @@ TEST_VIDEO_SCENES = {
                 },
             ],
             "metadata": {"timestamp": "1234", "weather": "rainy"},
-        }
+        },
+        {
+            "reference_id": "scene_2",
+            "video_url": TEST_VIDEO_URL,
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+        {
+            "reference_id": "scene_3",
+            "video_url": TEST_INACCESSIBLE_VIDEO_URL,
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "image_url": TEST_INACCESSIBLE_IMG_URLS[0],
+                    "type": "image",
+                    "reference_id": "video_frame_2",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "image_url": TEST_INACCESSIBLE_IMG_URLS[1],
+                    "type": "image",
+                    "reference_id": "video_frame_3",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+            "upload_to_scale": False,
+        },
+    ],
+    "update": False,
+}
+
+TEST_VIDEO_SCENES_REPEAT_REF_IDS = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "image_url": TEST_IMG_URLS[0],
+                    "type": "image",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "image_url": TEST_IMG_URLS[1],
+                    "type": "image",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+    ],
+    "update": False,
+}
+
+TEST_VIDEO_SCENES_INVALID_URLS = {
+    "scenes": [
+        {
+            "reference_id": "scene_1",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "image_url": TEST_VIDEO_URL,
+                    "type": "image",
+                    "reference_id": "video_frame_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "image_url": TEST_VIDEO_URL,
+                    "type": "image",
+                    "reference_id": "video_frame_1",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+        {
+            "reference_id": "scene_2",
+            "video_url": TEST_IMG_URLS[0],
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
+        {
+            "reference_id": "scene_3",
+            "video_url": TEST_VIDEO_URL + "nonsense",
+            "metadata": {"timestamp": "1234", "weather": "rainy"},
+        },
     ],
     "update": False,
 }

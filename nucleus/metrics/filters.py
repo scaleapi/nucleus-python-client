@@ -2,7 +2,8 @@ from typing import List
 
 from nucleus.prediction import PredictionList
 
-from .polygon_utils import BoxOrPolygonAnnoOrPred, polygon_annotation_to_shape
+from .custom_types import BoxOrPolygonAnnoOrPred
+from .polygon_utils import polygon_annotation_to_shape
 
 
 def polygon_area_filter(

@@ -33,6 +33,7 @@ from .constants import (
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     EXPORTED_ROWS,
+    FRAME_RATE_KEY,
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
@@ -41,7 +42,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
     UPDATE_KEY,
-    VIDEO_UPLOAD_TYPE_KEY,
+    VIDEO_URL_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.dataset_size import DatasetSize
@@ -388,6 +389,9 @@ class Dataset:
 
             Otherwise, returns an :class:`AsyncJob` object.
         """
+        uploader = AnnotationUploader(dataset_id=self.id, client=self._client)
+        uploader.check_for_duplicate_ids(annotations)
+
         if asynchronous:
             check_all_mask_paths_remote(annotations)
             request_id = serialize_and_write_to_presigned_url(
@@ -398,7 +402,7 @@ class Dataset:
                 route=f"dataset/{self.id}/annotate?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        uploader = AnnotationUploader(dataset_id=self.id, client=self._client)
+
         return uploader.upload(
             annotations=annotations,
             update=update,
@@ -553,6 +557,9 @@ class Dataset:
         ]
         lidar_scenes = [item for item in items if isinstance(item, LidarScene)]
         video_scenes = [item for item in items if isinstance(item, VideoScene)]
+
+        check_for_duplicate_reference_ids(dataset_items)
+
         if dataset_items and (lidar_scenes or video_scenes):
             raise Exception(
                 "You must append either DatasetItems or Scenes to the dataset."
@@ -571,8 +578,6 @@ class Dataset:
             return self._append_video_scenes(
                 video_scenes, update, asynchronous
             )
-
-        check_for_duplicate_reference_ids(dataset_items)
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
@@ -944,7 +949,7 @@ class Dataset:
             self._client,
         )
 
-    def delete_custom_index(self):
+    def delete_custom_index(self, image: bool = True):
         """Deletes the custom index uploaded to the dataset.
 
         Returns:
@@ -956,7 +961,18 @@ class Dataset:
                     "message": str
                 }
         """
-        return self._client.delete_custom_index(self.id)
+        return self._client.delete_custom_index(self.id, image)
+
+    def set_primary_index(self, image: bool = True, custom: bool = False):
+        """Sets the primary index used for Autotag and Similarity Search on this dataset.
+
+        Returns:
+
+            {
+                "success": bool,
+            }
+        """
+        return self._client.set_primary_index(self.id, image, custom)
 
     def set_continuous_indexing(self, enable: bool = True):
         """Toggle whether embeddings are automatically generated for new data.
@@ -985,10 +1001,50 @@ class Dataset:
             MESSAGE_KEY: preprocessed_response[MESSAGE_KEY],
         }
         if enable:
-            response[BACKFILL_JOB_KEY] = (
-                AsyncJob.from_json(preprocessed_response, self._client),
+            response[BACKFILL_JOB_KEY] = AsyncJob.from_json(
+                preprocessed_response, self._client
             )
+
         return response
+
+    def get_image_indexing_status(self):
+        """Gets the primary image index progress for the dataset.
+
+        Returns:
+            Response payload::
+
+                {
+                    "embedding_count": int
+                    "image_count": int
+                    "percent_indexed": float
+                    "additional_context": str
+                }
+        """
+        return self._client.make_request(
+            {"image": True},
+            f"dataset/{self.id}/indexingStatus",
+            requests_command=requests.post,
+        )
+
+    def get_object_indexing_status(self, model_run_id=None):
+        """Gets the primary object index progress of the dataset.
+        If model_run_id is not specified, this endpoint will retrieve the indexing progress of the ground truth objects.
+
+        Returns:
+            Response payload::
+
+                {
+                    "embedding_count": int
+                    "object_count": int
+                    "percent_indexed": float
+                    "additional_context": str
+                }
+        """
+        return self._client.make_request(
+            {"image": False, "model_run_id": model_run_id},
+            f"dataset/{self.id}/indexingStatus",
+            requests_command=requests.post,
+        )
 
     def create_image_index(self):
         """Creates or updates image index by generating embeddings for images that do not already have embeddings.
@@ -1196,7 +1252,7 @@ class Dataset:
             route=f"dataset/{self.id}/scene/{reference_id}",
             requests_command=requests.get,
         )
-        if VIDEO_UPLOAD_TYPE_KEY in response:
+        if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
             return VideoScene.from_json(response)
         return LidarScene.from_json(response)
 
@@ -1391,6 +1447,14 @@ class Dataset:
                     "predictions_ignored": int,
                 }
         """
+        uploader = PredictionUploader(
+            model_run_id=None,
+            dataset_id=self.id,
+            model_id=model.id,
+            client=self._client,
+        )
+        uploader.check_for_duplicate_ids(predictions)
+
         if asynchronous:
             check_all_mask_paths_remote(predictions)
 
@@ -1402,21 +1466,15 @@ class Dataset:
                 route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
             )
             return AsyncJob.from_json(response, self._client)
-        else:
-            uploader = PredictionUploader(
-                model_run_id=None,
-                dataset_id=self.id,
-                model_id=model.id,
-                client=self._client,
-            )
-            return uploader.upload(
-                annotations=predictions,
-                batch_size=batch_size,
-                update=update,
-                remote_files_per_upload_request=remote_files_per_upload_request,
-                local_files_per_upload_request=local_files_per_upload_request,
-                local_file_upload_concurrency=local_file_upload_concurrency,
-            )
+
+        return uploader.upload(
+            annotations=predictions,
+            batch_size=batch_size,
+            update=update,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            local_file_upload_concurrency=local_file_upload_concurrency,
+        )
 
     def predictions_iloc(self, model, index):
         """Fetches all predictions of a dataset item by its absolute index.

@@ -477,6 +477,15 @@ class KeypointsAnnotation(Annotation):
             raise ValueError(
                 "The list of keypoints must be the same length as the list of names"
             )
+        if len(set(self.names)) != len(self.names):
+            seen = set()
+            for name in self.names:
+                if name in seen:
+                    raise ValueError(
+                        f"The keypoint name '{name}' is repeated in the list of names"
+                    )
+                seen.add(name)
+
         for segment in self.skeleton:
             if len(segment) != 2:
                 raise ValueError(
