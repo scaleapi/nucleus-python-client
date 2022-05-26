@@ -40,7 +40,7 @@ __all__ = [
 
 import os
 import warnings
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import pkg_resources
 import pydantic
@@ -516,6 +516,196 @@ class NucleusClient:
             metadata=metadata,
             bundle_name=bundle_name,
             client=self,
+        )
+
+    def create_launch_model(
+        self,
+        name: str,
+        reference_id: str,
+        bundle_args: Dict[str, Any],
+        metadata: Optional[Dict] = None,
+    ) -> Model:
+        """
+        Adds a :class:`Model` to Nucleus, as well as a Launch bundle from a given function.
+
+        Parameters:
+            name: A human-readable name for the model.
+            reference_id: Unique, user-controlled ID for the model. This can be
+              used, for example, to link to an external storage of models which
+              may have its own id scheme.
+            bundle_args: Dict for kwargs for the creation of a Launch bundle,
+              more details on the keys below.
+            metadata: An arbitrary dictionary of additional data about this model
+              that can be stored and retrieved. For example, you can store information
+              about the hyperparameters used in training this model.
+
+        Returns:
+            :class:`Model`: The newly created model as an object.
+
+        Details on `bundle_args`:
+                Grabs a s3 signed url and uploads a model bundle to Scale Launch.
+
+        A model bundle consists of exactly {predict_fn_or_cls}, {load_predict_fn + model}, or {load_predict_fn + load_model_fn}.
+        Pre/post-processing code can be included inside load_predict_fn/model or in predict_fn_or_cls call.
+
+        Parameters:
+            model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            predict_fn_or_cls: Function or a Callable class that runs end-to-end (pre/post processing and model inference) on the call.
+                I.e. `predict_fn_or_cls(REQUEST) -> RESPONSE`.
+            model: Typically a trained Neural Network, e.g. a Pytorch module
+            load_predict_fn: Function that when called with model, returns a function that carries out inference
+                I.e. `load_predict_fn(model) -> func; func(REQUEST) -> RESPONSE`
+            load_model_fn: Function that when run, loads a model, e.g. a Pytorch module
+                I.e. `load_predict_fn(load_model_fn()) -> func; func(REQUEST) -> RESPONSE`
+            bundle_url: Only for self-hosted mode. Desired location of bundle.
+            Overrides any value given by self.bundle_location_fn
+            requirements: A list of python package requirements, e.g.
+                ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
+                imported list of packages.
+            app_config: Either a Dictionary that represents a YAML file contents or a local path to a YAML file.
+            env_params: A dictionary that dictates environment information e.g.
+                the use of pytorch or tensorflow, which cuda/cudnn versions to use.
+                Specifically, the dictionary should contain the following keys:
+                "framework_type": either "tensorflow" or "pytorch".
+                "pytorch_version": Version of pytorch, e.g. "1.5.1", "1.7.0", etc. Only applicable if framework_type is pytorch
+                "cuda_version": Version of cuda used, e.g. "11.0".
+                "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
+                "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
+            globals_copy: Dictionary of the global symbol table. Normally provided by `globals()` built-in function.
+        """
+        from launch import LaunchClient
+
+        launch_client = LaunchClient(api_key=self.api_key)
+
+        model_exists = any(model.name == name for model in self.list_models())
+        bundle_exists = any(
+            bundle.name == name + "-nucleus-autogen"
+            for bundle in launch_client.list_model_bundles()
+        )
+
+        if bundle_exists or model_exists:
+            raise ModelCreationError(
+                "Bundle with the given name already exists, please try a different name"
+            )
+
+        kwargs = {
+            "model_bundle_name": name + "-nucleus-autogen",
+            **bundle_args,
+        }
+
+        bundle = launch_client.create_model_bundle(**kwargs)
+        return self.create_model(
+            name,
+            reference_id,
+            metadata,
+            bundle.name,
+        )
+
+    def create_launch_model_from_dir(
+        self,
+        name: str,
+        reference_id: str,
+        bundle_from_dir_args: Dict[str, Any],
+        metadata: Optional[Dict] = None,
+    ) -> Model:
+        """
+        Adds a :class:`Model` to Nucleus, as well as a Launch bundle from a directory.
+
+        Parameters:
+            name: A human-readable name for the model.
+            reference_id: Unique, user-controlled ID for the model. This can be
+              used, for example, to link to an external storage of models which
+              may have its own id scheme.
+            bundle_from_dir_args: Dict for kwargs for the creation of a bundle from directory,
+              more details on the keys below.
+            metadata: An arbitrary dictionary of additional data about this model
+              that can be stored and retrieved. For example, you can store information
+              about the hyperparameters used in training this model.
+
+        Returns:
+            :class:`Model`: The newly created model as an object.
+
+        Details on `bundle_from_dir_args`
+        Packages up code from one or more local filesystem folders and uploads them as a bundle to Scale Launch.
+        In this mode, a bundle is just local code instead of a serialized object.
+
+        For example, if you have a directory structure like so, and your current working directory is also `my_root`:
+
+        ```
+        my_root/
+            my_module1/
+                __init__.py
+                ...files and directories
+                my_inference_file.py
+            my_module2/
+                __init__.py
+                ...files and directories
+        ```
+
+        then calling `create_model_bundle_from_dirs` with `base_paths=["my_module1", "my_module2"]` essentially
+        creates a zip file without the root directory, e.g.:
+
+        ```
+        my_module1/
+            __init__.py
+            ...files and directories
+            my_inference_file.py
+        my_module2/
+            __init__.py
+            ...files and directories
+        ```
+
+        and these contents will be unzipped relative to the server side `PYTHONPATH`. Bear these points in mind when
+        referencing Python module paths for this bundle. For instance, if `my_inference_file.py` has `def f(...)`
+        as the desired inference loading function, then the `load_predict_fn_module_path` argument should be
+        `my_module1.my_inference_file.f`.
+
+
+        Keys for `bundle_from_dir_args`:
+            model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
+            base_paths: The paths on the local filesystem where the bundle code lives.
+            requirements_path: A path on the local filesystem where a requirements.txt file lives.
+            env_params: A dictionary that dictates environment information e.g.
+                the use of pytorch or tensorflow, which cuda/cudnn versions to use.
+                Specifically, the dictionary should contain the following keys:
+                "framework_type": either "tensorflow" or "pytorch".
+                "pytorch_version": Version of pytorch, e.g. "1.5.1", "1.7.0", etc. Only applicable if framework_type is pytorch
+                "cuda_version": Version of cuda used, e.g. "11.0".
+                "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
+                "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
+            load_predict_fn_module_path: A python module path for a function that, when called with the output of
+                load_model_fn_module_path, returns a function that carries out inference.
+            load_model_fn_module_path: A python module path for a function that returns a model. The output feeds into
+                the function located at load_predict_fn_module_path.
+            app_config: Either a Dictionary that represents a YAML file contents or a local path to a YAML file.
+        """
+        from launch import LaunchClient
+
+        launch_client = LaunchClient(api_key=self.api_key)
+
+        model_exists = any(model.name == name for model in self.list_models())
+        bundle_exists = any(
+            bundle.name == name + "-nucleus-autogen"
+            for bundle in launch_client.list_model_bundles()
+        )
+
+        if bundle_exists or model_exists:
+            raise ModelCreationError(
+                "Bundle with the given name already exists, please try a different name"
+            )
+
+        kwargs = {
+            "model_bundle_name": name + "-nucleus-autogen",
+            **bundle_from_dir_args,
+        }
+
+        bundle = launch_client.create_model_bundle_from_dir(**kwargs)
+
+        return self.create_model(
+            name,
+            reference_id,
+            metadata,
+            bundle.name,
         )
 
     @deprecated(
