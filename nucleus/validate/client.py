@@ -3,8 +3,12 @@ from typing import List
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 
-from .constants import SCENARIO_TEST_ID_KEY
-from .data_transfer_objects.eval_function import GetEvalFunctions
+from .constants import EVAL_FUNCTION_KEY, SCENARIO_TEST_ID_KEY
+from .data_transfer_objects.eval_function import (
+    CreateEvalFunction,
+    EvalFunctionEntry,
+    GetEvalFunctions,
+)
 from .data_transfer_objects.scenario_test import (
     CreateScenarioTestRequest,
     EvalFunctionListEntry,
@@ -175,3 +179,31 @@ class Validate:
             f"validate/{model_id}/evaluate",
         )
         return AsyncJob.from_json(response, self.connection)
+
+    def create_custom_eval_function(
+        self,
+        name: str,
+    ) -> EvalFunctionEntry:
+        """Creates a new custom evaluation function with a specified name. With this function, you can upload
+        evaluation results computed on the client side.
+
+
+        Args:
+            name: unique name of evaluation function
+
+        Raises:
+            - NucleusAPIError if the evaluation name already exists for the user
+            - ValidationError if the evaluation name is not well defined
+
+        Returns:
+            Created EvalFunctionConfig object.
+
+        """
+
+        response = self.connection.post(
+            CreateEvalFunction(
+                name=name, is_custom=True, serialized_fn="", raw_source=""
+            ).dict(),
+            "validate/eval_fn",
+        )
+        return EvalFunctionEntry.parse_obj(response[EVAL_FUNCTION_KEY])

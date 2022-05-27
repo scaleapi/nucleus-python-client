@@ -1128,11 +1128,12 @@ class CategorizationF1Config(EvalFunctionConfig):
 
 
 class CustomEvalFunction(EvalFunctionConfig):
+    def __call__(self):
+        raise NotImplementedError("Cannot call a custom function")
+
     @classmethod
     def expected_name(cls) -> str:
-        raise NotImplementedError(
-            "Custm evaluation functions are coming soon"
-        )  # Placeholder: See super().eval_func_entry for actual name
+        return "custom_function"
 
 
 class StandardEvalFunction(EvalFunctionConfig):
@@ -1226,10 +1227,15 @@ class AvailableEvalFunctions:
         }
         # NOTE: Public are assigned
         self._public_to_function: Dict[str, EvalFunctionConfig] = {}
+        self._private_to_function: Dict[str, CustomEvalFunction] = {
+            f.name: CustomEvalFunction(f)
+            for f in available_functions
+            if not f.is_public and not f.is_customer_defined
+        }
         self._custom_to_function: Dict[str, CustomEvalFunction] = {
             f.name: CustomEvalFunction(f)
             for f in available_functions
-            if not f.is_public
+            if f.is_customer_defined
         }
         self.bbox_iou: BoundingBoxIOUConfig = (
             self._assign_eval_function_if_defined(BoundingBoxIOUConfig)
@@ -1295,7 +1301,8 @@ class AvailableEvalFunctions:
         ]
         return (
             f"<AvailableEvaluationFunctions: public:{functions_lower} "
-            f"private: {list(self._custom_to_function.keys())}"
+            f"private: {list(self._private_to_function.keys())} "
+            f"custom: {list(self._custom_to_function.keys())} "
         )
 
     @property
@@ -1312,6 +1319,15 @@ class AvailableEvalFunctions:
 
     @property
     def private_functions(self) -> Dict[str, CustomEvalFunction]:
+        """Private functions uploaded to Model CI
+
+        Returns:
+            Dict of function name to :class:`CustomEvalFunction`.
+        """
+        return self._private_to_function
+
+    @property
+    def custom_functions(self) -> Dict[str, CustomEvalFunction]:
         """Custom functions uploaded to Model CI
 
         Returns:
@@ -1339,7 +1355,7 @@ class AvailableEvalFunctions:
     def from_id(self, eval_function_id: str):
         for eval_func in itertools.chain(
             self._public_to_function.values(),
-            self._custom_to_function.values(),
+            self._private_to_function.values(),
         ):
             if eval_func.id == eval_function_id:
                 return eval_func
