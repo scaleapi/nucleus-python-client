@@ -1128,7 +1128,7 @@ class CategorizationF1Config(EvalFunctionConfig):
 
 
 class CustomEvalFunction(EvalFunctionConfig):
-    def __call__(self):
+    def __call__(self, **kwargs):
         raise NotImplementedError("Cannot call a custom function")
 
     @classmethod
