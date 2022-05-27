@@ -184,15 +184,14 @@ class Validate:
         self,
         name: str,
     ) -> EvalFunctionEntry:
-        """Creates a new custom evaluation function with a specified name. With this function, you can upload
+        """Creates a new custom evaluation function with a specified name. With this function, users can upload
         evaluation results computed on the client side.
-
 
         Args:
             name: unique name of evaluation function
 
         Raises:
-            - NucleusAPIError if the evaluation name already exists for the user
+            - NucleusAPIError if the creation of the function fails on the server side
             - ValidationError if the evaluation name is not well defined
 
         Returns:

@@ -1300,9 +1300,9 @@ class AvailableEvalFunctions:
             str(name).lower() for name in self._public_func_entries.keys()
         ]
         return (
-            f"<AvailableEvaluationFunctions: public:{functions_lower} "
+            f"<AvailableEvaluationFunctions: public: {functions_lower} "
             f"private: {list(self._private_to_function.keys())} "
-            f"custom: {list(self._custom_to_function.keys())} "
+            f"custom: {list(self._custom_to_function.keys())}   "
         )
 
     @property
