@@ -3,8 +3,12 @@ from typing import List
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 
-from .constants import SCENARIO_TEST_ID_KEY
-from .data_transfer_objects.eval_function import GetEvalFunctions
+from .constants import EVAL_FUNCTION_KEY, SCENARIO_TEST_ID_KEY
+from .data_transfer_objects.eval_function import (
+    CreateEvalFunction,
+    EvalFunctionEntry,
+    GetEvalFunctions,
+)
 from .data_transfer_objects.scenario_test import (
     CreateScenarioTestRequest,
     EvalFunctionListEntry,
@@ -175,3 +179,34 @@ class Validate:
             f"validate/{model_id}/evaluate",
         )
         return AsyncJob.from_json(response, self.connection)
+
+    def create_placeholder_eval_function(
+        self,
+        name: str,
+    ) -> EvalFunctionEntry:
+        """Creates a new placeholder evaluation function. This placeholder function can be used to upload evaluation
+        results with functions defined and computed by the customer, without having to share the source code of the
+        respective function.
+
+        Args:
+            name: unique name of evaluation function
+
+        Raises:
+            - NucleusAPIError if the creation of the function fails on the server side
+            - ValidationError if the evaluation name is not well defined
+
+        Returns:
+            Created EvalFunctionConfig object.
+
+        """
+
+        response = self.connection.post(
+            CreateEvalFunction(
+                name=name,
+                is_external_function=True,
+                serialized_fn="",
+                raw_source="",
+            ).dict(),
+            "validate/eval_fn",
+        )
+        return EvalFunctionEntry.parse_obj(response[EVAL_FUNCTION_KEY])
