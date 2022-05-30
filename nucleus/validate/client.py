@@ -202,7 +202,10 @@ class Validate:
 
         response = self.connection.post(
             CreateEvalFunction(
-                name=name, is_external_function=True, serialized_fn="", raw_source=""
+                name=name,
+                is_external_function=True,
+                serialized_fn="",
+                raw_source="",
             ).dict(),
             "validate/eval_fn",
         )
