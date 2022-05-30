@@ -1128,12 +1128,20 @@ class CategorizationF1Config(EvalFunctionConfig):
 
 
 class CustomEvalFunction(EvalFunctionConfig):
+    @classmethod
+    def expected_name(cls) -> str:
+        raise NotImplementedError(
+            "Custm evaluation functions are coming soon"
+        )  # Placeholder: See super().eval_func_entry for actual name
+
+
+class PlaceholderEvalFunction(EvalFunctionConfig):
     def __call__(self, **kwargs):
-        raise NotImplementedError("Cannot call a custom function")
+        raise NotImplementedError("Cannot call a placeholder function")
 
     @classmethod
     def expected_name(cls) -> str:
-        return "custom_function"
+        return "placeholder_function"
 
 
 class StandardEvalFunction(EvalFunctionConfig):
@@ -1227,15 +1235,15 @@ class AvailableEvalFunctions:
         }
         # NOTE: Public are assigned
         self._public_to_function: Dict[str, EvalFunctionConfig] = {}
-        self._private_to_function: Dict[str, CustomEvalFunction] = {
-            f.name: CustomEvalFunction(f)
-            for f in available_functions
-            if not f.is_public and not f.is_customer_defined
-        }
         self._custom_to_function: Dict[str, CustomEvalFunction] = {
             f.name: CustomEvalFunction(f)
             for f in available_functions
-            if f.is_customer_defined
+            if not f.is_public and not f.is_external_function
+        }
+        self._placeholder_to_function: Dict[str, PlaceholderEvalFunction] = {
+            f.name: PlaceholderEvalFunction(f)
+            for f in available_functions
+            if f.is_external_function
         }
         self.bbox_iou: BoundingBoxIOUConfig = (
             self._assign_eval_function_if_defined(BoundingBoxIOUConfig)
@@ -1301,8 +1309,8 @@ class AvailableEvalFunctions:
         ]
         return (
             f"<AvailableEvaluationFunctions: public: {functions_lower} "
-            f"private: {list(self._private_to_function.keys())} "
-            f"custom: {list(self._custom_to_function.keys())}   "
+            f"private: {list(self._custom_to_function.keys())} "
+            f"placeholder: {list(self._placeholder_to_function.keys())}   "
         )
 
     @property
@@ -1324,16 +1332,16 @@ class AvailableEvalFunctions:
         Returns:
             Dict of function name to :class:`CustomEvalFunction`.
         """
-        return self._private_to_function
+        return self._custom_to_function
 
     @property
-    def custom_functions(self) -> Dict[str, CustomEvalFunction]:
-        """Custom functions uploaded to Model CI
+    def placeholder_functions(self) -> Dict[str, PlaceholderEvalFunction]:
+        """Placeholder functions uploaded to Model CI
 
         Returns:
-            Dict of function name to :class:`CustomEvalFunction`.
+            Dict of function name to :class:`PlaceholderEvalFunction`.
         """
-        return self._custom_to_function
+        return self._placeholder_to_function
 
     def _assign_eval_function_if_defined(
         self,

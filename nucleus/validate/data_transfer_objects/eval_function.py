@@ -72,7 +72,7 @@ class EvalFunctionEntry(ImmutableModel):
     id: str
     name: str
     is_public: bool
-    is_customer_defined: bool = False
+    is_external_function: bool = False
     user_id: str
     serialized_fn: Optional[str] = None
     raw_source: Optional[str] = None
@@ -88,7 +88,7 @@ class CreateEvalFunction(ImmutableModel):
     """Expected payload to POST validate/eval_fn"""
 
     name: str
-    is_custom: bool
+    is_external_function: bool
     serialized_fn: Optional[str] = None
     raw_source: Optional[str] = None
 

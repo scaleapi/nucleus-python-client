@@ -180,12 +180,13 @@ class Validate:
         )
         return AsyncJob.from_json(response, self.connection)
 
-    def create_custom_eval_function(
+    def create_placeholder_eval_function(
         self,
         name: str,
     ) -> EvalFunctionEntry:
-        """Creates a new custom evaluation function with a specified name. With this function, users can upload
-        evaluation results computed on the client side.
+        """Creates a new placeholder evaluation function. This placeholder function can be used to upload evaluation
+        results with functions defined and computed by the customer, without having to share the source code of the
+        respective function.
 
         Args:
             name: unique name of evaluation function
@@ -201,7 +202,7 @@ class Validate:
 
         response = self.connection.post(
             CreateEvalFunction(
-                name=name, is_custom=True, serialized_fn="", raw_source=""
+                name=name, is_external_function=True, serialized_fn="", raw_source=""
             ).dict(),
             "validate/eval_fn",
         )
