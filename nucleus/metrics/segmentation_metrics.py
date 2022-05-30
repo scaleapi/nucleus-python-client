@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 import fsspec
 import numpy as np
+import numpy.ma as ma
 from PIL import Image
 from s3fs import S3FileSystem
 

@@ -8,8 +8,8 @@ from nucleus.metrics.segmentation_metrics import (
     SegmentationFWAVACC,
     SegmentationIOU,
     SegmentationMAP,
-    SegmentationRecall,
     SegmentationPrecision,
+    SegmentationRecall,
 )
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
