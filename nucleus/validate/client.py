@@ -85,6 +85,15 @@ class Validate:
                 "evaluation_functions=[client.validate.eval_functions.bbox_iou()]"
             )
 
+        placeholder_fns = [
+            f.eval_func_entry.is_external_function
+            for f in evaluation_functions
+        ]
+        if any(placeholder_fns):
+            assert all(
+                placeholder_fns
+            ), "Cannot create scenario tests with mixed placeholder and non-placeholder evaluation functions"
+
         response = self.connection.post(
             CreateScenarioTestRequest(
                 name=name,

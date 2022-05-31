@@ -18,9 +18,15 @@ from .constants import (
     THRESHOLD_KEY,
     ThresholdComparison,
 )
-from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
+from .data_transfer_objects.scenario_test_evaluations import (
+    EvaluationResult,
+    GetEvalHistory,
+)
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
-from .eval_functions.available_eval_functions import EvalFunction
+from .eval_functions.available_eval_functions import (
+    EvalFunction,
+    PlaceholderEvalFunction,
+)
 from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
 
@@ -86,6 +92,9 @@ class ScenarioTest:
         Returns:
             The created ScenarioTestMetric object.
         """
+
+        # TODO: Don't allow if mixing placeholders with non-placeholders
+
         response = self.connection.post(
             AddScenarioTestFunction(
                 scenario_test_name=self.name,
@@ -174,3 +183,43 @@ class ScenarioTest:
         )
         self.baseline_model_id = response.get("baseline_model_id")
         return self.baseline_model_id
+
+    def submit_evaluation_results(
+        self,
+        eval_fn: PlaceholderEvalFunction,
+        results: List[tuple],
+        model_id: str,
+    ):
+        assert eval_fn.eval_func_entry.is_external_function
+
+        formattedResults: List[EvaluationResult] = []
+        metric_per_ref_id = {}
+        weight_per_ref_id = {}
+        aggregate_weighted_sum = 0
+        aggregate_weight= 0
+        for r in results:
+            ref_id = r[0]
+            score = r[1]
+            weight = r[2]
+            metric_per_ref_id[ref_id] = score
+            weight_per_ref_id[ref_id] = weight
+            aggregate_weighted_sum += (score * weight)
+            aggregate_weight += weight
+
+
+        payload = {
+            "unit_test_id": self.id,
+            "eval_function_id": eval_fn.id,
+            "result_per_ref_id": metric_per_ref_id,
+            "weight_per_ref_id": weight_per_ref_id,
+            "overall_metric": aggregate_weighted_sum / aggregate_weight,
+            "model_id": model_id,
+            "slice_id": self.slice_id,
+
+        }
+        response = self.connection.post(
+            payload,
+            f"validate/scenario_test/upload_results",
+        )
+        print(response)
+        return response

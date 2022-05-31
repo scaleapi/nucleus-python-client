@@ -1195,6 +1195,7 @@ EvalFunction = Union[
     CuboidPrecisionConfig,
     CategorizationF1Config,
     CustomEvalFunction,
+    PlaceholderEvalFunction,
     EvalFunctionNotAvailable,
     StandardEvalFunction,
     PolygonMAPConfig,
