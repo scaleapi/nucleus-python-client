@@ -3,6 +3,7 @@ import PIL.Image
 
 from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics import ScalarResult
+from nucleus.metrics.filtering import SegmentFieldFilter
 from nucleus.metrics.segmentation_metrics import (
     SegmentationAveragePrecision,
     SegmentationFWAVACC,
@@ -98,7 +99,7 @@ def test_segmentation_recall():
 
     metric = SegmentationRecall()
     metric.loader = FakeLoader(url_to_img)
-    result: ScalarResult = metric(
+    result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
@@ -216,3 +217,38 @@ def test_segmentation_map():
         PredictionList(segmentation_predictions=[prediction]),
     )
     assert result.value == 0.5
+
+
+def test_masked_recall():
+    target_segment = Segment("one", 1)
+    filter_segment = Segment("two", 2)
+    segments = [target_segment, filter_segment]
+    annotation = SegmentationAnnotation(
+        "s3://fake_ann_url",
+        annotations=segments,
+        reference_id="item_1",
+    )
+    prediction = SegmentationPrediction(
+        "s3://fake_pred_url",
+        annotations=annotation.annotations,
+        reference_id=annotation.reference_id,
+    )
+    ground_truth_img = np.ones((5, 5))
+    ground_truth_img[:, 0:1] = filter_segment.index
+    prediction_img = np.ones((5, 5))
+    prediction_img[:, 0:1] = 0
+    url_to_img = {
+        annotation.mask_url: ground_truth_img,
+        prediction.mask_url: prediction_img,
+    }
+
+    filters = [SegmentFieldFilter("index", "==", 1)]
+    metric = SegmentationPrecision(
+        annotation_filters=[], prediction_filters=filters
+    )
+    metric.loader = FakeLoader(url_to_img)
+    result: ScalarResult = metric(  # type: ignore
+        AnnotationList(segmentation_annotations=[annotation]),
+        PredictionList(segmentation_predictions=[prediction]),
+    )
+    assert result.value == 1.0

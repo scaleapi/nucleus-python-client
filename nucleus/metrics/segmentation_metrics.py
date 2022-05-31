@@ -3,7 +3,6 @@ from typing import List, Optional, Union
 
 import fsspec
 import numpy as np
-import numpy.ma as ma
 from PIL import Image
 from s3fs import S3FileSystem
 
@@ -19,7 +18,10 @@ from .metric_utils import compute_average_precision
 
 
 def _fast_hist(label_true, label_pred, n_class):
-    """Calculates confusion matrix - fast!"""
+    """Calculates confusion matrix - fast!
+
+    Outputs a confusion matrix where each row is GT confusion and column is prediction confusion
+    """
     mask = (label_true >= 0) & (label_true < n_class)
     hist = np.bincount(
         n_class * label_true[mask].astype(int) + label_pred[mask],
@@ -78,7 +80,7 @@ class SegmentationMaskMetric(Metric):
 
     def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> MetricResult:
+    ) -> ScalarResult:
         assert (
             len(annotations.segmentation_annotations) <= 1
         ), f"Expected only one segmentation mask, got {annotations.segmentation_annotations}"
@@ -95,6 +97,8 @@ class SegmentationMaskMetric(Metric):
             if predictions.segmentation_predictions
             else None
         )
+        if annotation is None or prediction is None:
+            return ScalarResult(0, weight=0)
         annotation_img = self.loader.fetch(annotation.mask_url)
         pred_img = self.loader.fetch(prediction.mask_url)
         return self._metric_impl(
@@ -132,6 +136,27 @@ class SegmentationMaskMetric(Metric):
             if self.confusion is None
             else self.confusion
         )
+        if self.annotation_filters or self.prediction_filters:
+            # we mask the confusion matrix instead of the images
+            if self.annotation_filters:
+                annotation_indexes = {
+                    segment.index for segment in annotation.annotations
+                }
+                flatten_indexes = (
+                    set(range(confusion.shape[0])) - annotation_indexes
+                )
+                for row in flatten_indexes:
+                    confusion[row, :] = 0
+                confusion[annotation_indexes, :] = 0
+            if self.prediction_filters:
+                prediction_indexes = {
+                    segment.index for segment in prediction.annotations
+                }
+                flatten_indexes = (
+                    set(range(confusion.shape[0])) - prediction_indexes
+                )
+                for col in flatten_indexes:
+                    confusion[:, col] = 0
         return confusion
 
 
