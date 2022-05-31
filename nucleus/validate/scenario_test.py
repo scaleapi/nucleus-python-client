@@ -196,16 +196,15 @@ class ScenarioTest:
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0
-        aggregate_weight= 0
+        aggregate_weight = 0
         for r in results:
             ref_id = r[0]
             score = r[1]
             weight = r[2]
             metric_per_ref_id[ref_id] = score
             weight_per_ref_id[ref_id] = weight
-            aggregate_weighted_sum += (score * weight)
+            aggregate_weighted_sum += score * weight
             aggregate_weight += weight
-
 
         payload = {
             "unit_test_id": self.id,
@@ -215,7 +214,6 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
-
         }
         response = self.connection.post(
             payload,

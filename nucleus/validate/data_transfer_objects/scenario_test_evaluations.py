@@ -25,4 +25,3 @@ class EvaluationResult(ImmutableModel):
         raise ValueError(
             f"Expected evaluation score to be normalized between 0 and 1, but got: {v}"
         )
-
