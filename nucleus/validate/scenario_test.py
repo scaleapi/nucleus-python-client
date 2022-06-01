@@ -195,6 +195,8 @@ class ScenarioTest:
             eval_fn.eval_func_entry.is_external_function
         ), "Submitting evaluation results is only available for external functions."
 
+        assert len(results) > 0, "Submitting evaluation requires at least one result."
+
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0

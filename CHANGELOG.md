@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Allow users to create placeholder evaluation functions for Scenario Tests in Validate
+- Allow users to create external evaluation functions for Scenario Tests in Validate.
+- Allow users to upload external evaluation results calculated on the client side.
 
 
 ## [0.11.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.2) - 2022-05-20
