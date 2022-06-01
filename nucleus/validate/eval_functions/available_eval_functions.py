@@ -1131,20 +1131,17 @@ class CustomEvalFunction(EvalFunctionConfig):
     @classmethod
     def expected_name(cls) -> str:
         raise NotImplementedError(
-            "Custm evaluation functions are coming soon"
+            "Custom evaluation functions are coming soon"
         )  # Placeholder: See super().eval_func_entry for actual name
 
 
 class ExternalEvalFunction(EvalFunctionConfig):
-    def __init__(self, eval_function_entry: EvalFunctionEntry):
-        super().__init__(eval_function_entry)
-
     def __call__(self, **kwargs):
         raise NotImplementedError("Cannot call an external function")
 
-    @property
-    def expected_name(self) -> str:
-        return self.eval_func_entry.name
+    @classmethod
+    def expected_name(cls) -> str:
+        return "external_function"
 
 
 class StandardEvalFunction(EvalFunctionConfig):
