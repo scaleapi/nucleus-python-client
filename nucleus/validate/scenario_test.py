@@ -89,11 +89,12 @@ class ScenarioTest:
         Args:
             eval_function: :class:`EvalFunction`
 
+        Raises:
+            NucleusAPIError: If by adding this function, the scenario test mixes external with non-external functions
+
         Returns:
             The created ScenarioTestMetric object.
         """
-
-        # TODO: Don't allow if mixing placeholders with non-placeholders
 
         response = self.connection.post(
             AddScenarioTestFunction(
