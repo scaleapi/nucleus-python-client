@@ -1135,13 +1135,16 @@ class CustomEvalFunction(EvalFunctionConfig):
         )  # Placeholder: See super().eval_func_entry for actual name
 
 
-class PlaceholderEvalFunction(EvalFunctionConfig):
-    def __call__(self, **kwargs):
-        raise NotImplementedError("Cannot call a placeholder function")
+class ExternalEvalFunction(EvalFunctionConfig):
+    def __init__(self, eval_function_entry: EvalFunctionEntry):
+        super().__init__(eval_function_entry)
 
-    @classmethod
-    def expected_name(cls) -> str:
-        return "placeholder_function"
+    def __call__(self, **kwargs):
+        raise NotImplementedError("Cannot call an external function")
+
+    @property
+    def expected_name(self) -> str:
+        return self.eval_func_entry.name
 
 
 class StandardEvalFunction(EvalFunctionConfig):
@@ -1195,6 +1198,7 @@ EvalFunction = Union[
     CuboidPrecisionConfig,
     CategorizationF1Config,
     CustomEvalFunction,
+    ExternalEvalFunction,
     EvalFunctionNotAvailable,
     StandardEvalFunction,
     PolygonMAPConfig,
@@ -1240,8 +1244,8 @@ class AvailableEvalFunctions:
             for f in available_functions
             if not f.is_public and not f.is_external_function
         }
-        self._placeholder_to_function: Dict[str, PlaceholderEvalFunction] = {
-            f.name: PlaceholderEvalFunction(f)
+        self._external_to_function: Dict[str, ExternalEvalFunction] = {
+            f.name: ExternalEvalFunction(f)
             for f in available_functions
             if f.is_external_function
         }
@@ -1310,7 +1314,7 @@ class AvailableEvalFunctions:
         return (
             f"<AvailableEvaluationFunctions: public: {functions_lower} "
             f"private: {list(self._custom_to_function.keys())} "
-            f"placeholder: {list(self._placeholder_to_function.keys())}   "
+            f"external: {list(self._external_to_function.keys())}   "
         )
 
     @property
@@ -1335,13 +1339,13 @@ class AvailableEvalFunctions:
         return self._custom_to_function
 
     @property
-    def placeholder_functions(self) -> Dict[str, PlaceholderEvalFunction]:
-        """Placeholder functions uploaded to Model CI
+    def external_functions(self) -> Dict[str, ExternalEvalFunction]:
+        """External functions uploaded to Model CI
 
         Returns:
-            Dict of function name to :class:`PlaceholderEvalFunction`.
+            Dict of function name to :class:`ExternalEvalFunction`.
         """
-        return self._placeholder_to_function
+        return self._external_to_function
 
     def _assign_eval_function_if_defined(
         self,
@@ -1364,7 +1368,7 @@ class AvailableEvalFunctions:
         for eval_func in itertools.chain(
             self._public_to_function.values(),
             self._custom_to_function.values(),
-            self._placeholder_to_function.values(),
+            self._external_to_function.values(),
         ):
             if eval_func.id == eval_function_id:
                 return eval_func
