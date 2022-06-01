@@ -16,7 +16,7 @@ class GetEvalHistory(ImmutableModel):
 class EvaluationResult(ImmutableModel):
     item_ref_id: str
     score: float
-    weight: Optional[float] = 1
+    weight: float = 1
 
     @validator("score", "weight")
     def is_normalized(cls, v):  # pylint: disable=no-self-argument
