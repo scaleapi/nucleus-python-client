@@ -88,17 +88,21 @@ class SegmentationMaskToPolyMetric(Metric):
             if predictions.segmentation_predictions
             else None
         )
-        pred_img = self.loader.fetch(prediction.mask_url)
-        pred_value, pred_polys = instance_mask_to_polys(
-            np.asarray(pred_img)
-        )  # typing: ignore
-        code_to_label = {s.index: s.label for s in prediction.annotations}
-        poly_predictions = transform_poly_codes_to_poly_preds(
-            prediction.reference_id, pred_value, pred_polys, code_to_label
-        )
-        return self.call_poly_metric(
-            annotations, PredictionList(polygon_predictions=poly_predictions)
-        )
+        if prediction:
+            pred_img = self.loader.fetch(prediction.mask_url)
+            pred_value, pred_polys = instance_mask_to_polys(
+                np.asarray(pred_img)
+            )  # typing: ignore
+            code_to_label = {s.index: s.label for s in prediction.annotations}
+            poly_predictions = transform_poly_codes_to_poly_preds(
+                prediction.reference_id, pred_value, pred_polys, code_to_label
+            )
+            return self.call_poly_metric(
+                annotations,
+                PredictionList(polygon_predictions=poly_predictions),
+            )
+        else:
+            return ScalarResult(0, weight=0)
 
     @abc.abstractmethod
     def call_poly_metric(

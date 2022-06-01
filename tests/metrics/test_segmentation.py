@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 import PIL.Image
 
@@ -16,7 +18,12 @@ from nucleus.prediction import PredictionList, SegmentationPrediction
 
 
 class FakeLoader:
-    def __init__(self, url_to_array):
+    """We use this loader in the tests, this allows us to serve images from memory instead of fetching
+    from a filesystem.
+
+    """
+
+    def __init__(self, url_to_array: Dict[str, np.ndarray]):
         self.url_to_array = url_to_array
 
     def fetch(self, url: str):

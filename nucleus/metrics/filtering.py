@@ -258,7 +258,7 @@ DNFFieldOrMetadataFilters = List[
 def _attribute_getter(
     field_name: str,
     allow_missing: bool,
-    ann_or_pred: Union[AnnotationTypes, PredictionTypes],
+    ann_or_pred: Union[AnnotationTypes, PredictionTypes, Segment],
 ):
     """Create a function to get object fields"""
     if allow_missing:
@@ -296,7 +296,7 @@ class AlwaysFalseComparison:
 def _metadata_field_getter(
     field_name: str,
     allow_missing: bool,
-    ann_or_pred: Union[AnnotationTypes, PredictionTypes],
+    ann_or_pred: Union[AnnotationTypes, PredictionTypes, Segment],
 ):
     """Create a function to get a metadata field"""
     if isinstance(
@@ -331,7 +331,7 @@ def _metadata_field_getter(
 
 def _filter_to_comparison_function(  # pylint: disable=too-many-return-statements
     filter_def: Filter,
-) -> Callable[[Union[AnnotationTypes, PredictionTypes]], bool]:
+) -> Callable[[Union[AnnotationTypes, PredictionTypes, Segment]], bool]:
     """Creates a comparison function from a filter configuration to apply to annotations or predictions
 
     Parameters:
@@ -385,9 +385,10 @@ def _apply_field_or_metadata_filters(
     ],
     filters: DNFFieldOrMetadataFilters,
 ):
-    """Apply filters to list of annotations or list of predictions
+    """Apply filters to list of annotations or list of predictions or to a list of segments
+
     Attributes:
-        filterable_sequence: Prediction or Annotation
+        filterable_sequence: Prediction or Annotation or Segment sequence
         filters: Filter predicates. Allowed formats are:
             ListOfAndFilters where each Filter forms a chain of AND predicates.
             or
@@ -440,7 +441,9 @@ def _split_segment_filters(
 
 
 def _filter_segments(
-    anns_or_preds: Union[Sequence[AnnotationTypes], Sequence[PredictionTypes]],
+    anns_or_preds: Union[
+        Sequence[SegmentationAnnotation], Sequence[SegmentationPrediction]
+    ],
     segment_filters: OrAndDNFFilters,
 ):
     """Filter Segments of a SegmentationAnnotation or Prediction
@@ -451,9 +454,9 @@ def _filter_segments(
         return anns_or_preds
 
     # Transform segment filter types to field and metadata to iterate over annotation sub fields
-    transformed_or_branches = []
+    transformed_or_branches = []  # type: List[List[Union[MetadataFilter, FieldFilter]]]
     for and_branch in segment_filters:
-        transformed_and = []
+        transformed_and = []  # type: List[Union[MetadataFilter, FieldFilter]]
         for filter_statement in and_branch:
             if filter_statement.type is FilterType.SEGMENT_FIELD:
                 transformed_and.append(
@@ -484,7 +487,7 @@ def _filter_segments(
             ann_or_pred, (SegmentationAnnotation, SegmentationPrediction)
         ):
             ann_or_pred.annotations = _apply_field_or_metadata_filters(
-                ann_or_pred.annotations, transformed_or_branches
+                ann_or_pred.annotations, transformed_or_branches  # type: ignore
             )
             segments_filtered.append(ann_or_pred)
 
@@ -513,7 +516,7 @@ def apply_filters(
 
     dnf_filters = ensureDNFFilters(filters)
     filters, segment_filters = _split_segment_filters(dnf_filters)
-    filtered = _apply_field_or_metadata_filters(ann_or_pred, filters)
+    filtered = _apply_field_or_metadata_filters(ann_or_pred, filters) # type: ignore
     filtered = _filter_segments(filtered, segment_filters)
 
     return filtered
