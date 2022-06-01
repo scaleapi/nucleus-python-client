@@ -93,7 +93,7 @@ class ScenarioTest:
             ).dict(),
             "validate/scenario_test_eval_function",
         )
-        print(response)
+
         return ScenarioTestMetric(
             scenario_test_id=response[SCENARIO_TEST_ID_KEY],
             eval_function_id=response[EVAL_FUNCTION_ID_KEY],
