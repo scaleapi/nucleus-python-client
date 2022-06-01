@@ -218,6 +218,6 @@ class ScenarioTest:
         }
         response = self.connection.post(
             payload,
-            f"validate/scenario_test/upload_results",
+            "validate/scenario_test/upload_results",
         )
         return response
