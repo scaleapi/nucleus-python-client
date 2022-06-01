@@ -201,8 +201,8 @@ class ScenarioTest:
 
         metric_per_ref_id = {}
         weight_per_ref_id = {}
-        aggregate_weighted_sum = 0
-        aggregate_weight = 0
+        aggregate_weighted_sum = 0.0
+        aggregate_weight = 0.0
         # aggregation based on https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
         for r in results:
             metric_per_ref_id[r.item_ref_id] = r.score
