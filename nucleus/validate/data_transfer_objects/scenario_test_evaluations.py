@@ -16,12 +16,12 @@ class GetEvalHistory(ImmutableModel):
 class EvaluationResult(ImmutableModel):
     item_ref_id: str
     score: float
-    weight: Optional[float]
+    weight: Optional[float] = 1
 
-    @validator("score")
-    def normalized_score(cls, v):  # pylint: disable=no-self-argument
+    @validator("score", "weight")
+    def is_normalized(cls, v):  # pylint: disable=no-self-argument
         if 0 <= v <= 1:
             return v
         raise ValueError(
-            f"Expected evaluation score to be normalized between 0 and 1, but got: {v}"
+            f"Expected evaluation score and weights to be normalized between 0 and 1, but got: {v}"
         )

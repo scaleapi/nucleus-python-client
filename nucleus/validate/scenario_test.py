@@ -25,7 +25,7 @@ from .data_transfer_objects.scenario_test_evaluations import (
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
 from .eval_functions.available_eval_functions import (
     EvalFunction,
-    PlaceholderEvalFunction,
+    ExternalEvalFunction,
 )
 from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
@@ -186,25 +186,21 @@ class ScenarioTest:
 
     def submit_evaluation_results(
         self,
-        eval_fn: PlaceholderEvalFunction,
-        results: List[tuple],
+        eval_fn: ExternalEvalFunction,
+        results: List[EvaluationResult],
         model_id: str,
     ):
-        assert eval_fn.eval_func_entry.is_external_function
+        assert eval_fn.eval_func_entry.is_external_function, "Submitting evaluation results is only available for external functions."
 
-        formattedResults: List[EvaluationResult] = []
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0
         aggregate_weight = 0
         for r in results:
-            ref_id = r[0]
-            score = r[1]
-            weight = r[2]
-            metric_per_ref_id[ref_id] = score
-            weight_per_ref_id[ref_id] = weight
-            aggregate_weighted_sum += score * weight
-            aggregate_weight += weight
+            metric_per_ref_id[r.item_ref_id] = r.score
+            weight_per_ref_id[r.item_ref_id] = r.weight
+            aggregate_weighted_sum += r.score * r.weight
+            aggregate_weight += r.weight
 
         payload = {
             "unit_test_id": self.id,
@@ -219,5 +215,4 @@ class ScenarioTest:
             payload,
             f"validate/scenario_test/upload_results",
         )
-        print(response)
         return response
