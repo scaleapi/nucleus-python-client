@@ -184,13 +184,15 @@ class ScenarioTest:
         self.baseline_model_id = response.get("baseline_model_id")
         return self.baseline_model_id
 
-    def submit_evaluation_results(
+    def upload_external_evaluation_results(
         self,
         eval_fn: ExternalEvalFunction,
         results: List[EvaluationResult],
         model_id: str,
     ):
-        assert eval_fn.eval_func_entry.is_external_function, "Submitting evaluation results is only available for external functions."
+        assert (
+            eval_fn.eval_func_entry.is_external_function
+        ), "Submitting evaluation results is only available for external functions."
 
         metric_per_ref_id = {}
         weight_per_ref_id = {}
