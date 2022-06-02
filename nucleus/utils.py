@@ -28,6 +28,7 @@ from .constants import (
     BOX_TYPE,
     CATEGORY_TYPE,
     CUBOID_TYPE,
+    EXPORTED_SCALE_TASK_INFO_ROWS,
     ITEM_KEY,
     KEYPOINTS_TYPE,
     LAST_PAGE,
@@ -39,6 +40,8 @@ from .constants import (
     POLYGON_TYPE,
     PREDICTIONS_KEY,
     REFERENCE_ID_KEY,
+    SCALE_TASK_INFO_KEY,
+    SCENE_KEY,
     SEGMENTATION_TYPE,
 )
 from .dataset_item import DatasetItem
@@ -161,7 +164,7 @@ def format_dataset_item_response(response: dict) -> dict:
     Args:
       response: JSON dictionary response from REST endpoint
     Returns:
-      item_dict: A dictionary with two entries, one for the dataset item, and annother
+      item_dict: A dictionary with two entries, one for the dataset item, and another
         for all of the associated annotations.
     """
     if ANNOTATIONS_KEY not in response:
@@ -186,6 +189,33 @@ def format_dataset_item_response(response: dict) -> dict:
         ITEM_KEY: DatasetItem.from_json(item),
         ANNOTATIONS_KEY: annotation_response,
     }
+
+
+def format_scale_task_info_response(response: dict) -> Union[Dict, List[Dict]]:
+    """Format the raw client response into api objects.
+
+    Args:
+      response: JSON dictionary response from REST endpoint
+    Returns:
+      A dictionary with two entries, one for the dataset item, and another
+        for all of the associated Scale tasks.
+    """
+    if EXPORTED_SCALE_TASK_INFO_ROWS not in response:
+        # Payload is empty so an error occurred
+        return response
+
+    ret = []
+    for row in response[EXPORTED_SCALE_TASK_INFO_ROWS]:
+        if ITEM_KEY in row:
+            ret.append(
+                {
+                    ITEM_KEY: DatasetItem.from_json(row[ITEM_KEY]),
+                    SCALE_TASK_INFO_KEY: row[SCALE_TASK_INFO_KEY],
+                }
+            )
+        elif SCENE_KEY in row:
+            ret.append(row)
+    return ret
 
 
 def convert_export_payload(api_payload, has_predictions: bool = False):
