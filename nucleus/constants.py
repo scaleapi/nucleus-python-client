@@ -111,6 +111,7 @@ REFERENCE_IDS_KEY = "reference_ids"
 REFERENCE_ID_KEY = "reference_id"
 BACKEND_REFERENCE_ID_KEY = "ref_id"  # TODO(355762): Our backend returns this instead of the "proper" key sometimes.
 REQUEST_ID_KEY = "requestId"
+REQUEST_IDS_KEY = "requestIds"
 SCENES_KEY = "scenes"
 SERIALIZED_REQUEST_KEY = "serialized_request"
 SEGMENTATIONS_KEY = "segmentations"
