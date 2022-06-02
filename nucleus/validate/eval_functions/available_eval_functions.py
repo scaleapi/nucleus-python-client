@@ -1303,7 +1303,7 @@ class AvailableEvalFunctions:
         return (
             f"<AvailableEvaluationFunctions: public: {functions_lower} "
             f"private: {list(self._custom_to_function.keys())} "
-            f"external: {list(self._external_to_function.keys())}   "
+            f"external: {list(self._external_to_function.keys())}"
         )
 
     @property

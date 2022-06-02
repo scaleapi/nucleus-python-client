@@ -18,9 +18,15 @@ from .constants import (
     THRESHOLD_KEY,
     ThresholdComparison,
 )
-from .data_transfer_objects.scenario_test_evaluations import GetEvalHistory
+from .data_transfer_objects.scenario_test_evaluations import (
+    EvaluationResult,
+    GetEvalHistory,
+)
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
-from .eval_functions.available_eval_functions import EvalFunction
+from .eval_functions.available_eval_functions import (
+    EvalFunction,
+    ExternalEvalFunction,
+)
 from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
 
@@ -83,9 +89,13 @@ class ScenarioTest:
         Args:
             eval_function: :class:`EvalFunction`
 
+        Raises:
+            NucleusAPIError: By adding this function, the scenario test mixes external with non-external functions which is not permitted.
+
         Returns:
             The created ScenarioTestMetric object.
         """
+
         response = self.connection.post(
             AddScenarioTestFunction(
                 scenario_test_name=self.name,
@@ -174,3 +184,43 @@ class ScenarioTest:
         )
         self.baseline_model_id = response.get("baseline_model_id")
         return self.baseline_model_id
+
+    def upload_external_evaluation_results(
+        self,
+        eval_fn: ExternalEvalFunction,
+        results: List[EvaluationResult],
+        model_id: str,
+    ):
+        assert (
+            eval_fn.eval_func_entry.is_external_function
+        ), "Submitting evaluation results is only available for external functions."
+
+        assert (
+            len(results) > 0
+        ), "Submitting evaluation requires at least one result."
+
+        metric_per_ref_id = {}
+        weight_per_ref_id = {}
+        aggregate_weighted_sum = 0.0
+        aggregate_weight = 0.0
+        # aggregation based on https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
+        for r in results:
+            metric_per_ref_id[r.item_ref_id] = r.score
+            weight_per_ref_id[r.item_ref_id] = r.weight
+            aggregate_weighted_sum += r.score * r.weight
+            aggregate_weight += r.weight
+
+        payload = {
+            "unit_test_id": self.id,
+            "eval_function_id": eval_fn.id,
+            "result_per_ref_id": metric_per_ref_id,
+            "weight_per_ref_id": weight_per_ref_id,
+            "overall_metric": aggregate_weighted_sum / aggregate_weight,
+            "model_id": model_id,
+            "slice_id": self.slice_id,
+        }
+        response = self.connection.post(
+            payload,
+            "validate/scenario_test/upload_results",
+        )
+        return response

@@ -14,6 +14,7 @@ from .data_transfer_objects.eval_function import (
     GetEvalFunctions,
 )
 from .data_transfer_objects.scenario_test import CreateScenarioTestRequest
+from .data_transfer_objects.scenario_test_evaluations import EvaluationResult
 from .errors import CreateScenarioTestError
 from .eval_functions.available_eval_functions import AvailableEvalFunctions
 from .scenario_test import ScenarioTest
