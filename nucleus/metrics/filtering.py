@@ -454,11 +454,13 @@ def _filter_segments(
         return anns_or_preds
 
     # Transform segment filter types to field and metadata to iterate over annotation sub fields
-    transformed_or_branches = []  # type: List[List[Union[MetadataFilter, FieldFilter]]]
+    transformed_or_branches = (
+        []
+    )  # type: List[List[Union[MetadataFilter, FieldFilter]]]
     for and_branch in segment_filters:
         transformed_and = []  # type: List[Union[MetadataFilter, FieldFilter]]
         for filter_statement in and_branch:
-            if filter_statement.type is FilterType.SEGMENT_FIELD:
+            if filter_statement.type == FilterType.SEGMENT_FIELD:
                 transformed_and.append(
                     FieldFilter(
                         filter_statement.key,
@@ -467,7 +469,7 @@ def _filter_segments(
                         filter_statement.allow_missing,
                     )
                 )
-            elif filter_statement.type is FilterType.SEGMENT_METADATA:
+            elif filter_statement.type == FilterType.SEGMENT_METADATA:
                 transformed_and.append(
                     MetadataFilter(
                         filter_statement.key,
@@ -516,7 +518,7 @@ def apply_filters(
 
     dnf_filters = ensureDNFFilters(filters)
     filters, segment_filters = _split_segment_filters(dnf_filters)
-    filtered = _apply_field_or_metadata_filters(ann_or_pred, filters) # type: ignore
+    filtered = _apply_field_or_metadata_filters(ann_or_pred, filters)  # type: ignore
     filtered = _filter_segments(filtered, segment_filters)
 
     return filtered

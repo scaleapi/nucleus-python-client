@@ -124,6 +124,9 @@ class SegmentationMaskMetric(Metric):
 
         Notes:
             If filtering has been applied we filter out missing segments from the confusion matrix.
+
+        TODO(gunnar): Allow pre-seeding confusion matrix (all of the metrics calculate the same confusion matrix ->
+            we can calculate it once and then use it for all other metrics in the chain)
         """
         # NOTE: This creates a max(class_index) * max(class_index) MAT. If we have np.int16 this could become
         #  huge. We could probably use a sparse matrix instead or change the logic to only create count(index) ** 2
@@ -142,20 +145,19 @@ class SegmentationMaskMetric(Metric):
                 annotation_indexes = {
                     segment.index for segment in annotation.annotations
                 }
-                flatten_indexes = (
-                    set(range(confusion.shape[0])) - annotation_indexes
+                indexes_to_remove = (
+                    set(range(confusion.shape[0] - 1)) - annotation_indexes
                 )
-                for row in flatten_indexes:
+                for row in indexes_to_remove:
                     confusion[row, :] = 0
-                confusion[annotation_indexes, :] = 0
             if self.prediction_filters:
                 prediction_indexes = {
                     segment.index for segment in prediction.annotations
                 }
-                flatten_indexes = (
-                    set(range(confusion.shape[0])) - prediction_indexes
+                indexes_to_remove = (
+                    set(range(confusion.shape[0] - 1)) - prediction_indexes
                 )
-                for col in flatten_indexes:
+                for col in indexes_to_remove:
                     confusion[:, col] = 0
         return confusion
 
