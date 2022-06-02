@@ -90,7 +90,7 @@ class ScenarioTest:
             eval_function: :class:`EvalFunction`
 
         Raises:
-            NucleusAPIError: If by adding this function, the scenario test mixes external with non-external functions
+            NucleusAPIError: By adding this function, the scenario test mixes external with non-external functions which is not permitted.
 
         Returns:
             The created ScenarioTestMetric object.
