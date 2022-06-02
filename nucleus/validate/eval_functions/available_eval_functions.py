@@ -1,7 +1,6 @@
 import itertools
 from typing import Callable, Dict, List, Optional, Union
 
-from nucleus.logger import logger
 from nucleus.validate.eval_functions.base_eval_function import (
     EvalFunctionConfig,
 )
@@ -1148,13 +1147,6 @@ class StandardEvalFunction(EvalFunctionConfig):
     """Class for standard Model CI eval functions that have not been added as attributes on
     AvailableEvalFunctions yet.
     """
-
-    def __init__(self, eval_function_entry: EvalFunctionEntry):
-        logger.warning(
-            "Standard function %s not implemented as an attribute on AvailableEvalFunctions",
-            eval_function_entry.name,
-        )
-        super().__init__(eval_function_entry)
 
     @classmethod
     def expected_name(cls) -> str:
