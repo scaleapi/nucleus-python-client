@@ -5,6 +5,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.3) - 2022-06-02
+
+### Added
+
+- New methods to export associated Scale task info at either the item or scene level.
+- `Dataset.export_scale_task_info`
+- `Slice.export_scale_task_info`
+
+
 ## [0.12.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.2) - 2022-06-02
 
 ### Added
