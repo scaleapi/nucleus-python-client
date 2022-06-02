@@ -18,6 +18,7 @@ from nucleus.utils import (
     convert_export_payload,
     format_dataset_item_response,
     format_prediction_response,
+    format_scale_task_info_response,
     paginate_generator,
     serialize_and_write_to_presigned_url,
 )
@@ -1277,6 +1278,36 @@ class Dataset:
             requests_command=requests.get,
         )
         return format_prediction_response({ANNOTATIONS_KEY: json_response})
+
+    def export_scale_task_info(self):
+        """Fetches info for all linked Scale tasks of items/scenes in the dataset.
+
+        Returns:
+            A list of dicts, each with two keys, respectively mapping to items/scenes
+            and info on their corresponding Scale tasks within the dataset::
+
+                List[{
+                    "item" | "scene": Union[:class:`DatasetItem`, :class:`Scene`],
+                    "scale_task_info": {
+                        "task_id": str,
+                        "subtask_id": str,
+                        "task_status": str,
+                        "task_audit_status": str,
+                        "task_audit_review_comment": Optional[str],
+                        "project_name": str,
+                        "batch": str,
+                        "created_at": str,
+                        "completed_at": Optional[str]
+                    }[]
+                }]
+
+        """
+        response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/exportScaleTaskInfo",
+            requests_command=requests.get,
+        )
+        return format_scale_task_info_response(response)
 
     def calculate_evaluation_metrics(self, model, options: dict = None):
         """Starts computation of evaluation metrics for a model on the dataset.

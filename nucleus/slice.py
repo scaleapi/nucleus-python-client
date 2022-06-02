@@ -12,6 +12,7 @@ from nucleus.utils import (
     KeyErrorDict,
     convert_export_payload,
     format_dataset_item_response,
+    format_scale_task_info_response,
     paginate_generator,
 )
 
@@ -264,6 +265,37 @@ class Slice:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS], True)
+
+    def export_scale_task_info(self):
+        """Fetches info for all linked Scale tasks of items/scenes in the slice.
+
+        Returns:
+            A list of dicts, each with two keys, respectively mapping to items/scenes
+            and info on their corresponding Scale tasks within the dataset::
+
+                List[{
+                    "item" | "scene": Union[:class:`DatasetItem`, :class:`Scene`],
+                    "scale_task_info": {
+                        "task_id": str,
+                        "subtask_id": str,
+                        "task_status": str,
+                        "task_audit_status": str,
+                        "task_audit_review_comment": Optional[str],
+                        "project_name": str,
+                        "batch": str,
+                        "created_at": str,
+                        "completed_at": Optional[str]
+                    }[]
+                }]
+
+        """
+        response = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.id}/exportScaleTaskInfo",
+            requests_command=requests.get,
+        )
+        # TODO: implement format function with nice keying
+        return format_scale_task_info_response(response)
 
     def send_to_labeling(self, project_id: str):
         """Send items in the Slice as tasks to a Scale labeling project.
