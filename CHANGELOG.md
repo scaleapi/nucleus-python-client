@@ -5,9 +5,58 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.4) - 2022-06-02
+
+### Fixed
+
+- Poetry dependency list
+
+
+## [0.12.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.3) - 2022-06-02
+
+### Added
+
+- New methods to export associated Scale task info at either the item or scene level.
+- `Dataset.export_scale_task_info`
+- `Slice.export_scale_task_info`
+
+
+## [0.12.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.2) - 2022-06-02
+
+### Added
+
+- Allow users to upload external evaluation results calculated on the client side.
+
+
+## [0.12.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.1) - 2022-06-02
+
+### Added
+
+- Suppress warning statement when un-implemented standard configs found
+
+## [0.12.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.0) - 2022-05-27
+
+### Added
+
+- Allow users to create external evaluation functions for Scenario Tests in Validate.
+
+
+## [0.11.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.2) - 2022-05-20
+
+### Changed
+
+- Restored backward compatibility of video constructor by adding back deprecated attachment_type argument
+
+## [0.11.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.1) - 2022-05-19
+
+### Added
+
+- Exporting model predictions from a slice
+
 ## [0.11.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.0) - 2022-05-13
 
 ### Added
+
 - Segmentation prediction masks can now be evaluated against polygon annotation with new Validate functions
 - New function SegmentationToPolyIOU, configurable through client.validate.eval_functions.segmentation_to_poly_iou
 - New function SegmentationToPolyRecall, configurable through client.validate.eval_functions.segmentation_to_poly_recall
@@ -18,14 +67,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.8) - 2022-05-10
 
 ### Fixed
-- Add checks for duplicate (`reference_id`, `annotation_id`) when uploading Annotations or Predictions
 
+- Add checks for duplicate (`reference_id`, `annotation_id`) when uploading Annotations or Predictions
 
 ## [0.10.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.7) - 2022-05-09
 
 ### Fixed
-- Add checks for duplicate reference IDs
 
+- Add checks for duplicate reference IDs
 
 ## [0.10.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.10.6) - 2022-05-06
 

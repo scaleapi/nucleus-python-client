@@ -1,7 +1,6 @@
 import itertools
 from typing import Callable, Dict, List, Optional, Union
 
-from nucleus.logger import logger
 from nucleus.validate.eval_functions.base_eval_function import (
     EvalFunctionConfig,
 )
@@ -1139,21 +1138,23 @@ class CustomEvalFunction(EvalFunctionConfig):
     @classmethod
     def expected_name(cls) -> str:
         raise NotImplementedError(
-            "Custm evaluation functions are coming soon"
+            "Custom evaluation functions are coming soon"
         )  # Placeholder: See super().eval_func_entry for actual name
+
+
+class ExternalEvalFunction(EvalFunctionConfig):
+    def __call__(self, **kwargs):
+        raise NotImplementedError("Cannot call an external function")
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "external_function"
 
 
 class StandardEvalFunction(EvalFunctionConfig):
     """Class for standard Model CI eval functions that have not been added as attributes on
     AvailableEvalFunctions yet.
     """
-
-    def __init__(self, eval_function_entry: EvalFunctionEntry):
-        logger.warning(
-            "Standard function %s not implemented as an attribute on AvailableEvalFunctions",
-            eval_function_entry.name,
-        )
-        super().__init__(eval_function_entry)
 
     @classmethod
     def expected_name(cls) -> str:
@@ -1194,6 +1195,7 @@ EvalFunction = Union[
     CuboidPrecisionConfig,
     CategorizationF1Config,
     CustomEvalFunction,
+    ExternalEvalFunction,
     EvalFunctionNotAvailable,
     StandardEvalFunction,
     PolygonMAPConfig,
@@ -1243,7 +1245,12 @@ class AvailableEvalFunctions:
         self._custom_to_function: Dict[str, CustomEvalFunction] = {
             f.name: CustomEvalFunction(f)
             for f in available_functions
-            if not f.is_public
+            if not f.is_public and not f.is_external_function
+        }
+        self._external_to_function: Dict[str, ExternalEvalFunction] = {
+            f.name: ExternalEvalFunction(f)
+            for f in available_functions
+            if f.is_external_function
         }
         self.bbox_iou: BoundingBoxIOUConfig = (
             self._assign_eval_function_if_defined(BoundingBoxIOUConfig)
@@ -1326,8 +1333,9 @@ class AvailableEvalFunctions:
             str(name).lower() for name in self._public_func_entries.keys()
         ]
         return (
-            f"<AvailableEvaluationFunctions: public:{functions_lower} "
-            f"private: {list(self._custom_to_function.keys())}"
+            f"<AvailableEvaluationFunctions: public: {functions_lower} "
+            f"private: {list(self._custom_to_function.keys())} "
+            f"external: {list(self._external_to_function.keys())}"
         )
 
     @property
@@ -1344,12 +1352,21 @@ class AvailableEvalFunctions:
 
     @property
     def private_functions(self) -> Dict[str, CustomEvalFunction]:
-        """Custom functions uploaded to Model CI
+        """Private functions uploaded to Model CI
 
         Returns:
             Dict of function name to :class:`CustomEvalFunction`.
         """
         return self._custom_to_function
+
+    @property
+    def external_functions(self) -> Dict[str, ExternalEvalFunction]:
+        """External functions uploaded to Model CI
+
+        Returns:
+            Dict of function name to :class:`ExternalEvalFunction`.
+        """
+        return self._external_to_function
 
     def _assign_eval_function_if_defined(
         self,
@@ -1372,6 +1389,7 @@ class AvailableEvalFunctions:
         for eval_func in itertools.chain(
             self._public_to_function.values(),
             self._custom_to_function.values(),
+            self._external_to_function.values(),
         ):
             if eval_func.id == eval_function_id:
                 return eval_func
