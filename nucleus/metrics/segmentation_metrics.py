@@ -287,7 +287,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             true_pos = np.diag(confusion)
-            precision = true_pos / np.sum(confusion, axis=0)
+            precision = true_pos / np.sum(confusion, axis=1)
             mean_precision = np.nanmean(precision)
         return ScalarResult(value=mean_precision, weight=1)  # type: ignore
 
