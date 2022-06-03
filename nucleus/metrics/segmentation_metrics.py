@@ -96,8 +96,8 @@ class SegmentationMaskMetric(Metric):
             else None
         )
         if annotation and prediction:
-            annotation_img = self.loader.fetch(annotation.mask_url)
-            pred_img = self.loader.fetch(prediction.mask_url)
+            annotation_img = self.get_mask_channel(annotation)
+            pred_img = self.get_mask_channel(prediction)
             return self._metric_impl(
                 np.asarray(annotation_img, dtype=np.int32),
                 np.asarray(pred_img, dtype=np.int32),
@@ -106,6 +106,16 @@ class SegmentationMaskMetric(Metric):
             )
         else:
             return ScalarResult(0, weight=0)
+
+    def get_mask_channel(self, ann_or_pred):
+        """Some annotations are stored as RGB instead of L (single-channel).
+        We expect the image to be faux-single-channel with all the channels repeating so we choose the first one.
+        """
+        img = self.loader.fetch(ann_or_pred.mask_url)
+        if img.mode != "L":
+            # TODO: Do we have to do anything more advanced? Currently expect all channels to have same data
+            img = img.getchannel(0)
+        return img
 
     @abc.abstractmethod
     def _metric_impl(
