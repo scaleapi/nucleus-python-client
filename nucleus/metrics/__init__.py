@@ -5,6 +5,8 @@ from .filtering import (
     FieldFilter,
     ListOfOrAndFilters,
     MetadataFilter,
+    SegmentFieldFilter,
+    SegmentMetadataFilter,
     apply_filters,
 )
 from .polygon_metrics import (

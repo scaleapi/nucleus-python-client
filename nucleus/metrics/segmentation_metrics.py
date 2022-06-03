@@ -95,7 +95,12 @@ class SegmentationMaskMetric(Metric):
             if predictions.segmentation_predictions
             else None
         )
-        if annotation and prediction:
+        if (
+            annotation
+            and prediction
+            and annotation.annotations
+            and prediction.annotations
+        ):
             annotation_img = self.get_mask_channel(annotation)
             pred_img = self.get_mask_channel(prediction)
             return self._metric_impl(
@@ -112,7 +117,7 @@ class SegmentationMaskMetric(Metric):
         We expect the image to be faux-single-channel with all the channels repeating so we choose the first one.
         """
         img = self.loader.fetch(ann_or_pred.mask_url)
-        if img.mode != "L":
+        if img.mode not in {"L", "F"}:
             # TODO: Do we have to do anything more advanced? Currently expect all channels to have same data
             img = img.getchannel(0)
         return img
@@ -341,8 +346,8 @@ class SegmentationAveragePrecision(SegmentationMaskMetric):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             true_pos = np.diag(confusion)
-            precision = true_pos / np.sum(confusion, axis=0)
-            recall = true_pos / np.sum(confusion, axis=1)
+            precision = true_pos / np.sum(confusion, axis=1)
+            recall = true_pos / np.sum(confusion, axis=0)
             average_precision = compute_average_precision(
                 np.nan_to_num(recall), np.nan_to_num(precision)
             )
@@ -406,7 +411,7 @@ class SegmentationRecall(SegmentationMaskMetric):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             true_pos = np.diag(confusion)
-            recall = np.nanmean(true_pos / np.sum(confusion, axis=1))
+            recall = np.nanmean(true_pos / np.sum(confusion, axis=0))
         return ScalarResult(value=recall, weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
@@ -608,7 +613,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 + confusion.sum(axis=0)
                 - np.diag(confusion)
             )
-            freq = confusion.sum(axis=1) / confusion.sum()
+            freq = confusion.sum(axis=0) / confusion.sum()
             fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
         return ScalarResult(value=np.nanmean(fwavacc), weight=1)  # type: ignore
 
