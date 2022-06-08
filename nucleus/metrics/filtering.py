@@ -253,6 +253,13 @@ ListOfAndFilters = Union[
 DNFFieldOrMetadataFilters = List[
     List[Union[FieldFilter, MetadataFilter, AnnotationOrPredictionFilter]]
 ]
+DNFFieldOrMetadataFilters.__doc__ = """\
+Disjunctive normal form (DNF) filters.
+DNF allows arbitrary boolean logical combinations of single field predicates.
+The innermost structures each describe a single field predicate.
+-The list of inner predicates is interpreted as a conjunction (AND), forming a more selective and multiple column
+predicate.
+"""
 
 
 def _attribute_getter(

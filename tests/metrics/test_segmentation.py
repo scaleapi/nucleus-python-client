@@ -20,7 +20,6 @@ from nucleus.prediction import PredictionList, SegmentationPrediction
 class FakeLoader:
     """We use this loader in the tests, this allows us to serve images from memory instead of fetching
     from a filesystem.
-
     """
 
     def __init__(self, url_to_array: Dict[str, np.ndarray]):

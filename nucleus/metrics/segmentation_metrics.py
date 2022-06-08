@@ -16,10 +16,18 @@ from .base import Metric, ScalarResult
 # pylint: disable=useless-super-delegation
 
 
-def _fast_hist(label_true, label_pred, n_class):
+def _fast_hist(
+    label_true: np.ndarray, label_pred: np.ndarray, n_class: int
+) -> np.ndarray:
     """Calculates confusion matrix - fast!
 
     Outputs a confusion matrix where each row is GT confusion and column is prediction confusion
+    Example:
+        _fast_hist(np.array([0, 1, 2, 3], dtype=np.int16), np.array([0, 1, 1, 1], dtype=np.int16), n_class=4)
+        array([[1, 0, 0, 0],
+               [0, 1, 0, 0],
+               [0, 1, 0, 0],
+               [0, 1, 0, 0]])
     """
     mask = (label_true >= 0) & (label_true < n_class)
     hist = np.bincount(
