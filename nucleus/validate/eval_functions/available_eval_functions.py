@@ -8,6 +8,13 @@ from nucleus.validate.eval_functions.base_eval_function import (
 from ...metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
+from .config_classes.segmentation import (
+    SegmentationFWAVACCConfig,
+    SegmentationIOUConfig,
+    SegmentationMAPConfig,
+    SegmentationPrecisionConfig,
+    SegmentationRecallConfig,
+)
 
 # TODO(gunnar) split up into modules
 # pylint: disable=too-many-lines
@@ -1199,6 +1206,11 @@ EvalFunction = Union[
     SegmentationToPolyMAPConfig,
     SegmentationToPolyPrecisionConfig,
     SegmentationToPolyAveragePrecisionConfig,
+    SegmentationFWAVACCConfig,
+    SegmentationIOUConfig,
+    SegmentationPrecisionConfig,
+    SegmentationRecallConfig,
+    SegmentationMAPConfig,
 ]
 
 
@@ -1287,6 +1299,21 @@ class AvailableEvalFunctions:
             SegmentationToPolyAveragePrecisionConfig  # type: ignore
         )
 
+        self.seg_iou: SegmentationIOUConfig = self._assign_eval_function_if_defined(
+            SegmentationIOUConfig  # type: ignore
+        )
+        self.seg_recall: SegmentationRecallConfig = self._assign_eval_function_if_defined(
+            SegmentationRecallConfig  # type: ignore
+        )
+        self.seg_map: SegmentationMAPConfig = self._assign_eval_function_if_defined(
+            SegmentationMAPConfig  # type: ignore
+        )
+        self.seg_precision: SegmentationPrecisionConfig = self._assign_eval_function_if_defined(
+            SegmentationPrecisionConfig  # type: ignore
+        )
+        self.seg_fwavacc: SegmentationFWAVACCConfig = self._assign_eval_function_if_defined(
+            SegmentationFWAVACCConfig  # type: ignore
+        )
         # Add public entries that have not been implemented as an attribute on this class
         for func_entry in self._public_func_entries.values():
             if func_entry.name not in self._public_to_function:

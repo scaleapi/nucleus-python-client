@@ -2,7 +2,9 @@ import json
 
 import pytest
 
+from nucleus.annotation import Segment, SegmentationAnnotation
 from nucleus.metrics import FieldFilter, MetadataFilter, apply_filters
+from nucleus.metrics.filtering import SegmentFieldFilter, SegmentMetadataFilter
 from tests.metrics.helpers import (
     TEST_BOX_ANNOTATION_LIST,
     TEST_BOX_PREDICTION_LIST,
@@ -278,3 +280,35 @@ def test_not_in_field(annotations_or_predictions):
     ]
     filtered = apply_filters(annotations_or_predictions, valid_gt)
     assert filtered == annotations_or_predictions[2:]
+
+
+def test_segment_annotation_filtering():
+    grass_segment = Segment(label="grass", index=1)
+    sky_segment = Segment(label="sky", index=2)
+    segment_annotation = SegmentationAnnotation(
+        "https://fake-url.png",
+        annotations=[grass_segment, sky_segment],
+        reference_id="test_id",
+    )
+    valid_gt = [SegmentFieldFilter("label", "==", grass_segment.label)]
+    filtered = apply_filters([segment_annotation], valid_gt)
+    assert filtered[0].annotations == [grass_segment]
+    assert len(filtered) == 1, f"Expected only one annotation, got: {filtered}"
+
+
+def test_segment_annotation_filtering_metadata():
+    grass_segment = Segment(label="grass", index=1, metadata={"meta_field": 1})
+    sky_segment = Segment(label="sky", index=2, metadata={"meta_field": 2})
+    segment_annotation = SegmentationAnnotation(
+        "https://fake-url.png",
+        annotations=[grass_segment, sky_segment],
+        reference_id="test_id",
+    )
+    valid_gt = [
+        SegmentMetadataFilter(
+            "meta_field", "==", grass_segment.metadata["meta_field"]
+        )
+    ]
+    filtered = apply_filters([segment_annotation], valid_gt)
+    assert filtered[0].annotations == [grass_segment]
+    assert len(filtered) == 1, f"Expected only one annotation, got: {filtered}"
