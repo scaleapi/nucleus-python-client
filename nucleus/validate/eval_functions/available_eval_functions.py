@@ -9,7 +9,6 @@ from ...metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
 from .config_classes.segmentation import (
-    SegmentationAveragePrecisionConfig,
     SegmentationFWAVACCConfig,
     SegmentationIOUConfig,
     SegmentationMAPConfig,
@@ -1207,7 +1206,6 @@ EvalFunction = Union[
     SegmentationToPolyMAPConfig,
     SegmentationToPolyPrecisionConfig,
     SegmentationToPolyAveragePrecisionConfig,
-    SegmentationAveragePrecisionConfig,
     SegmentationFWAVACCConfig,
     SegmentationIOUConfig,
     SegmentationPrecisionConfig,
@@ -1303,9 +1301,6 @@ class AvailableEvalFunctions:
 
         self.seg_iou: SegmentationIOUConfig = self._assign_eval_function_if_defined(
             SegmentationIOUConfig  # type: ignore
-        )
-        self.seg_ap: SegmentationAveragePrecisionConfig = self._assign_eval_function_if_defined(
-            SegmentationAveragePrecisionConfig  # type: ignore
         )
         self.seg_recall: SegmentationRecallConfig = self._assign_eval_function_if_defined(
             SegmentationRecallConfig  # type: ignore

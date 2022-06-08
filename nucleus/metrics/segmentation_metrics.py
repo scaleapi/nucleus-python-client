@@ -12,7 +12,6 @@ from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
 from .base import Metric, ScalarResult
-from .metric_utils import compute_average_precision
 
 # pylint: disable=useless-super-delegation
 
@@ -117,7 +116,7 @@ class SegmentationMaskMetric(Metric):
         We expect the image to be faux-single-channel with all the channels repeating so we choose the first one.
         """
         img = self.loader.fetch(ann_or_pred.mask_url)
-        if img.mode not in {"L", "F"}:
+        if len(img.getbands()) > 1:
             # TODO: Do we have to do anything more advanced? Currently expect all channels to have same data
             img = img.getchannel(0)
         return img
@@ -287,71 +286,8 @@ class SegmentationPrecision(SegmentationMaskMetric):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             true_pos = np.diag(confusion)
-            precision = true_pos / np.sum(confusion, axis=1)
-            mean_precision = np.nanmean(precision)
-        return ScalarResult(value=mean_precision, weight=1)  # type: ignore
-
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return ScalarResult.aggregate(results)  # type: ignore
-
-
-class SegmentationAveragePrecision(SegmentationMaskMetric):
-    def __init__(
-        self,
-        annotation_filters: Optional[
-            Union[ListOfOrAndFilters, ListOfAndFilters]
-        ] = None,
-        prediction_filters: Optional[
-            Union[ListOfOrAndFilters, ListOfAndFilters]
-        ] = None,
-    ):
-        """Initializes SegmentationAveragePrecision object.
-
-        Args:
-            annotation_filters: Filter predicates. Allowed formats are:
-                ListOfAndFilters where each Filter forms a chain of AND predicates.
-                    or
-                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
-                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective `and` multiple field predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-            prediction_filters: Filter predicates. Allowed formats are:
-                ListOfAndFilters where each Filter forms a chain of AND predicates.
-                    or
-                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
-                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective `and` multiple field predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-        """
-        super().__init__(
-            annotation_filters,
-            prediction_filters,
-        )
-
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ) -> ScalarResult:
-
-        confusion = self._calculate_confusion_matrix(
-            annotation, annotation_img, prediction, prediction_img
-        )
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            true_pos = np.diag(confusion)
-            precision = true_pos / np.sum(confusion, axis=1)
-            recall = true_pos / np.sum(confusion, axis=0)
-            average_precision = compute_average_precision(
-                np.nan_to_num(recall), np.nan_to_num(precision)
-            )
-        return ScalarResult(value=average_precision, weight=1)
+            precision = np.nanmean(true_pos / np.sum(confusion, axis=1))
+        return ScalarResult(value=precision, weight=confusion.sum())  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -411,7 +347,7 @@ class SegmentationRecall(SegmentationMaskMetric):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             true_pos = np.diag(confusion)
-            recall = np.nanmean(true_pos / np.sum(confusion, axis=0))
+            recall = np.nanmean(true_pos / np.sum(confusion, axis=1))
         return ScalarResult(value=recall, weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
@@ -613,7 +549,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 + confusion.sum(axis=0)
                 - np.diag(confusion)
             )
-            freq = confusion.sum(axis=0) / confusion.sum()
+            freq = confusion.sum(axis=1) / confusion.sum()
             fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
         return ScalarResult(value=np.nanmean(fwavacc), weight=1)  # type: ignore
 

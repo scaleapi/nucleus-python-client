@@ -2,12 +2,12 @@ from typing import Dict
 
 import numpy as np
 import PIL.Image
+import pytest
 
 from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics import ScalarResult
 from nucleus.metrics.filtering import SegmentFieldFilter
 from nucleus.metrics.segmentation_metrics import (
-    SegmentationAveragePrecision,
     SegmentationFWAVACC,
     SegmentationIOU,
     SegmentationMAP,
@@ -32,10 +32,20 @@ class FakeLoader:
         return img
 
 
-def test_segmentation_iou_perfect():
+@pytest.mark.parametrize(
+    "gt,pred,iou",
+    [
+        ([1], [0], 0),
+        ([1], [1], 1),
+        ([1, 1], [0, 1], 0.25),
+        ([1, 1, 1, 1], [0, 1, 1, 1], 0.75 / 2),
+        ([0, 1, 2, 3], [0, 0, 0, 0], 0.25 / 4),
+    ],
+)
+def test_segmentation_iou(gt, pred, iou):
     annotation = SegmentationAnnotation(
         "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
+        annotations=[Segment(f"{index}", index) for index in set(gt + pred)],
         reference_id="item_1",
     )
     prediction = SegmentationPrediction(
@@ -43,7 +53,8 @@ def test_segmentation_iou_perfect():
         annotations=annotation.annotations,
         reference_id=annotation.reference_id,
     )
-    ground_truth_img = prediction_img = np.ones((5, 5))
+    ground_truth_img = np.array(gt, dtype=np.int16)
+    prediction_img = np.array(pred, dtype=np.int16)
     url_to_img = {
         annotation.mask_url: ground_truth_img,
         prediction.mask_url: prediction_img,
@@ -55,13 +66,23 @@ def test_segmentation_iou_perfect():
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    assert result.value == 1
+    assert result.value == iou
 
 
-def test_segmentation_iou_0():
+@pytest.mark.parametrize(
+    "gt,pred,recall",
+    [
+        ([1], [0], 0),
+        ([1], [1], 1),
+        ([1, 1], [0, 1], 0.5),
+        ([1, 1, 1, 1], [0, 1, 1, 1], 0.75),
+        ([0, 1, 2, 3], [0, 0, 0, 0], 0.25),
+    ],
+)
+def test_segmentation_recall(gt, pred, recall):
     annotation = SegmentationAnnotation(
         "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
+        annotations=[Segment(f"{index}", index) for index in set(gt + pred)],
         reference_id="item_1",
     )
     prediction = SegmentationPrediction(
@@ -69,36 +90,8 @@ def test_segmentation_iou_0():
         annotations=annotation.annotations,
         reference_id=annotation.reference_id,
     )
-    ground_truth_img = np.ones((5, 5))
-    prediction_img = np.zeros((5, 5))
-    url_to_img = {
-        annotation.mask_url: ground_truth_img,
-        prediction.mask_url: prediction_img,
-    }
-
-    metric = SegmentationIOU()
-    metric.loader = FakeLoader(url_to_img)
-    result: ScalarResult = metric(  # type: ignore
-        AnnotationList(segmentation_annotations=[annotation]),
-        PredictionList(segmentation_predictions=[prediction]),
-    )
-    assert result.value == 0
-
-
-def test_segmentation_recall():
-    annotation = SegmentationAnnotation(
-        "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
-        reference_id="item_1",
-    )
-    prediction = SegmentationPrediction(
-        "s3://fake_pred_url",
-        annotations=annotation.annotations,
-        reference_id=annotation.reference_id,
-    )
-    ground_truth_img = np.ones((5, 5))
-    prediction_img = np.ones((5, 5))
-    prediction_img[:, 0] = 0
+    ground_truth_img = np.array(gt, dtype=np.int16)
+    prediction_img = np.array(pred, dtype=np.int16)
     url_to_img = {
         annotation.mask_url: ground_truth_img,
         prediction.mask_url: prediction_img,
@@ -110,13 +103,23 @@ def test_segmentation_recall():
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    assert result.value == 0.8
+    assert result.value == recall
 
 
-def test_segmentation_precision():
+@pytest.mark.parametrize(
+    "gt,pred,precision",
+    [
+        ([1], [0], 0),
+        ([1], [1], 1),
+        ([1, 1], [0, 1], 0.5),
+        ([1, 1, 1, 1], [0, 1, 1, 1], 0.75),
+        ([0, 1, 2, 3], [0, 0, 0, 0], 0.25),
+    ],
+)
+def test_segmentation_precision(gt, pred, precision):
     annotation = SegmentationAnnotation(
         "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
+        annotations=[Segment(f"{index}", index) for index in set(gt + pred)],
         reference_id="item_1",
     )
     prediction = SegmentationPrediction(
@@ -124,9 +127,8 @@ def test_segmentation_precision():
         annotations=annotation.annotations,
         reference_id=annotation.reference_id,
     )
-    ground_truth_img = np.ones((5, 5))
-    prediction_img = np.ones((5, 5))
-    prediction_img[:, 0:1] = 0
+    ground_truth_img = np.array(gt, dtype=np.int16)
+    prediction_img = np.array(pred, dtype=np.int16)
     url_to_img = {
         annotation.mask_url: ground_truth_img,
         prediction.mask_url: prediction_img,
@@ -138,14 +140,23 @@ def test_segmentation_precision():
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    # One class has precision 1.0, the other 0 -> 0.5
-    assert result.value == 0.5
+    assert result.value == precision
 
 
-def test_segmentation_avg_precision():
+@pytest.mark.parametrize(
+    "gt,pred,fwavacc",
+    [
+        ([1], [0], 0),
+        ([1], [1], 1),
+        ([1, 1], [0, 1], 0.5),
+        ([1, 1, 1, 1], [0, 1, 1, 1], 0.75),
+        ([0, 1, 1, 3], [0, 1, 1, 0], 0.625),
+    ],
+)
+def test_segmentation_fwavacc(gt, pred, fwavacc):
     annotation = SegmentationAnnotation(
         "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
+        annotations=[Segment(f"{index}", index) for index in set(gt + pred)],
         reference_id="item_1",
     )
     prediction = SegmentationPrediction(
@@ -153,37 +164,8 @@ def test_segmentation_avg_precision():
         annotations=annotation.annotations,
         reference_id=annotation.reference_id,
     )
-    ground_truth_img = np.ones((5, 5))
-    prediction_img = np.ones((5, 5))
-    prediction_img[:, 0:1] = 0
-    url_to_img = {
-        annotation.mask_url: ground_truth_img,
-        prediction.mask_url: prediction_img,
-    }
-
-    metric = SegmentationAveragePrecision()
-    metric.loader = FakeLoader(url_to_img)
-    result: ScalarResult = metric(  # type: ignore
-        AnnotationList(segmentation_annotations=[annotation]),
-        PredictionList(segmentation_predictions=[prediction]),
-    )
-    assert result.value == 0.8
-
-
-def test_segmentation_fwavacc():
-    annotation = SegmentationAnnotation(
-        "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
-        reference_id="item_1",
-    )
-    prediction = SegmentationPrediction(
-        "s3://fake_pred_url",
-        annotations=annotation.annotations,
-        reference_id=annotation.reference_id,
-    )
-    ground_truth_img = np.ones((5, 5))
-    prediction_img = np.copy(ground_truth_img)
-    prediction_img[:, 0:1] = 0
+    ground_truth_img = np.array(gt, dtype=np.int16)
+    prediction_img = np.array(pred, dtype=np.int16)
     url_to_img = {
         annotation.mask_url: ground_truth_img,
         prediction.mask_url: prediction_img,
@@ -195,7 +177,7 @@ def test_segmentation_fwavacc():
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    assert result.value == 0.8
+    assert result.value == fwavacc
 
 
 def test_segmentation_map():
