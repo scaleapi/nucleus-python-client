@@ -188,7 +188,7 @@ sphinx-autobuild . ./_build/html --watch ../nucleus
 
 ## Custom Metrics using Shapely in scale-validate
 
-Certain metrics use `shapely` which is added as an optional dependency.
+Certain metrics use `Shapely` and `rasterio` which is added as optional dependencies.
 
 ```bash
 pip install scale-nucleus[metrics]
@@ -205,4 +205,4 @@ apt-get install libgeos-dev
 
 To develop it locally use
 
-`poetry install --extras shapely`
+`poetry install --extras metrics`
