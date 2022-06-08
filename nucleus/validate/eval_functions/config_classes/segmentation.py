@@ -80,12 +80,12 @@ class SegmentationMAPConfig(EvalFunctionConfig):
             import nucleus
 
             client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
-            poly_map: BoundingBoxMeanAveragePrecision= client.validate.eval_functions.poly_map
+            seg_map: SegmentationMAP= client.validate.eval_functions.seg_map
             slice_id = "slc_<your_slice>"
             scenario_test = client.validate.create_scenario_test(
                 "Example test",
                 slice_id=slice_id,
-                evaluation_criteria=[poly_map(iou_threshold=0.6) > 0.8]
+                evaluation_criteria=[seg_map(iou_threshold=0.6) > 0.8]
             )
 
         Args:

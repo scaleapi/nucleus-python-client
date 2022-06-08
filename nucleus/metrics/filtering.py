@@ -388,7 +388,7 @@ def _apply_field_or_metadata_filters(
     """Apply filters to list of annotations or list of predictions or to a list of segments
 
     Attributes:
-        filterable_sequence: Prediction or Annotation or Segment sequence
+        filterable_sequence: Prediction, Annotation or Segment sequence
         filters: Filter predicates. Allowed formats are:
             ListOfAndFilters where each Filter forms a chain of AND predicates.
             or
