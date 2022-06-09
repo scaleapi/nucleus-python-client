@@ -108,11 +108,10 @@ jobs:
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
   test_installation:
     parameters:
-      os:
-        type: executor
-      node-version:
+      python_version:
         type: string
-    executor: python/<<parameters.python_version>>
+    docker:
+      - image: cimg/python:<<parameters.python_version>>
     steps:
       - python/install-packages:
             pkg-manager: poetry
