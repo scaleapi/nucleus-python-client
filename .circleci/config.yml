@@ -20,6 +20,8 @@ jobs:
           command: | # install dependencies
             apt-get update
             apt-get -y install curl libgeos-dev
+            pip install --upgrade pip
+            pip install poetry
       - python/install-packages:
           pkg-manager: poetry
       - run:
