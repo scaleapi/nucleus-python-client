@@ -1,10 +1,8 @@
 import abc
 from typing import List, Optional, Union
 
-import fsspec
 import numpy as np
 from PIL import Image
-from s3fs import S3FileSystem
 
 from nucleus.annotation import AnnotationList
 from nucleus.metrics.base import MetricResult
@@ -14,6 +12,15 @@ from nucleus.metrics.segmentation_utils import (
     transform_poly_codes_to_poly_preds,
 )
 from nucleus.prediction import PredictionList
+
+try:
+    import fsspec
+    from s3fs import S3FileSystem
+except ModuleNotFoundError:
+    from ..package_not_installed import PackageNotInstalled
+
+    S3FileSystem = PackageNotInstalled
+    fsspec = PackageNotInstalled
 
 from .base import Metric, ScalarResult
 from .polygon_metrics import (
