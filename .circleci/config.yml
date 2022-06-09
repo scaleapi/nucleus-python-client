@@ -113,6 +113,7 @@ jobs:
     docker:
       - image: cimg/python:<<parameters.python_version>>
     steps:
+      - checkout
       - python/install-packages:
             pkg-manager: poetry
       - run:
