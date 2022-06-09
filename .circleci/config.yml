@@ -21,7 +21,7 @@ jobs:
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
-            poetry install -E metric
+            poetry install
       - run:
           name: Test Imports (extras need to be guarded!)
           command: | # Make sure that importing works without extras installed
