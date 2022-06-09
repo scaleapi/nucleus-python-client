@@ -144,7 +144,7 @@ workflows:
       - test_installation:
           matrix:
             parameters:
-              python_version: [3.6, 3.7, 3.8, 3.9, 3.10]
+              python_version: ['3.6', '3.7', '3.8', '3.9', '3.10']
           context: Nucleus
   build_test_publish:
     jobs:
