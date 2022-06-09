@@ -2142,7 +2142,7 @@ metrics = ["Shapely", "rasterio", "s3fs"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6.2,<4.0"
-content-hash = "9f7ea5db973dcec81f68f9db5b54441aaae45533d3ca3953af1a530b67172c98"
+content-hash = "4a130315a35ea8097222b95f6f7f33711b37358d6d8c530e8c17850ffa14426c"
 
 [metadata.files]
 absl-py = [
