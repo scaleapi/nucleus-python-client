@@ -114,6 +114,10 @@ jobs:
       - image: cimg/python:<<parameters.python_version>>
     steps:
       - checkout
+      - run:
+          command: |
+            rm poetry.lock
+          name: Remove lock to not have pinned dependencies (similar to pip install)
       - python/install-packages:
             pkg-manager: poetry
       - run:
