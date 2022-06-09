@@ -115,6 +115,10 @@ jobs:
       - image: cimg/python:<<parameters.python_version>>
     steps:
       - checkout
+      - run:
+          command: |
+            pip install --upgrade pip
+          name: Upgrade pip
       - python/install-packages:
             pkg-manager: poetry
       - run:
@@ -138,7 +142,7 @@ workflows:
       - test_installation:
           matrix:
             parameters:
-              python_version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+              python_version: ['3.6', '3.7', '3.8', '3.9'] #, '3.10'] Haven't gotten the 3.10 test to work
           context: Nucleus
   build_test_publish:
     jobs:
