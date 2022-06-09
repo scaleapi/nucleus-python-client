@@ -117,6 +117,17 @@ workflows:
     jobs:
       - build_test:
           context: Nucleus
+  installation_matrix:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - test_installation:
+          context: Nucleus
   build_test_publish:
     jobs:
       - build_test:
