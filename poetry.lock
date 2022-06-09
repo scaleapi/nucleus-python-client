@@ -392,7 +392,7 @@ name = "cloudpickle"
 version = "2.1.0"
 description = "Extended pickling support for Python objects"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [[package]]
@@ -449,7 +449,7 @@ name = "dataclasses-json"
 version = "0.5.7"
 description = "Easily serialize dataclasses to and from JSON"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [package.dependencies]
@@ -984,7 +984,7 @@ name = "marshmallow"
 version = "3.16.0"
 description = "A lightweight library for converting complex datatypes to and from native Python datatypes."
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1001,7 +1001,7 @@ name = "marshmallow-enum"
 version = "1.5.1"
 description = "Enum field for Marshmallow"
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
 
 [package.dependencies]
@@ -1648,7 +1648,7 @@ name = "scale-launch"
 version = "0.1.0"
 description = "The official Python client library for Launch, the Data Platform for AI"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
@@ -2025,7 +2025,7 @@ name = "typing-inspect"
 version = "0.7.1"
 description = "Runtime inspection utilities for typing module."
 category = "main"
-optional = false
+optional = true
 python-versions = "*"
 
 [package.dependencies]
@@ -2136,12 +2136,13 @@ docs = ["sphinx", "jaraco.packaging (>=8.2)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy"]
 
 [extras]
+launch = ["scale-launch"]
 metrics = ["Shapely", "rasterio", "s3fs"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6.2,<4.0"
-content-hash = "5e4644e04e1f2c1ce893240396be5ead7216f054432bc6768825f8d7522e1075"
+content-hash = "9f7ea5db973dcec81f68f9db5b54441aaae45533d3ca3953af1a530b67172c98"
 
 [metadata.files]
 absl-py = [
