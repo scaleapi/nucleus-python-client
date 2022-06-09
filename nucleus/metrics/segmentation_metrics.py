@@ -1,10 +1,17 @@
 import abc
 from typing import List, Optional, Union
 
-import fsspec
 import numpy as np
 from PIL import Image
-from s3fs import S3FileSystem
+
+try:
+    import fsspec
+    from s3fs import S3FileSystem
+except ModuleNotFoundError:
+    from ..package_not_installed import PackageNotInstalled
+
+    S3FileSystem = PackageNotInstalled
+    fsspec = PackageNotInstalled
 
 from nucleus.annotation import AnnotationList, SegmentationAnnotation
 from nucleus.metrics.base import MetricResult
