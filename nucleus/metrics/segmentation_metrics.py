@@ -1,8 +1,15 @@
 import abc
+import itertools
 from typing import List, Optional, Union
 
 import numpy as np
 from PIL import Image
+
+from .segmentation_utils import (
+    max_iou_match_from_confusion,
+    fast_confusion_matrix,
+    non_max_suppress_confusion,
+)
 
 try:
     import fsspec
@@ -20,28 +27,8 @@ from nucleus.prediction import PredictionList, SegmentationPrediction
 
 from .base import Metric, ScalarResult
 
+
 # pylint: disable=useless-super-delegation
-
-
-def _fast_hist(
-    label_true: np.ndarray, label_pred: np.ndarray, n_class: int
-) -> np.ndarray:
-    """Calculates confusion matrix - fast!
-
-    Outputs a confusion matrix where each row is GT confusion and column is prediction confusion
-    Example:
-        _fast_hist(np.array([0, 1, 2, 3], dtype=np.int16), np.array([0, 1, 1, 1], dtype=np.int16), n_class=4)
-        array([[1, 0, 0, 0],
-               [0, 1, 0, 0],
-               [0, 1, 0, 0],
-               [0, 1, 0, 0]])
-    """
-    mask = (label_true >= 0) & (label_true < n_class)
-    hist = np.bincount(
-        n_class * label_true[mask].astype(int) + label_pred[mask],
-        minlength=n_class ** 2,
-    ).reshape(n_class, n_class)
-    return hist
 
 
 class SegmentationMaskLoader:
@@ -63,6 +50,7 @@ class SegmentationMaskMetric(Metric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        instance_iou_threshold: float = 0.1,
     ):
         """Initializes PolygonMetric abstract object.
 
@@ -89,6 +77,7 @@ class SegmentationMaskMetric(Metric):
         # TODO -> add custom filtering to Segmentation(Annotation|Prediction).annotations.(metadata|label)
         super().__init__(annotation_filters, prediction_filters)
         self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
+        self.instance_iou_threshold = instance_iou_threshold
 
     def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
@@ -167,7 +156,82 @@ class SegmentationMaskMetric(Metric):
             )
             + 1  # to include 0
         )
-        confusion = _fast_hist(annotation_img, prediction_img, num_classes)
+        if self._is_instance_segmentation(annotation, prediction):
+            confusion = fast_confusion_matrix(
+                annotation_img, prediction_img, num_classes
+            )
+            non_max_suppressed = non_max_suppress_confusion(confusion)
+            confusion = non_max_suppressed
+        else:
+            confusion = fast_confusion_matrix(
+                annotation_img, prediction_img, num_classes
+            )
+            confusion = self._filter_confusion_matrix(
+                confusion, annotation, prediction
+            )
+        return confusion
+
+    # def _convert_to_instance_seg_confusion(
+    #     self, confusion, annotation, prediction
+    # ):
+    #     labels = list(
+    #         dict.fromkeys(
+    #             s.label
+    #             for s in itertools.chain(
+    #                 annotation.annotations, prediction.annotations
+    #             )
+    #         )
+    #     )
+    #     num_classes = len(labels)
+    #     all_classes = np.arange(num_classes + 1)
+    #     new_confusion = np.zeros((num_classes, num_classes), dtype=np.int16)
+    #
+    #     gt_label_to_new_index = {
+    #         label: idx for idx, label in enumerate(labels)
+    #     }
+    #     pred_index_to_new_index = {
+    #         p.index: gt_label_to_new_index[p.label]
+    #         for p in prediction.annotations
+    #     }
+    #     for gt_segment in annotation.annotations:
+    #         allowed_match_idxs = [
+    #             p.index
+    #             for p in prediction.annotations
+    #             if p.label == gt_segment.label
+    #         ]
+    #         non_match_idxs = np.setdiff1d(all_classes, allowed_match_idxs)
+    #
+    #         new_label_index = gt_label_to_new_index[gt_segment.label]
+    #         for match_idx in allowed_match_idxs:
+    #             new_confusion[new_label_index, new_label_index] += confusion[
+    #                 gt_segment.index, match_idx
+    #             ]
+    #
+    #         for non_match_idx in non_match_idxs:
+    #             new_idx = pred_index_to_new_index[non_match_idx]
+    #             new_confusion[new_label_index, new_idx] += confusion[
+    #                 gt_segment.index, non_match_idx
+    #             ]
+    #
+    #     return new_confusion
+
+    def _is_instance_segmentation(self, annotation, prediction):
+        """Guesses that we're dealing with instance segmentation if we have multiple segments with same label.
+        Degenerate case is same as semseg so fine to misclassify in that case."""
+        # This is a trick to get ordered sets
+        ann_labels = list(
+            dict.fromkeys(s.label for s in annotation.annotations)
+        )
+        pred_labels = list(
+            dict.fromkeys(s.label for s in prediction.annotations)
+        )
+        # NOTE: We assume instance segmentation if labels are duplicated in annotations or predictions
+        is_instance_segmentation = len(ann_labels) != len(
+            annotation.annotations
+        ) or len(pred_labels) != len(prediction.annotations)
+        return is_instance_segmentation
+
+    def _filter_confusion_matrix(self, confusion, annotation, prediction):
         if self.annotation_filters or self.prediction_filters:
             # we mask the confusion matrix instead of the images
             if self.annotation_filters:
@@ -355,7 +419,6 @@ class SegmentationRecall(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-
         confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )
@@ -554,7 +617,6 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-
         confusion = self._calculate_confusion_matrix(
             annotation, annotation_img, prediction, prediction_img
         )

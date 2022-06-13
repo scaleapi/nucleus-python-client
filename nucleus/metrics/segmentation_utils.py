@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.optimize import linear_sum_assignment
 
 from nucleus import Point, PolygonPrediction
 from nucleus.package_not_installed import (  # pylint: disable=ungrouped-imports
@@ -50,3 +51,60 @@ def transform_poly_codes_to_poly_preds(
         )
         polygon_predictions.append(pred)
     return polygon_predictions
+
+
+def max_iou_match_from_confusion(confusion):
+    """Calculate iou from confusion matrix and do linear sum assignment to get strongest candiaate for each GT
+
+    Returns:
+        iou_matrix with same dims as confusion and 1-d best match rows, 1-d best match cols
+    """
+    iou = np.zeros(confusion.shape, dtype=np.float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        for i in range(confusion.shape[0]):
+            for j in range(confusion.shape[1]):
+                intersection = confusion[i, j]
+                union = (
+                    confusion[i, :].sum()
+                    + confusion[:, j].sum()
+                    - intersection
+                )
+                if union > 0:
+                    iou[i, j] = intersection / union
+    iou = np.nan_to_num(iou)
+    iou_match_row, iou_match_col = linear_sum_assignment(-iou)
+    return iou, iou_match_row, iou_match_col
+
+
+def fast_confusion_matrix(
+    label_true: np.ndarray, label_pred: np.ndarray, n_class: int
+) -> np.ndarray:
+    """Calculates confusion matrix - fast!
+
+    Outputs a confusion matrix where each row is GT confusion and column is prediction confusion
+    Example:
+        _fast_hist(np.array([0, 1, 2, 3], dtype=np.int16), np.array([0, 1, 1, 1], dtype=np.int16), n_class=4)
+        array([[1, 0, 0, 0],
+               [0, 1, 0, 0],
+               [0, 1, 0, 0],
+               [0, 1, 0, 0]])
+    """
+    mask = (label_true >= 0) & (label_true < n_class)
+    hist = np.bincount(
+        n_class * label_true[mask].astype(int) + label_pred[mask],
+        minlength=n_class ** 2,
+    ).reshape(n_class, n_class)
+    return hist
+
+
+def non_max_suppress_confusion(confusion: np.ndarray):
+    iou, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
+    non_max_suppressed = np.zeros(np.add(confusion.shape, 1), dtype=np.int16)
+    matches_flat_indexes = max_iou_col + max_iou_row * confusion.shape[1]
+    dest_flat_indexes = max_iou_col + max_iou_row * non_max_suppressed.shape[1]
+    non_max_suppressed.put(
+        dest_flat_indexes, confusion.take(matches_flat_indexes)
+    )
+    confusion.put(matches_flat_indexes, np.zeros(len(matches_flat_indexes)))
+    non_max_suppressed[:, -1] = np.r_[confusion.sum(axis=1), np.zeros(1)]
+    return non_max_suppressed
