@@ -3,6 +3,7 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.4.2
+  python: circleci/python@2.0.3
 
 jobs:
   build_test:
@@ -21,7 +22,8 @@ jobs:
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
-            poetry install
+      - python/install-packages:
+          pkg-manager: poetry
       - run:
           name: Test Imports (extras need to be guarded!)
           command: | # Make sure that importing works without extras installed
@@ -105,6 +107,47 @@ jobs:
                 exit 1
             fi
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
+  test_poetry_installation:
+    parameters:
+      python_version:
+        type: string
+    docker:
+      - image: cimg/python:<<parameters.python_version>>
+    steps:
+      - checkout
+      - run:
+          command: |
+            pip install --upgrade pip
+          name: Upgrade pip
+      - python/install-packages:
+            pkg-manager: poetry
+      - run:
+          command: |
+            poetry run python -c 'import nucleus'
+          name: Test import nucleus
+  test_client_installation:
+    parameters:
+      python_version:
+        type: string
+    docker:
+      - image: cimg/python:<<parameters.python_version>>
+    steps:
+      - checkout
+      - run:
+          command: |
+            pip install --upgrade pip
+          name: Upgrade pip
+#        - python/install-packages:
+#            pkg-manager: poetry
+      - run:
+          command: |
+            poetry build
+          name: Test it
+      - run:
+          command: |
+            export FOUND_PKG=$(find ./dist -name "*.tar.gz")
+            pip install $FOUND_PKG
+          name: Test it
 workflows:
   nightly_build_test:
     triggers:
@@ -116,6 +159,18 @@ workflows:
                 - master
     jobs:
       - build_test:
+          context: Nucleus
+  installation_matrix:
+    jobs:
+      - test_poetry_installation:
+          matrix:
+            parameters:
+              python_version: ['3.6', '3.7', '3.8', '3.9'] #, '3.10'] Haven't gotten the 3.10 test to work
+          context: Nucleus
+      - test_client_installation:
+          matrix:
+            parameters:
+              python_version: ['3.6', '3.7', '3.8', '3.9', '3.10']
           context: Nucleus
   build_test_publish:
     jobs:
