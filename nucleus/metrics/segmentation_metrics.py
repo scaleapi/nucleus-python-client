@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 
 from .segmentation_utils import (
-    max_iou_match_from_confusion,
     fast_confusion_matrix,
+    max_iou_match_from_confusion,
     non_max_suppress_confusion,
 )
 
@@ -20,13 +20,12 @@ except ModuleNotFoundError:
     S3FileSystem = PackageNotInstalled
     fsspec = PackageNotInstalled
 
-from nucleus.annotation import AnnotationList, SegmentationAnnotation
+from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics.base import MetricResult
 from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
 from .base import Metric, ScalarResult
-
 
 # pylint: disable=useless-super-delegation
 
@@ -161,7 +160,15 @@ class SegmentationMaskMetric(Metric):
                 annotation_img, prediction_img, num_classes
             )
             non_max_suppressed = non_max_suppress_confusion(confusion)
-            confusion = non_max_suppressed
+            false_positive = Segment(
+                "false_positive", index=non_max_suppressed.shape[0] - 1
+            )
+            annotation.annotations.append(false_positive)
+            prediction.annotations.append(false_positive)
+            confusion = self._convert_to_instance_seg_confusion(
+                non_max_suppressed, annotation, prediction
+            )
+
         else:
             confusion = fast_confusion_matrix(
                 annotation_img, prediction_img, num_classes
@@ -171,49 +178,49 @@ class SegmentationMaskMetric(Metric):
             )
         return confusion
 
-    # def _convert_to_instance_seg_confusion(
-    #     self, confusion, annotation, prediction
-    # ):
-    #     labels = list(
-    #         dict.fromkeys(
-    #             s.label
-    #             for s in itertools.chain(
-    #                 annotation.annotations, prediction.annotations
-    #             )
-    #         )
-    #     )
-    #     num_classes = len(labels)
-    #     all_classes = np.arange(num_classes + 1)
-    #     new_confusion = np.zeros((num_classes, num_classes), dtype=np.int16)
-    #
-    #     gt_label_to_new_index = {
-    #         label: idx for idx, label in enumerate(labels)
-    #     }
-    #     pred_index_to_new_index = {
-    #         p.index: gt_label_to_new_index[p.label]
-    #         for p in prediction.annotations
-    #     }
-    #     for gt_segment in annotation.annotations:
-    #         allowed_match_idxs = [
-    #             p.index
-    #             for p in prediction.annotations
-    #             if p.label == gt_segment.label
-    #         ]
-    #         non_match_idxs = np.setdiff1d(all_classes, allowed_match_idxs)
-    #
-    #         new_label_index = gt_label_to_new_index[gt_segment.label]
-    #         for match_idx in allowed_match_idxs:
-    #             new_confusion[new_label_index, new_label_index] += confusion[
-    #                 gt_segment.index, match_idx
-    #             ]
-    #
-    #         for non_match_idx in non_match_idxs:
-    #             new_idx = pred_index_to_new_index[non_match_idx]
-    #             new_confusion[new_label_index, new_idx] += confusion[
-    #                 gt_segment.index, non_match_idx
-    #             ]
-    #
-    #     return new_confusion
+    def _convert_to_instance_seg_confusion(
+        self, confusion, annotation, prediction
+    ):
+        labels = list(
+            dict.fromkeys(
+                s.label
+                for s in itertools.chain(
+                    annotation.annotations, prediction.annotations
+                )
+            )
+        )
+        num_classes = len(labels)
+        all_classes = np.arange(num_classes + 1)
+        new_confusion = np.zeros((num_classes, num_classes), dtype=np.int16)
+
+        gt_label_to_new_index = {
+            label: idx for idx, label in enumerate(labels)
+        }
+        pred_index_to_new_index = {
+            p.index: gt_label_to_new_index[p.label]
+            for p in prediction.annotations
+        }
+        for gt_segment in annotation.annotations:
+            allowed_match_idxs = [
+                p.index
+                for p in prediction.annotations
+                if p.label == gt_segment.label
+            ]
+            non_match_idxs = np.setdiff1d(all_classes, allowed_match_idxs)
+
+            new_label_index = gt_label_to_new_index[gt_segment.label]
+            for match_idx in allowed_match_idxs:
+                new_confusion[new_label_index, new_label_index] += confusion[
+                    gt_segment.index, match_idx
+                ]
+
+            for non_match_idx in non_match_idxs:
+                new_idx = pred_index_to_new_index[non_match_idx]
+                new_confusion[new_label_index, new_idx] += confusion[
+                    gt_segment.index, non_match_idx
+                ]
+
+        return new_confusion
 
     def _is_instance_segmentation(self, annotation, prediction):
         """Guesses that we're dealing with instance segmentation if we have multiple segments with same label.

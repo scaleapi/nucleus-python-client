@@ -285,7 +285,7 @@ def test_masked_recall():
         (
             [0, 0, 0, 0],
             [0, 1, 2, 1],
-            0.25,
+            0.0,  # non-max suppression causes more FPs to match
             [
                 Segment("background", 0),
                 Segment("class1", 1),
