@@ -93,13 +93,14 @@ class Model:
     """
 
     def __init__(
-        self, model_id, name, reference_id, metadata, client, bundle_name=None
+        self, model_id, name, reference_id, metadata, client, bundle_name=None, tags=None,
     ):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
         self.metadata = metadata
         self.bundle_name = bundle_name
+        self._tags = tags
         self._client = client
 
     def __repr__(self):
@@ -127,6 +128,10 @@ class Model:
             metadata=payload["metadata"] or None,
             client=client,
         )
+
+    @property
+    def tags(self):
+        return self._tags
 
     def create_run(
         self,

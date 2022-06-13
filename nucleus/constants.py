@@ -90,6 +90,7 @@ MAX_PAYLOAD_SIZE = 0x1FFFFFE8  # Set to max string size since we currently conve
 MESSAGE_KEY = "message"
 METADATA_KEY = "metadata"
 MODEL_BUNDLE_NAME_KEY = "bundle_name"
+MODEL_TAGS_KEY = "tags"
 MODEL_ID_KEY = "model_id"
 MODEL_RUN_ID_KEY = "model_run_id"
 NAME_KEY = "name"

@@ -484,6 +484,7 @@ class NucleusClient:
         reference_id: str,
         metadata: Optional[Dict] = None,
         bundle_name: Optional[str] = None,
+        tags: Optional[List[str]] = None
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -495,13 +496,15 @@ class NucleusClient:
             metadata: An arbitrary dictionary of additional data about this model
               that can be stored and retrieved. For example, you can store information
               about the hyperparameters used in training this model.
+            bundle_name: Optional name of bundle attached to this model
+            tags: Optional list of tags to attach to this model
 
         Returns:
             :class:`Model`: The newly created model as an object.
         """
         response = self.make_request(
             construct_model_creation_payload(
-                name, reference_id, metadata, bundle_name
+                name, reference_id, metadata, bundle_name, tags
             ),
             "models/add",
         )
