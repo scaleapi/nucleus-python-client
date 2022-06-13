@@ -98,7 +98,15 @@ def fast_confusion_matrix(
 
 
 def non_max_suppress_confusion(confusion: np.ndarray):
-    iou, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
+    """Uses linear sum assignment to find biggest pixel-wise IOU match. Secondary matches are moved to last column
+    as false positives (since they are outside of instance boundaries).
+
+    Returns:
+        Non max suppressed confusion matrix (NxN) with dimension ((N+1)x(N+1)) where the last column are suppressed
+        positives
+
+    """
+    _, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
     non_max_suppressed = np.zeros(np.add(confusion.shape, 1), dtype=np.int16)
     matches_flat_indexes = max_iou_col + max_iou_row * confusion.shape[1]
     dest_flat_indexes = max_iou_col + max_iou_row * non_max_suppressed.shape[1]

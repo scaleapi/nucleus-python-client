@@ -7,7 +7,6 @@ from PIL import Image
 
 from .segmentation_utils import (
     fast_confusion_matrix,
-    max_iou_match_from_confusion,
     non_max_suppress_confusion,
 )
 
@@ -161,7 +160,7 @@ class SegmentationMaskMetric(Metric):
             )
             non_max_suppressed = non_max_suppress_confusion(confusion)
             false_positive = Segment(
-                "false_positive", index=non_max_suppressed.shape[0] - 1
+                "non_max_positive", index=non_max_suppressed.shape[0] - 1
             )
             annotation.annotations.append(false_positive)
             prediction.annotations.append(false_positive)
