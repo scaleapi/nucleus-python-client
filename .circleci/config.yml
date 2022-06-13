@@ -125,29 +125,29 @@ jobs:
           command: |
             poetry run python -c 'import nucleus'
           name: Test import nucleus
-    test_client_installation:
-      parameters:
-        python_version:
-          type: string
-      docker:
-        - image: cimg/python:<<parameters.python_version>>
-      steps:
-        - checkout
-        - run:
-            command: |
-              pip install --upgrade pip
-            name: Upgrade pip
+  test_client_installation:
+    parameters:
+      python_version:
+        type: string
+    docker:
+      - image: cimg/python:<<parameters.python_version>>
+    steps:
+      - checkout
+      - run:
+          command: |
+            pip install --upgrade pip
+          name: Upgrade pip
 #        - python/install-packages:
 #            pkg-manager: poetry
-        - run:
-            command: |
-              poetry build
-            name: Test it
-        - run:
-            command: |
-              export FOUND_PKG=$(find ./dist -name "*.tar.gz")
-              pip install $FOUND_PKG
-            name: Test it
+      - run:
+          command: |
+            poetry build
+          name: Test it
+      - run:
+          command: |
+            export FOUND_PKG=$(find ./dist -name "*.tar.gz")
+            pip install $FOUND_PKG
+          name: Test it
 workflows:
   nightly_build_test:
     triggers:
