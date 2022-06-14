@@ -33,7 +33,6 @@ class SegmentationTestSetup:
         expected_results: Expected aggregated result from the image
         annotations: Create a custom segmentation hierarchy (i.e. to test instance segmentation)
         iou_threshold: Set a custom iou_threshold. We default to 0 for easy mental calculations.
-
     """
 
     gt: List[int]
@@ -41,6 +40,31 @@ class SegmentationTestSetup:
     expected_result: float
     annotations: Optional[List[Segment]] = None
     iou_threshold: float = 0
+
+
+def compose_input_variables(setup: SegmentationTestSetup):
+    """Common step to create input variables from SegmentationTestSetup"""
+    annotation = SegmentationAnnotation(
+        "s3://fake_ann_url",
+        annotations=setup.annotations
+        if setup.annotations
+        else [
+            Segment(f"{index}", index) for index in set(setup.gt + setup.pred)
+        ],
+        reference_id="item_1",
+    )
+    prediction = SegmentationPrediction(
+        "s3://fake_pred_url",
+        annotations=annotation.annotations,
+        reference_id=annotation.reference_id,
+    )
+    ground_truth_img = np.array(setup.gt, dtype=np.int16)
+    prediction_img = np.array(setup.pred, dtype=np.int16)
+    url_to_img = {
+        annotation.mask_url: ground_truth_img,
+        prediction.mask_url: prediction_img,
+    }
+    return annotation, prediction, url_to_img
 
 
 class FakeLoader:
@@ -107,8 +131,8 @@ def test_segmentation_recall(setup):
         SegmentationTestSetup([1], [0], 0),
         SegmentationTestSetup([1], [1], 1),
         SegmentationTestSetup([1, 1], [0, 1], 0.5),
-        SegmentationTestSetup([1, 1, 1, 1], [0, 1, 1, 1], 0.75),
-        SegmentationTestSetup([0, 1, 2, 3], [0, 0, 0, 0], 0.25),
+        SegmentationTestSetup([1, 1, 1, 1], [0, 1, 1, 1], (0 + 1) / 2),
+        SegmentationTestSetup([0, 1, 2, 3], [0, 0, 0, 0], (1 + 0 + 0 + 0) / 4),
     ],
 )
 def test_segmentation_precision(setup):
@@ -128,8 +152,10 @@ def test_segmentation_precision(setup):
     [
         SegmentationTestSetup([1], [0], 0),
         SegmentationTestSetup([1], [1], 1),
-        SegmentationTestSetup([1, 1], [0, 1], 0.5),
-        SegmentationTestSetup([1, 1, 1, 1], [0, 1, 1, 1], 0.75),
+        SegmentationTestSetup([1, 1], [0, 1], (1 * 0 + 1 * 0.5) / 2),
+        SegmentationTestSetup(
+            [1, 1, 1, 1], [0, 1, 1, 1], (0.25 * 0 + 0.75 * 3 / 4)
+        ),
         SegmentationTestSetup(
             [0, 1, 1, 3], [0, 1, 1, 0], (1 * 1 + 2 * 1 + 1 * 0) / 4
         ),
@@ -147,57 +173,31 @@ def test_segmentation_fwavacc(setup):
     assert result.value == setup.expected_result
 
 
-def compose_input_variables(setup: SegmentationTestSetup):
-    """ Common step to create input variables from SegmentationTestSetup"""
-    annotation = SegmentationAnnotation(
-        "s3://fake_ann_url",
-        annotations=setup.annotations
-        if setup.annotations
-        else [
-            Segment(f"{index}", index) for index in set(setup.gt + setup.pred)
-        ],
-        reference_id="item_1",
-    )
-    prediction = SegmentationPrediction(
-        "s3://fake_pred_url",
-        annotations=annotation.annotations,
-        reference_id=annotation.reference_id,
-    )
-    ground_truth_img = np.array(setup.gt, dtype=np.int16)
-    prediction_img = np.array(setup.pred, dtype=np.int16)
-    url_to_img = {
-        annotation.mask_url: ground_truth_img,
-        prediction.mask_url: prediction_img,
-    }
-    return annotation, prediction, url_to_img
+@pytest.mark.parametrize(
+    "setup, iou_thresholds",
+    [
+        (SegmentationTestSetup([1], [0], 0), "coco"),
+        (SegmentationTestSetup([1], [1], 1), "coco"),
+        (
+            SegmentationTestSetup(
+                [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2],
+                [0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2],
+                ((1 / 1 + 3 / 4 + 5 / 6) / 3 + (0 + 0 + 5 / 6) / 3) / 2,
+            ),
+            [0.5, 0.8],
+        ),
+    ],
+)
+def test_segmentation_map(setup, iou_thresholds):
+    annotation, prediction, url_to_img = compose_input_variables(setup)
 
-
-def test_segmentation_map():
-    annotation = SegmentationAnnotation(
-        "s3://fake_ann_url",
-        annotations=[Segment("one", 1)],
-        reference_id="item_1",
-    )
-    prediction = SegmentationPrediction(
-        "s3://fake_pred_url",
-        annotations=annotation.annotations,
-        reference_id=annotation.reference_id,
-    )
-    ground_truth_img = np.ones((5, 5))
-    prediction_img = np.copy(ground_truth_img)
-    prediction_img[:, 0:1] = 0
-    url_to_img = {
-        annotation.mask_url: ground_truth_img,
-        prediction.mask_url: prediction_img,
-    }
-
-    metric = SegmentationMAP()
+    metric = SegmentationMAP(iou_thresholds=iou_thresholds)
     metric.loader = FakeLoader(url_to_img)
     result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    assert result.value == 0.5
+    assert result.value == setup.expected_result
 
 
 def test_masked_recall():

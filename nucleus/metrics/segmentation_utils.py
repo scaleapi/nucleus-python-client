@@ -101,6 +101,8 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
     """Uses linear sum assignment to find biggest pixel-wise IOU match. Secondary matches are moved to last column
     as false positives (since they are outside of instance boundaries).
 
+    TODO(gunnar): Change logic to only move suppressed TP to FP so we can maintain the original confusion
+
     Arguments:
         confusion: Confusion matrix
         iou_threshold: Detections under iou threshold are considered false positives
@@ -113,6 +115,7 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
     iou, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
     # Prepare the new confusion with +1 added to the shape
     non_max_suppressed = np.zeros(np.add(confusion.shape, 1), dtype=np.int16)
+    original_confusion = np.copy(confusion)
 
     keep_diagonal = iou.diagonal() >= iou_threshold
     # Move false positives from diag to new false_positive class
@@ -133,7 +136,8 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
         dest_flat_indexes, confusion.take(matches_flat_indexes)
     )
     confusion.put(matches_flat_indexes, np.zeros(len(matches_flat_indexes)))
-    non_max_suppressed[:, -1] += np.r_[
-        confusion.sum(axis=1), np.zeros(1, dtype=np.int16)
-    ]
+    valid_confusion = confusion > 0
+    valid_row, valid_col = np.where(confusion > 0)
+    flat_idxs = valid_col + valid_row * non_max_suppressed.shape[1]
+    non_max_suppressed.put(flat_idxs, confusion[valid_confusion])
     return non_max_suppressed

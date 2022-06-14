@@ -5,10 +5,13 @@ from typing import List, Optional, Union
 import numpy as np
 from PIL import Image
 
+from .metric_utils import compute_average_precision
 from .segmentation_utils import (
     fast_confusion_matrix,
     non_max_suppress_confusion,
 )
+
+FALSE_POSITIVES = "__non_max_false_positive"
 
 try:
     import fsspec
@@ -134,7 +137,12 @@ class SegmentationMaskMetric(Metric):
         pass
 
     def _calculate_confusion_matrix(
-        self, annotation, annotation_img, prediction, prediction_img
+        self,
+        annotation,
+        annotation_img,
+        prediction,
+        prediction_img,
+        iou_threshold,
     ) -> np.ndarray:
         """This calculates a confusion matrix with ground_truth_index X predicted_index summary
 
@@ -160,15 +168,14 @@ class SegmentationMaskMetric(Metric):
         confusion = self._filter_confusion_matrix(
             confusion, annotation, prediction
         )
-        confusion = non_max_suppress_confusion(confusion, self.iou_threshold)
-        false_positive = Segment(
-            "non_max_positive", index=confusion.shape[0] - 1
-        )
-        annotation.annotations.append(false_positive)
-        if annotation.annotations is not prediction.annotations:
-            # Probably likely that this structure is re-used -> check if same list instance and only append once
-            # TODO(gunnar): Should this uniqueness be handled by the base class?
-            prediction.annotations.append(false_positive)
+        confusion = non_max_suppress_confusion(confusion, iou_threshold)
+        false_positive = Segment(FALSE_POSITIVES, index=confusion.shape[0] - 1)
+        if annotation.annotations[-1].label != FALSE_POSITIVES:
+            annotation.annotations.append(false_positive)
+            if annotation.annotations is not prediction.annotations:
+                # Probably likely that this structure is re-used -> check if same list instance and only append once
+                # TODO(gunnar): Should this uniqueness be handled by the base class?
+                prediction.annotations.append(false_positive)
 
         if self._is_instance_segmentation(annotation, prediction):
             confusion = self._convert_to_instance_seg_confusion(
@@ -308,7 +315,11 @@ class SegmentationIOU(SegmentationMaskMetric):
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
         confusion = self._calculate_confusion_matrix(
-            annotation, annotation_img, prediction, prediction_img
+            annotation,
+            annotation_img,
+            prediction,
+            prediction_img,
+            self.iou_threshold,
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -370,12 +381,19 @@ class SegmentationPrecision(SegmentationMaskMetric):
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
         confusion = self._calculate_confusion_matrix(
-            annotation, annotation_img, prediction, prediction_img
+            annotation,
+            annotation_img,
+            prediction,
+            prediction_img,
+            self.iou_threshold,
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            true_pos = np.diag(confusion)
-            precision = np.nanmean(true_pos / np.sum(confusion, axis=1))
+            confused = confusion[:-1, :-1]
+            tp = confused.diagonal()
+            fp = confusion[:, -1][:-1] + confused.sum(axis=0) - tp
+            tp_and_fp = tp + fp
+            precision = np.nanmean(tp / tp_and_fp)
         return ScalarResult(value=precision, weight=confusion.sum())  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
@@ -432,7 +450,11 @@ class SegmentationRecall(SegmentationMaskMetric):
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
         confusion = self._calculate_confusion_matrix(
-            annotation, annotation_img, prediction, prediction_img
+            annotation,
+            annotation_img,
+            prediction,
+            prediction_img,
+            self.iou_threshold,
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
@@ -479,6 +501,8 @@ class SegmentationMAP(SegmentationMaskMetric):
         metric(annotations, predictions)
     """
 
+    iou_setups = {"coco"}
+
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
@@ -488,7 +512,7 @@ class SegmentationMAP(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
+        iou_thresholds: Union[List[float], str] = "coco",
     ):
         """Initializes PolygonRecall object.
 
@@ -511,12 +535,30 @@ class SegmentationMAP(SegmentationMaskMetric):
                 each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
+            map_thresholds: Provide a list of threshold to compute over or literal "coco"
         """
         super().__init__(
             annotation_filters,
             prediction_filters,
-            iou_threshold,
         )
+        self.iou_thresholds = self._setup_iou_thresholds(iou_thresholds)
+
+    def _setup_iou_thresholds(
+        self, iou_thresholds: Union[List[float], str] = "coco"
+    ):
+        if isinstance(iou_thresholds, list):
+            return iou_thresholds
+        elif isinstance(iou_thresholds, str):
+            if iou_thresholds in self.iou_setups:
+                return np.arange(0.5, 1.0, 0.05)
+            else:
+                raise RuntimeError(
+                    f"Got invalid configuration value: {iou_thresholds}, expected one of: {self.iou_setups}"
+                )
+        else:
+            raise RuntimeError(
+                f"Got invalid configuration: {iou_thresholds}. Expected list of floats or one of: {self.iou_setups}"
+            )
 
     def _metric_impl(
         self,
@@ -526,27 +568,21 @@ class SegmentationMAP(SegmentationMaskMetric):
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
 
-        confusion = self._calculate_confusion_matrix(
-            annotation, annotation_img, prediction, prediction_img
-        )
-        label_to_index = {a.label: a.index for a in annotation.annotations}
-        num_classes = len(label_to_index.keys())
-        ap_per_class = np.ndarray(num_classes)  # type: ignore
-        with np.errstate(divide="ignore", invalid="ignore"):
-            for class_idx, (_, index) in enumerate(label_to_index.items()):
-                true_pos = confusion[index, index]
-                false_pos = confusion[:, index].sum()
-                samples = true_pos + false_pos
-                if samples:
-                    ap_per_class[class_idx] = true_pos / samples
-                else:
-                    ap_per_class[class_idx] = np.nan
+        ap_per_threshold = []
+        weight = 0
+        for iou_threshold in self.iou_thresholds:
+            ap = SegmentationPrecision(
+                self.annotation_filters, self.prediction_filters, iou_threshold
+            )
+            ap.loader = self.loader
+            ap_result = ap(
+                AnnotationList(segmentation_annotations=[annotation]),
+                PredictionList(segmentation_predictions=[prediction]),
+            )
+            ap_per_threshold.append(ap_result.value)
+            weight += ap_result.weight
 
-        if num_classes > 0:
-            m_ap = np.nanmean(ap_per_class)
-            return ScalarResult(m_ap, weight=1)  # type: ignore
-        else:
-            return ScalarResult(0, weight=0)
+        return ScalarResult(np.nanmean(ap_per_threshold), weight=weight)
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -634,7 +670,11 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
         confusion = self._calculate_confusion_matrix(
-            annotation, annotation_img, prediction, prediction_img
+            annotation,
+            annotation_img,
+            prediction,
+            prediction_img,
+            self.iou_threshold,
         )
         with np.errstate(divide="ignore", invalid="ignore"):
             iu = np.diag(confusion) / (
@@ -642,7 +682,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 + confusion.sum(axis=0)
                 - np.diag(confusion)
             )
-            freq = confusion.sum(axis=1) / confusion.sum()
+            freq = confusion.sum(axis=0) / confusion.sum()
             fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
         return ScalarResult(value=np.nanmean(fwavacc), weight=1)  # type: ignore
 
