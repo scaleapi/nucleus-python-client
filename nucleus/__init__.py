@@ -218,6 +218,7 @@ class NucleusClient:
                 reference_id=model["ref_id"],
                 metadata=model["metadata"] or None,
                 client=self,
+                tags=model.get("tags", []),
             )
             for model in model_objects["models"]
         ]

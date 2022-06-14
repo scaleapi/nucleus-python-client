@@ -115,3 +115,20 @@ def test_new_model_endpoints(CLIENT, dataset: Dataset):
         model, predictions[0].reference_id, predictions[0].annotation_id
     )
     assert_box_prediction_matches_dict(prediction_loc, TEST_BOX_PREDICTIONS[0])
+
+
+def test_tag_model(CLIENT, dataset: Dataset):
+    model_reference = "model_" + str(time.time())
+    model = CLIENT.create_model(
+        TEST_MODEL_NAME, model_reference, tags=["first_tag"]
+    )
+
+    model.tag("single tag")
+    model.tags(["tag_a", "tag_b"])
+
+    model_from_backend = list(
+        filter(lambda m: m.reference_id == model_reference, CLIENT.models)
+    )[0]
+    assert sorted(model_from_backend.tags) == sorted(
+        ["first_tag", "single tag", "tag_a", "tag_b"]
+    )
