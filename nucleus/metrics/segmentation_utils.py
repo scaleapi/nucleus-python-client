@@ -1,16 +1,20 @@
 import numpy as np
-from rasterio import features
 
 from nucleus import Point, PolygonPrediction
+from nucleus.package_not_installed import (  # pylint: disable=ungrouped-imports
+    PackageNotInstalled,
+)
 
 try:
     from shapely import geometry
 except ModuleNotFoundError:
-    from nucleus.shapely_not_installed import (  # pylint: disable=ungrouped-imports
-        ShapelyNotInstalled,
-    )
+    geometry = PackageNotInstalled
 
-    geometry = ShapelyNotInstalled
+
+try:
+    from rasterio import features
+except ModuleNotFoundError:
+    rasterio = PackageNotInstalled
 
 
 def instance_mask_to_polys(instance_mask: np.ndarray, background_code=None):

@@ -13,9 +13,9 @@ from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
 try:
     from shapely.geometry import Polygon
 except ModuleNotFoundError:
-    from ..shapely_not_installed import ShapelyNotInstalled
+    from ..package_not_installed import PackageNotInstalled
 
-    Polygon = ShapelyNotInstalled
+    Polygon = PackageNotInstalled
 
 
 from .base import ScalarResult

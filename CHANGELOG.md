@@ -5,25 +5,48 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.13.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.3) - 2022-06-14
+## [0.14.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.0) - 2022-06-14
 
 ### Added
 
 - Allow creation of model tags on new and existing models, eg:
 ```python
-client = nucleus.NucleusClient(API_KEY)
-
 # on model creation
-model = client.create_model(
-  name="foo_model",
-  reference_id="foo-model-ref",
-  tags=["some tag"]
-)
+model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags=["some tag"])
 
 # on existing models
 existing_model = client.models[0]
 existing_model.tag(['some tag'])
 ```
+
+
+## [0.13.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-09
+
+### Fixed
+- Guard against extras imports 
+
+## [0.13.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.3) - 2022-06-09
+
+### Fixed
+- Make installation of scale-launch optional (again!).
+
+## [0.13.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.2) - 2022-06-08
+
+### Fixed
+
+- Open up requirements for easier installation in more environments. Add more optional installs under `metrics`
+ 
+## [0.13.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.1) - 2022-06-08
+
+### Fixed
+
+- Make installation of scale-launch optional
+
+## [0.13.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.0) - 2022-06-08
+
+### Added
+
+- Segmentation functions to Validate API
 
 ## [0.12.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.4) - 2022-06-02
 
