@@ -93,7 +93,14 @@ class Model:
     """
 
     def __init__(
-        self, model_id, name, reference_id, metadata, client, bundle_name=None, tags=None,
+        self,
+        model_id,
+        name,
+        reference_id,
+        metadata,
+        client,
+        bundle_name=None,
+        tags=None,
     ):
         self.id = model_id
         self.name = name

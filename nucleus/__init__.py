@@ -484,7 +484,7 @@ class NucleusClient:
         reference_id: str,
         metadata: Optional[Dict] = None,
         bundle_name: Optional[str] = None,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -519,6 +519,7 @@ class NucleusClient:
             metadata=metadata,
             bundle_name=bundle_name,
             client=self,
+            tags=tags,
         )
 
     def create_launch_model(
