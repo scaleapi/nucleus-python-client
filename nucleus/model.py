@@ -100,14 +100,14 @@ class Model:
         metadata,
         client,
         bundle_name=None,
-        tags=None,
+        tags: Optional[List[str]] = None,
     ):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
         self.metadata = metadata
         self.bundle_name = bundle_name
-        self._tags = tags
+        self.tags = tags
         self._client = client
 
     def __repr__(self):
@@ -135,10 +135,6 @@ class Model:
             metadata=payload["metadata"] or None,
             client=client,
         )
-
-    @property
-    def tags(self):
-        return self._tags
 
     def create_run(
         self,
@@ -247,5 +243,8 @@ class Model:
             f"model/{self.id}/tag",
             requests_command=requests.post,
         )
+
+        if response.get("msg", False):
+            self.tags.extend([tags] if isinstance(tags, str) else tags)
 
         return response
