@@ -222,15 +222,15 @@ class Model:
 
         return response
 
-    def tag(self, tags: Union[str, List[str]]):
+    def add_tag(self, tags: Union[str, List[str]]):
         """Tag the model with a custom tag name. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
 
-            model.tag("tag_x")
-            model.tag(["tag_A", "tag_B"])
+            model.add_tag("tag_x")
+            model.add_tag(["tag_A", "tag_B"])
 
         Args:
             tags: single tag name, or list of tag names

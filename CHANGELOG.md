@@ -16,7 +16,7 @@ model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags
 
 # on existing models
 existing_model = client.models[0]
-existing_model.tag(['some tag'])
+existing_model.add_tag(['some tag'])
 ```
 
 

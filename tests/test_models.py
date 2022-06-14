@@ -123,8 +123,8 @@ def test_tag_model(CLIENT, dataset: Dataset):
         TEST_MODEL_NAME, model_reference, tags=["first_tag"]
     )
 
-    model.tag("single tag")
-    model.tags(["tag_a", "tag_b"])
+    model.add_tag("single tag")
+    model.add_tag(["tag_a", "tag_b"])
 
     models_from_backend = list(
         filter(lambda m: m.reference_id == model_reference, CLIENT.models)
