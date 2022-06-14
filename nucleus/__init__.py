@@ -91,6 +91,7 @@ from .constants import (
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
+    MODEL_TAGS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
     PREDICTIONS_IGNORED_KEY,
@@ -218,7 +219,7 @@ class NucleusClient:
                 reference_id=model["ref_id"],
                 metadata=model["metadata"] or None,
                 client=self,
-                tags=model.get("tags", []),
+                tags=model.get(MODEL_TAGS_KEY, []),
             )
             for model in model_objects["models"]
         ]

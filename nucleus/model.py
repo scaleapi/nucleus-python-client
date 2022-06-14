@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Union
 
 import requests
 
-from .constants import METADATA_KEY, NAME_KEY, REFERENCE_ID_KEY
+from .constants import METADATA_KEY, MODEL_TAGS_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
 from .job import AsyncJob
 from .model_run import ModelRun
@@ -237,7 +237,7 @@ class Model:
 
         """
 
-        payload = {"tags": [tags] if isinstance(tags, str) else tags}
+        payload = {MODEL_TAGS_KEY: [tags] if isinstance(tags, str) else tags}
         response = self._client.make_request(
             payload,
             f"model/{self.id}/tag",
