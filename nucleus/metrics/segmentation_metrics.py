@@ -1,5 +1,6 @@
 import abc
 import itertools
+from collections import defaultdict
 from typing import List, Optional, Union
 
 import numpy as np
@@ -187,44 +188,58 @@ class SegmentationMaskMetric(Metric):
     def _convert_to_instance_seg_confusion(
         self, confusion, annotation, prediction
     ):
-        labels = list(
-            dict.fromkeys(
-                s.label
-                for s in itertools.chain(
-                    annotation.annotations, prediction.annotations
-                )
-            )
-        )
-        num_classes = len(labels)
-        all_classes = np.arange(num_classes + 1)
-        new_confusion = np.zeros((num_classes, num_classes), dtype=np.int16)
+        """If we have instance segmentation we swap the maximal intersection to be on the diagonal if it fits the label
+        This "fixes" the confusion matrix since all of the instances are equal and puts the right match on the diagonal
 
-        gt_label_to_new_index = {
-            label: idx for idx, label in enumerate(labels)
+        TODO(gunnar):Take into account FPs -> iterate over groups and create new confusion from that
+        """
+        pred_index_to_label = {
+            s.index: s.label for s in prediction.annotations
         }
-        pred_index_to_new_index = {
-            p.index: gt_label_to_new_index[p.label]
-            for p in prediction.annotations
-        }
+        swapped = set()
+        swap_indexes = {}
         for gt_segment in annotation.annotations:
-            allowed_match_idxs = [
-                p.index
-                for p in prediction.annotations
-                if p.label == gt_segment.label
-            ]
-            non_match_idxs = np.setdiff1d(all_classes, allowed_match_idxs)
+            row = confusion[gt_segment.index, :]
+            max_col = np.argmax(row)
+            if row[max_col] == 0:
+                continue
+            if (
+                pred_index_to_label[max_col] == gt_segment.label
+                and max_col not in swapped
+            ):
+                swap_indexes[max_col] = gt_segment.index
+                swapped.update({max_col, gt_segment.index})
 
-            new_label_index = gt_label_to_new_index[gt_segment.label]
-            for match_idx in allowed_match_idxs:
-                new_confusion[new_label_index, new_label_index] += confusion[
-                    gt_segment.index, match_idx
-                ]
+        for col1, col2 in swap_indexes.items():
+            confusion[:, col1], confusion[:, col2] = (
+                confusion[:, col2],
+                confusion[:, col1].copy(),
+            )
 
-            for non_match_idx in non_match_idxs:
-                new_idx = pred_index_to_new_index[non_match_idx]
-                new_confusion[new_label_index, new_idx] += confusion[
-                    gt_segment.index, non_match_idx
-                ]
+        label_to_old_indexes = defaultdict(set)
+        for segment in itertools.chain(
+            annotation.annotations, prediction.annotations
+        ):
+            label_to_old_indexes[segment.label].add(segment.index)
+
+        new_confusion = np.zeros(
+            (len(label_to_old_indexes), len(label_to_old_indexes)),
+            dtype=np.int16,
+        )
+        old_row, old_col = np.where(confusion >= 1)
+        for r, c in zip(old_row, old_col):
+            new_r = None
+            new_c = None
+            for new_idx, old_indexes in enumerate(
+                label_to_old_indexes.values()
+            ):
+                if r in old_indexes:
+                    new_r = new_idx
+                if c in old_indexes:
+                    new_c = new_idx
+                if new_r is not None and new_c is not None:
+                    new_confusion[new_r, new_c] += confusion[r, c]
+                    break
 
         return new_confusion
 
@@ -458,8 +473,14 @@ class SegmentationRecall(SegmentationMaskMetric):
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            true_pos = np.diag(confusion)
-            recall = np.nanmean(true_pos / np.sum(confusion, axis=1))
+            confused = confusion[:-1, :-1]
+            tp = confused.diagonal()
+            fn = confused.sum(axis=1) - tp
+            tp_and_fn = tp + fn
+            if tp_and_fn.sum():
+                recall = np.nanmean(tp / tp_and_fn)
+            else:
+                recall = 0
         return ScalarResult(value=recall, weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:

@@ -117,9 +117,12 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
     non_max_suppressed = np.zeros(np.add(confusion.shape, 1), dtype=np.int16)
     original_confusion = np.copy(confusion)
 
+    # ----  IOU filtering from diagonal
     keep_diagonal = iou.diagonal() >= iou_threshold
     # Move false positives from diag to new false_positive class
     move_indexes = np.where(~keep_diagonal)
+
+    # log iou suppressed as FPs
     non_max_suppressed[:, -1].put(
         move_indexes, confusion.diagonal().take(move_indexes)
     )
@@ -128,7 +131,9 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
     new_diagonal = np.zeros(len(confusion.diagonal()))
     new_diagonal.put(keep_indexes, confusion.diagonal()[keep_indexes])
     np.fill_diagonal(confusion, new_diagonal)
+    # ----
 
+    # -- move max over
     matches_flat_indexes = max_iou_col + max_iou_row * confusion.shape[1]
     dest_flat_indexes = max_iou_col + max_iou_row * non_max_suppressed.shape[1]
 
@@ -136,8 +141,19 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
         dest_flat_indexes, confusion.take(matches_flat_indexes)
     )
     confusion.put(matches_flat_indexes, np.zeros(len(matches_flat_indexes)))
+    # --
+
+    # -- move left on diagonal to FPs
+    non_max_suppressed[:, -1] = (
+        np.r_[confusion.diagonal(), np.zeros(1)] + non_max_suppressed[:, -1]
+    )
+    np.fill_diagonal(confusion, np.zeros(len(confusion.diagonal())))
+    # --
+
+    # -- move valid confusions over
     valid_confusion = confusion > 0
     valid_row, valid_col = np.where(confusion > 0)
     flat_idxs = valid_col + valid_row * non_max_suppressed.shape[1]
     non_max_suppressed.put(flat_idxs, confusion[valid_confusion])
+    # --
     return non_max_suppressed
