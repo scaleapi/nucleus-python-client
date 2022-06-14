@@ -126,9 +126,10 @@ def test_tag_model(CLIENT, dataset: Dataset):
     model.tag("single tag")
     model.tags(["tag_a", "tag_b"])
 
-    model_from_backend = list(
+    models_from_backend = list(
         filter(lambda m: m.reference_id == model_reference, CLIENT.models)
-    )[0]
-    assert sorted(model_from_backend.tags) == sorted(
+    )
+    assert len(models_from_backend) == 1
+    assert sorted(models_from_backend[0].tags) == sorted(
         ["first_tag", "single tag", "tag_a", "tag_b"]
     )
