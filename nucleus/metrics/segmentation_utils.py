@@ -97,22 +97,43 @@ def fast_confusion_matrix(
     return hist
 
 
-def non_max_suppress_confusion(confusion: np.ndarray):
+def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
     """Uses linear sum assignment to find biggest pixel-wise IOU match. Secondary matches are moved to last column
     as false positives (since they are outside of instance boundaries).
+
+    Arguments:
+        confusion: Confusion matrix
+        iou_threshold: Detections under iou threshold are considered false positives
 
     Returns:
         Non max suppressed confusion matrix (NxN) with dimension ((N+1)x(N+1)) where the last column are suppressed
         positives
 
     """
-    _, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
+    iou, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
+    # Prepare the new confusion with +1 added to the shape
     non_max_suppressed = np.zeros(np.add(confusion.shape, 1), dtype=np.int16)
+
+    keep_diagonal = iou.diagonal() >= iou_threshold
+    # Move false positives from diag to new false_positive class
+    move_indexes = np.where(~keep_diagonal)
+    non_max_suppressed[:, -1].put(
+        move_indexes, confusion.diagonal().take(move_indexes)
+    )
+    # Zero false positives on diagonal
+    keep_indexes = np.where(keep_diagonal)
+    new_diagonal = np.zeros(len(confusion.diagonal()))
+    new_diagonal.put(keep_indexes, confusion.diagonal()[keep_indexes])
+    np.fill_diagonal(confusion, new_diagonal)
+
     matches_flat_indexes = max_iou_col + max_iou_row * confusion.shape[1]
     dest_flat_indexes = max_iou_col + max_iou_row * non_max_suppressed.shape[1]
+
     non_max_suppressed.put(
         dest_flat_indexes, confusion.take(matches_flat_indexes)
     )
     confusion.put(matches_flat_indexes, np.zeros(len(matches_flat_indexes)))
-    non_max_suppressed[:, -1] = np.r_[confusion.sum(axis=1), np.zeros(1)]
+    non_max_suppressed[:, -1] += np.r_[
+        confusion.sum(axis=1), np.zeros(1, dtype=np.int16)
+    ]
     return non_max_suppressed

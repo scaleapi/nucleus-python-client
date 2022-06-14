@@ -48,7 +48,7 @@ class SegmentationMaskMetric(Metric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        instance_iou_threshold: float = 0.1,
+        iou_threshold: float = 0.5,
     ):
         """Initializes PolygonMetric abstract object.
 
@@ -75,7 +75,7 @@ class SegmentationMaskMetric(Metric):
         # TODO -> add custom filtering to Segmentation(Annotation|Prediction).annotations.(metadata|label)
         super().__init__(annotation_filters, prediction_filters)
         self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
-        self.instance_iou_threshold = instance_iou_threshold
+        self.iou_threshold = iou_threshold
 
     def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
@@ -154,27 +154,27 @@ class SegmentationMaskMetric(Metric):
             )
             + 1  # to include 0
         )
-        if self._is_instance_segmentation(annotation, prediction):
-            confusion = fast_confusion_matrix(
-                annotation_img, prediction_img, num_classes
-            )
-            non_max_suppressed = non_max_suppress_confusion(confusion)
-            false_positive = Segment(
-                "non_max_positive", index=non_max_suppressed.shape[0] - 1
-            )
-            annotation.annotations.append(false_positive)
+        confusion = fast_confusion_matrix(
+            annotation_img, prediction_img, num_classes
+        )
+        confusion = self._filter_confusion_matrix(
+            confusion, annotation, prediction
+        )
+        confusion = non_max_suppress_confusion(confusion, self.iou_threshold)
+        false_positive = Segment(
+            "non_max_positive", index=confusion.shape[0] - 1
+        )
+        annotation.annotations.append(false_positive)
+        if annotation.annotations is not prediction.annotations:
+            # Probably likely that this structure is re-used -> check if same list instance and only append once
+            # TODO(gunnar): Should this uniqueness be handled by the base class?
             prediction.annotations.append(false_positive)
-            confusion = self._convert_to_instance_seg_confusion(
-                non_max_suppressed, annotation, prediction
-            )
 
-        else:
-            confusion = fast_confusion_matrix(
-                annotation_img, prediction_img, num_classes
-            )
-            confusion = self._filter_confusion_matrix(
+        if self._is_instance_segmentation(annotation, prediction):
+            confusion = self._convert_to_instance_seg_confusion(
                 confusion, annotation, prediction
             )
+
         return confusion
 
     def _convert_to_instance_seg_confusion(
@@ -270,6 +270,7 @@ class SegmentationIOU(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        iou_threshold: float = 0.5,
     ):
         """Initializes PolygonIOU object.
 
@@ -296,6 +297,7 @@ class SegmentationIOU(SegmentationMaskMetric):
         super().__init__(
             annotation_filters,
             prediction_filters,
+            iou_threshold,
         )
 
     def _metric_impl(
@@ -310,12 +312,12 @@ class SegmentationIOU(SegmentationMaskMetric):
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            iou = np.diag(confusion) / (
-                confusion.sum(axis=1)
-                + confusion.sum(axis=0)
-                - np.diag(confusion)
+            tp = confusion[:-1, :-1]
+            fp = confusion[:, -1]
+            iou = np.diag(tp) / (
+                tp.sum(axis=1) + tp.sum(axis=0) + fp.sum() - np.diag(tp)
             )
-        return ScalarResult(value=np.nanmean(iou), weight=annotation_img.size)  # type: ignore
+            return ScalarResult(value=np.nanmean(iou), weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -330,6 +332,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        iou_threshold: float = 0.5,
     ):
         """Calculates mean per-class precision
 
@@ -356,6 +359,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
         super().__init__(
             annotation_filters,
             prediction_filters,
+            iou_threshold,
         )
 
     def _metric_impl(
@@ -390,6 +394,7 @@ class SegmentationRecall(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        iou_threshold: float = 0.5,
     ):
         """Initializes PolygonRecall object.
 
@@ -414,8 +419,9 @@ class SegmentationRecall(SegmentationMaskMetric):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         super().__init__(
-            annotation_filters=annotation_filters,
-            prediction_filters=prediction_filters,
+            annotation_filters,
+            prediction_filters,
+            iou_threshold,
         )
 
     def _metric_impl(
@@ -482,6 +488,7 @@ class SegmentationMAP(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        iou_threshold: float = 0.5,
     ):
         """Initializes PolygonRecall object.
 
@@ -506,8 +513,9 @@ class SegmentationMAP(SegmentationMaskMetric):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         super().__init__(
-            annotation_filters=annotation_filters,
-            prediction_filters=prediction_filters,
+            annotation_filters,
+            prediction_filters,
+            iou_threshold,
         )
 
     def _metric_impl(
@@ -588,6 +596,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        iou_threshold: float = 0.5,
     ):
         """Initializes SegmentationFWAVACC object.
 
@@ -612,8 +621,9 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         super().__init__(
-            annotation_filters=annotation_filters,
-            prediction_filters=prediction_filters,
+            annotation_filters,
+            prediction_filters,
+            iou_threshold,
         )
 
     def _metric_impl(
