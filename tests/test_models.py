@@ -118,6 +118,14 @@ def test_new_model_endpoints(CLIENT, dataset: Dataset):
 
 
 def test_tag_model(CLIENT, dataset: Dataset):
+
+    def testing_model(ref_id):
+        models_from_backend = list(
+            filter(lambda m: m.reference_id == ref_id, CLIENT.models)
+        )
+        assert len(models_from_backend) == 1
+        return models_from_backend[0]
+
     model_reference = "model_" + str(time.time())
     model = CLIENT.create_model(
         TEST_MODEL_NAME, model_reference, tags=["first_tag"]
@@ -126,10 +134,13 @@ def test_tag_model(CLIENT, dataset: Dataset):
     model.add_tag("single tag")
     model.add_tag(["tag_a", "tag_b"])
 
-    models_from_backend = list(
-        filter(lambda m: m.reference_id == model_reference, CLIENT.models)
-    )
-    assert len(models_from_backend) == 1
-    assert sorted(models_from_backend[0].tags) == sorted(
+    backend_model = testing_model(model_reference)
+    assert sorted(backend_model.tags) == sorted(
         ["first_tag", "single tag", "tag_a", "tag_b"]
     )
+
+    model.remove_tag("tag_a")
+    model.remove_tag(["first_tag", "tag_b"])
+
+    backend_model = testing_model(model_reference)
+    assert backend_model.tags == ["single tag"]

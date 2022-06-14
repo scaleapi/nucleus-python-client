@@ -248,3 +248,31 @@ class Model:
             self.tags.extend([tags] if isinstance(tags, str) else tags)
 
         return response
+
+    def remove_tag(self, tags: Union[str, List[str]]):
+        """Tag the model with a custom tag name. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.add_tag("tag_x")
+            model.add_tag(["tag_A", "tag_B"])
+
+        Args:
+            tags: single tag name, or list of tag names
+
+        """
+
+        payload = {MODEL_TAGS_KEY: [tags] if isinstance(tags, str) else tags}
+        response = self._client.make_request(
+            payload,
+            f"model/{self.id}/tag",
+            requests_command=requests.delete,
+        )
+
+        if response.get("msg", False):
+            rm_tags = [tags] if isinstance(tags, str) else tags
+            self.tags = list(filter(lambda t: t not in rm_tags, self.tags))
+
+        return response

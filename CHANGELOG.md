@@ -9,14 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Allow creation of model tags on new and existing models, eg:
+- Allow creation/deletion of model tags on new and existing models, eg:
 ```python
 # on model creation
 model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags=["some tag"])
 
 # on existing models
 existing_model = client.models[0]
-existing_model.add_tag(['some tag'])
+existing_model.add_tag(['tag a', 'tag b'])
+
+# remove tag
+existing_model.remove_tag(['tag a'])
 ```
 
 
