@@ -100,14 +100,14 @@ class Model:
         metadata,
         client,
         bundle_name=None,
-        tags: Optional[List[str]] = None,
+        tags: List[str] = None,
     ):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
         self.metadata = metadata
         self.bundle_name = bundle_name
-        self.tags = tags
+        self.tags = tags if tags else []
         self._client = client
 
     def __repr__(self):
