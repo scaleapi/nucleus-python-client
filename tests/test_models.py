@@ -118,7 +118,6 @@ def test_new_model_endpoints(CLIENT, dataset: Dataset):
 
 
 def test_tag_model(CLIENT, dataset: Dataset):
-
     def testing_model(ref_id):
         models_from_backend = list(
             filter(lambda m: m.reference_id == ref_id, CLIENT.models)
