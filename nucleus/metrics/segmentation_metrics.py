@@ -617,7 +617,9 @@ class SegmentationMAP(SegmentationMaskMetric):
 
         thresholds = np.concatenate([[0], self.iou_thresholds, [1]])
         steps = np.diff(thresholds)
-        mean_ap = (np.array(ap_per_threshold + [ap_per_threshold[-1]]) * steps).sum()
+        mean_ap = (
+            np.array(ap_per_threshold + [ap_per_threshold[-1]]) * steps
+        ).sum()
         return ScalarResult(mean_ap, weight=weight)
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
