@@ -439,7 +439,7 @@ class KeypointsAnnotation(Annotation):
             label="face",
             keypoints=[Keypoint(100, 100), Keypoint(120, 120), Keypoint(visible=False), Keypoint(0, 0)],
             names=["point1", "point2", "point3", "point4"],
-            skeleton=[[0, 1], [1, 2], [1, 3], [2, 4]],
+            skeleton=[[0, 1], [1, 2], [1, 3], [2, 3]],
             reference_id="image_2",
             annotation_id="image_2_face_keypoints_1",
             metadata={"face_direction": "forward"},
@@ -486,11 +486,17 @@ class KeypointsAnnotation(Annotation):
                     )
                 seen.add(name)
 
+        max_segment_index = len(self.keypoints) - 1
         for segment in self.skeleton:
             if len(segment) != 2:
                 raise ValueError(
                     "The keypoints skeleton must contain a list of line segments with exactly 2 indices"
                 )
+            for index in segment:
+                if index > max_segment_index:
+                    raise ValueError(
+                        f"The skeleton index {index} is not a valid keypoint index"
+                    )
 
     @classmethod
     def from_json(cls, payload: dict):
