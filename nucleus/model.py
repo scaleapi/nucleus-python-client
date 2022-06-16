@@ -222,57 +222,48 @@ class Model:
 
         return response
 
-    def add_tag(self, tags: Union[str, List[str]]):
-        """Tag the model with a custom tag name. ::
+    def add_tags(self, tags: List[str]):
+        """Tag the model with custom tag names. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
 
-            model.add_tag("tag_x")
-            model.add_tag(["tag_A", "tag_B"])
+            model.add_tags(["tag_A", "tag_B"])
 
         Args:
-            tags: single tag name, or list of tag names
-
+            tags: list of tag names
         """
-
-        payload = {MODEL_TAGS_KEY: [tags] if isinstance(tags, str) else tags}
         response = self._client.make_request(
-            payload,
+            {MODEL_TAGS_KEY: tags},
             f"model/{self.id}/tag",
             requests_command=requests.post,
         )
 
         if response.get("msg", False):
-            self.tags.extend([tags] if isinstance(tags, str) else tags)
+            self.tags.extend(tags)
 
         return response
 
-    def remove_tag(self, tags: Union[str, List[str]]):
-        """Tag the model with a custom tag name. ::
+    def remove_tags(self, tags: List[str]):
+        """Remove tag(s) from the model. ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             model = client.list_models()[0]
 
-            model.add_tag("tag_x")
-            model.add_tag(["tag_A", "tag_B"])
+            model.remove_tags(["tag_x"])
 
         Args:
-            tags: single tag name, or list of tag names
-
+            tags: list of tag names to remove
         """
-
-        payload = {MODEL_TAGS_KEY: [tags] if isinstance(tags, str) else tags}
         response = self._client.make_request(
-            payload,
+            {MODEL_TAGS_KEY: tags},
             f"model/{self.id}/tag",
             requests_command=requests.delete,
         )
 
         if response.get("msg", False):
-            rm_tags = [tags] if isinstance(tags, str) else tags
-            self.tags = list(filter(lambda t: t not in rm_tags, self.tags))
+            self.tags = list(filter(lambda t: t not in tags, self.tags))
 
         return response

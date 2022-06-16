@@ -130,16 +130,16 @@ def test_tag_model(CLIENT, dataset: Dataset):
         TEST_MODEL_NAME, model_reference, tags=["first_tag"]
     )
 
-    model.add_tag("single tag")
-    model.add_tag(["tag_a", "tag_b"])
+    model.add_tags(["single tag"])
+    model.add_tags(["tag_a", "tag_b"])
 
     backend_model = testing_model(model_reference)
     assert sorted(backend_model.tags) == sorted(
         ["first_tag", "single tag", "tag_a", "tag_b"]
     )
 
-    model.remove_tag("tag_a")
-    model.remove_tag(["first_tag", "tag_b"])
+    model.remove_tags(["tag_a"])
+    model.remove_tags(["first_tag", "tag_b"])
 
     backend_model = testing_model(model_reference)
     assert backend_model.tags == ["single tag"]

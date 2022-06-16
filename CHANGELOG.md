@@ -17,10 +17,10 @@ model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags
 
 # on existing models
 existing_model = client.models[0]
-existing_model.add_tag(['tag a', 'tag b'])
+existing_model.add_tags(['tag a', 'tag b'])
 
 # remove tag
-existing_model.remove_tag(['tag a'])
+existing_model.remove_tags(['tag a'])
 ```
 
 ## [0.13.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-15
