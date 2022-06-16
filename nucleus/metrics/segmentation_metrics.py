@@ -30,6 +30,7 @@ from nucleus.prediction import PredictionList, SegmentationPrediction
 
 from .base import Metric, ScalarResult
 
+
 # pylint: disable=useless-super-delegation
 
 
@@ -190,8 +191,6 @@ class SegmentationMaskMetric(Metric):
     ):
         """If we have instance segmentation we swap the maximal intersection to be on the diagonal if it fits the label
         This "fixes" the confusion matrix since all of the instances are equal and puts the right match on the diagonal
-
-        TODO(gunnar):Take into account FPs -> iterate over groups and create new confusion from that
         """
         pred_index_to_label = {
             s.index: s.label for s in prediction.annotations
@@ -223,24 +222,43 @@ class SegmentationMaskMetric(Metric):
             label_to_old_indexes[segment.label].add(segment.index)
 
         new_confusion = np.zeros(
-            (len(label_to_old_indexes), len(label_to_old_indexes)),
+            (len(label_to_old_indexes) + 1, len(label_to_old_indexes) + 1),
             dtype=np.int16,
         )
-        old_row, old_col = np.where(confusion >= 1)
-        for r, c in zip(old_row, old_col):
-            new_r = None
-            new_c = None
-            for new_idx, old_indexes in enumerate(
-                label_to_old_indexes.values()
-            ):
-                if r in old_indexes:
-                    new_r = new_idx
-                if c in old_indexes:
-                    new_c = new_idx
-                if new_r is not None and new_c is not None:
-                    new_confusion[new_r, new_c] += confusion[r, c]
-                    break
 
+        for gt_idx, (from_label, from_indexes) in enumerate(
+            label_to_old_indexes.items()
+        ):
+            for pred_idx, (to_label, to_indexes) in enumerate(
+                label_to_old_indexes.items()
+            ):
+                if gt_idx > pred_idx:
+                    continue
+                # inter-class confusion
+                elif gt_idx == pred_idx:
+                    gt = np.diag(confusion).take(list(from_indexes))
+                    # inter-class
+                    fp = 0
+                    for r, c in itertools.permutations(from_indexes, 2):
+                        fp += confusion[r, c]
+
+                    new_confusion[gt_idx, pred_idx] = gt.sum()
+                    new_confusion[gt_idx, -1] = fp
+                # other class confusion
+                else:
+                    for from_index in from_indexes:
+                        new_confusion[pred_idx, gt_idx] += (
+                            confusion[:, from_index]
+                            .take(list(to_indexes))
+                            .sum()
+                        )
+                        new_confusion[gt_idx, pred_idx] += (
+                            confusion[from_index, :]
+                            .take(list(to_indexes))
+                            .sum()
+                        )
+
+        assert confusion.sum() == new_confusion.sum()
         return new_confusion
 
     def _is_instance_segmentation(self, annotation, prediction):
@@ -473,15 +491,9 @@ class SegmentationRecall(SegmentationMaskMetric):
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            confused = confusion[:-1, :-1]
-            tp = confused.diagonal()
-            fn = confused.sum(axis=1) - tp
-            tp_and_fn = tp + fn
-            if tp_and_fn.sum():
-                recall = np.nanmean(tp / tp_and_fn)
-            else:
-                recall = 0
-        return ScalarResult(value=recall, weight=annotation_img.size)  # type: ignore
+            recall = confusion.diagonal() / confusion.sum(axis=1)
+            recall = recall[:-1]  # We drop fps as it is not a real class
+        return ScalarResult(value=np.nanmean(recall), weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore

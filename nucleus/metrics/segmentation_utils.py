@@ -115,7 +115,6 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
     iou, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
     # Prepare the new confusion with +1 added to the shape
     non_max_suppressed = np.zeros(np.add(confusion.shape, 1), dtype=np.int16)
-    original_confusion = np.copy(confusion)
 
     # ----  IOU filtering from diagonal
     keep_diagonal = iou.diagonal() >= iou_threshold

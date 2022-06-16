@@ -238,48 +238,48 @@ def test_masked_recall():
 @pytest.mark.parametrize(
     "setup",
     [
-        # SegmentationTestSetup(
-        #     [1, 2],
-        #     [0, 0],
-        #     0,
-        #     [
-        #         Segment("background", 0),
-        #         Segment("instance", 1),
-        #         Segment("instance", 2),
-        #     ],
-        # ),
-        # SegmentationTestSetup(
-        #     [1, 2],
-        #     [2, 1],
-        #     1,
-        #     [
-        #         Segment("background", 0),
-        #         Segment("instance", 1),
-        #         Segment("instance", 2),
-        #     ],
-        # ),
-        # SegmentationTestSetup(
-        #     [0, 0, 1, 2],
-        #     [0, 1, 2, 1],
-        #     0.75,
-        #     [
-        #         Segment("background", 0),
-        #         Segment("class1", 1),
-        #         Segment("class1", 2),
-        #         Segment("class2", 3),
-        #     ],
-        # ),
-        # SegmentationTestSetup(
-        #     [0, 0, 0, 0],
-        #     [0, 1, 2, 1],
-        #     0.0,  # non-max suppression causes more FPs to match
-        #     [
-        #         Segment("background", 0),
-        #         Segment("class1", 1),
-        #         Segment("class1", 2),
-        #         Segment("class2", 3),
-        #     ],
-        # ),
+        SegmentationTestSetup(
+            [1, 2],
+            [0, 0],
+            0,
+            [
+                Segment("background", 0),
+                Segment("instance", 1),
+                Segment("instance", 2),
+            ],
+        ),
+        SegmentationTestSetup(
+            [1, 2],
+            [2, 1],
+            1,
+            [
+                Segment("background", 0),
+                Segment("instance", 1),
+                Segment("instance", 2),
+            ],
+        ),
+        SegmentationTestSetup(
+            [0, 0, 1, 2],
+            [0, 1, 2, 1],
+            0.75,
+            [
+                Segment("background", 0),
+                Segment("class1", 1),
+                Segment("class1", 2),
+                Segment("class2", 3),
+            ],
+        ),
+        SegmentationTestSetup(
+            [0, 0, 0, 0],
+            [0, 1, 2, 1],
+            0.0,  # non-max suppression causes more FPs to match
+            [
+                Segment("background", 0),
+                Segment("class1", 1),
+                Segment("class1", 2),
+                Segment("class2", 3),
+            ],
+        ),
         SegmentationTestSetup(
             [0, 0, 0, 0, 1, 1, 1],
             [0, 1, 2, 1, 1, 1, 2],
