@@ -91,6 +91,7 @@ from .constants import (
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
+    MODEL_TAGS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
     PREDICTIONS_IGNORED_KEY,
@@ -218,6 +219,7 @@ class NucleusClient:
                 reference_id=model["ref_id"],
                 metadata=model["metadata"] or None,
                 client=self,
+                tags=model.get(MODEL_TAGS_KEY, []),
             )
             for model in model_objects["models"]
         ]
@@ -484,6 +486,7 @@ class NucleusClient:
         reference_id: str,
         metadata: Optional[Dict] = None,
         bundle_name: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -495,13 +498,15 @@ class NucleusClient:
             metadata: An arbitrary dictionary of additional data about this model
               that can be stored and retrieved. For example, you can store information
               about the hyperparameters used in training this model.
+            bundle_name: Optional name of bundle attached to this model
+            tags: Optional list of tags to attach to this model
 
         Returns:
             :class:`Model`: The newly created model as an object.
         """
         response = self.make_request(
             construct_model_creation_payload(
-                name, reference_id, metadata, bundle_name
+                name, reference_id, metadata, bundle_name, tags
             ),
             "models/add",
         )
@@ -516,6 +521,7 @@ class NucleusClient:
             metadata=metadata,
             bundle_name=bundle_name,
             client=self,
+            tags=tags,
         )
 
     def create_launch_model(

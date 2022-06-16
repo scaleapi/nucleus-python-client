@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Union
 
 import requests
 
-from .constants import METADATA_KEY, NAME_KEY, REFERENCE_ID_KEY
+from .constants import METADATA_KEY, MODEL_TAGS_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
 from .job import AsyncJob
 from .model_run import ModelRun
@@ -93,13 +93,21 @@ class Model:
     """
 
     def __init__(
-        self, model_id, name, reference_id, metadata, client, bundle_name=None
+        self,
+        model_id,
+        name,
+        reference_id,
+        metadata,
+        client,
+        bundle_name=None,
+        tags: List[str] = None,
     ):
         self.id = model_id
         self.name = name
         self.reference_id = reference_id
         self.metadata = metadata
         self.bundle_name = bundle_name
+        self.tags = tags if tags else []
         self._client = client
 
     def __repr__(self):
@@ -211,5 +219,51 @@ class Model:
             f"model/run/{self.id}/",
             requests_command=requests.post,
         )
+
+        return response
+
+    def add_tags(self, tags: List[str]):
+        """Tag the model with custom tag names. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.add_tags(["tag_A", "tag_B"])
+
+        Args:
+            tags: list of tag names
+        """
+        response = self._client.make_request(
+            {MODEL_TAGS_KEY: tags},
+            f"model/{self.id}/tag",
+            requests_command=requests.post,
+        )
+
+        if response.get("msg", False):
+            self.tags.extend(tags)
+
+        return response
+
+    def remove_tags(self, tags: List[str]):
+        """Remove tag(s) from the model. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.remove_tags(["tag_x"])
+
+        Args:
+            tags: list of tag names to remove
+        """
+        response = self._client.make_request(
+            {MODEL_TAGS_KEY: tags},
+            f"model/{self.id}/tag",
+            requests_command=requests.delete,
+        )
+
+        if response.get("msg", False):
+            self.tags = list(filter(lambda t: t not in tags, self.tags))
 
         return response
