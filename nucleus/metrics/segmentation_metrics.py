@@ -580,7 +580,7 @@ class SegmentationMAP(SegmentationMaskMetric):
         self, iou_thresholds: Union[List[float], str] = "coco"
     ):
         if isinstance(iou_thresholds, list):
-            return iou_thresholds
+            return np.asarray(iou_thresholds, np.float)
         elif isinstance(iou_thresholds, str):
             if iou_thresholds in self.iou_setups:
                 return np.arange(0.5, 1.0, 0.05)
@@ -615,7 +615,10 @@ class SegmentationMAP(SegmentationMaskMetric):
             ap_per_threshold.append(ap_result.value)  # type: ignore
             weight += ap_result.weight  # type: ignore
 
-        return ScalarResult(np.nanmean(ap_per_threshold), weight=weight)
+        thresholds = np.concatenate([[0], self.iou_thresholds, [1]])
+        steps = np.diff(thresholds)
+        mean_ap = (np.array(ap_per_threshold + [ap_per_threshold[-1]]) * steps).sum()
+        return ScalarResult(mean_ap, weight=weight)
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore

@@ -197,7 +197,7 @@ def test_segmentation_map(setup, iou_thresholds):
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
     )
-    assert result.value == setup.expected_result
+    assert_almost_equal(result.value, setup.expected_result)
 
 
 def test_masked_recall():
