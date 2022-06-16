@@ -6,7 +6,12 @@ from typing import List, Optional, Union
 import numpy as np
 from PIL import Image
 
-from .metric_utils import compute_average_precision
+from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
+from nucleus.metrics.base import MetricResult
+from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
+from nucleus.prediction import PredictionList, SegmentationPrediction
+
+from .base import Metric, ScalarResult
 from .segmentation_utils import (
     fast_confusion_matrix,
     non_max_suppress_confusion,
@@ -22,13 +27,6 @@ except ModuleNotFoundError:
 
     S3FileSystem = PackageNotInstalled
     fsspec = PackageNotInstalled
-
-from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
-from nucleus.metrics.base import MetricResult
-from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
-from nucleus.prediction import PredictionList, SegmentationPrediction
-
-from .base import Metric, ScalarResult
 
 
 # pylint: disable=useless-super-delegation
@@ -226,16 +224,18 @@ class SegmentationMaskMetric(Metric):
             dtype=np.int16,
         )
 
-        for gt_idx, (from_label, from_indexes) in enumerate(
-            label_to_old_indexes.items()
-        ):
-            for pred_idx, (to_label, to_indexes) in enumerate(
-                label_to_old_indexes.items()
-            ):
+        for gt_idx, (
+            from_label,  # pylint: disable=unused-variable
+            from_indexes,
+        ) in enumerate(label_to_old_indexes.items()):
+            for pred_idx, (
+                to_label,  # pylint: disable=unused-variable
+                to_indexes,
+            ) in enumerate(label_to_old_indexes.items()):
                 if gt_idx > pred_idx:
                     continue
                 # inter-class confusion
-                elif gt_idx == pred_idx:
+                if gt_idx == pred_idx:
                     gt = np.diag(confusion).take(list(from_indexes))
                     # inter-class
                     fp = 0
@@ -612,8 +612,8 @@ class SegmentationMAP(SegmentationMaskMetric):
                 AnnotationList(segmentation_annotations=[annotation]),
                 PredictionList(segmentation_predictions=[prediction]),
             )
-            ap_per_threshold.append(ap_result.value)
-            weight += ap_result.weight
+            ap_per_threshold.append(ap_result.value)  # type: ignore
+            weight += ap_result.weight  # type: ignore
 
         return ScalarResult(np.nanmean(ap_per_threshold), weight=weight)
 
