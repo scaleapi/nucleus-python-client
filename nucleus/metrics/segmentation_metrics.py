@@ -4,7 +4,6 @@ from collections import defaultdict
 from typing import List, Optional, Union
 
 import numpy as np
-from PIL import Image
 
 from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics.base import MetricResult
@@ -12,12 +11,14 @@ from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
 from .base import Metric, ScalarResult
+from .segmentation_loader import SegmentationMaskLoader
 from .segmentation_utils import (
     fast_confusion_matrix,
     non_max_suppress_confusion,
+    FALSE_POSITIVES,
+    convert_to_instance_seg_confusion,
 )
 
-FALSE_POSITIVES = "__non_max_false_positive"
 
 try:
     import fsspec
@@ -30,16 +31,6 @@ except ModuleNotFoundError:
 
 
 # pylint: disable=useless-super-delegation
-
-
-class SegmentationMaskLoader:
-    def __init__(self, fs: fsspec):
-        self.fs = fs
-
-    def fetch(self, url: str):
-        with self.fs.open(url) as fh:
-            img = Image.open(fh)
-        return img
 
 
 class SegmentationMaskMetric(Metric):
@@ -121,9 +112,15 @@ class SegmentationMaskMetric(Metric):
         We expect the image to be faux-single-channel with all the channels repeating so we choose the first one.
         """
         img = self.loader.fetch(ann_or_pred.mask_url)
-        if len(img.getbands()) > 1:
+        if len(img.shape) > 2:
             # TODO: Do we have to do anything more advanced? Currently expect all channels to have same data
-            img = img.getchannel(0)
+            min_dim = np.argmin(img.shape)
+            if min_dim == 0:
+                img = img[0, :, :]
+            elif min_dim == 1:
+                img = img[:, 0, :]
+            else:
+                img = img[:, :, 0]
         return img
 
     @abc.abstractmethod
@@ -152,7 +149,7 @@ class SegmentationMaskMetric(Metric):
         TODO(gunnar): Allow pre-seeding confusion matrix (all of the metrics calculate the same confusion matrix ->
             we can calculate it once and then use it for all other metrics in the chain)
         """
-        # NOTE: This creates a max(class_index) * max(class_index) MAT. If we have np.int16 this could become
+        # NOTE: This creates a max(class_index) * max(class_index) MAT. If we have np.int32 this could become
         #  huge. We could probably use a sparse matrix instead or change the logic to only create count(index) ** 2
         #  matrix (we only need to keep track of available indexes)
         num_classes = (
@@ -178,88 +175,11 @@ class SegmentationMaskMetric(Metric):
                 prediction.annotations.append(false_positive)
 
         if self._is_instance_segmentation(annotation, prediction):
-            confusion = self._convert_to_instance_seg_confusion(
+            confusion, _ = convert_to_instance_seg_confusion(
                 confusion, annotation, prediction
             )
 
         return confusion
-
-    def _convert_to_instance_seg_confusion(
-        self, confusion, annotation, prediction
-    ):
-        """If we have instance segmentation we swap the maximal intersection to be on the diagonal if it fits the label
-        This "fixes" the confusion matrix since all of the instances are equal and puts the right match on the diagonal
-        """
-        pred_index_to_label = {
-            s.index: s.label for s in prediction.annotations
-        }
-        swapped = set()
-        swap_indexes = {}
-        for gt_segment in annotation.annotations:
-            row = confusion[gt_segment.index, :]
-            max_col = np.argmax(row)
-            if row[max_col] == 0:
-                continue
-            if (
-                pred_index_to_label[max_col] == gt_segment.label
-                and max_col not in swapped
-            ):
-                swap_indexes[max_col] = gt_segment.index
-                swapped.update({max_col, gt_segment.index})
-
-        for col1, col2 in swap_indexes.items():
-            confusion[:, col1], confusion[:, col2] = (
-                confusion[:, col2],
-                confusion[:, col1].copy(),
-            )
-
-        label_to_old_indexes = defaultdict(set)
-        for segment in itertools.chain(
-            annotation.annotations, prediction.annotations
-        ):
-            label_to_old_indexes[segment.label].add(segment.index)
-
-        new_confusion = np.zeros(
-            (len(label_to_old_indexes) + 1, len(label_to_old_indexes) + 1),
-            dtype=np.int16,
-        )
-
-        for gt_idx, (
-            from_label,  # pylint: disable=unused-variable
-            from_indexes,
-        ) in enumerate(label_to_old_indexes.items()):
-            for pred_idx, (
-                to_label,  # pylint: disable=unused-variable
-                to_indexes,
-            ) in enumerate(label_to_old_indexes.items()):
-                if gt_idx > pred_idx:
-                    continue
-                # inter-class confusion
-                if gt_idx == pred_idx:
-                    gt = np.diag(confusion).take(list(from_indexes))
-                    # inter-class
-                    fp = 0
-                    for r, c in itertools.permutations(from_indexes, 2):
-                        fp += confusion[r, c]
-
-                    new_confusion[gt_idx, pred_idx] = gt.sum()
-                    new_confusion[gt_idx, -1] = fp
-                # other class confusion
-                else:
-                    for from_index in from_indexes:
-                        new_confusion[pred_idx, gt_idx] += (
-                            confusion[:, from_index]
-                            .take(list(to_indexes))
-                            .sum()
-                        )
-                        new_confusion[gt_idx, pred_idx] += (
-                            confusion[from_index, :]
-                            .take(list(to_indexes))
-                            .sum()
-                        )
-
-        assert confusion.sum() == new_confusion.sum()
-        return new_confusion
 
     def _is_instance_segmentation(self, annotation, prediction):
         """Guesses that we're dealing with instance segmentation if we have multiple segments with same label.

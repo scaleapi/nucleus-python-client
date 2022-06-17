@@ -1,14 +1,14 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import numpy as np
-import PIL.Image
 import pytest
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_array_equal
 
 from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics import ScalarResult
 from nucleus.metrics.filtering import SegmentFieldFilter
+from nucleus.metrics.segmentation_loader import InMemoryLoader
 from nucleus.metrics.segmentation_metrics import (
     SegmentationFWAVACC,
     SegmentationIOU,
@@ -19,6 +19,9 @@ from nucleus.metrics.segmentation_metrics import (
 from nucleus.metrics.segmentation_utils import (
     fast_confusion_matrix,
     max_iou_match_from_confusion,
+    non_max_suppress_confusion,
+    convert_to_instance_seg_confusion,
+    FALSE_POSITIVES,
 )
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
@@ -38,47 +41,40 @@ class SegmentationTestSetup:
     gt: List[int]
     pred: List[int]
     expected_result: float
-    annotations: Optional[List[Segment]] = None
+    gt_annotations: Optional[List[Segment]] = None
+    pred_annotations: Optional[List[Segment]] = None
     iou_threshold: float = 0
 
 
 def compose_input_variables(setup: SegmentationTestSetup):
     """Common step to create input variables from SegmentationTestSetup"""
-    annotation = SegmentationAnnotation(
-        "s3://fake_ann_url",
-        annotations=setup.annotations
-        if setup.annotations
+    gt_annotations = (
+        setup.gt_annotations
+        if setup.gt_annotations
         else [
             Segment(f"{index}", index) for index in set(setup.gt + setup.pred)
-        ],
+        ]
+    )
+    pred_annotations = (
+        setup.pred_annotations if setup.pred_annotations else gt_annotations
+    )
+    annotation = SegmentationAnnotation(
+        "s3://fake_ann_url",
+        annotations=gt_annotations,
         reference_id="item_1",
     )
     prediction = SegmentationPrediction(
         "s3://fake_pred_url",
-        annotations=annotation.annotations,
+        annotations=pred_annotations,
         reference_id=annotation.reference_id,
     )
-    ground_truth_img = np.array(setup.gt, dtype=np.int16)
-    prediction_img = np.array(setup.pred, dtype=np.int16)
+    ground_truth_img = np.array(setup.gt, dtype=np.int32)
+    prediction_img = np.array(setup.pred, dtype=np.int32)
     url_to_img = {
         annotation.mask_url: ground_truth_img,
         prediction.mask_url: prediction_img,
     }
     return annotation, prediction, url_to_img
-
-
-class FakeLoader:
-    """We use this loader in the tests, this allows us to serve images from memory instead of fetching
-    from a filesystem.
-    """
-
-    def __init__(self, url_to_array: Dict[str, np.ndarray]):
-        self.url_to_array = url_to_array
-
-    def fetch(self, url: str):
-        array = self.url_to_array[url]
-        img = PIL.Image.fromarray(array)
-        return img
 
 
 @pytest.mark.parametrize(
@@ -95,7 +91,7 @@ def test_segmentation_iou(setup):
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
     metric = SegmentationIOU(iou_threshold=setup.iou_threshold)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result = metric(
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -117,7 +113,7 @@ def test_segmentation_recall(setup):
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
     metric = SegmentationRecall(iou_threshold=setup.iou_threshold)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -139,7 +135,7 @@ def test_segmentation_precision(setup):
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
     metric = SegmentationPrecision(iou_threshold=setup.iou_threshold)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -165,7 +161,7 @@ def test_segmentation_fwavacc(setup):
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
     metric = SegmentationFWAVACC(iou_threshold=setup.iou_threshold)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -192,7 +188,7 @@ def test_segmentation_map(setup, iou_thresholds):
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
     metric = SegmentationMAP(iou_thresholds=iou_thresholds)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -227,7 +223,7 @@ def test_masked_recall():
     metric = SegmentationPrecision(
         annotation_filters=[], prediction_filters=filters
     )
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result: ScalarResult = metric(  # type: ignore
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -297,7 +293,7 @@ def test_instance_segmentation_recall(setup: SegmentationTestSetup):
 
     # iou_threshold=0 is easier to reason about for small "images"
     metric = SegmentationRecall(iou_threshold=setup.iou_threshold)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result = metric(
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -338,7 +334,7 @@ def test_instance_segmentation_recall_varying_thresholds(
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
     metric = SegmentationRecall(iou_threshold=setup.iou_threshold)
-    metric.loader = FakeLoader(url_to_img)
+    metric.loader = InMemoryLoader(url_to_img)
     result = metric(
         AnnotationList(segmentation_annotations=[annotation]),
         PredictionList(segmentation_predictions=[prediction]),
@@ -385,8 +381,8 @@ class IOUMatch:
 def test_iou_match_confusion_matrix(
     gt, pred, expected_matches: List[IOUMatch]
 ):
-    ground_truth_img = np.array(gt, dtype=np.int16)
-    prediction_img = np.array(pred, dtype=np.int16)
+    ground_truth_img = np.array(gt, dtype=np.int32)
+    prediction_img = np.array(pred, dtype=np.int32)
     n_class = max(max(gt), max(pred)) + 1
     confusion = fast_confusion_matrix(
         ground_truth_img, prediction_img, n_class=n_class
@@ -401,3 +397,97 @@ def test_iou_match_confusion_matrix(
             assert_almost_equal(matched_iou, expected_match.iou)
             assert matched_row == expected_match.gt
             assert matched_col == expected_match.pred
+
+
+@pytest.mark.parametrize(
+    "setup,expected_confusion,expected_non_max_confusion,expected_class_confusion",
+    [
+        # (
+        #     SegmentationTestSetup(
+        #         [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2],
+        #         [2, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3],
+        #         0,
+        #         gt_annotations=[
+        #             Segment("background", 0),
+        #             Segment("class1", 1),
+        #             Segment("class1", 2),
+        #             Segment("class1", 3),
+        #         ],
+        #         pred_annotations=[
+        #             Segment("background", 0),
+        #             Segment("class1", 3),
+        #             Segment("class1", 2),
+        #             Segment("class1", 1),
+        #         ],
+        #     ),
+        #     np.array([[3, 1, 1, 0], [0, 3, 2, 0], [0, 0, 0, 2], [0, 0, 0, 0]]),
+        #     np.array(
+        #         [
+        #             [3, 1, 1, 0, 0],  # TODO(gunnar):
+        #             [0, 3, 2, 0, 0],  # Maybe should be [0, 3, 0, 0, 2],
+        #             [0, 0, 0, 2, 0],  # since we're doing instance seg
+        #             [0, 0, 0, 0, 0],
+        #             [0, 0, 0, 0, 0],
+        #         ]
+        #     ),
+        #     np.array([[3, 2, 0], [0, 5, 2], [0, 0, 0]]),
+        # ),
+        (
+            SegmentationTestSetup(
+                [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2],
+                [2, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3],
+                0,
+                gt_annotations=[
+                    Segment("background", 0),
+                    Segment("class1", 1),
+                    Segment("class2", 2),
+                    Segment("class1", 3),
+                ],
+                pred_annotations=[
+                    Segment("background", 0),
+                    Segment("class1", 3),
+                    Segment("class1", 2),
+                    Segment("class2", 1),
+                ],
+            ),
+            np.array([[3, 1, 1, 0], [0, 3, 2, 0], [0, 0, 0, 2], [0, 0, 0, 0]]),
+            np.array(
+                [
+                    [3, 1, 1, 0, 0],  # TODO(gunnar):
+                    [0, 3, 2, 0, 0],  # Maybe should be [0, 3, 0, 0, 2],
+                    [0, 0, 0, 2, 0],  # since we're doing instance seg
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ]
+            ),
+            np.array([[3, 1, 1, 0], [0, 0, 3, 2], [0, 2, 0, 0], [0, 0, 0, 0]]),
+        ),
+    ],
+)
+def test_instance_confusion_chain(
+    setup,
+    expected_confusion,
+    expected_non_max_confusion,
+    expected_class_confusion,
+):
+    num_classes = max(max(setup.gt), max(setup.pred)) + 1
+    actual_confusion = fast_confusion_matrix(
+        np.array(setup.gt), np.array(setup.pred), num_classes
+    )
+    annotation, prediction, url_to_img = compose_input_variables(setup)
+    assert_array_equal(actual_confusion, expected_confusion)
+    nms_confusion = non_max_suppress_confusion(
+        actual_confusion, setup.iou_threshold
+    )
+    false_positive = Segment(
+        FALSE_POSITIVES, index=actual_confusion.shape[0] - 1
+    )
+    annotation.annotations.append(false_positive)
+    if annotation.annotations is not prediction.annotations:
+        prediction.annotations.append(false_positive)
+    assert_array_equal(nms_confusion, expected_non_max_confusion)
+    actual_class_confusion, new_labels = convert_to_instance_seg_confusion(
+        nms_confusion, annotation, prediction
+    )
+    assert new_labels == ["background", "class1", "class2", FALSE_POSITIVES]
+    assert_array_equal(actual_class_confusion, expected_class_confusion)
