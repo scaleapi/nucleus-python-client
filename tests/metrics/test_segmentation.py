@@ -279,7 +279,7 @@ def test_masked_recall():
         SegmentationTestSetup(
             [0, 0, 0, 0, 1, 1, 1],
             [0, 1, 2, 1, 1, 1, 2],
-            (1 / 4 + 2 / 3) / 2,  # class 0 recall + class 1 recall averaged
+            (0 / 4 + 2 / 3) / 2,  # class 0 recall + class 1 recall averaged
             [
                 Segment("background", 0),
                 Segment("class1", 1),
