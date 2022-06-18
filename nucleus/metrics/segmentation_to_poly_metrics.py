@@ -15,13 +15,13 @@ from nucleus.metrics.segmentation_utils import (
 )
 from nucleus.prediction import PredictionList
 
+from .segmentation_loader import InMemoryLoader, SegmentationMaskLoader
 from .segmentation_metrics import (
     SegmentationIOU,
     SegmentationMAP,
     SegmentationPrecision,
     SegmentationRecall,
 )
-from .segmentation_loader import InMemoryLoader, SegmentationMaskLoader
 
 try:
     from s3fs import S3FileSystem
