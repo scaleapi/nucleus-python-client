@@ -1,4 +1,5 @@
 import abc
+import logging
 from enum import Enum
 from typing import List, Optional, Union
 
@@ -559,6 +560,7 @@ class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
+        iou_threshold: float = -1,
         iou_thresholds: Union[List[float], str] = "coco",
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -591,6 +593,8 @@ class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        if iou_threshold:
+            logging.warning("Got deprecated parameter 'iou_threshold'. Ignoring it.")
         self.iou_thresholds = setup_iou_thresholds(iou_thresholds)
         super().__init__(
             False, 0, annotation_filters, prediction_filters, mode

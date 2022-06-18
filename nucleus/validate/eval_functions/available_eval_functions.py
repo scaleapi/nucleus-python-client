@@ -342,7 +342,7 @@ class SegmentationToPolyIOUConfig(EvalFunctionConfig):
 class SegmentationToPolyMAPConfig(EvalFunctionConfig):
     def __call__(
         self,
-        iou_threshold: float = 0.5,
+        iou_thresholds: Union[List[float, str]] = "coco",
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
