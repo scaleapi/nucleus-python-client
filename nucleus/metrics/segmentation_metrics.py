@@ -1,5 +1,5 @@
 import abc
-from typing import List, Optional, Sequence, Set, Tuple, Union
+from typing import List, Optional, Set, Tuple, Union
 
 import numpy as np
 

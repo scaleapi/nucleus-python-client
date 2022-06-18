@@ -15,7 +15,7 @@ from nucleus.metrics.segmentation_utils import (
 )
 from nucleus.prediction import PredictionList
 
-from . import (
+from .segmentation_metrics import (
     SegmentationIOU,
     SegmentationMAP,
     SegmentationPrecision,
