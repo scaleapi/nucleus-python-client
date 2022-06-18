@@ -438,13 +438,13 @@ def test_iou_match_confusion_matrix(
                 [2, 0, 0, 0, 1, 1, 1, 1, 2, 2, 3, 3],
                 0,
                 gt_annotations=[
-                    Segment("background", 0),
+                    Segment("class0", 0),
                     Segment("class1", 1),
                     Segment("class2", 2),
                     Segment("class1", 3),
                 ],
                 pred_annotations=[
-                    Segment("background", 0),
+                    Segment("class0", 0),
                     Segment("class1", 3),
                     Segment("class1", 2),
                     Segment("class2", 1),
@@ -486,8 +486,9 @@ def test_instance_confusion_chain(
     if annotation.annotations is not prediction.annotations:
         prediction.annotations.append(false_positive)
     assert_array_equal(nms_confusion, expected_non_max_confusion)
-    actual_class_confusion, new_labels = convert_to_instance_seg_confusion(
+    actual_class_confusion, new_labels, non_taxonomy_classes = convert_to_instance_seg_confusion(
         nms_confusion, annotation, prediction
     )
-    assert new_labels == ["background", "class1", "class2", FALSE_POSITIVES]
+    assert new_labels == ["class0", "class1", "class2", FALSE_POSITIVES]
+    assert non_taxonomy_classes == {3}
     assert_array_equal(actual_class_confusion, expected_class_confusion)

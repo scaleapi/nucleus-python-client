@@ -174,12 +174,18 @@ class SegmentationMaskMetric(Metric):
                 # TODO(gunnar): Should this uniqueness be handled by the base class?
                 prediction.annotations.append(false_positive)
 
+        # TODO(gunnar): Detect non_taxonomy classes for segmentation as well as instance segmentation
+        non_taxonomy_classes = {}
         if self._is_instance_segmentation(annotation, prediction):
-            confusion, _ = convert_to_instance_seg_confusion(
+            (
+                confusion,
+                _,
+                non_taxonomy_classes,
+            ) = convert_to_instance_seg_confusion(
                 confusion, annotation, prediction
             )
 
-        return confusion
+        return confusion, non_taxonomy_classes
 
     def _is_instance_segmentation(self, annotation, prediction):
         """Guesses that we're dealing with instance segmentation if we have multiple segments with same label.
@@ -267,7 +273,7 @@ class SegmentationIOU(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-        confusion = self._calculate_confusion_matrix(
+        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
             annotation,
             annotation_img,
             prediction,
@@ -281,7 +287,9 @@ class SegmentationIOU(SegmentationMaskMetric):
             iou = np.diag(tp) / (
                 tp.sum(axis=1) + tp.sum(axis=0) + fp.sum() - np.diag(tp)
             )
-            return ScalarResult(value=np.nanmean(iou), weight=annotation_img.size)  # type: ignore
+            iou.put(list(non_taxonomy_classes), np.nan)
+            mean_iou = np.nanmean(iou)
+            return ScalarResult(value=mean_iou, weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -333,7 +341,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-        confusion = self._calculate_confusion_matrix(
+        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
             annotation,
             annotation_img,
             prediction,
@@ -346,8 +354,10 @@ class SegmentationPrecision(SegmentationMaskMetric):
             tp = confused.diagonal()
             fp = confusion[:, -1][:-1] + confused.sum(axis=0) - tp
             tp_and_fp = tp + fp
-            precision = np.nanmean(tp / tp_and_fp)
-        return ScalarResult(value=precision, weight=confusion.sum())  # type: ignore
+            precision = tp / tp_and_fp
+            precision.put(list(non_taxonomy_classes), np.nan)
+            avg_precision = np.nanmean(precision)
+        return ScalarResult(value=avg_precision, weight=confusion.sum())  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -402,7 +412,7 @@ class SegmentationRecall(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-        confusion = self._calculate_confusion_matrix(
+        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
             annotation,
             annotation_img,
             prediction,
@@ -412,8 +422,11 @@ class SegmentationRecall(SegmentationMaskMetric):
 
         with np.errstate(divide="ignore", invalid="ignore"):
             recall = confusion.diagonal() / confusion.sum(axis=1)
-            recall = recall[:-1]  # We drop fps as it is not a real class
-        return ScalarResult(value=np.nanmean(recall), weight=annotation_img.size)  # type: ignore
+            recall.put(
+                list(non_taxonomy_classes), np.nan
+            )  # We don't consider non taxonomy classes, i.e. FPs and background
+            mean_recall = np.nanmean(recall)
+        return ScalarResult(value=mean_recall, weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -627,7 +640,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-        confusion = self._calculate_confusion_matrix(
+        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
             annotation,
             annotation_img,
             prediction,
@@ -642,6 +655,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
             )
             freq = confusion.sum(axis=0) / confusion.sum()
             fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
+            fwavacc.put(list(non_taxonomy_classes), np.nan)
         return ScalarResult(value=np.nanmean(fwavacc), weight=1)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:

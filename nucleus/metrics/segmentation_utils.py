@@ -205,7 +205,9 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
         )
     )
     # NOTE: We make sure that FALSE_POSITIVES are at the back
-    new_labels.append(list(pr_label_to_old_indexes.keys())[-1])
+    false_positive_label = list(pr_label_to_old_indexes.keys())[-1]
+    new_labels.append(false_positive_label)
+    non_taxonomy_classes = {len(new_labels)-1}
 
     num_classes = len(new_labels)
     new_confusion = np.zeros(
@@ -220,9 +222,10 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
             logging.warning(
                 f"No annotations with label '{from_label}', interpreted as false positives."
             )
-            # NOTE: This is iffy -> but it works. Need to think better about handling mismatch in taxonomies
-            idx = next(iter(pr_label_to_old_indexes[from_label]))
-            fp = confusion[idx, :].sum()
+            non_taxonomy_classes.add(gt_class_idx)
+            # NOTE: If the index is not in the gt segments it comes from the predictions, we get the "old_indexes"
+            # from there even though they are all FPs
+            from_indexes = pr_label_to_old_indexes[from_label]
         for gt_instance_idx in from_indexes:
             max_col = np.argmax(
                 confusion[gt_instance_idx, :]
@@ -261,4 +264,4 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
             assert old_sum == new_confusion[gt_class_idx, :].sum()
 
     assert confusion.sum() == new_confusion.sum()
-    return new_confusion, new_labels
+    return new_confusion, new_labels, non_taxonomy_classes
