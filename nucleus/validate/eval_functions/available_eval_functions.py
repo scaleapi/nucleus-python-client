@@ -387,7 +387,7 @@ class SegmentationToPolyMAPConfig(EvalFunctionConfig):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
-            iou_threshold=iou_threshold,
+            iou_thresholds=iou_thresholds,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
             **kwargs,

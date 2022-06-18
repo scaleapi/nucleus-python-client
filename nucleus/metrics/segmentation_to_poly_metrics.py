@@ -594,7 +594,9 @@ class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         if iou_threshold:
-            logging.warning("Got deprecated parameter 'iou_threshold'. Ignoring it.")
+            logging.warning(
+                "Got deprecated parameter 'iou_threshold'. Ignoring it."
+            )
         self.iou_thresholds = setup_iou_thresholds(iou_thresholds)
         super().__init__(
             False, 0, annotation_filters, prediction_filters, mode
