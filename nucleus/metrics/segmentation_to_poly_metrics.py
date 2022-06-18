@@ -7,7 +7,11 @@ import numpy as np
 
 from nucleus.annotation import AnnotationList, SegmentationAnnotation
 from nucleus.metrics.base import MetricResult
-from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
+from nucleus.metrics.filtering import (
+    ListOfAndFilters,
+    ListOfOrAndFilters,
+    apply_filters,
+)
 from nucleus.metrics.segmentation_utils import (
     instance_mask_to_polys,
     rasterize_polygons_to_segmentation_mask,
@@ -82,7 +86,10 @@ class SegmentationMaskToPolyMetric(Metric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        super().__init__(annotation_filters, prediction_filters)
+        # Since segmentation annotations are very different from everything else we can't rely on the upper filtering
+        super().__init__(None, None)
+        self._annotation_filters = annotation_filters
+        self._prediction_filters = prediction_filters
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
@@ -100,6 +107,15 @@ class SegmentationMaskToPolyMetric(Metric):
             if predictions.segmentation_predictions
             else None
         )
+        annotations.polygon_annotations = apply_filters(
+            annotations.polygon_annotations, self._annotation_filters
+        )
+        annotations.box_annotations = apply_filters(
+            annotations.box_annotations, self._annotation_filters
+        )
+        predictions.segmentation_predictions = apply_filters(
+            predictions.segmentation_predictions, self._prediction_filters
+        )
         if prediction:
             if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
                 pred_img = self.loader.fetch(prediction.mask_url)
@@ -108,6 +124,7 @@ class SegmentationMaskToPolyMetric(Metric):
                     + annotations.box_annotations,  # type:ignore
                     pred_img.shape,
                 )
+                # TODO: apply Segmentation filters after?
                 annotations.segmentation_annotations = [
                     SegmentationAnnotation(
                         "__no_url",

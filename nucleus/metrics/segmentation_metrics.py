@@ -288,6 +288,9 @@ class SegmentationIOU(SegmentationMaskMetric):
             iou = np.diag(tp) / (
                 tp.sum(axis=1) + tp.sum(axis=0) + fp.sum() - np.diag(tp)
             )
+            non_taxonomy_classes = non_taxonomy_classes - {
+                confusion.shape[1] - 1
+            }
             iou.put(list(non_taxonomy_classes), np.nan)
             mean_iou = np.nanmean(iou)
             return ScalarResult(value=mean_iou, weight=annotation_img.size)  # type: ignore
@@ -351,11 +354,15 @@ class SegmentationPrecision(SegmentationMaskMetric):
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
+            # TODO(gunnar): Logic can be simplified
             confused = confusion[:-1, :-1]
             tp = confused.diagonal()
             fp = confusion[:, -1][:-1] + confused.sum(axis=0) - tp
             tp_and_fp = tp + fp
             precision = tp / tp_and_fp
+            non_taxonomy_classes = non_taxonomy_classes - {
+                confusion.shape[1] - 1
+            }
             precision.put(list(non_taxonomy_classes), np.nan)
             avg_precision = np.nanmean(precision)
         return ScalarResult(value=avg_precision, weight=confusion.sum())  # type: ignore

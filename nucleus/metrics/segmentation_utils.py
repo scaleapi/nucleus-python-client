@@ -237,7 +237,7 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
             for pred_class_idx, to_label in enumerate(new_labels):
                 to_indexes = pr_label_to_old_indexes[to_label]
                 if from_label == to_label:
-                    if pred_index_to_label[max_col] == from_label:
+                    if pred_index_to_label.get(max_col, None) == from_label:
                         tp += confusion[gt_instance_idx, max_col]
                         fp_indexes = to_indexes - {max_col}
                     else:
