@@ -1,4 +1,4 @@
-from nucleus.annotation import PolygonAnnotation, Point
+from nucleus.annotation import Point, PolygonAnnotation
 from nucleus.metrics.segmentation_utils import (
     rasterize_polygons_to_segmentation_mask,
 )

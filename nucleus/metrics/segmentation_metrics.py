@@ -1,7 +1,5 @@
 import abc
-import itertools
-from collections import defaultdict
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 
@@ -13,21 +11,19 @@ from nucleus.prediction import PredictionList, SegmentationPrediction
 from .base import Metric, ScalarResult
 from .segmentation_loader import SegmentationMaskLoader
 from .segmentation_utils import (
-    fast_confusion_matrix,
-    non_max_suppress_confusion,
     FALSE_POSITIVES,
     convert_to_instance_seg_confusion,
+    fast_confusion_matrix,
+    non_max_suppress_confusion,
+    setup_iou_thresholds,
 )
 
-
 try:
-    import fsspec
     from s3fs import S3FileSystem
 except ModuleNotFoundError:
     from ..package_not_installed import PackageNotInstalled
 
     S3FileSystem = PackageNotInstalled
-    fsspec = PackageNotInstalled
 
 
 # pylint: disable=useless-super-delegation
@@ -140,11 +136,16 @@ class SegmentationMaskMetric(Metric):
         prediction,
         prediction_img,
         iou_threshold,
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, Set[int]]:
         """This calculates a confusion matrix with ground_truth_index X predicted_index summary
 
         Notes:
             If filtering has been applied we filter out missing segments from the confusion matrix.
+
+        Returns:
+            Class-based confusion matrix and a set of indexes that are not considered a part of the taxonomy (and are
+            only considered for FPs not as a part of mean calculations)
+
 
         TODO(gunnar): Allow pre-seeding confusion matrix (all of the metrics calculate the same confusion matrix ->
             we can calculate it once and then use it for all other metrics in the chain)
@@ -175,7 +176,7 @@ class SegmentationMaskMetric(Metric):
                 prediction.annotations.append(false_positive)
 
         # TODO(gunnar): Detect non_taxonomy classes for segmentation as well as instance segmentation
-        non_taxonomy_classes = {}
+        non_taxonomy_classes = set()
         if self._is_instance_segmentation(annotation, prediction):
             (
                 confusion,
@@ -507,24 +508,7 @@ class SegmentationMAP(SegmentationMaskMetric):
             annotation_filters,
             prediction_filters,
         )
-        self.iou_thresholds = self._setup_iou_thresholds(iou_thresholds)
-
-    def _setup_iou_thresholds(
-        self, iou_thresholds: Union[List[float], str] = "coco"
-    ):
-        if isinstance(iou_thresholds, list):
-            return np.asarray(iou_thresholds, np.float)
-        elif isinstance(iou_thresholds, str):
-            if iou_thresholds in self.iou_setups:
-                return np.arange(0.5, 1.0, 0.05)
-            else:
-                raise RuntimeError(
-                    f"Got invalid configuration value: {iou_thresholds}, expected one of: {self.iou_setups}"
-                )
-        else:
-            raise RuntimeError(
-                f"Got invalid configuration: {iou_thresholds}. Expected list of floats or one of: {self.iou_setups}"
-            )
+        self.iou_thresholds = setup_iou_thresholds(iou_thresholds)
 
     def _metric_impl(
         self,

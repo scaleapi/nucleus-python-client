@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import List, Tuple, Sequence
+from typing import List, Sequence, Tuple, Union
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -207,7 +207,7 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
     # NOTE: We make sure that FALSE_POSITIVES are at the back
     false_positive_label = list(pr_label_to_old_indexes.keys())[-1]
     new_labels.append(false_positive_label)
-    non_taxonomy_classes = {len(new_labels)-1}
+    non_taxonomy_classes = {len(new_labels) - 1}
 
     num_classes = len(new_labels)
     new_confusion = np.zeros(
@@ -220,7 +220,8 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
         tp, fp = 0, 0
         if len(from_indexes) == 0:
             logging.warning(
-                f"No annotations with label '{from_label}', interpreted as false positives."
+                "No annotations with label '%s', interpreted as false positives.",
+                from_label,
             )
             non_taxonomy_classes.add(gt_class_idx)
             # NOTE: If the index is not in the gt segments it comes from the predictions, we get the "old_indexes"
@@ -257,11 +258,22 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
         new_confusion[gt_class_idx, gt_class_idx] = tp
         new_confusion[gt_class_idx, -1] = fp
 
-        old_sum = 0
-        for idx in from_indexes:
-            old_sum += confusion[idx, :].sum()
-        if from_indexes:
-            assert old_sum == new_confusion[gt_class_idx, :].sum()
-
     assert confusion.sum() == new_confusion.sum()
     return new_confusion, new_labels, non_taxonomy_classes
+
+
+def setup_iou_thresholds(iou_thresholds: Union[Sequence[float], str] = "coco"):
+    supported_iou_setups = {"coco"}
+    if isinstance(iou_thresholds, list):
+        return np.array(iou_thresholds, np.float_)
+    elif isinstance(iou_thresholds, str):
+        if iou_thresholds in supported_iou_setups:
+            return np.arange(0.5, 1.0, 0.05)
+        else:
+            raise RuntimeError(
+                f"Got invalid configuration value: {iou_thresholds}, expected one of: {supported_iou_setups}"
+            )
+    else:
+        raise RuntimeError(
+            f"Got invalid configuration: {iou_thresholds}. Expected list of floats or one of: {supported_iou_setups}"
+        )

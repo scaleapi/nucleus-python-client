@@ -17,11 +17,11 @@ from nucleus.metrics.segmentation_metrics import (
     SegmentationRecall,
 )
 from nucleus.metrics.segmentation_utils import (
+    FALSE_POSITIVES,
+    convert_to_instance_seg_confusion,
     fast_confusion_matrix,
     max_iou_match_from_confusion,
     non_max_suppress_confusion,
-    convert_to_instance_seg_confusion,
-    FALSE_POSITIVES,
 )
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
@@ -486,7 +486,11 @@ def test_instance_confusion_chain(
     if annotation.annotations is not prediction.annotations:
         prediction.annotations.append(false_positive)
     assert_array_equal(nms_confusion, expected_non_max_confusion)
-    actual_class_confusion, new_labels, non_taxonomy_classes = convert_to_instance_seg_confusion(
+    (
+        actual_class_confusion,
+        new_labels,
+        non_taxonomy_classes,
+    ) = convert_to_instance_seg_confusion(
         nms_confusion, annotation, prediction
     )
     assert new_labels == ["class0", "class1", "class2", FALSE_POSITIVES]

@@ -1,8 +1,14 @@
 from typing import Dict
 
-import fsspec
 import numpy as np
 from PIL import Image
+
+try:
+    import fsspec
+except ModuleNotFoundError:
+    from ..package_not_installed import PackageNotInstalled
+
+    fsspec = PackageNotInstalled
 
 
 class SegmentationMaskLoader:

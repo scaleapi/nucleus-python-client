@@ -1,42 +1,39 @@
 import abc
 from enum import Enum
-from functools import lru_cache
 from typing import List, Optional, Union
 
 import numpy as np
-from PIL import Image
 
 from nucleus.annotation import AnnotationList, SegmentationAnnotation
 from nucleus.metrics.base import MetricResult
 from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from nucleus.metrics.segmentation_utils import (
     instance_mask_to_polys,
-    transform_poly_codes_to_poly_preds,
     rasterize_polygons_to_segmentation_mask,
+    setup_iou_thresholds,
+    transform_poly_codes_to_poly_preds,
 )
 from nucleus.prediction import PredictionList
+
 from . import (
     SegmentationIOU,
+    SegmentationMAP,
     SegmentationPrecision,
     SegmentationRecall,
-    SegmentationMAP,
 )
-from .segmentation_loader import SegmentationMaskLoader, InMemoryLoader
+from .segmentation_loader import InMemoryLoader, SegmentationMaskLoader
 
 try:
-    import fsspec
     from s3fs import S3FileSystem
 except ModuleNotFoundError:
     from ..package_not_installed import PackageNotInstalled
 
     S3FileSystem = PackageNotInstalled
-    fsspec = PackageNotInstalled
 
 from .base import Metric, ScalarResult
 from .polygon_metrics import (
     PolygonAveragePrecision,
     PolygonIOU,
-    PolygonMAP,
     PolygonPrecision,
     PolygonRecall,
 )
@@ -119,32 +116,30 @@ class SegmentationMaskToPolyMetric(Metric):
                         ].reference_id,
                     )
                 ]
-                self.call_segmentation_metric(
+                return self.call_segmentation_metric(
                     annotations,
                     np.asarray(ann_img),
                     predictions,
                     np.asarray(pred_img),
                 )
-
             elif self.mode == SegToPolyMode.GENERATE_PRED_POLYS_FROM_MASK:
-                if prediction:
-                    pred_img = self.loader.fetch(prediction.mask_url)
-                    pred_value, pred_polys = instance_mask_to_polys(
-                        np.asarray(pred_img)
-                    )  # typing: ignore
-                    code_to_label = {
-                        s.index: s.label for s in prediction.annotations
-                    }
-                    poly_predictions = transform_poly_codes_to_poly_preds(
-                        prediction.reference_id,
-                        pred_value,
-                        pred_polys,
-                        code_to_label,
-                    )
-                    return self.call_poly_metric(
-                        annotations,
-                        PredictionList(polygon_predictions=poly_predictions),
-                    )
+                pred_img = self.loader.fetch(prediction.mask_url)
+                pred_value, pred_polys = instance_mask_to_polys(
+                    np.asarray(pred_img)
+                )  # typing: ignore
+                code_to_label = {
+                    s.index: s.label for s in prediction.annotations
+                }
+                poly_predictions = transform_poly_codes_to_poly_preds(
+                    prediction.reference_id,
+                    pred_value,
+                    pred_polys,
+                    code_to_label,
+                )
+                return self.call_poly_metric(
+                    annotations,
+                    PredictionList(polygon_predictions=poly_predictions),
+                )
             else:
                 raise RuntimeError(
                     f"Misonconfigured class. Got mode '{self.mode}', expected one of {list(SegToPolyMode)}"
@@ -561,7 +556,6 @@ class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
         metric(annotations, predictions)
     """
 
-    iou_setups = {"coco"}
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
@@ -597,27 +591,10 @@ class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        self.iou_thresholds = iou_thresholds
+        self.iou_thresholds = setup_iou_thresholds(iou_thresholds)
         super().__init__(
             False, 0, annotation_filters, prediction_filters, mode
         )
-
-    def _setup_iou_thresholds(
-        self, iou_thresholds: Union[List[float], str] = "coco"
-    ):
-        if isinstance(iou_thresholds, list):
-            return np.asarray(iou_thresholds, np.float)
-        elif isinstance(iou_thresholds, str):
-            if iou_thresholds in self.iou_setups:
-                return np.arange(0.5, 1.0, 0.05)
-            else:
-                raise RuntimeError(
-                    f"Got invalid configuration value: {iou_thresholds}, expected one of: {self.iou_setups}"
-                )
-        else:
-            raise RuntimeError(
-                f"Got invalid configuration: {iou_thresholds}. Expected list of floats or one of: {self.iou_setups}"
-            )
 
     def configure_metric(self):
         if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
@@ -631,13 +608,20 @@ class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
 
             def patched_average_precision(annotations, predictions):
                 ap_per_threshold = []
-                call_metric = PolygonAveragePrecision(
-                    threshold,
-                    self.annotation_filters,
-                    self.prediction_filters,
-                )
+                labels = [p.label for p in predictions.polygon_predictions]
                 for threshold in self.iou_thresholds:
-                    call_metric(annotations, predictions)
+                    ap_per_label = []
+                    for label in labels:
+                        call_metric = PolygonAveragePrecision(
+                            label,
+                            iou_threshold=threshold,
+                            annotation_filters=self.annotation_filters,
+                            prediction_filters=self.prediction_filters,
+                        )
+                        result = call_metric(annotations, predictions)
+                        ap_per_label.append(result.value)  # type: ignore
+                    ap_per_threshold = np.mean(ap_per_label)
+
                 thresholds = np.concatenate([[0], self.iou_thresholds, [1]])
                 steps = np.diff(thresholds)
                 mean_ap = (
