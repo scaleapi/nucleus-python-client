@@ -108,13 +108,13 @@ class SegmentationMaskToPolyMetric(Metric):
             else None
         )
         annotations.polygon_annotations = apply_filters(
-            annotations.polygon_annotations, self._annotation_filters
+            annotations.polygon_annotations, self._annotation_filters  # type: ignore
         )
         annotations.box_annotations = apply_filters(
-            annotations.box_annotations, self._annotation_filters
+            annotations.box_annotations, self._annotation_filters  # type: ignore
         )
         predictions.segmentation_predictions = apply_filters(
-            predictions.segmentation_predictions, self._prediction_filters
+            predictions.segmentation_predictions, self._prediction_filters  # type: ignore
         )
         if prediction:
             if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
