@@ -264,7 +264,7 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
 
 def setup_iou_thresholds(iou_thresholds: Union[Sequence[float], str] = "coco"):
     supported_iou_setups = {"coco"}
-    if isinstance(iou_thresholds, list):
+    if isinstance(iou_thresholds, (list, np.ndarray)):
         return np.array(iou_thresholds, np.float_)
     elif isinstance(iou_thresholds, str):
         if iou_thresholds in supported_iou_setups:
