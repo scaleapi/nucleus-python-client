@@ -33,7 +33,7 @@ def test_invoke_describe_test(runner, scenario_test):
     assert scenario_test.id in result.output
 
 
-@pytest.skip(reason="Errors out on master")
+@pytest.mark.skip(reason="Errors out on master")
 def test_invoke_describe_test_all(runner, scenario_test):
     result = runner.invoke(describe_test, ["--all"])
     assert result.exception is None
