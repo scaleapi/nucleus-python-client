@@ -365,7 +365,7 @@ class SegmentationPrecision(SegmentationMaskMetric):
             }
             precision.put(list(non_taxonomy_classes), np.nan)
             avg_precision = np.nanmean(precision)
-        return ScalarResult(value=avg_precision, weight=confusion.sum())  # type: ignore
+        return ScalarResult(value=np.nan_to_num(avg_precision), weight=confusion.sum())  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -434,7 +434,7 @@ class SegmentationRecall(SegmentationMaskMetric):
                 list(non_taxonomy_classes), np.nan
             )  # We don't consider non taxonomy classes, i.e. FPs and background
             mean_recall = np.nanmean(recall)
-        return ScalarResult(value=mean_recall, weight=annotation_img.size)  # type: ignore
+        return ScalarResult(value=np.nan_to_num(mean_recall), weight=annotation_img.size)  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
@@ -647,7 +647,8 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
             freq = confusion.sum(axis=0) / confusion.sum()
             fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
             fwavacc.put(list(non_taxonomy_classes), np.nan)
-        return ScalarResult(value=np.nanmean(fwavacc), weight=1)  # type: ignore
+            mean_fwavacc = np.nanmean(fwavacc)
+        return ScalarResult(value=np.nan_to_num(mean_fwavacc), weight=confusion.sum())  # type: ignore
 
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
         return ScalarResult.aggregate(results)  # type: ignore
