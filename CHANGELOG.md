@@ -5,11 +5,35 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.14.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.0) - 2022-06-20
+## [0.14.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.1) - 2022-06-20
 
 ### Fixed
 - Adapt Segmentation metrics to better support instance segmentation
 - Change Segmentation/Polygon metrics to use new segmentation metrics 
+
+
+## [0.14.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.0) - 2022-06-16
+
+### Added
+
+- Allow creation/deletion of model tags on new and existing models, eg:
+```python
+# on model creation
+model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags=["some tag"])
+
+# on existing models
+existing_model = client.models[0]
+existing_model.add_tags(['tag a', 'tag b'])
+
+# remove tag
+existing_model.remove_tags(['tag a'])
+```
+
+## [0.13.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-15
+
+### Fixed
+- Guard against invalid skeleton indexes in KeypointsAnnotation
+
 
 ## [0.13.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-09
 
@@ -38,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Segmentation functions to Validate API
- 
+
 ## [0.12.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.4) - 2022-06-02
 
 ### Fixed
