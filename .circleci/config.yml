@@ -18,11 +18,13 @@ jobs:
       - run:
           name: Install Basic Environment Dependencies
           command: | # install dependencies
+            echo $PWD
             apt-get update
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
       - python/install-packages:
+          include-python-in-cache-key: false
           pkg-manager: poetry
       - run:
           name: Test Imports (extras need to be guarded!)
