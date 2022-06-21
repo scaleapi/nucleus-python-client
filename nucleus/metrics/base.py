@@ -188,7 +188,8 @@ class Metric(ABC):
         if len(filtered_predictions) == 0:
             msg.extend(
                 compose_helpful_filtering_error(
-                    predictions, filtered_predictions
+                    predictions, self.prediction_filters
                 )
             )
-        raise EverythingFilteredError("\n".join(msg))
+        if msg:
+            raise EverythingFilteredError("\n".join(msg))

@@ -637,7 +637,7 @@ def compose_helpful_filtering_error(
     )
     msg = []
     msg.append(f"{prefix}: All items filtered out by:")
-    msg.append(f" ({pretty_format_filters_with_or_and(filters)})")
+    msg.append(f" {pretty_format_filters_with_or_and(filters)}")
     msg.append("")
     console = Console()
     table = Table(
