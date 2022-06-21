@@ -1,10 +1,19 @@
 import json
+from typing import Union
 
 import pytest
 
-from nucleus.annotation import Segment, SegmentationAnnotation
+from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics import FieldFilter, MetadataFilter, apply_filters
-from nucleus.metrics.filtering import SegmentFieldFilter, SegmentMetadataFilter
+from nucleus.metrics.filtering import (
+    SegmentFieldFilter,
+    SegmentMetadataFilter,
+    compose_helpful_filtering_error,
+    filter_annotation_list,
+    filter_prediction_list,
+    pretty_format_filters_with_or_and,
+)
+from nucleus.prediction import PredictionList
 from tests.metrics.helpers import (
     TEST_BOX_ANNOTATION_LIST,
     TEST_BOX_PREDICTION_LIST,
@@ -312,3 +321,73 @@ def test_segment_annotation_filtering_metadata():
     filtered = apply_filters([segment_annotation], valid_gt)
     assert filtered[0].annotations == [grass_segment]
     assert len(filtered) == 1, f"Expected only one annotation, got: {filtered}"
+
+
+@pytest.mark.parametrize(
+    "filters,expected_statement",
+    [
+        (
+            [FieldFilter("label", "==", "bus")],
+            'FieldFilter("label", "==", "bus")',
+        ),
+        (
+            [
+                FieldFilter("label", "in", ["bus", "car"]),
+                MetadataFilter("n_points", ">=", 15),
+            ],
+            'FieldFilter("label", "in", ["bus", "car"]) and MetadataFilter("n_points", ">=", 15)',
+        ),
+        (
+            [
+                [
+                    SegmentFieldFilter("label", "in", ["bus", "car"]),
+                    MetadataFilter("n_points", ">=", 15),
+                ],
+                [FieldFilter("label", "==", "bus")],
+            ],
+            " or ".join(
+                [
+                    '(SegmentFieldFilter("label", "in", ["bus", "car"]) and MetadataFilter("n_points", ">=", 15))',
+                    'FieldFilter("label", "==", "bus")',
+                ]
+            ),
+        ),
+        (
+            [
+                [
+                    SegmentFieldFilter("label", "in", ["bus", "car"]),
+                    MetadataFilter("n_points", ">=", 15),
+                ],
+                [
+                    FieldFilter("label", "in", ["bus", "car"]),
+                    SegmentMetadataFilter("n_points", ">=", 15),
+                ],
+            ],
+            " or ".join(
+                [
+                    '(SegmentFieldFilter("label", "in", ["bus", "car"]) and MetadataFilter("n_points", ">=", 15))',
+                    '(FieldFilter("label", "in", ["bus", "car"]) and SegmentMetadataFilter("n_points", ">=", 15))',
+                ]
+            ),
+        ),
+    ],
+)
+def test_pretty_format_statement(filters, expected_statement):
+    pretty_filters = pretty_format_filters_with_or_and(filters)
+    assert pretty_filters == expected_statement
+
+
+@pytest.mark.parametrize(
+    "ann_or_pred_list,filters",
+    [(TEST_BOX_ANNOTATION_LIST, [FieldFilter("label", "in", "no_match")])],
+)
+def test_pretty_filtering_msg(
+    ann_or_pred_list: Union[AnnotationList, PredictionList], filters
+):
+    if isinstance(ann_or_pred_list, AnnotationList):
+        filtered_list = filter_annotation_list(ann_or_pred_list, filters)
+    else:
+        filtered_list = filter_prediction_list(ann_or_pred_list, filters)
+    assert len(filtered_list) == 0
+    msg = compose_helpful_filtering_error(ann_or_pred_list, filters)
+    assert len(msg) > 0

@@ -939,6 +939,9 @@ class AnnotationList:
                 ), f"Unexpected annotation type: {type(annotation)}"
                 self.segmentation_annotations.append(annotation)
 
+    def items(self):
+        return self.__dict__.items()
+
     def __len__(self):
         return (
             len(self.box_annotations)

@@ -600,6 +600,9 @@ class PredictionList:
         default_factory=list
     )
 
+    def items(self):
+        return self.__dict__.items()
+
     def add_predictions(self, predictions: List[Prediction]):
         for prediction in predictions:
             if isinstance(prediction, BoxPrediction):
