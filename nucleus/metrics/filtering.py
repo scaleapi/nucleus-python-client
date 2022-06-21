@@ -1,3 +1,4 @@
+import copy
 import enum
 import functools
 import logging
@@ -7,13 +8,18 @@ from typing import (
     Iterable,
     List,
     NamedTuple,
+    Optional,
     Sequence,
     Set,
     Tuple,
     Union,
 )
 
+from rich.console import Console
+from rich.table import Table
+
 from nucleus.annotation import (
+    AnnotationList,
     BoxAnnotation,
     CategoryAnnotation,
     CuboidAnnotation,
@@ -29,6 +35,7 @@ from nucleus.prediction import (
     CuboidPrediction,
     LinePrediction,
     PolygonPrediction,
+    PredictionList,
     SegmentationPrediction,
 )
 
@@ -568,3 +575,147 @@ def ensureDNFFilters(filters) -> OrAndDNFFilters:
             formatted_filter.append(and_chain)
         filters = formatted_filter
     return filters
+
+
+def pretty_format_filters_with_or_and(
+    filters: Optional[Union[ListOfOrAndFilters, ListOfAndFilters]]
+):
+    if filters is None:
+        return "No filters applied!"
+    dnf_filters = ensureDNFFilters(filters)
+    or_branches = []
+    for or_branch in dnf_filters:
+        and_statements = []
+        for and_branch in or_branch:
+            if and_branch.type == FilterType.FIELD:
+                class_name = "FieldFilter"
+            elif and_branch.type == FilterType.METADATA:
+                class_name = "MetadataFilter"
+            elif and_branch.type == FilterType.SEGMENT_FIELD:
+                class_name = "SegmentFieldFilter"
+            elif and_branch.type == FilterType.SEGMENT_METADATA:
+                class_name = "SegmentMetadataFilter"
+            else:
+                raise RuntimeError(
+                    f"Un-handled filter type: {and_branch.type}"
+                )
+            op = (
+                and_branch.op.value
+                if isinstance(and_branch.op, FilterOp)
+                else and_branch.op
+            )
+            value_formatted = (
+                f'"{and_branch.value}"'
+                if isinstance(and_branch.value, str)
+                else f"{and_branch.value}".replace("'", '"')
+            )
+            statement = (
+                f'{class_name}("{and_branch.key}", "{op}", {value_formatted})'
+            )
+            and_statements.append(statement)
+
+        or_branches.append(and_statements)
+
+    and_to_join = []
+    for and_statements in or_branches:
+        joined_and = " and ".join(and_statements)
+        if len(or_branches) > 1 and len(and_statements) > 1:
+            joined_and = "(" + joined_and + ")"
+        and_to_join.append(joined_and)
+
+    full_statement = " or ".join(and_to_join)
+    return full_statement
+
+
+def compose_helpful_filtering_error(
+    ann_or_pred_list: Union[AnnotationList, PredictionList], filters
+) -> List[str]:
+    prefix = (
+        "Annotations"
+        if isinstance(ann_or_pred_list, AnnotationList)
+        else "Predictions"
+    )
+    msg = []
+    msg.append(f"{prefix}: All items filtered out by:")
+    msg.append(f" {pretty_format_filters_with_or_and(filters)}")
+    msg.append("")
+    console = Console()
+    table = Table(
+        "Type",
+        "Count",
+        "Labels",
+        title=f"Original {prefix}",
+        title_justify="left",
+    )
+    for ann_or_pred_type, items in ann_or_pred_list.items():
+        if items and isinstance(
+            items[-1], (SegmentationAnnotation, SegmentationPrediction)
+        ):
+            labels = set()
+            for seg in items:
+                labels.update(set(s.label for s in seg.annotations))
+        else:
+            labels = set(a.label for a in items)
+        if items:
+            table.add_row(ann_or_pred_type, str(len(items)), str(list(labels)))
+    with console.capture() as capture:
+        console.print(table)
+    msg.append(capture.get())
+    return msg
+
+
+def filter_annotation_list(
+    annotations: AnnotationList, annotation_filters
+) -> AnnotationList:
+    annotations = copy.deepcopy(annotations)
+    if annotation_filters is None or len(annotation_filters) == 0:
+        return annotations
+    annotations.box_annotations = apply_filters(
+        annotations.box_annotations, annotation_filters
+    )
+    annotations.line_annotations = apply_filters(
+        annotations.line_annotations, annotation_filters
+    )
+    annotations.polygon_annotations = apply_filters(
+        annotations.polygon_annotations, annotation_filters
+    )
+    annotations.cuboid_annotations = apply_filters(
+        annotations.cuboid_annotations, annotation_filters
+    )
+    annotations.category_annotations = apply_filters(
+        annotations.category_annotations, annotation_filters
+    )
+    annotations.multi_category_annotations = apply_filters(
+        annotations.multi_category_annotations, annotation_filters
+    )
+    annotations.segmentation_annotations = apply_filters(
+        annotations.segmentation_annotations, annotation_filters
+    )
+    return annotations
+
+
+def filter_prediction_list(
+    predictions: PredictionList, prediction_filters
+) -> PredictionList:
+    predictions = copy.deepcopy(predictions)
+    if prediction_filters is None or len(prediction_filters) == 0:
+        return predictions
+    predictions.box_predictions = apply_filters(
+        predictions.box_predictions, prediction_filters
+    )
+    predictions.line_predictions = apply_filters(
+        predictions.line_predictions, prediction_filters
+    )
+    predictions.polygon_predictions = apply_filters(
+        predictions.polygon_predictions, prediction_filters
+    )
+    predictions.cuboid_predictions = apply_filters(
+        predictions.cuboid_predictions, prediction_filters
+    )
+    predictions.category_predictions = apply_filters(
+        predictions.category_predictions, prediction_filters
+    )
+    predictions.segmentation_predictions = apply_filters(
+        predictions.segmentation_predictions, prediction_filters
+    )
+    return predictions

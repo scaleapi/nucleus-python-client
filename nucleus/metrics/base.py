@@ -4,10 +4,13 @@ from dataclasses import dataclass
 from typing import Iterable, List, Optional, Union
 
 from nucleus.annotation import AnnotationList
+from nucleus.metrics.errors import EverythingFilteredError
 from nucleus.metrics.filtering import (
     ListOfAndFilters,
     ListOfOrAndFilters,
-    apply_filters,
+    compose_helpful_filtering_error,
+    filter_annotation_list,
+    filter_prediction_list,
 )
 from nucleus.prediction import PredictionList
 
@@ -133,64 +136,16 @@ class Metric(ABC):
     def __call__(
         self, annotations: AnnotationList, predictions: PredictionList
     ) -> MetricResult:
-        annotations = self._filter_annotations(annotations)
-        predictions = self._filter_predictions(predictions)
+        filtered_anns = filter_annotation_list(
+            annotations, self.annotation_filters
+        )
+        filtered_preds = filter_prediction_list(
+            predictions, self.prediction_filters
+        )
+        self._raise_if_everything_filtered(
+            annotations, filtered_anns, predictions, filtered_preds
+        )
         return self.call_metric(annotations, predictions)
-
-    def _filter_annotations(self, annotations: AnnotationList):
-        if (
-            self.annotation_filters is None
-            or len(self.annotation_filters) == 0
-        ):
-            return annotations
-        annotations.box_annotations = apply_filters(
-            annotations.box_annotations, self.annotation_filters
-        )
-        annotations.line_annotations = apply_filters(
-            annotations.line_annotations, self.annotation_filters
-        )
-        annotations.polygon_annotations = apply_filters(
-            annotations.polygon_annotations, self.annotation_filters
-        )
-        annotations.cuboid_annotations = apply_filters(
-            annotations.cuboid_annotations, self.annotation_filters
-        )
-        annotations.category_annotations = apply_filters(
-            annotations.category_annotations, self.annotation_filters
-        )
-        annotations.multi_category_annotations = apply_filters(
-            annotations.multi_category_annotations, self.annotation_filters
-        )
-        annotations.segmentation_annotations = apply_filters(
-            annotations.segmentation_annotations, self.annotation_filters
-        )
-        return annotations
-
-    def _filter_predictions(self, predictions: PredictionList):
-        if (
-            self.prediction_filters is None
-            or len(self.prediction_filters) == 0
-        ):
-            return predictions
-        predictions.box_predictions = apply_filters(
-            predictions.box_predictions, self.prediction_filters
-        )
-        predictions.line_predictions = apply_filters(
-            predictions.line_predictions, self.prediction_filters
-        )
-        predictions.polygon_predictions = apply_filters(
-            predictions.polygon_predictions, self.prediction_filters
-        )
-        predictions.cuboid_predictions = apply_filters(
-            predictions.cuboid_predictions, self.prediction_filters
-        )
-        predictions.category_predictions = apply_filters(
-            predictions.category_predictions, self.prediction_filters
-        )
-        predictions.segmentation_predictions = apply_filters(
-            predictions.segmentation_predictions, self.prediction_filters
-        )
-        return predictions
 
     @abstractmethod
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
@@ -215,3 +170,26 @@ class Metric(ABC):
                 return ScalarResult(r2_score)
 
         """
+
+    def _raise_if_everything_filtered(
+        self,
+        annotations: AnnotationList,
+        filtered_annotations: AnnotationList,
+        predictions: PredictionList,
+        filtered_predictions: PredictionList,
+    ):
+        msg = []
+        if len(filtered_annotations) == 0:
+            msg.extend(
+                compose_helpful_filtering_error(
+                    annotations, self.annotation_filters
+                )
+            )
+        if len(filtered_predictions) == 0:
+            msg.extend(
+                compose_helpful_filtering_error(
+                    predictions, self.prediction_filters
+                )
+            )
+        if msg:
+            raise EverythingFilteredError("\n".join(msg))
