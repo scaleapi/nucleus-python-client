@@ -5,7 +5,7 @@ from PIL import Image
 
 try:
     import fsspec
-except ModuleNotFoundError:
+except (ModuleNotFoundError, OSError):
     from ..package_not_installed import PackageNotInstalled
 
     fsspec = PackageNotInstalled

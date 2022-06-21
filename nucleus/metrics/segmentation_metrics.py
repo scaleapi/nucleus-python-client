@@ -20,7 +20,7 @@ from .segmentation_utils import (
 
 try:
     from s3fs import S3FileSystem
-except ModuleNotFoundError:
+except (ModuleNotFoundError, OSError):
     from ..package_not_installed import PackageNotInstalled
 
     S3FileSystem = PackageNotInstalled

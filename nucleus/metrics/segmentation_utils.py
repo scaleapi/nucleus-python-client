@@ -16,13 +16,13 @@ FALSE_POSITIVES = "__non_max_false_positive"
 
 try:
     from shapely import geometry
-except ModuleNotFoundError:
+except (ModuleNotFoundError, OSError):
     geometry = PackageNotInstalled
 
 
 try:
     from rasterio import features
-except ModuleNotFoundError:
+except (ModuleNotFoundError, OSError):
     rasterio = PackageNotInstalled
 
 
