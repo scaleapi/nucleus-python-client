@@ -846,15 +846,17 @@ class CategoryAnnotation(Annotation):
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
-        if not self.reference_id or not self.scene_id:
+        if self.reference_id is None and self.scene_id is None:
             raise Exception("You must specify a reference_id or a scene_id.")
 
     @classmethod
     def from_json(cls, payload: dict):
+        reference_id = payload.get(REFERENCE_ID_KEY, None)
+        scene_id = payload[SCENE_ID_KEY] if reference_id is None else None
         return cls(
             label=payload[LABEL_KEY],
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
-            scene_id=payload.get(SCENE_ID_KEY, None),
+            reference_id=reference_id,
+            scene_id=scene_id,
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -864,10 +866,12 @@ class CategoryAnnotation(Annotation):
             LABEL_KEY: self.label,
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
-            REFERENCE_ID_KEY: self.reference_id,
-            SCENE_ID_KEY: self.scene_id,
             METADATA_KEY: self.metadata,
         }
+        if self.reference_id is not None:
+            payload[REFERENCE_ID_KEY] = self.reference_id
+        elif self.scene_id is not None:
+            payload[SCENE_ID_KEY] = self.scene_id
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
         return payload
