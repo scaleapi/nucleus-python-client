@@ -115,6 +115,7 @@ BACKEND_REFERENCE_ID_KEY = "ref_id"  # TODO(355762): Our backend returns this in
 REQUEST_ID_KEY = "requestId"
 SCALE_TASK_INFO_KEY = "scale_task_info"
 SCENE_KEY = "scene"
+SCENE_ID_KEY = "scene_id"
 SCENES_KEY = "scenes"
 SERIALIZED_REQUEST_KEY = "serialized_request"
 SEGMENTATIONS_KEY = "segmentations"

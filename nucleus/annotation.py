@@ -30,6 +30,7 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
+    SCENE_ID_KEY,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -817,9 +818,18 @@ class CategoryAnnotation(Annotation):
             metadata={"dress_color": "navy"}
         )
 
+        scene_category = CategoryAnnotation(
+            label="throwing",
+            scene_id="scn_c29dk5hs81j50ak42c84",
+            taxonomy_name="human_action",
+            metadata={"object_thrown": "baseball"}
+        )
+
     Parameters:
         label (str): The label for this annotation.
-        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        reference_id (Optional[str]): User-defined ID of the image to which to apply this annotation.
+        scene_id (Optional[str]): Nucleus ID of the scene to which to apply this annotation. Will be ignored if a
+          reference_id is provided.
         taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
@@ -829,18 +839,22 @@ class CategoryAnnotation(Annotation):
     """
 
     label: str
-    reference_id: str
+    reference_id: Optional[str]
+    scene_id: Optional[str]
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
+        if not self.reference_id or not self.scene_id:
+            raise Exception("You must specify a reference_id or a scene_id.")
 
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
             label=payload[LABEL_KEY],
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY, None),
+            scene_id=payload.get(SCENE_ID_KEY, None),
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
@@ -851,6 +865,7 @@ class CategoryAnnotation(Annotation):
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
+            SCENE_ID_KEY: self.scene_id,
             METADATA_KEY: self.metadata,
         }
         if self.taxonomy_name is not None:
