@@ -866,10 +866,10 @@ class CategoryAnnotation(Annotation):
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
         }
-        if self.is_scene:
-            payload[ANNOTATION_IS_SCENE_KEY] = self.is_scene
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
+        if self.is_scene:
+            payload[ANNOTATION_IS_SCENE_KEY] = self.is_scene
         return payload
 
 
@@ -881,6 +881,7 @@ class MultiCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
+    is_scene: bool = False
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -892,10 +893,11 @@ class MultiCategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            is_scene=payload.get(ANNOTATION_IS_SCENE_KEY, False),
         )
 
     def to_payload(self) -> dict:
-        payload = {
+        payload: Dict[str, Any] = {
             LABELS_KEY: self.labels,
             TYPE_KEY: MULTICATEGORY_TYPE,
             GEOMETRY_KEY: {},
@@ -904,6 +906,8 @@ class MultiCategoryAnnotation(Annotation):
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
+        if self.is_scene:
+            payload[ANNOTATION_IS_SCENE_KEY] = self.is_scene
         return payload
 
 
