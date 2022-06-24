@@ -2,11 +2,12 @@ import json
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 from urllib.parse import urlparse
 
 from .constants import (
     ANNOTATION_ID_KEY,
+    ANNOTATION_IS_SCENE_KEY,
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
@@ -30,7 +31,6 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
-    ANNOTATION_IS_SCENE_KEY,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -815,7 +815,7 @@ class CategoryAnnotation(Annotation):
             label="dress",
             reference_id="image_1",
             taxonomy_name="clothing_type",
-            metadata={"dress_color": "navy"}
+            metadata={"dress_color": "navy"},
         )
 
         scene_category = CategoryAnnotation(
@@ -823,7 +823,7 @@ class CategoryAnnotation(Annotation):
             reference_id="scene_1",
             taxonomy_name="human_action",
             metadata={"object_thrown": "baseball"},
-            is_scene=True
+            is_scene=True,
         )
 
     Parameters:
@@ -859,7 +859,7 @@ class CategoryAnnotation(Annotation):
         )
 
     def to_payload(self) -> dict:
-        payload = {
+        payload: Dict[str, Any] = {
             LABEL_KEY: self.label,
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
@@ -867,7 +867,7 @@ class CategoryAnnotation(Annotation):
             METADATA_KEY: self.metadata,
         }
         if self.is_scene:
-            payload[ANNOTATION_IS_SCENE_KEY] = True
+            payload[ANNOTATION_IS_SCENE_KEY] = self.is_scene
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
         return payload

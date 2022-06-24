@@ -24,6 +24,7 @@ from .helpers import (
     TEST_CATEGORY_PREDICTIONS,
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_PREDICTIONS,
+    TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS,
     TEST_IMG_URLS,
     TEST_KEYPOINTS_PREDICTIONS,
     TEST_LINE_PREDICTIONS,
@@ -31,6 +32,8 @@ from .helpers import (
     TEST_MODEL_RUN,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
     TEST_POLYGON_PREDICTIONS,
+    TEST_SCENE_CATEGORY_ANNOTATIONS,
+    TEST_SCENE_CATEGORY_PREDICTIONS,
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
@@ -232,6 +235,40 @@ def test_non_existent_taxonomy_category_gt_upload(model_run):
     assert (
         f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
         in response["errors"][0]
+    )
+
+
+def test_scene_category_pred_upload(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["category"]
+    assert len(response) == 1
+    assert_category_prediction_matches_dict(
+        response[0], TEST_SCENE_CATEGORY_PREDICTIONS[0]
+    )
+
+
+def test_scene_default_category_pred_upload(model_run):
+    prediction = CategoryPrediction.from_json(
+        TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+    response = model_run.refloc(prediction.reference_id)["category"]
+    assert len(response) == 1
+    assert_category_prediction_matches_dict(
+        response[0], TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS[0]
     )
 
 

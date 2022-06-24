@@ -389,6 +389,25 @@ TEST_DEFAULT_CATEGORY_ANNOTATIONS = [
     for i in range(len(TEST_IMG_URLS))
 ]
 
+TEST_SCENE_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Scene Category Label ${i}",
+        "reference_id": scene["reference_id"],
+        "taxonomy_name": "[Pytest] Scene Category Taxonomy 1",
+        "is_scene": True,
+    }
+    for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
+]
+
+TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Scene Category Label ${i}",
+        "reference_id": scene["reference_id"],
+        "is_scene": True,
+    }
+    for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
+]
+
 TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION = [
     {
         "label": "[Pytest] Category Label 0",
@@ -418,6 +437,31 @@ TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS = [
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
     }
     for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_SCENE_MULTICATEGORY_ANNOTATIONS = [
+    {
+        "labels": [
+            f"[Pytest] MultiCategory Scene Label ${i}",
+            f"[Pytest] MultiCategory Scene Label ${i+1}",
+        ],
+        "reference_id": scene["reference_id"],
+        "taxonomy_name": "[Pytest] MultiCategory Scene Taxonomy 1",
+        "is_scene": True,
+    }
+    for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
+]
+
+TEST_DEFAULT_SCENE_MULTICATEGORY_ANNOTATIONS = [
+    {
+        "labels": [
+            f"[Pytest] MultiCategory Scene Label ${i}",
+            f"[Pytest] MultiCategory Scene Label ${i+1}",
+        ],
+        "reference_id": scene["reference_id"],
+        "is_scene": True,
+    }
+    for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
 ]
 
 TEST_MASK_URL = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/000000000285.png"
@@ -571,6 +615,34 @@ TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION = [
         "taxonomy_name": "[Pytest] Category Taxonomy Nonexistent",
         "confidence": 0.10,
     }
+]
+
+TEST_SCENE_CATEGORY_PREDICTIONS = [
+    {
+        **TEST_SCENE_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_CATEGORY_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_SCENE_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_SCENE_CATEGORY_ANNOTATIONS))
+]
+
+TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS = [
+    {
+        **TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+        "class_pdf": TEST_CATEGORY_MODEL_PDF,
+    }
+    if i != 0
+    else {
+        **TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS[i],
+        "confidence": 0.10 * i,
+    }
+    for i in range(len(TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS))
 ]
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"

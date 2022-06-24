@@ -25,12 +25,16 @@ from .helpers import (
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_ANNOTATIONS,
     TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
+    TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS,
+    TEST_DEFAULT_SCENE_MULTICATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
     TEST_KEYPOINTS_ANNOTATIONS,
     TEST_LINE_ANNOTATIONS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
     TEST_POLYGON_ANNOTATIONS,
+    TEST_SCENE_CATEGORY_ANNOTATIONS,
+    TEST_SCENE_MULTICATEGORY_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
     assert_category_annotation_matches_dict,
@@ -247,6 +251,47 @@ def test_non_existent_taxonomy_category_gt_upload(dataset):
     )
 
 
+def test_scene_category_gt_upload(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_category_annotation_matches_dict(
+        response_annotation, TEST_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_default_scene_category_gt_upload(dataset):
+    annotation = CategoryAnnotation.from_json(
+        TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "category"
+    ]
+    assert len(response) == 1
+    response_annotation = response[0]
+
+    assert_category_annotation_matches_dict(
+        response_annotation, TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+
+
 def test_multicategory_gt_upload(dataset):
     annotation = MultiCategoryAnnotation.from_json(
         TEST_MULTICATEGORY_ANNOTATIONS[0]
@@ -286,6 +331,48 @@ def test_default_multicategory_gt_upload(dataset):
     response_annotation = response[0]
     assert_multicategory_annotation_matches_dict(
         response_annotation, TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_scene_multicategory_gt_upload(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_SCENE_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, TEST_SCENE_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_default_scene_multicategory_gt_upload(dataset):
+    annotation = MultiCategoryAnnotation.from_json(
+        TEST_DEFAULT_SCENE_MULTICATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "multicategory"
+    ]
+
+    assert len(response) == 1
+    response_annotation = response[0]
+    assert_multicategory_annotation_matches_dict(
+        response_annotation, TEST_DEFAULT_SCENE_MULTICATEGORY_ANNOTATIONS[0]
     )
 
 
