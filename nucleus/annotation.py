@@ -30,7 +30,7 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
-    SCENE_ID_KEY,
+    ANNOTATION_IS_SCENE_KEY,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -820,45 +820,42 @@ class CategoryAnnotation(Annotation):
 
         scene_category = CategoryAnnotation(
             label="throwing",
-            scene_id="scn_c29dk5hs81j50ak42c84",
+            reference_id="scene_1",
             taxonomy_name="human_action",
-            metadata={"object_thrown": "baseball"}
+            metadata={"object_thrown": "baseball"},
+            is_scene=True
         )
 
     Parameters:
         label (str): The label for this annotation.
-        reference_id (Optional[str]): User-defined ID of the image to which to apply this annotation.
-        scene_id (Optional[str]): Nucleus ID of the scene to which to apply this annotation. Will be ignored if a
-          reference_id is provided.
+        reference_id (str): User-defined ID of the image (or scene if is_scene=True) to which to apply this annotation.
         taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
+        is_scene (Optional[bool]): If True, this annotation will apply to a scene rather than an image. Defaults to
+          False.
     """
 
     label: str
-    reference_id: Optional[str]
-    scene_id: Optional[str]
+    reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
+    is_scene: bool = False
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
-        if self.reference_id is None and self.scene_id is None:
-            raise Exception("You must specify a reference_id or a scene_id.")
 
     @classmethod
     def from_json(cls, payload: dict):
-        reference_id = payload.get(REFERENCE_ID_KEY, None)
-        scene_id = payload[SCENE_ID_KEY] if reference_id is None else None
         return cls(
             label=payload[LABEL_KEY],
-            reference_id=reference_id,
-            scene_id=scene_id,
+            reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            is_scene=payload.get(ANNOTATION_IS_SCENE_KEY, False),
         )
 
     def to_payload(self) -> dict:
@@ -866,12 +863,11 @@ class CategoryAnnotation(Annotation):
             LABEL_KEY: self.label,
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
+            REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
         }
-        if self.reference_id is not None:
-            payload[REFERENCE_ID_KEY] = self.reference_id
-        elif self.scene_id is not None:
-            payload[SCENE_ID_KEY] = self.scene_id
+        if self.is_scene:
+            payload[ANNOTATION_IS_SCENE_KEY] = True
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
         return payload
