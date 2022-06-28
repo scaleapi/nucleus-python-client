@@ -21,7 +21,6 @@ from .annotation import (
 )
 from .constants import (
     ANNOTATION_ID_KEY,
-    ANNOTATION_IS_SCENE_KEY,
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
@@ -541,14 +540,12 @@ class CategoryPrediction(CategoryAnnotation):
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
-        is_scene: bool = False,
     ):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
             reference_id=reference_id,
             metadata=metadata,
-            is_scene=is_scene,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -571,7 +568,6 @@ class CategoryPrediction(CategoryAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
-            is_scene=payload.get(ANNOTATION_IS_SCENE_KEY, None),
         )
 
 

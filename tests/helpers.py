@@ -394,7 +394,6 @@ TEST_SCENE_CATEGORY_ANNOTATIONS = [
         "label": f"[Pytest] Scene Category Label ${i}",
         "reference_id": scene["reference_id"],
         "taxonomy_name": "[Pytest] Scene Category Taxonomy 1",
-        "is_scene": True,
     }
     for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
 ]
@@ -403,7 +402,6 @@ TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS = [
     {
         "label": f"[Pytest] Scene Category Label ${i}",
         "reference_id": scene["reference_id"],
-        "is_scene": True,
     }
     for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
 ]
@@ -447,7 +445,6 @@ TEST_SCENE_MULTICATEGORY_ANNOTATIONS = [
         ],
         "reference_id": scene["reference_id"],
         "taxonomy_name": "[Pytest] MultiCategory Scene Taxonomy 1",
-        "is_scene": True,
     }
     for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
 ]
@@ -459,7 +456,6 @@ TEST_DEFAULT_SCENE_MULTICATEGORY_ANNOTATIONS = [
             f"[Pytest] MultiCategory Scene Label ${i+1}",
         ],
         "reference_id": scene["reference_id"],
-        "is_scene": True,
     }
     for i, scene in enumerate(TEST_VIDEO_SCENES["scenes"])
 ]

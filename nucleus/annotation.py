@@ -2,12 +2,11 @@ import json
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Dict, List, Optional, Sequence, Type, Union
 from urllib.parse import urlparse
 
 from .constants import (
     ANNOTATION_ID_KEY,
-    ANNOTATION_IS_SCENE_KEY,
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
@@ -815,35 +814,31 @@ class CategoryAnnotation(Annotation):
             label="dress",
             reference_id="image_1",
             taxonomy_name="clothing_type",
-            metadata={"dress_color": "navy"},
+            metadata={"dress_color": "navy"}
         )
 
         scene_category = CategoryAnnotation(
             label="throwing",
             reference_id="scene_1",
             taxonomy_name="human_action",
-            metadata={"object_thrown": "baseball"},
-            is_scene=True,
+            metadata={"object_thrown": "baseball"}
         )
 
     Parameters:
         label (str): The label for this annotation.
-        reference_id (str): User-defined ID of the image (or scene if is_scene=True) to which to apply this annotation.
+        reference_id (str): User-defined ID of the image or scene to which to apply this annotation.
         taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this annotation.
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
-        is_scene (Optional[bool]): If True, this annotation will apply to a scene rather than an image. Defaults to
-          False.
     """
 
     label: str
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
-    is_scene: bool = False
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -855,11 +850,10 @@ class CategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            is_scene=payload.get(ANNOTATION_IS_SCENE_KEY, False),
         )
 
     def to_payload(self) -> dict:
-        payload: Dict[str, Any] = {
+        payload = {
             LABEL_KEY: self.label,
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
@@ -868,8 +862,6 @@ class CategoryAnnotation(Annotation):
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
-        if self.is_scene:
-            payload[ANNOTATION_IS_SCENE_KEY] = self.is_scene
         return payload
 
 
@@ -881,7 +873,6 @@ class MultiCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
-    is_scene: bool = False
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -893,11 +884,10 @@ class MultiCategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            is_scene=payload.get(ANNOTATION_IS_SCENE_KEY, False),
         )
 
     def to_payload(self) -> dict:
-        payload: Dict[str, Any] = {
+        payload = {
             LABELS_KEY: self.labels,
             TYPE_KEY: MULTICATEGORY_TYPE,
             GEOMETRY_KEY: {},
@@ -906,8 +896,6 @@ class MultiCategoryAnnotation(Annotation):
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
-        if self.is_scene:
-            payload[ANNOTATION_IS_SCENE_KEY] = self.is_scene
         return payload
 
 
