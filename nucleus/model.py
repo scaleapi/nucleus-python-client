@@ -77,7 +77,7 @@ class Model:
 
         # For large ingestions, we recommend asynchronous ingestion
         job = dataset.upload_predictions(
-            [prediction_1, prediction_2], asynchronous=True
+            model, [prediction_1, prediction_2], asynchronous=True
         )
         # Check current status
         job.status()
