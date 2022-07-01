@@ -145,7 +145,7 @@ class Metric(ABC):
         self._raise_if_everything_filtered(
             annotations, filtered_anns, predictions, filtered_preds
         )
-        return self.call_metric(annotations, predictions)
+        return self.call_metric(filtered_anns, filtered_preds)
 
     @abstractmethod
     def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
