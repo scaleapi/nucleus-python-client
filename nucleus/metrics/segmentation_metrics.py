@@ -185,6 +185,19 @@ class SegmentationMaskMetric(Metric):
             ) = convert_to_instance_seg_confusion(
                 confusion, annotation, prediction
             )
+        else:
+            ann_labels = list(
+                dict.fromkeys(s.label for s in annotation.annotations)
+            )
+            pred_labels = list(
+                dict.fromkeys(s.label for s in prediction.annotations)
+            )
+            missing_or_filtered_labels = set(ann_labels) - set(pred_labels)
+            non_taxonomy_classes = {
+                segment.index
+                for segment in annotation.annotations
+                if segment.label in missing_or_filtered_labels
+            }
 
         return confusion, non_taxonomy_classes
 
@@ -645,8 +658,11 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 - np.diag(confusion)
             )
             freq = confusion.sum(axis=0) / confusion.sum()
-            fwavacc = (freq[freq > 0] * iu[freq > 0]).sum()
-            fwavacc.put(list(non_taxonomy_classes), np.nan)
+            iu.put(list(non_taxonomy_classes), np.nan)
+            freq.put(list(non_taxonomy_classes), np.nan)
+            fwavacc = (
+                np.nan_to_num(freq[freq > 0]) * np.nan_to_num(iu[freq > 0])
+            ).sum()
             mean_fwavacc = np.nanmean(fwavacc)
         return ScalarResult(value=np.nan_to_num(mean_fwavacc), weight=confusion.sum())  # type: ignore
 
