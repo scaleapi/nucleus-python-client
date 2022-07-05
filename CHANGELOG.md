@@ -5,6 +5,16 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.5) - 2022-07-05
+
+### Fixed
+- Averaging of rich semantic segmentation taxonomies not taking into account missing classes
+
+## [0.14.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.4) - 2022-06-21
+
+### Fixed
+- Regression that caused Validate filter statements to not work
+
 ## [0.14.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.3) - 2022-06-21
 
 ### Fixed
