@@ -1,6 +1,5 @@
 import copy
 import math
-from time import sleep
 
 import pytest
 
