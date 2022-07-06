@@ -1681,7 +1681,7 @@ class Dataset:
         )
         return mm.update()
 
-    def list_query_items(self, query: str) -> Iterable[DatasetItem]:
+    def query_items(self, query: str) -> Iterable[DatasetItem]:
         """
         Fetches all DatasetItems that pertain to a given structured query.
 
