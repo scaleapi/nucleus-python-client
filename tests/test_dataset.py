@@ -1,7 +1,6 @@
 import copy
 import math
 from time import sleep
-from nucleus.errors import NucleusAPIError
 
 import pytest
 
@@ -28,6 +27,7 @@ from nucleus.constants import (
     SEGMENTATION_TYPE,
     UPDATED_ITEMS,
 )
+from nucleus.errors import NucleusAPIError
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
@@ -586,26 +586,22 @@ def test_dataset_get_object_indexing_status(CLIENT):
     )
 
 
-@pytest.mark.skip(reason="Flaky because we have to wait for ES indexing")
 @pytest.mark.integration
-def test_append_and_query(CLIENT):
-    dataset = CLIENT.create_dataset("delete me")
-    items = make_dataset_items()
-    expected_ref_ids = set(
-        i.reference_id for i in items if i.metadata["example_int"] < 2
-    )
-    response = dataset.append(items)
-    assert ERROR_PAYLOAD not in response.json()
+def test_query(CLIENT):
+    dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
+    expected_items = {
+        ia["item"].reference_id: ia["item"]
+        for ia in dataset.items_and_annotations()
+        if len(ia["annotations"]["box"]) > 6  # assume only box annotations
+    }
+    queried_items = [
+        i for i in dataset.list_query_items("annotations.count > 6")
+    ]
 
-    query_result_ref_ids = {}
-    for qi in dataset.list_query_items("metadata.example_int < 2"):
-        assert qi.ref_id in expected_ref_ids
-        query_result_ref_ids.add(qi.reference_id)
-    assert len(query_result_ref_ids) == len(expected_ref_ids)
+    assert len(queried_items) == len(expected_items)
+    for qi in queried_items:
+        assert qi == expected_items[qi.reference_id]
 
     with pytest.raises(NucleusAPIError):
-        for qi in dataset.list_query_items("annotations.count fail"):
+        for qi in dataset.list_query_items("annotations.count bad syntax"):
             print(qi)  # unreachable, just need to yield an item from generator
-
-    CLIENT.delete_dataset(dataset.id)
-    assert response == {"message": "Beginning dataset deletion..."}

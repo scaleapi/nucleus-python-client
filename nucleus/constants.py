@@ -139,6 +139,3 @@ W_KEY = "w"
 X_KEY = "x"
 Y_KEY = "y"
 Z_KEY = "z"
-QUERY_LANGUAGE_DOCS_URL = (
-    "https://nucleus.scale.com/docs/query-language-reference"
-)

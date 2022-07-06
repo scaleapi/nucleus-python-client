@@ -39,7 +39,6 @@ from .constants import (
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
-    QUERY_LANGUAGE_DOCS_URL,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
@@ -1683,11 +1682,11 @@ class Dataset:
         return mm.update()
 
     def list_query_items(self, query: str) -> Iterable[DatasetItem]:
-        f"""
+        """
         Fetches all DatasetItems that pertain to a given structured query.
 
         Args:
-            query: Structured query compatible with the [Nucleus query language]({QUERY_LANGUAGE_DOCS_URL}).
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
 
         Returns:
             A list of DatasetItem query results.
