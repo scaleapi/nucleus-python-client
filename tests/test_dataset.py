@@ -1,5 +1,7 @@
 import copy
 import math
+from time import sleep
+from nucleus.errors import NucleusAPIError
 
 import pytest
 
@@ -582,3 +584,28 @@ def test_dataset_get_object_indexing_status(CLIENT):
     assert round(resp["percent_indexed"], 2) == round(
         resp["object_count"] / resp["embedding_count"], 2
     )
+
+
+@pytest.mark.skip(reason="Flaky because we have to wait for ES indexing")
+@pytest.mark.integration
+def test_append_and_query(CLIENT):
+    dataset = CLIENT.create_dataset("delete me")
+    items = make_dataset_items()
+    expected_ref_ids = set(
+        i.reference_id for i in items if i.metadata["example_int"] < 2
+    )
+    response = dataset.append(items)
+    assert ERROR_PAYLOAD not in response.json()
+
+    query_result_ref_ids = {}
+    for qi in dataset.list_query_items("metadata.example_int < 2"):
+        assert qi.ref_id in expected_ref_ids
+        query_result_ref_ids.add(qi.reference_id)
+    assert len(query_result_ref_ids) == len(expected_ref_ids)
+
+    with pytest.raises(NucleusAPIError):
+        for qi in dataset.list_query_items("annotations.count fail"):
+            print(qi)  # unreachable, just need to yield an item from generator
+
+    CLIENT.delete_dataset(dataset.id)
+    assert response == {"message": "Beginning dataset deletion..."}

@@ -29,19 +29,20 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     EXPORTED_SCALE_TASK_INFO_ROWS,
+    HAS_MORE_KEY,
     ITEM_KEY,
     KEYPOINTS_TYPE,
-    LAST_PAGE,
     LINE_TYPE,
     MAX_PAYLOAD_SIZE,
     MULTICATEGORY_TYPE,
+    NEXT_TOKEN_KEY,
     PAGE_SIZE,
-    PAGE_TOKEN,
     POLYGON_TYPE,
     PREDICTIONS_KEY,
     REFERENCE_ID_KEY,
     SCALE_TASK_INFO_KEY,
     SCENE_KEY,
+    SEARCH_AFTER_TOKEN_KEY,
     SEGMENTATION_TYPE,
 )
 from .dataset_item import DatasetItem
@@ -362,13 +363,18 @@ def paginate_generator(
     endpoint: str,
     result_key: str,
     page_size: int = 100000,
+    **kwargs,
 ):
-    last_page = False
-    page_token = None
-    while not last_page:
+    has_more = True
+    next_token = None
+    while has_more:
         try:
             response = client.make_request(
-                {PAGE_TOKEN: page_token, PAGE_SIZE: page_size},
+                {
+                    SEARCH_AFTER_TOKEN_KEY: next_token,
+                    PAGE_SIZE: page_size,
+                    **kwargs,
+                },
                 endpoint,
                 requests.post,
             )
@@ -376,6 +382,6 @@ def paginate_generator(
             if e.status_code == 503:
                 e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page_size."
             raise e
-        page_token, last_page = response[PAGE_TOKEN], response[LAST_PAGE]
+        next_token, has_more = response[NEXT_TOKEN_KEY], response[HAS_MORE_KEY]
         for json_value in response[result_key]:
             yield json_value
