@@ -594,7 +594,7 @@ def test_query(CLIENT):
         if len(ia["annotations"]["box"]) > 6  # assume only box annotations
     }
     queried_items = [
-        i for i in dataset.list_query_items("annotations.count > 6")
+        i for i in dataset.query_items("annotations.count > 6")
     ]
 
     assert len(queried_items) == len(expected_items)
@@ -602,5 +602,5 @@ def test_query(CLIENT):
         assert qi == expected_items[qi.reference_id]
 
     with pytest.raises(NucleusAPIError):
-        for qi in dataset.list_query_items("annotations.count bad syntax"):
+        for qi in dataset.query_items("annotations.count bad syntax"):
             print(qi)  # unreachable, just need to yield an item from generator
