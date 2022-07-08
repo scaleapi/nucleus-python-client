@@ -695,7 +695,9 @@ def test_box_gt_deletion(dataset):
 
     assert response["annotations_processed"] == 1
 
-    job = dataset.delete_annotations()
+    job = dataset.delete_annotations(
+        reference_ids=[TEST_BOX_ANNOTATIONS[0]["reference_id"]]
+    )
     job.sleep_until_complete()
     job_status = job.status()
     assert job_status["status"] == "Completed"
@@ -712,7 +714,9 @@ def test_category_gt_deletion(dataset):
 
     assert response["annotations_processed"] == 1
 
-    job = dataset.delete_annotations()
+    job = dataset.delete_annotations(
+        reference_ids=[TEST_CATEGORY_ANNOTATIONS[0]["reference_id"]]
+    )
     job.sleep_until_complete()
     job_status = job.status()
     assert job_status["status"] == "Completed"
@@ -731,7 +735,9 @@ def test_multicategory_gt_deletion(dataset):
 
     assert response["annotations_processed"] == 1
 
-    job = dataset.delete_annotations()
+    job = dataset.delete_annotations(
+        reference_ids=[TEST_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]]
+    )
     job.sleep_until_complete()
     job_status = job.status()
     assert job_status["status"] == "Completed"
