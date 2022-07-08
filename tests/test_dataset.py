@@ -593,9 +593,7 @@ def test_query(CLIENT):
         for ia in dataset.items_and_annotations()
         if len(ia["annotations"]["box"]) > 6  # assume only box annotations
     }
-    queried_items = [
-        i for i in dataset.query_items("annotations.count > 6")
-    ]
+    queried_items = [i for i in dataset.query_items("annotations.count > 6")]
 
     assert len(queried_items) == len(expected_items)
     for qi in queried_items:
