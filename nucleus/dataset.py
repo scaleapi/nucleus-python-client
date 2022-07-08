@@ -1680,3 +1680,23 @@ class Dataset:
             self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS
         )
         return mm.update()
+
+    def query_items(self, query: str) -> Iterable[DatasetItem]:
+        """
+        Fetches all DatasetItems that pertain to a given structured query.
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+
+        Returns:
+            A list of DatasetItem query results.
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/queryItemsPage",
+            result_key=ITEMS_KEY,
+            page_size=10000,  # max ES page size
+            query=query,
+        )
+        for item_json in json_generator:
+            yield DatasetItem.from_json(item_json)

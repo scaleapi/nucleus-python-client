@@ -26,6 +26,7 @@ from nucleus.constants import (
     SEGMENTATION_TYPE,
     UPDATED_ITEMS,
 )
+from nucleus.errors import NucleusAPIError
 from nucleus.job import AsyncJob, JobError
 
 from .helpers import (
@@ -582,3 +583,22 @@ def test_dataset_get_object_indexing_status(CLIENT):
     assert round(resp["percent_indexed"], 2) == round(
         resp["object_count"] / resp["embedding_count"], 2
     )
+
+
+@pytest.mark.integration
+def test_query(CLIENT):
+    dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
+    expected_items = {
+        ia["item"].reference_id: ia["item"]
+        for ia in dataset.items_and_annotations()
+        if len(ia["annotations"]["box"]) > 6  # assume only box annotations
+    }
+    queried_items = [i for i in dataset.query_items("annotations.count > 6")]
+
+    assert len(queried_items) == len(expected_items)
+    for qi in queried_items:
+        assert qi == expected_items[qi.reference_id]
+
+    with pytest.raises(NucleusAPIError):
+        for qi in dataset.query_items("annotations.count bad syntax"):
+            print(qi)  # unreachable, just need to yield an item from generator
