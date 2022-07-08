@@ -1213,24 +1213,27 @@ class Dataset:
         return api_payload  # type: ignore
 
     def delete_annotations(
-        self, reference_ids: list = None, keep_history=False
+        self, reference_ids: list = None, keep_history=True
     ) -> AsyncJob:
         """Deletes all annotations associated with the specified item reference IDs.
 
         Parameters:
             reference_ids: List of user-defined reference IDs of the dataset items
-              from which to delete annotations.
+              from which to delete annotations. Defaults to an empty list.
             keep_history: Whether to preserve version history. If False, all
                 previous versions will be deleted along with the annotations. If
                 True, the version history (including deletion) wil persist.
-                Default is False.
+                Default is True.
 
         Returns:
             :class:`AsyncJob`: Empty payload response.
         """
-        payload = {KEEP_HISTORY_KEY: keep_history}
-        if reference_ids:
-            payload[REFERENCE_IDS_KEY] = reference_ids
+        if reference_ids is None:
+            reference_ids = []
+        payload = {
+            KEEP_HISTORY_KEY: keep_history,
+            REFERENCE_IDS_KEY: reference_ids,
+        }
         response = self._client.make_request(
             payload,
             f"annotation/{self.id}",
