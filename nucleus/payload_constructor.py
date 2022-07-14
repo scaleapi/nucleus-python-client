@@ -17,6 +17,7 @@ from .constants import (
     METADATA_KEY,
     MODEL_BUNDLE_NAME_KEY,
     MODEL_ID_KEY,
+    MODEL_TAGS_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
     SCENES_KEY,
@@ -127,6 +128,7 @@ def construct_model_creation_payload(
     reference_id: str,
     metadata: Optional[Dict],
     bundle_name: Optional[str],
+    tags: Optional[List[str]],
 ) -> dict:
     payload = {
         NAME_KEY: name,
@@ -136,6 +138,8 @@ def construct_model_creation_payload(
 
     if bundle_name:
         payload[MODEL_BUNDLE_NAME_KEY] = bundle_name
+    if tags:
+        payload[MODEL_TAGS_KEY] = tags
 
     return payload
 

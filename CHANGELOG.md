@@ -5,6 +5,131 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.7) - 2022-07-07
+
+### Added
+- Support running structured queries and retrieving item results via API
+
+## [0.14.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.6) - 2022-07-07
+
+### Fixed
+- `Dataset.delete_annotations` now defaults `reference_ids` to an empty list and `keep_history` to true
+
+## [0.14.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.5) - 2022-07-05
+
+### Fixed
+- Averaging of rich semantic segmentation taxonomies not taking into account missing classes
+
+## [0.14.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.4) - 2022-06-21
+
+### Fixed
+- Regression that caused Validate filter statements to not work
+
+## [0.14.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.3) - 2022-06-21
+
+### Fixed
+- CLI installation without GEOS errored out. Now handled by importer.
+
+
+## [0.14.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.2) - 2022-06-21
+
+### Fixed
+- Better error reporting when everything is filtered out by a filter statement in a Validate evaluation function
+
+## [0.14.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.1) - 2022-06-20
+
+### Fixed
+- Adapt Segmentation metrics to better support instance segmentation
+- Change Segmentation/Polygon metrics to use new segmentation metrics 
+
+
+## [0.14.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.0) - 2022-06-16
+
+### Added
+
+- Allow creation/deletion of model tags on new and existing models, eg:
+```python
+# on model creation
+model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags=["some tag"])
+
+# on existing models
+existing_model = client.models[0]
+existing_model.add_tags(['tag a', 'tag b'])
+
+# remove tag
+existing_model.remove_tags(['tag a'])
+```
+
+## [0.13.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-15
+
+### Fixed
+- Guard against invalid skeleton indexes in KeypointsAnnotation
+
+
+## [0.13.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-09
+
+### Fixed
+- Guard against extras imports 
+
+## [0.13.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.3) - 2022-06-09
+
+### Fixed
+- Make installation of scale-launch optional (again!).
+
+## [0.13.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.2) - 2022-06-08
+
+### Fixed
+
+- Open up requirements for easier installation in more environments. Add more optional installs under `metrics`
+ 
+## [0.13.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.1) - 2022-06-08
+
+### Fixed
+
+- Make installation of scale-launch optional
+
+## [0.13.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.0) - 2022-06-08
+
+### Added
+
+- Segmentation functions to Validate API
+
+## [0.12.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.4) - 2022-06-02
+
+### Fixed
+
+- Poetry dependency list
+
+
+## [0.12.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.3) - 2022-06-02
+
+### Added
+
+- New methods to export associated Scale task info at either the item or scene level.
+- `Dataset.export_scale_task_info`
+- `Slice.export_scale_task_info`
+
+
+## [0.12.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.2) - 2022-06-02
+
+### Added
+
+- Allow users to upload external evaluation results calculated on the client side.
+
+
+## [0.12.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.1) - 2022-06-02
+
+### Added
+
+- Suppress warning statement when un-implemented standard configs found
+
+## [0.12.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.0) - 2022-05-27
+
+### Added
+
+- Allow users to create external evaluation functions for Scenario Tests in Validate.
+
+
 ## [0.11.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.2) - 2022-05-20
 
 ### Changed

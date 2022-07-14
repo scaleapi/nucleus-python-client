@@ -3,8 +3,12 @@ from typing import List
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 
-from .constants import SCENARIO_TEST_ID_KEY
-from .data_transfer_objects.eval_function import GetEvalFunctions
+from .constants import EVAL_FUNCTION_KEY, SCENARIO_TEST_ID_KEY
+from .data_transfer_objects.eval_function import (
+    CreateEvalFunction,
+    EvalFunctionEntry,
+    GetEvalFunctions,
+)
 from .data_transfer_objects.scenario_test import (
     CreateScenarioTestRequest,
     EvalFunctionListEntry,
@@ -80,6 +84,15 @@ class Validate:
                 "Must pass an evaluation_function to the scenario test! I.e. "
                 "evaluation_functions=[client.validate.eval_functions.bbox_iou()]"
             )
+
+        external_fns = [
+            f.eval_func_entry.is_external_function
+            for f in evaluation_functions
+        ]
+        if any(external_fns):
+            assert all(
+                external_fns
+            ), "Cannot create scenario tests with mixed placeholder and non-placeholder evaluation functions"
 
         response = self.connection.post(
             CreateScenarioTestRequest(
@@ -175,3 +188,34 @@ class Validate:
             f"validate/{model_id}/evaluate",
         )
         return AsyncJob.from_json(response, self.connection)
+
+    def create_external_eval_function(
+        self,
+        name: str,
+    ) -> EvalFunctionEntry:
+        """Creates a new external evaluation function. This external function can be used to upload evaluation
+        results with functions defined and computed by the customer, without having to share the source code of the
+        respective function.
+
+        Args:
+            name: unique name of evaluation function
+
+        Raises:
+            - NucleusAPIError if the creation of the function fails on the server side
+            - ValidationError if the evaluation name is not well defined
+
+        Returns:
+            Created EvalFunctionConfig object.
+
+        """
+
+        response = self.connection.post(
+            CreateEvalFunction(
+                name=name,
+                is_external_function=True,
+                serialized_fn=None,
+                raw_source=None,
+            ).dict(),
+            "validate/eval_fn",
+        )
+        return EvalFunctionEntry.parse_obj(response[EVAL_FUNCTION_KEY])

@@ -1,7 +1,6 @@
 import itertools
 from typing import Callable, Dict, List, Optional, Union
 
-from nucleus.logger import logger
 from nucleus.validate.eval_functions.base_eval_function import (
     EvalFunctionConfig,
 )
@@ -9,6 +8,13 @@ from nucleus.validate.eval_functions.base_eval_function import (
 from ...metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from ..data_transfer_objects.eval_function import EvalFunctionEntry
 from ..errors import EvalFunctionNotAvailableError
+from .config_classes.segmentation import (
+    SegmentationFWAVACCConfig,
+    SegmentationIOUConfig,
+    SegmentationMAPConfig,
+    SegmentationPrecisionConfig,
+    SegmentationRecallConfig,
+)
 
 # TODO(gunnar) split up into modules
 # pylint: disable=too-many-lines
@@ -336,7 +342,7 @@ class SegmentationToPolyIOUConfig(EvalFunctionConfig):
 class SegmentationToPolyMAPConfig(EvalFunctionConfig):
     def __call__(
         self,
-        iou_threshold: float = 0.5,
+        iou_thresholds: Union[List[float], str] = "coco",
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -381,7 +387,7 @@ class SegmentationToPolyMAPConfig(EvalFunctionConfig):
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
         return super().__call__(
-            iou_threshold=iou_threshold,
+            iou_thresholds=iou_thresholds,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
             **kwargs,
@@ -1131,21 +1137,23 @@ class CustomEvalFunction(EvalFunctionConfig):
     @classmethod
     def expected_name(cls) -> str:
         raise NotImplementedError(
-            "Custm evaluation functions are coming soon"
+            "Custom evaluation functions are coming soon"
         )  # Placeholder: See super().eval_func_entry for actual name
+
+
+class ExternalEvalFunction(EvalFunctionConfig):
+    def __call__(self, **kwargs):
+        raise NotImplementedError("Cannot call an external function")
+
+    @classmethod
+    def expected_name(cls) -> str:
+        return "external_function"
 
 
 class StandardEvalFunction(EvalFunctionConfig):
     """Class for standard Model CI eval functions that have not been added as attributes on
     AvailableEvalFunctions yet.
     """
-
-    def __init__(self, eval_function_entry: EvalFunctionEntry):
-        logger.warning(
-            "Standard function %s not implemented as an attribute on AvailableEvalFunctions",
-            eval_function_entry.name,
-        )
-        super().__init__(eval_function_entry)
 
     @classmethod
     def expected_name(cls) -> str:
@@ -1186,6 +1194,7 @@ EvalFunction = Union[
     CuboidPrecisionConfig,
     CategorizationF1Config,
     CustomEvalFunction,
+    ExternalEvalFunction,
     EvalFunctionNotAvailable,
     StandardEvalFunction,
     PolygonMAPConfig,
@@ -1197,6 +1206,11 @@ EvalFunction = Union[
     SegmentationToPolyMAPConfig,
     SegmentationToPolyPrecisionConfig,
     SegmentationToPolyAveragePrecisionConfig,
+    SegmentationFWAVACCConfig,
+    SegmentationIOUConfig,
+    SegmentationPrecisionConfig,
+    SegmentationRecallConfig,
+    SegmentationMAPConfig,
 ]
 
 
@@ -1229,7 +1243,12 @@ class AvailableEvalFunctions:
         self._custom_to_function: Dict[str, CustomEvalFunction] = {
             f.name: CustomEvalFunction(f)
             for f in available_functions
-            if not f.is_public
+            if not f.is_public and not f.is_external_function
+        }
+        self._external_to_function: Dict[str, ExternalEvalFunction] = {
+            f.name: ExternalEvalFunction(f)
+            for f in available_functions
+            if f.is_external_function
         }
         self.bbox_iou: BoundingBoxIOUConfig = (
             self._assign_eval_function_if_defined(BoundingBoxIOUConfig)
@@ -1280,6 +1299,21 @@ class AvailableEvalFunctions:
             SegmentationToPolyAveragePrecisionConfig  # type: ignore
         )
 
+        self.seg_iou: SegmentationIOUConfig = self._assign_eval_function_if_defined(
+            SegmentationIOUConfig  # type: ignore
+        )
+        self.seg_recall: SegmentationRecallConfig = self._assign_eval_function_if_defined(
+            SegmentationRecallConfig  # type: ignore
+        )
+        self.seg_map: SegmentationMAPConfig = self._assign_eval_function_if_defined(
+            SegmentationMAPConfig  # type: ignore
+        )
+        self.seg_precision: SegmentationPrecisionConfig = self._assign_eval_function_if_defined(
+            SegmentationPrecisionConfig  # type: ignore
+        )
+        self.seg_fwavacc: SegmentationFWAVACCConfig = self._assign_eval_function_if_defined(
+            SegmentationFWAVACCConfig  # type: ignore
+        )
         # Add public entries that have not been implemented as an attribute on this class
         for func_entry in self._public_func_entries.values():
             if func_entry.name not in self._public_to_function:
@@ -1294,8 +1328,9 @@ class AvailableEvalFunctions:
             str(name).lower() for name in self._public_func_entries.keys()
         ]
         return (
-            f"<AvailableEvaluationFunctions: public:{functions_lower} "
-            f"private: {list(self._custom_to_function.keys())}"
+            f"<AvailableEvaluationFunctions: public: {functions_lower} "
+            f"private: {list(self._custom_to_function.keys())} "
+            f"external: {list(self._external_to_function.keys())}"
         )
 
     @property
@@ -1312,12 +1347,21 @@ class AvailableEvalFunctions:
 
     @property
     def private_functions(self) -> Dict[str, CustomEvalFunction]:
-        """Custom functions uploaded to Model CI
+        """Private functions uploaded to Model CI
 
         Returns:
             Dict of function name to :class:`CustomEvalFunction`.
         """
         return self._custom_to_function
+
+    @property
+    def external_functions(self) -> Dict[str, ExternalEvalFunction]:
+        """External functions uploaded to Model CI
+
+        Returns:
+            Dict of function name to :class:`ExternalEvalFunction`.
+        """
+        return self._external_to_function
 
     def _assign_eval_function_if_defined(
         self,
@@ -1340,6 +1384,7 @@ class AvailableEvalFunctions:
         for eval_func in itertools.chain(
             self._public_to_function.values(),
             self._custom_to_function.values(),
+            self._external_to_function.values(),
         ):
             if eval_func.id == eval_function_id:
                 return eval_func

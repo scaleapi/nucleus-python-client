@@ -1,21 +1,31 @@
 import abc
-from typing import List, Optional, Set, Tuple, Union
+import logging
+from enum import Enum
+from typing import List, Optional, Union
 
 import numpy as np
 
-from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
+from nucleus.annotation import AnnotationList, SegmentationAnnotation
 from nucleus.metrics.base import MetricResult
-from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
-from nucleus.prediction import PredictionList, SegmentationPrediction
-
-from .base import Metric, ScalarResult
-from .segmentation_loader import SegmentationMaskLoader
-from .segmentation_utils import (
-    FALSE_POSITIVES,
-    convert_to_instance_seg_confusion,
-    fast_confusion_matrix,
-    non_max_suppress_confusion,
+from nucleus.metrics.filtering import (
+    ListOfAndFilters,
+    ListOfOrAndFilters,
+    apply_filters,
+)
+from nucleus.metrics.segmentation_utils import (
+    instance_mask_to_polys,
+    rasterize_polygons_to_segmentation_mask,
     setup_iou_thresholds,
+    transform_poly_codes_to_poly_preds,
+)
+from nucleus.prediction import PredictionList
+
+from .segmentation_loader import InMemoryLoader, SegmentationMaskLoader
+from .segmentation_metrics import (
+    SegmentationIOU,
+    SegmentationMAP,
+    SegmentationPrecision,
+    SegmentationRecall,
 )
 
 try:
@@ -25,24 +35,38 @@ except (ModuleNotFoundError, OSError):
 
     S3FileSystem = PackageNotInstalled
 
+from .base import Metric, ScalarResult
+from .polygon_metrics import (
+    PolygonAveragePrecision,
+    PolygonIOU,
+    PolygonPrecision,
+    PolygonRecall,
+)
 
-# pylint: disable=useless-super-delegation
+
+class SegToPolyMode(str, Enum):
+    GENERATE_GT_FROM_POLY = "gt_from_poly"
+    GENERATE_PRED_POLYS_FROM_MASK = "gt_from_poly"
 
 
-class SegmentationMaskMetric(Metric):
+class SegmentationMaskToPolyMetric(Metric):
     def __init__(
         self,
+        enforce_label_match: bool = False,
+        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
+        mode: SegToPolyMode = SegToPolyMode.GENERATE_GT_FROM_POLY,
     ):
         """Initializes PolygonMetric abstract object.
 
         Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Default False
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -62,199 +86,136 @@ class SegmentationMaskMetric(Metric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
-        # TODO -> add custom filtering to Segmentation(Annotation|Prediction).annotations.(metadata|label)
-        super().__init__(annotation_filters, prediction_filters)
+        # Since segmentation annotations are very different from everything else we can't rely on the upper filtering
+        super().__init__(None, None)
+        self._annotation_filters = annotation_filters
+        self._prediction_filters = prediction_filters
+        self.enforce_label_match = enforce_label_match
+        assert 0 <= confidence_threshold <= 1
+        self.confidence_threshold = confidence_threshold
         self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
-        self.iou_threshold = iou_threshold
+        self.mode = mode
 
     def call_metric(
         self, annotations: AnnotationList, predictions: PredictionList
-    ) -> ScalarResult:
-        assert (
-            len(annotations.segmentation_annotations) <= 1
-        ), f"Expected only one segmentation mask, got {annotations.segmentation_annotations}"
+    ) -> MetricResult:
         assert (
             len(predictions.segmentation_predictions) <= 1
         ), f"Expected only one segmentation mask, got {predictions.segmentation_predictions}"
-        annotation = (
-            annotations.segmentation_annotations[0]
-            if annotations.segmentation_annotations
-            else None
-        )
         prediction = (
             predictions.segmentation_predictions[0]
             if predictions.segmentation_predictions
             else None
         )
-        if (
-            annotation
-            and prediction
-            and annotation.annotations
-            and prediction.annotations
-        ):
-            annotation_img = self.get_mask_channel(annotation)
-            pred_img = self.get_mask_channel(prediction)
-            return self._metric_impl(
-                np.asarray(annotation_img, dtype=np.int32),
-                np.asarray(pred_img, dtype=np.int32),
-                annotation,
-                prediction,
-            )
+        annotations.polygon_annotations = apply_filters(
+            annotations.polygon_annotations, self._annotation_filters  # type: ignore
+        )
+        annotations.box_annotations = apply_filters(
+            annotations.box_annotations, self._annotation_filters  # type: ignore
+        )
+        predictions.segmentation_predictions = apply_filters(
+            predictions.segmentation_predictions, self._prediction_filters  # type: ignore
+        )
+        if prediction:
+            if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
+                pred_img = self.loader.fetch(prediction.mask_url)
+                ann_img, segments = rasterize_polygons_to_segmentation_mask(
+                    annotations.polygon_annotations
+                    + annotations.box_annotations,  # type:ignore
+                    pred_img.shape,
+                )
+                # TODO: apply Segmentation filters after?
+                annotations.segmentation_annotations = [
+                    SegmentationAnnotation(
+                        "__no_url",
+                        annotations=segments,
+                        reference_id=annotations.polygon_annotations[
+                            0
+                        ].reference_id,
+                    )
+                ]
+                return self.call_segmentation_metric(
+                    annotations,
+                    np.asarray(ann_img),
+                    predictions,
+                    np.asarray(pred_img),
+                )
+            elif self.mode == SegToPolyMode.GENERATE_PRED_POLYS_FROM_MASK:
+                pred_img = self.loader.fetch(prediction.mask_url)
+                pred_value, pred_polys = instance_mask_to_polys(
+                    np.asarray(pred_img)
+                )  # typing: ignore
+                code_to_label = {
+                    s.index: s.label for s in prediction.annotations
+                }
+                poly_predictions = transform_poly_codes_to_poly_preds(
+                    prediction.reference_id,
+                    pred_value,
+                    pred_polys,
+                    code_to_label,
+                )
+                return self.call_poly_metric(
+                    annotations,
+                    PredictionList(polygon_predictions=poly_predictions),
+                )
+            else:
+                raise RuntimeError(
+                    f"Misonconfigured class. Got mode '{self.mode}', expected one of {list(SegToPolyMode)}"
+                )
         else:
             return ScalarResult(0, weight=0)
 
-    def get_mask_channel(self, ann_or_pred):
-        """Some annotations are stored as RGB instead of L (single-channel).
-        We expect the image to be faux-single-channel with all the channels repeating so we choose the first one.
-        """
-        img = self.loader.fetch(ann_or_pred.mask_url)
-        if len(img.shape) > 2:
-            # TODO: Do we have to do anything more advanced? Currently expect all channels to have same data
-            min_dim = np.argmin(img.shape)
-            if min_dim == 0:
-                img = img[0, :, :]
-            elif min_dim == 1:
-                img = img[:, 0, :]
-            else:
-                img = img[:, :, 0]
-        return img
+    def call_segmentation_metric(
+        self,
+        annotations: AnnotationList,
+        ann_img: np.ndarray,
+        predictions: PredictionList,
+        pred_img: np.ndarray,
+    ):
+        metric = self.configure_metric()
+        metric.loader = InMemoryLoader(
+            {
+                annotations.segmentation_annotations[0].mask_url: ann_img,
+                predictions.segmentation_predictions[0].mask_url: pred_img,
+            }
+        )
+        return metric(annotations, predictions)
+
+    def call_poly_metric(
+        self, annotations: AnnotationList, predictions: PredictionList
+    ):
+        metric = self.configure_metric()
+        return metric(annotations, predictions)
+
+    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
+        metric = self.configure_metric()
+        return metric.aggregate_score(results)  # type: ignore
 
     @abc.abstractmethod
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ):
+    def configure_metric(self):
         pass
 
-    def _calculate_confusion_matrix(
-        self,
-        annotation,
-        annotation_img,
-        prediction,
-        prediction_img,
-        iou_threshold,
-    ) -> Tuple[np.ndarray, Set[int]]:
-        """This calculates a confusion matrix with ground_truth_index X predicted_index summary
 
-        Notes:
-            If filtering has been applied we filter out missing segments from the confusion matrix.
-
-        Returns:
-            Class-based confusion matrix and a set of indexes that are not considered a part of the taxonomy (and are
-            only considered for FPs not as a part of mean calculations)
-
-
-        TODO(gunnar): Allow pre-seeding confusion matrix (all of the metrics calculate the same confusion matrix ->
-            we can calculate it once and then use it for all other metrics in the chain)
-        """
-        # NOTE: This creates a max(class_index) * max(class_index) MAT. If we have np.int32 this could become
-        #  huge. We could probably use a sparse matrix instead or change the logic to only create count(index) ** 2
-        #  matrix (we only need to keep track of available indexes)
-        num_classes = (
-            max(
-                max((a.index for a in annotation.annotations)),
-                max((a.index for a in prediction.annotations)),
-            )
-            + 1  # to include 0
-        )
-        confusion = fast_confusion_matrix(
-            annotation_img, prediction_img, num_classes
-        )
-        confusion = self._filter_confusion_matrix(
-            confusion, annotation, prediction
-        )
-        confusion = non_max_suppress_confusion(confusion, iou_threshold)
-        false_positive = Segment(FALSE_POSITIVES, index=confusion.shape[0] - 1)
-        if annotation.annotations[-1].label != FALSE_POSITIVES:
-            annotation.annotations.append(false_positive)
-            if annotation.annotations is not prediction.annotations:
-                # Probably likely that this structure is re-used -> check if same list instance and only append once
-                # TODO(gunnar): Should this uniqueness be handled by the base class?
-                prediction.annotations.append(false_positive)
-
-        # TODO(gunnar): Detect non_taxonomy classes for segmentation as well as instance segmentation
-        non_taxonomy_classes = set()
-        if self._is_instance_segmentation(annotation, prediction):
-            (
-                confusion,
-                _,
-                non_taxonomy_classes,
-            ) = convert_to_instance_seg_confusion(
-                confusion, annotation, prediction
-            )
-        else:
-            ann_labels = list(
-                dict.fromkeys(s.label for s in annotation.annotations)
-            )
-            pred_labels = list(
-                dict.fromkeys(s.label for s in prediction.annotations)
-            )
-            missing_or_filtered_labels = set(ann_labels) - set(pred_labels)
-            non_taxonomy_classes = {
-                segment.index
-                for segment in annotation.annotations
-                if segment.label in missing_or_filtered_labels
-            }
-
-        return confusion, non_taxonomy_classes
-
-    def _is_instance_segmentation(self, annotation, prediction):
-        """Guesses that we're dealing with instance segmentation if we have multiple segments with same label.
-        Degenerate case is same as semseg so fine to misclassify in that case."""
-        # This is a trick to get ordered sets
-        ann_labels = list(
-            dict.fromkeys(s.label for s in annotation.annotations)
-        )
-        pred_labels = list(
-            dict.fromkeys(s.label for s in prediction.annotations)
-        )
-        # NOTE: We assume instance segmentation if labels are duplicated in annotations or predictions
-        is_instance_segmentation = len(ann_labels) != len(
-            annotation.annotations
-        ) or len(pred_labels) != len(prediction.annotations)
-        return is_instance_segmentation
-
-    def _filter_confusion_matrix(self, confusion, annotation, prediction):
-        if self.annotation_filters or self.prediction_filters:
-            # we mask the confusion matrix instead of the images
-            if self.annotation_filters:
-                annotation_indexes = {
-                    segment.index for segment in annotation.annotations
-                }
-                indexes_to_remove = (
-                    set(range(confusion.shape[0] - 1)) - annotation_indexes
-                )
-                for row in indexes_to_remove:
-                    confusion[row, :] = 0
-            if self.prediction_filters:
-                prediction_indexes = {
-                    segment.index for segment in prediction.annotations
-                }
-                indexes_to_remove = (
-                    set(range(confusion.shape[0] - 1)) - prediction_indexes
-                )
-                for col in indexes_to_remove:
-                    confusion[:, col] = 0
-        return confusion
-
-
-class SegmentationIOU(SegmentationMaskMetric):
+class SegmentationToPolyIOU(SegmentationMaskToPolyMetric):
     def __init__(
         self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.0,
+        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
+        mode: SegToPolyMode = SegToPolyMode.GENERATE_GT_FROM_POLY,
     ):
         """Initializes PolygonIOU object.
 
         Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -274,133 +235,56 @@ class SegmentationIOU(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        assert (
+            0 <= iou_threshold <= 1
+        ), "IoU threshold must be between 0 and 1."
+        self.iou_threshold = iou_threshold
         super().__init__(
+            enforce_label_match,
+            confidence_threshold,
             annotation_filters,
             prediction_filters,
-            iou_threshold,
+            mode,
         )
 
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ) -> ScalarResult:
-        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
-            annotation,
-            annotation_img,
-            prediction,
-            prediction_img,
-            self.iou_threshold,
-        )
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            tp = confusion[:-1, :-1]
-            fp = confusion[:, -1]
-            iou = np.diag(tp) / (
-                tp.sum(axis=1) + tp.sum(axis=0) + fp.sum() - np.diag(tp)
+    def configure_metric(self):
+        if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
+            metric = SegmentationIOU(
+                self.annotation_filters,
+                self.prediction_filters,
+                self.iou_threshold,
             )
-            non_taxonomy_classes = non_taxonomy_classes - {
-                confusion.shape[1] - 1
-            }
-            iou.put(list(non_taxonomy_classes), np.nan)
-            mean_iou = np.nanmean(iou)
-            return ScalarResult(value=mean_iou, weight=annotation_img.size)  # type: ignore
+        else:
+            metric = PolygonIOU(
+                self.enforce_label_match,
+                self.iou_threshold,
+                self.confidence_threshold,
+                self.annotation_filters,
+                self.prediction_filters,
+            )
+        return metric
 
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return ScalarResult.aggregate(results)  # type: ignore
 
-
-class SegmentationPrecision(SegmentationMaskMetric):
+class SegmentationToPolyPrecision(SegmentationMaskToPolyMetric):
     def __init__(
         self,
-        annotation_filters: Optional[
-            Union[ListOfOrAndFilters, ListOfAndFilters]
-        ] = None,
-        prediction_filters: Optional[
-            Union[ListOfOrAndFilters, ListOfAndFilters]
-        ] = None,
+        enforce_label_match: bool = False,
         iou_threshold: float = 0.5,
-    ):
-        """Calculates mean per-class precision
-
-        Args:
-            annotation_filters: Filter predicates. Allowed formats are:
-                ListOfAndFilters where each Filter forms a chain of AND predicates.
-                    or
-                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
-                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective `and` multiple field predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-            prediction_filters: Filter predicates. Allowed formats are:
-                ListOfAndFilters where each Filter forms a chain of AND predicates.
-                    or
-                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
-                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective `and` multiple field predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-        """
-        super().__init__(
-            annotation_filters,
-            prediction_filters,
-            iou_threshold,
-        )
-
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ) -> ScalarResult:
-        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
-            annotation,
-            annotation_img,
-            prediction,
-            prediction_img,
-            self.iou_threshold,
-        )
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            # TODO(gunnar): Logic can be simplified
-            confused = confusion[:-1, :-1]
-            tp = confused.diagonal()
-            fp = confusion[:, -1][:-1] + confused.sum(axis=0) - tp
-            tp_and_fp = tp + fp
-            precision = tp / tp_and_fp
-            non_taxonomy_classes = non_taxonomy_classes - {
-                confusion.shape[1] - 1
-            }
-            precision.put(list(non_taxonomy_classes), np.nan)
-            avg_precision = np.nanmean(precision)
-        return ScalarResult(value=np.nan_to_num(avg_precision), weight=confusion.sum())  # type: ignore
-
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return ScalarResult.aggregate(results)  # type: ignore
-
-
-class SegmentationRecall(SegmentationMaskMetric):
-    """Calculates the recall for a segmentation mask"""
-
-    # TODO: Remove defaults once these are surfaced more cleanly to users.
-    def __init__(
-        self,
+        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
+        mode: SegToPolyMode = SegToPolyMode.GENERATE_GT_FROM_POLY,
     ):
-        """Initializes PolygonRecall object.
+        """Initializes SegmentationToPolyPrecision object.
 
         Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -420,151 +304,38 @@ class SegmentationRecall(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        assert (
+            0 <= iou_threshold <= 1
+        ), "IoU threshold must be between 0 and 1."
+        self.iou_threshold = iou_threshold
         super().__init__(
+            enforce_label_match,
+            confidence_threshold,
             annotation_filters,
             prediction_filters,
-            iou_threshold,
+            mode,
         )
 
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ) -> ScalarResult:
-        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
-            annotation,
-            annotation_img,
-            prediction,
-            prediction_img,
-            self.iou_threshold,
-        )
-
-        with np.errstate(divide="ignore", invalid="ignore"):
-            recall = confusion.diagonal() / confusion.sum(axis=1)
-            recall.put(
-                list(non_taxonomy_classes), np.nan
-            )  # We don't consider non taxonomy classes, i.e. FPs and background
-            mean_recall = np.nanmean(recall)
-        return ScalarResult(value=np.nan_to_num(mean_recall), weight=annotation_img.size)  # type: ignore
-
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return ScalarResult.aggregate(results)  # type: ignore
-
-
-class SegmentationMAP(SegmentationMaskMetric):
-    """Calculates the mean average precision per class for segmentation masks
-    ::
-
-        from nucleus import BoxAnnotation, Point, PolygonPrediction
-        from nucleus.annotation import AnnotationList
-        from nucleus.prediction import PredictionList
-        from nucleus.metrics import PolygonMAP
-
-        box_anno = BoxAnnotation(
-            label="car",
-            x=0,
-            y=0,
-            width=10,
-            height=10,
-            reference_id="image_1",
-            annotation_id="image_1_car_box_1",
-            metadata={"vehicle_color": "red"}
-        )
-
-        polygon_pred = PolygonPrediction(
-            label="bus",
-            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
-            reference_id="image_2",
-            annotation_id="image_2_bus_polygon_1",
-            confidence=0.8,
-            metadata={"vehicle_color": "yellow"}
-        )
-
-        annotations = AnnotationList(box_annotations=[box_anno])
-        predictions = PredictionList(polygon_predictions=[polygon_pred])
-        metric = PolygonMAP()
-        metric(annotations, predictions)
-    """
-
-    iou_setups = {"coco"}
-
-    # TODO: Remove defaults once these are surfaced more cleanly to users.
-    def __init__(
-        self,
-        annotation_filters: Optional[
-            Union[ListOfOrAndFilters, ListOfAndFilters]
-        ] = None,
-        prediction_filters: Optional[
-            Union[ListOfOrAndFilters, ListOfAndFilters]
-        ] = None,
-        iou_thresholds: Union[List[float], str] = "coco",
-    ):
-        """Initializes PolygonRecall object.
-
-        Args:
-            annotation_filters: Filter predicates. Allowed formats are:
-                ListOfAndFilters where each Filter forms a chain of AND predicates.
-                    or
-                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
-                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective `and` multiple field predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-            prediction_filters: Filter predicates. Allowed formats are:
-                ListOfAndFilters where each Filter forms a chain of AND predicates.
-                    or
-                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
-                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
-                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
-                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
-                (AND), forming a more selective `and` multiple field predicate.
-                Finally, the most outer list combines these filters as a disjunction (OR).
-            map_thresholds: Provide a list of threshold to compute over or literal "coco"
-        """
-        super().__init__(
-            annotation_filters,
-            prediction_filters,
-        )
-        self.iou_thresholds = setup_iou_thresholds(iou_thresholds)
-
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ) -> ScalarResult:
-
-        ap_per_threshold = []
-        weight = 0
-        for iou_threshold in self.iou_thresholds:
-            ap = SegmentationPrecision(
-                self.annotation_filters, self.prediction_filters, iou_threshold
+    def configure_metric(self):
+        if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
+            metric = SegmentationPrecision(
+                self.annotation_filters,
+                self.prediction_filters,
+                self.iou_threshold,
             )
-            ap.loader = self.loader
-            ap_result = ap(
-                AnnotationList(segmentation_annotations=[annotation]),
-                PredictionList(segmentation_predictions=[prediction]),
+        else:
+            metric = PolygonPrecision(
+                self.enforce_label_match,
+                self.iou_threshold,
+                self.confidence_threshold,
+                self.annotation_filters,
+                self.prediction_filters,
             )
-            ap_per_threshold.append(ap_result.value)  # type: ignore
-            weight += ap_result.weight  # type: ignore
-
-        thresholds = np.concatenate([[0], self.iou_thresholds, [1]])
-        steps = np.diff(thresholds)
-        mean_ap = (
-            np.array(ap_per_threshold + [ap_per_threshold[-1]]) * steps
-        ).sum()
-        return ScalarResult(mean_ap, weight=weight)
-
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return ScalarResult.aggregate(results)  # type: ignore
+        return metric
 
 
-class SegmentationFWAVACC(SegmentationMaskMetric):
-    """Calculates the frequency weighted average of the class-wise Jaccard index
+class SegmentationToPolyRecall(SegmentationMaskToPolyMetric):
+    """Calculates the recall between box or polygon annotations and predictions.
     ::
 
         from nucleus import BoxAnnotation, Point, PolygonPrediction
@@ -601,17 +372,23 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
     # TODO: Remove defaults once these are surfaced more cleanly to users.
     def __init__(
         self,
+        enforce_label_match: bool = False,
+        iou_threshold: float = 0.5,
+        confidence_threshold: float = 0.0,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
+        mode: SegToPolyMode = SegToPolyMode.GENERATE_GT_FROM_POLY,
     ):
-        """Initializes SegmentationFWAVACC object.
+        """Initializes PolygonRecall object.
 
         Args:
+            enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to False
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
+            confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
             annotation_filters: Filter predicates. Allowed formats are:
                 ListOfAndFilters where each Filter forms a chain of AND predicates.
                     or
@@ -631,41 +408,249 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        assert (
+            0 <= iou_threshold <= 1
+        ), "IoU threshold must be between 0 and 1."
+        self.iou_threshold = iou_threshold
         super().__init__(
+            enforce_label_match,
+            confidence_threshold,
             annotation_filters,
             prediction_filters,
-            iou_threshold,
+            mode,
         )
 
-    def _metric_impl(
-        self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
-        annotation: SegmentationAnnotation,
-        prediction: SegmentationPrediction,
-    ) -> ScalarResult:
-        confusion, non_taxonomy_classes = self._calculate_confusion_matrix(
-            annotation,
-            annotation_img,
-            prediction,
-            prediction_img,
-            self.iou_threshold,
-        )
-        with np.errstate(divide="ignore", invalid="ignore"):
-            iu = np.diag(confusion) / (
-                confusion.sum(axis=1)
-                + confusion.sum(axis=0)
-                - np.diag(confusion)
+    def configure_metric(self):
+        if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
+            metric = SegmentationRecall(
+                self.annotation_filters,
+                self.prediction_filters,
+                self.iou_threshold,
             )
-            predicted_counts = confusion.sum(axis=0).astype(np.float_)
-            predicted_counts.put(list(non_taxonomy_classes), np.nan)
-            freq = predicted_counts / np.nansum(predicted_counts)
-            iu.put(list(non_taxonomy_classes), np.nan)
-            fwavacc = (
-                np.nan_to_num(freq[freq > 0]) * np.nan_to_num(iu[freq > 0])
-            ).sum()
-            mean_fwavacc = np.nanmean(fwavacc)
-        return ScalarResult(value=np.nan_to_num(mean_fwavacc), weight=confusion.sum())  # type: ignore
+        else:
+            metric = PolygonRecall(
+                self.enforce_label_match,
+                self.iou_threshold,
+                self.confidence_threshold,
+                self.annotation_filters,
+                self.prediction_filters,
+            )
+        return metric
 
-    def aggregate_score(self, results: List[MetricResult]) -> ScalarResult:
-        return ScalarResult.aggregate(results)  # type: ignore
+
+class SegmentationToPolyAveragePrecision(SegmentationMaskToPolyMetric):
+    """Calculates the average precision between box or polygon annotations and predictions.
+    ::
+
+        from nucleus import BoxAnnotation, Point, PolygonPrediction
+        from nucleus.annotation import AnnotationList
+        from nucleus.prediction import PredictionList
+        from nucleus.metrics import PolygonAveragePrecision
+
+        box_anno = BoxAnnotation(
+            label="car",
+            x=0,
+            y=0,
+            width=10,
+            height=10,
+            reference_id="image_1",
+            annotation_id="image_1_car_box_1",
+            metadata={"vehicle_color": "red"}
+        )
+
+        polygon_pred = PolygonPrediction(
+            label="bus",
+            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
+            reference_id="image_2",
+            annotation_id="image_2_bus_polygon_1",
+            confidence=0.8,
+            metadata={"vehicle_color": "yellow"}
+        )
+
+        annotations = AnnotationList(box_annotations=[box_anno])
+        predictions = PredictionList(polygon_predictions=[polygon_pred])
+        metric = PolygonAveragePrecision(label="car")
+        metric(annotations, predictions)
+    """
+
+    # TODO: Remove defaults once these are surfaced more cleanly to users.
+    def __init__(
+        self,
+        label,
+        iou_threshold: float = 0.5,
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        mode: SegToPolyMode = SegToPolyMode.GENERATE_GT_FROM_POLY,
+    ):
+        """Initializes PolygonRecall object.
+
+        Args:
+            iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.5
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        assert (
+            0 <= iou_threshold <= 1
+        ), "IoU threshold must be between 0 and 1."
+        self.iou_threshold = iou_threshold
+        self.label = label
+        super().__init__(
+            enforce_label_match=False,
+            confidence_threshold=0,
+            annotation_filters=annotation_filters,
+            prediction_filters=prediction_filters,
+        )
+
+    def configure_metric(self):
+        if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
+            # TODO(gunnar): Add a label filter
+            metric = SegmentationPrecision(
+                self.annotation_filters,
+                self.prediction_filters,
+                self.iou_threshold,
+            )
+        else:
+            metric = PolygonAveragePrecision(
+                self.label,
+                self.iou_threshold,
+                self.annotation_filters,
+                self.prediction_filters,
+            )
+        return metric
+
+
+class SegmentationToPolyMAP(SegmentationMaskToPolyMetric):
+    """Calculates the mean average precision between box or polygon annotations and predictions.
+    ::
+
+        from nucleus import BoxAnnotation, Point, PolygonPrediction
+        from nucleus.annotation import AnnotationList
+        from nucleus.prediction import PredictionList
+        from nucleus.metrics import PolygonMAP
+
+        box_anno = BoxAnnotation(
+            label="car",
+            x=0,
+            y=0,
+            width=10,
+            height=10,
+            reference_id="image_1",
+            annotation_id="image_1_car_box_1",
+            metadata={"vehicle_color": "red"}
+        )
+
+        polygon_pred = PolygonPrediction(
+            label="bus",
+            vertices=[Point(100, 100), Point(150, 200), Point(200, 100)],
+            reference_id="image_2",
+            annotation_id="image_2_bus_polygon_1",
+            confidence=0.8,
+            metadata={"vehicle_color": "yellow"}
+        )
+
+        annotations = AnnotationList(box_annotations=[box_anno])
+        predictions = PredictionList(polygon_predictions=[polygon_pred])
+        metric = PolygonMAP()
+        metric(annotations, predictions)
+    """
+
+    # TODO: Remove defaults once these are surfaced more cleanly to users.
+    def __init__(
+        self,
+        iou_threshold: float = -1,
+        iou_thresholds: Union[List[float], str] = "coco",
+        annotation_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        prediction_filters: Optional[
+            Union[ListOfOrAndFilters, ListOfAndFilters]
+        ] = None,
+        mode: SegToPolyMode = SegToPolyMode.GENERATE_GT_FROM_POLY,
+    ):
+        """Initializes PolygonRecall object.
+
+        Args:
+            iou_thresholds: IOU thresholds to check AP at
+            annotation_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+            prediction_filters: Filter predicates. Allowed formats are:
+                ListOfAndFilters where each Filter forms a chain of AND predicates.
+                    or
+                ListOfOrAndFilters where Filters are expressed in disjunctive normal form (DNF), like
+                [[MetadataFilter("short_haired", "==", True), FieldFilter("label", "in", ["cat", "dog"]), ...].
+                DNF allows arbitrary boolean logical combinations of single field predicates. The innermost structures
+                each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
+                (AND), forming a more selective `and` multiple field predicate.
+                Finally, the most outer list combines these filters as a disjunction (OR).
+        """
+        if iou_threshold:
+            logging.warning(
+                "Got deprecated parameter 'iou_threshold'. Ignoring it."
+            )
+        self.iou_thresholds = setup_iou_thresholds(iou_thresholds)
+        super().__init__(
+            False, 0, annotation_filters, prediction_filters, mode
+        )
+
+    def configure_metric(self):
+        if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
+            # TODO(gunnar): Add a label filter
+            metric = SegmentationMAP(
+                self.annotation_filters,
+                self.prediction_filters,
+                self.iou_thresholds,
+            )
+        else:
+
+            def patched_average_precision(annotations, predictions):
+                ap_per_threshold = []
+                labels = [p.label for p in predictions.polygon_predictions]
+                for threshold in self.iou_thresholds:
+                    ap_per_label = []
+                    for label in labels:
+                        call_metric = PolygonAveragePrecision(
+                            label,
+                            iou_threshold=threshold,
+                            annotation_filters=self.annotation_filters,
+                            prediction_filters=self.prediction_filters,
+                        )
+                        result = call_metric(annotations, predictions)
+                        ap_per_label.append(result.value)  # type: ignore
+                    ap_per_threshold = np.mean(ap_per_label)
+
+                thresholds = np.concatenate([[0], self.iou_thresholds, [1]])
+                steps = np.diff(thresholds)
+                mean_ap = (
+                    np.array(ap_per_threshold + [ap_per_threshold[-1]]) * steps
+                ).sum()
+                return ScalarResult(mean_ap)
+
+            metric = patched_average_precision
+        return metric

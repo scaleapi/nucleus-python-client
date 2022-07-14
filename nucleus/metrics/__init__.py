@@ -5,6 +5,8 @@ from .filtering import (
     FieldFilter,
     ListOfOrAndFilters,
     MetadataFilter,
+    SegmentFieldFilter,
+    SegmentMetadataFilter,
     apply_filters,
 )
 from .polygon_metrics import (
@@ -16,6 +18,14 @@ from .polygon_metrics import (
     PolygonRecall,
 )
 from .segmentation_metrics import (
+    SegmentationFWAVACC,
+    SegmentationIOU,
+    SegmentationMAP,
+    SegmentationMaskMetric,
+    SegmentationPrecision,
+    SegmentationRecall,
+)
+from .segmentation_to_poly_metrics import (
     SegmentationMaskToPolyMetric,
     SegmentationToPolyAveragePrecision,
     SegmentationToPolyIOU,

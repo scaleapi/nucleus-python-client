@@ -1,8 +1,19 @@
 import json
+from typing import Union
 
 import pytest
 
+from nucleus.annotation import AnnotationList, Segment, SegmentationAnnotation
 from nucleus.metrics import FieldFilter, MetadataFilter, apply_filters
+from nucleus.metrics.filtering import (
+    SegmentFieldFilter,
+    SegmentMetadataFilter,
+    compose_helpful_filtering_error,
+    filter_annotation_list,
+    filter_prediction_list,
+    pretty_format_filters_with_or_and,
+)
+from nucleus.prediction import PredictionList
 from tests.metrics.helpers import (
     TEST_BOX_ANNOTATION_LIST,
     TEST_BOX_PREDICTION_LIST,
@@ -278,3 +289,105 @@ def test_not_in_field(annotations_or_predictions):
     ]
     filtered = apply_filters(annotations_or_predictions, valid_gt)
     assert filtered == annotations_or_predictions[2:]
+
+
+def test_segment_annotation_filtering():
+    grass_segment = Segment(label="grass", index=1)
+    sky_segment = Segment(label="sky", index=2)
+    segment_annotation = SegmentationAnnotation(
+        "https://fake-url.png",
+        annotations=[grass_segment, sky_segment],
+        reference_id="test_id",
+    )
+    valid_gt = [SegmentFieldFilter("label", "==", grass_segment.label)]
+    filtered = apply_filters([segment_annotation], valid_gt)
+    assert filtered[0].annotations == [grass_segment]
+    assert len(filtered) == 1, f"Expected only one annotation, got: {filtered}"
+
+
+def test_segment_annotation_filtering_metadata():
+    grass_segment = Segment(label="grass", index=1, metadata={"meta_field": 1})
+    sky_segment = Segment(label="sky", index=2, metadata={"meta_field": 2})
+    segment_annotation = SegmentationAnnotation(
+        "https://fake-url.png",
+        annotations=[grass_segment, sky_segment],
+        reference_id="test_id",
+    )
+    valid_gt = [
+        SegmentMetadataFilter(
+            "meta_field", "==", grass_segment.metadata["meta_field"]
+        )
+    ]
+    filtered = apply_filters([segment_annotation], valid_gt)
+    assert filtered[0].annotations == [grass_segment]
+    assert len(filtered) == 1, f"Expected only one annotation, got: {filtered}"
+
+
+@pytest.mark.parametrize(
+    "filters,expected_statement",
+    [
+        (
+            [FieldFilter("label", "==", "bus")],
+            'FieldFilter("label", "==", "bus")',
+        ),
+        (
+            [
+                FieldFilter("label", "in", ["bus", "car"]),
+                MetadataFilter("n_points", ">=", 15),
+            ],
+            'FieldFilter("label", "in", ["bus", "car"]) and MetadataFilter("n_points", ">=", 15)',
+        ),
+        (
+            [
+                [
+                    SegmentFieldFilter("label", "in", ["bus", "car"]),
+                    MetadataFilter("n_points", ">=", 15),
+                ],
+                [FieldFilter("label", "==", "bus")],
+            ],
+            " or ".join(
+                [
+                    '(SegmentFieldFilter("label", "in", ["bus", "car"]) and MetadataFilter("n_points", ">=", 15))',
+                    'FieldFilter("label", "==", "bus")',
+                ]
+            ),
+        ),
+        (
+            [
+                [
+                    SegmentFieldFilter("label", "in", ["bus", "car"]),
+                    MetadataFilter("n_points", ">=", 15),
+                ],
+                [
+                    FieldFilter("label", "in", ["bus", "car"]),
+                    SegmentMetadataFilter("n_points", ">=", 15),
+                ],
+            ],
+            " or ".join(
+                [
+                    '(SegmentFieldFilter("label", "in", ["bus", "car"]) and MetadataFilter("n_points", ">=", 15))',
+                    '(FieldFilter("label", "in", ["bus", "car"]) and SegmentMetadataFilter("n_points", ">=", 15))',
+                ]
+            ),
+        ),
+    ],
+)
+def test_pretty_format_statement(filters, expected_statement):
+    pretty_filters = pretty_format_filters_with_or_and(filters)
+    assert pretty_filters == expected_statement
+
+
+@pytest.mark.parametrize(
+    "ann_or_pred_list,filters",
+    [(TEST_BOX_ANNOTATION_LIST, [FieldFilter("label", "in", "no_match")])],
+)
+def test_pretty_filtering_msg(
+    ann_or_pred_list: Union[AnnotationList, PredictionList], filters
+):
+    if isinstance(ann_or_pred_list, AnnotationList):
+        filtered_list = filter_annotation_list(ann_or_pred_list, filters)
+    else:
+        filtered_list = filter_prediction_list(ann_or_pred_list, filters)
+    assert len(filtered_list) == 0
+    msg = compose_helpful_filtering_error(ann_or_pred_list, filters)
+    assert len(msg) > 0

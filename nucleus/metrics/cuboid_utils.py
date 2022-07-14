@@ -5,10 +5,10 @@ import numpy as np
 
 try:
     from shapely.geometry import Polygon
-except ModuleNotFoundError:
-    from ..shapely_not_installed import ShapelyNotInstalled
+except (ModuleNotFoundError, OSError):
+    from ..package_not_installed import PackageNotInstalled
 
-    Polygon = ShapelyNotInstalled
+    Polygon = PackageNotInstalled
 
 
 from nucleus.annotation import CuboidAnnotation
@@ -357,6 +357,4 @@ def detection_iou(
             meter_3d.append(iou_3d[i, j])
             meter_2d.append(iou_2d[i, j])
 
-    meter_3d = np.array(meter_3d)
-    meter_2d = np.array(meter_2d)
-    return meter_3d, meter_2d
+    return np.array(meter_3d), np.array(meter_2d)

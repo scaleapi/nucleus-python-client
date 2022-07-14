@@ -1,5 +1,6 @@
 from enum import Enum
 
+EVAL_FUNCTION_KEY = "eval_fn"
 EVALUATION_ID_KEY = "evaluation_id"
 EVAL_FUNCTION_ID_KEY = "eval_function_id"
 ID_KEY = "id"

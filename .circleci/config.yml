@@ -3,6 +3,7 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.4.2
+  python: circleci/python@2.0.3
 
 jobs:
   build_test:
@@ -15,14 +16,24 @@ jobs:
     steps:
       - checkout # checkout source code to working directory
       - run:
-          name: Install Environment Dependencies
+          name: Install Basic Environment Dependencies
           command: | # install dependencies
+            echo $PWD
             apt-get update
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
-            poetry install -E shapely
-
+      - python/install-packages:
+          include-python-in-cache-key: false
+          pkg-manager: poetry
+      - run:
+          name: Test Imports (extras need to be guarded!)
+          command: | # Make sure that importing works without extras installed
+            poetry run python -c 'import nucleus'
+      - run:
+          name: Install Extra Dependencies
+          command: | # install dependencies
+            poetry install -E metrics -E launch
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
           command: |
@@ -49,7 +60,7 @@ jobs:
             mkdir test_results
             set -e
             TEST_FILES=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings)
-            poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml $TEST_FILES
+            poetry run coverage run --include=nucleus/* -m pytest -n 6 -s -v --junitxml=test_results/junit.xml $TEST_FILES
             poetry run coverage report
             poetry run coverage html
       - store_test_results:
@@ -98,6 +109,45 @@ jobs:
                 exit 1
             fi
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
+  test_poetry_installation:
+    parameters:
+      python_version:
+        type: string
+    docker:
+      - image: cimg/python:<<parameters.python_version>>
+    steps:
+      - checkout
+      - run:
+          command: |
+            pip install --upgrade pip
+          name: Upgrade pip
+      - python/install-packages:
+            pkg-manager: poetry
+      - run:
+          command: |
+            poetry run python -c 'import nucleus'
+          name: Test import nucleus
+  test_client_installation:
+    parameters:
+      python_version:
+        type: string
+    docker:
+      - image: cimg/python:<<parameters.python_version>>
+    steps:
+      - checkout
+      - run:
+          command: |
+            pip install --upgrade pip
+          name: Upgrade pip
+      - run:
+          command: |
+            poetry build
+          name: Build the package
+      - run:
+          command: |
+            export FOUND_PKG=$(find ./dist -name "*.tar.gz")
+            pip install $FOUND_PKG
+          name: Install with Python Version
 workflows:
   nightly_build_test:
     triggers:
@@ -109,6 +159,18 @@ workflows:
                 - master
     jobs:
       - build_test:
+          context: Nucleus
+  installation_matrix:
+    jobs:
+      - test_poetry_installation:
+          matrix:
+            parameters:
+              python_version: ['3.6', '3.7', '3.8', '3.9'] #, '3.10'] Haven't gotten the 3.10 poetry install test to work
+          context: Nucleus
+      - test_client_installation:
+          matrix:
+            parameters:
+              python_version: ['3.6', '3.7', '3.8', '3.9', '3.10']
           context: Nucleus
   build_test_publish:
     jobs:

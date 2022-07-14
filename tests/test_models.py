@@ -115,3 +115,46 @@ def test_new_model_endpoints(CLIENT, dataset: Dataset):
         model, predictions[0].reference_id, predictions[0].annotation_id
     )
     assert_box_prediction_matches_dict(prediction_loc, TEST_BOX_PREDICTIONS[0])
+
+
+def test_tag_model(CLIENT, dataset: Dataset):
+    def testing_model(ref_id):
+        models_from_backend = list(
+            filter(lambda m: m.reference_id == ref_id, CLIENT.models)
+        )
+        assert len(models_from_backend) == 1
+        return models_from_backend[0]
+
+    model_reference = "model_" + str(time.time())
+    model = CLIENT.create_model(
+        TEST_MODEL_NAME, model_reference, tags=["first_tag"]
+    )
+
+    model.add_tags(["single tag"])
+    model.add_tags(["tag_a", "tag_b"])
+
+    backend_model = testing_model(model_reference)
+    assert sorted(backend_model.tags) == sorted(
+        ["first_tag", "single tag", "tag_a", "tag_b"]
+    )
+
+    model.remove_tags(["tag_a"])
+    model.remove_tags(["first_tag", "tag_b"])
+
+    backend_model = testing_model(model_reference)
+    assert backend_model.tags == ["single tag"]
+
+
+def test_remove_invalid_tag_from_model(CLIENT, dataset: Dataset):
+
+    model_reference = "model_" + str(time.time())
+    model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
+
+    model.add_tags(["single tag"])
+
+    response = model.remove_tags(["tag_a"])
+    assert "error" in response
+    assert (
+        response["error"]
+        == "Deleted 0 tags from model. Either the tag(s) did not exist, or you are not the owner of this model project."
+    )

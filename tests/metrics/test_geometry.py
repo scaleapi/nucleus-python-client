@@ -3,7 +3,7 @@ import pytest
 
 try:
     from shapely.geometry import LineString, Polygon
-except ModuleNotFoundError:
+except (ModuleNotFoundError, OSError):
     pytest.skip(
         "Shapely not installed, skipping (install with poetry install -E shapely)",
         allow_module_level=True,

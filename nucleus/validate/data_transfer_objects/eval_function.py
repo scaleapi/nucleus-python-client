@@ -72,6 +72,7 @@ class EvalFunctionEntry(ImmutableModel):
     id: str
     name: str
     is_public: bool
+    is_external_function: bool = False
     user_id: str
     serialized_fn: Optional[str] = None
     raw_source: Optional[str] = None
@@ -81,3 +82,24 @@ class GetEvalFunctions(ImmutableModel):
     """Expected format from GET validate/eval_fn"""
 
     eval_functions: List[EvalFunctionEntry]
+
+
+class CreateEvalFunction(ImmutableModel):
+    """Expected payload to POST validate/eval_fn"""
+
+    name: str
+    is_external_function: bool
+    serialized_fn: Optional[str] = None
+    raw_source: Optional[str] = None
+
+    @validator("name")
+    def name_is_valid(cls, v):  # pylint: disable=no-self-argument
+        if " " in v:
+            raise ValueError(
+                f"No spaces allowed in an evaluation function name, got '{v}'"
+            )
+        if len(v) == 0 or len(v) > 255:
+            raise ValueError(
+                "Name of evaluation function must be between 1-255 characters long"
+            )
+        return v

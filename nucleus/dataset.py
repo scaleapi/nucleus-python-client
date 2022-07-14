@@ -18,6 +18,7 @@ from nucleus.utils import (
     convert_export_payload,
     format_dataset_item_response,
     format_prediction_response,
+    format_scale_task_info_response,
     paginate_generator,
     serialize_and_write_to_presigned_url,
 )
@@ -1212,24 +1213,27 @@ class Dataset:
         return api_payload  # type: ignore
 
     def delete_annotations(
-        self, reference_ids: list = None, keep_history=False
+        self, reference_ids: list = None, keep_history=True
     ) -> AsyncJob:
         """Deletes all annotations associated with the specified item reference IDs.
 
         Parameters:
             reference_ids: List of user-defined reference IDs of the dataset items
-              from which to delete annotations.
+              from which to delete annotations. Defaults to an empty list.
             keep_history: Whether to preserve version history. If False, all
                 previous versions will be deleted along with the annotations. If
                 True, the version history (including deletion) wil persist.
-                Default is False.
+                Default is True.
 
         Returns:
             :class:`AsyncJob`: Empty payload response.
         """
-        payload = {KEEP_HISTORY_KEY: keep_history}
-        if reference_ids:
-            payload[REFERENCE_IDS_KEY] = reference_ids
+        if reference_ids is None:
+            reference_ids = []
+        payload = {
+            KEEP_HISTORY_KEY: keep_history,
+            REFERENCE_IDS_KEY: reference_ids,
+        }
         response = self._client.make_request(
             payload,
             f"annotation/{self.id}",
@@ -1277,6 +1281,36 @@ class Dataset:
             requests_command=requests.get,
         )
         return format_prediction_response({ANNOTATIONS_KEY: json_response})
+
+    def export_scale_task_info(self):
+        """Fetches info for all linked Scale tasks of items/scenes in the dataset.
+
+        Returns:
+            A list of dicts, each with two keys, respectively mapping to items/scenes
+            and info on their corresponding Scale tasks within the dataset::
+
+                List[{
+                    "item" | "scene": Union[:class:`DatasetItem`, :class:`Scene`],
+                    "scale_task_info": {
+                        "task_id": str,
+                        "subtask_id": str,
+                        "task_status": str,
+                        "task_audit_status": str,
+                        "task_audit_review_comment": Optional[str],
+                        "project_name": str,
+                        "batch": str,
+                        "created_at": str,
+                        "completed_at": Optional[str]
+                    }[]
+                }]
+
+        """
+        response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/exportScaleTaskInfo",
+            requests_command=requests.get,
+        )
+        return format_scale_task_info_response(response)
 
     def calculate_evaluation_metrics(self, model, options: dict = None):
         """Starts computation of evaluation metrics for a model on the dataset.
@@ -1646,3 +1680,23 @@ class Dataset:
             self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS
         )
         return mm.update()
+
+    def query_items(self, query: str) -> Iterable[DatasetItem]:
+        """
+        Fetches all DatasetItems that pertain to a given structured query.
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+
+        Returns:
+            A list of DatasetItem query results.
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/queryItemsPage",
+            result_key=ITEMS_KEY,
+            page_size=10000,  # max ES page size
+            query=query,
+        )
+        for item_json in json_generator:
+            yield DatasetItem.from_json(item_json)

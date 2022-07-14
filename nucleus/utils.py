@@ -28,17 +28,20 @@ from .constants import (
     BOX_TYPE,
     CATEGORY_TYPE,
     CUBOID_TYPE,
+    EXPORTED_SCALE_TASK_INFO_ROWS,
     ITEM_KEY,
     KEYPOINTS_TYPE,
-    LAST_PAGE,
     LINE_TYPE,
     MAX_PAYLOAD_SIZE,
     MULTICATEGORY_TYPE,
-    PAGE_SIZE,
-    PAGE_TOKEN,
+    NEXT_TOKEN_KEY,
+    PAGE_SIZE_KEY,
+    PAGE_TOKEN_KEY,
     POLYGON_TYPE,
     PREDICTIONS_KEY,
     REFERENCE_ID_KEY,
+    SCALE_TASK_INFO_KEY,
+    SCENE_KEY,
     SEGMENTATION_TYPE,
 )
 from .dataset_item import DatasetItem
@@ -161,7 +164,7 @@ def format_dataset_item_response(response: dict) -> dict:
     Args:
       response: JSON dictionary response from REST endpoint
     Returns:
-      item_dict: A dictionary with two entries, one for the dataset item, and annother
+      item_dict: A dictionary with two entries, one for the dataset item, and another
         for all of the associated annotations.
     """
     if ANNOTATIONS_KEY not in response:
@@ -186,6 +189,33 @@ def format_dataset_item_response(response: dict) -> dict:
         ITEM_KEY: DatasetItem.from_json(item),
         ANNOTATIONS_KEY: annotation_response,
     }
+
+
+def format_scale_task_info_response(response: dict) -> Union[Dict, List[Dict]]:
+    """Format the raw client response into api objects.
+
+    Args:
+      response: JSON dictionary response from REST endpoint
+    Returns:
+      A dictionary with two entries, one for the dataset item, and another
+        for all of the associated Scale tasks.
+    """
+    if EXPORTED_SCALE_TASK_INFO_ROWS not in response:
+        # Payload is empty so an error occurred
+        return response
+
+    ret = []
+    for row in response[EXPORTED_SCALE_TASK_INFO_ROWS]:
+        if ITEM_KEY in row:
+            ret.append(
+                {
+                    ITEM_KEY: DatasetItem.from_json(row[ITEM_KEY]),
+                    SCALE_TASK_INFO_KEY: row[SCALE_TASK_INFO_KEY],
+                }
+            )
+        elif SCENE_KEY in row:
+            ret.append(row)
+    return ret
 
 
 def convert_export_payload(api_payload, has_predictions: bool = False):
@@ -276,7 +306,7 @@ def serialize_and_write(
                 f"The following {type_name} could not be serialized: {unit}\n"
             )
             message += (
-                "This is usally an issue with a custom python object being "
+                "This is usually an issue with a custom python object being "
                 "present in the metadata. Please inspect this error and adjust the "
                 "metadata so it is json-serializable: only python primitives such as "
                 "strings, ints, floats, lists, and dicts. For example, you must "
@@ -332,13 +362,17 @@ def paginate_generator(
     endpoint: str,
     result_key: str,
     page_size: int = 100000,
+    **kwargs,
 ):
-    last_page = False
-    page_token = None
-    while not last_page:
+    next_token = None
+    while True:
         try:
             response = client.make_request(
-                {PAGE_TOKEN: page_token, PAGE_SIZE: page_size},
+                {
+                    PAGE_TOKEN_KEY: next_token,
+                    PAGE_SIZE_KEY: page_size,
+                    **kwargs,
+                },
                 endpoint,
                 requests.post,
             )
@@ -346,6 +380,8 @@ def paginate_generator(
             if e.status_code == 503:
                 e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page_size."
             raise e
-        page_token, last_page = response[PAGE_TOKEN], response[LAST_PAGE]
+        next_token = response[NEXT_TOKEN_KEY]
         for json_value in response[result_key]:
             yield json_value
+        if not next_token:
+            break
