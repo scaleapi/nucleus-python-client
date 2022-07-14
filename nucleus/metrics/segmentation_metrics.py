@@ -219,25 +219,21 @@ class SegmentationMaskMetric(Metric):
 
     def _filter_confusion_matrix(self, confusion, annotation, prediction):
         if self.annotation_filters or self.prediction_filters:
+            new_confusion = np.zeros_like(confusion)
             # we mask the confusion matrix instead of the images
             if self.annotation_filters:
                 annotation_indexes = {
                     segment.index for segment in annotation.annotations
                 }
-                indexes_to_remove = (
-                    set(range(confusion.shape[0] - 1)) - annotation_indexes
-                )
-                for row in indexes_to_remove:
-                    confusion[row, :] = 0
+                for row in annotation_indexes:
+                    new_confusion[row, :] = confusion[row, :]
             if self.prediction_filters:
                 prediction_indexes = {
                     segment.index for segment in prediction.annotations
                 }
-                indexes_to_remove = (
-                    set(range(confusion.shape[0] - 1)) - prediction_indexes
-                )
-                for col in indexes_to_remove:
-                    confusion[:, col] = 0
+                for col in prediction_indexes:
+                    new_confusion[:, col] = confusion[:, col]
+            confusion = new_confusion
         return confusion
 
 
