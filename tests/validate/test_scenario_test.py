@@ -25,7 +25,7 @@ def test_scenario_test_metric_creation(CLIENT, annotations, scenario_test):
     assert scenario_test_metric in criteria
 
 
-@pytest.xfail(
+@pytest.mark.xfail(
     reason="Race-condition with other tests and __post_init__ pattern. Need to refactor."
 )
 def test_list_scenario_test(CLIENT, test_slice, annotations):
