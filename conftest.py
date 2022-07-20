@@ -31,7 +31,7 @@ def dataset(CLIENT: "NucleusClient"):
     test_dataset.append(TEST_DATASET_ITEMS)
     yield test_dataset
 
-    CLIENT.delete_dataset(test_dataset.id)
+    # CLIENT.delete_dataset(test_dataset.id)
 
 
 @pytest.fixture()
@@ -43,7 +43,7 @@ def model(CLIENT):
         TEST_DATASET_NAME, "fake_reference_id_" + random_postfix
     )
     yield model
-    CLIENT.delete_model(model.id)
+    # CLIENT.delete_model(model.id)
 
 
 if __name__ == "__main__":

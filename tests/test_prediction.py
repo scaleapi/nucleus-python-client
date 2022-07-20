@@ -101,10 +101,10 @@ def model_run(CLIENT):
 
     yield run
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-    response = CLIENT.delete_model(model.id)
-    assert response == {}
+    # response = CLIENT.delete_dataset(ds.id)
+    # assert response == {"message": "Beginning dataset deletion..."}
+    # response = CLIENT.delete_model(model.id)
+    # assert response == {}
 
 
 def test_box_pred_upload(model_run):

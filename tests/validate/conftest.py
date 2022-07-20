@@ -18,7 +18,7 @@ def validate_dataset(CLIENT):
     ds = CLIENT.create_dataset("[Test Model CI] Dataset", is_scene=False)
     yield ds
 
-    CLIENT.delete_dataset(ds.id)
+    # CLIENT.delete_dataset(ds.id)
 
 
 @pytest.fixture(scope="module")
@@ -48,7 +48,7 @@ def model(CLIENT):
     model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
     yield model
 
-    CLIENT.delete_model(model.id)
+    # CLIENT.delete_model(model.id)
 
 
 @pytest.fixture(scope="module")

@@ -65,15 +65,15 @@ def dataset(CLIENT):
 
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
+    # response = CLIENT.delete_dataset(ds.id)
+    # assert response == {"message": "Beginning dataset deletion..."}
 
 
 @pytest.fixture()
 def dataset_scene(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=True)
     yield ds
-    CLIENT.delete_dataset(ds.id)
+    # CLIENT.delete_dataset(ds.id)
 
 
 def make_dataset_items():
