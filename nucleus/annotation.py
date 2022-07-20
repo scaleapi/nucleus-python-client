@@ -105,7 +105,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             reference_id="image_1",
             annotation_id="image_1_car_box_1",
             metadata={"vehicle_color": "red"},
-            embedding_vector=[0.1423, 1.432, ...3.829],
+            embedding_vector=[0.1423, 1.432, ..., 3.829],
         )
 
     Parameters:
@@ -310,7 +310,7 @@ class PolygonAnnotation(Annotation):
             reference_id="image_2",
             annotation_id="image_2_bus_polygon_1",
             metadata={"vehicle_color": "yellow"},
-            embedding_vector=[0.1423, 1.432, ...3.829],
+            embedding_vector=[0.1423, 1.432, ..., 3.829],
         )
 
     Parameters:
@@ -691,7 +691,7 @@ class SegmentationAnnotation(Annotation):
         from nucleus import SegmentationAnnotation
 
         segmentation = SegmentationAnnotation(
-            mask_url="s3://your-bucket-name/segmentation-masks/image_2_mask_id1.png",
+            mask_url="s3://your-bucket-name/segmentation-masks/image_2_mask_id_1.png",
             annotations=[
                 Segment(label="grass", index="1"),
                 Segment(label="road", index="2"),
@@ -704,7 +704,8 @@ class SegmentationAnnotation(Annotation):
 
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
-          accessible to Scale, or a local path. The mask is an HxW int8 array saved in PNG format,
+          accessible to Scale. This "URL" can also be a path to a local file.
+          The mask is an HxW int8 array saved in PNG format,
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
           segmentation).

@@ -86,9 +86,11 @@ class Slice:
         """Generator yielding all dataset items in the dataset.
 
         ::
-            sum_example_field = 0
-            for item in slice.items_generator():
-                sum += item.metadata["example_field"]
+
+            collected_ref_ids = []
+            for item in dataset.items_generator():
+                print(f"Exporting item: {item.reference_id}")
+                collected_ref_ids.append(item.reference_id)
 
         Args:
             page_size (int, optional): Number of items to return per page. If you are
@@ -111,7 +113,7 @@ class Slice:
     def items(self):
         """All DatasetItems contained in the Slice.
 
-        For fetching more than 200k items see :meth:`Slice.items_generator`.
+        We recommend using :meth:`Slice.items_generator` if the Slice has more than 200k items.
 
         """
         try:
@@ -278,7 +280,7 @@ class Slice:
             and info on their corresponding Scale tasks within the dataset::
 
                 List[{
-                    "item" | "scene": Union[:class:`DatasetItem`, :class:`Scene`],
+                    "item" | "scene": Union[DatasetItem, Scene],
                     "scale_task_info": {
                         "task_id": str,
                         "subtask_id": str,
@@ -289,7 +291,7 @@ class Slice:
                         "batch": str,
                         "created_at": str,
                         "completed_at": Optional[str]
-                    }[]
+                    }]
                 }]
 
         """

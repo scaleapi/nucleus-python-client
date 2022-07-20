@@ -441,7 +441,8 @@ class NucleusClient:
         Deletes a dataset by ID.
 
         All items, annotations, and predictions associated with the dataset will
-        be deleted as well.
+        be deleted as well. Note that if this dataset is linked to a Scale or Rapid
+        labeling project, the project itself will not be deleted.
 
         Parameters:
             dataset_id: The ID of the dataset to delete.
