@@ -536,9 +536,7 @@ def test_append_and_export(dataset):
             row[ANNOTATIONS_KEY][SEGMENTATION_TYPE][0]
         ) == sort_labelmap(clear_fields(segmentation_annotation))
         assert row[ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
-        assert (
-            row[ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
-        )
+        assert row[ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
         row[ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels = set(
             row[ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels
         )
@@ -547,6 +545,7 @@ def test_append_and_export(dataset):
             row[ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0]
             == multicategory_annotation
         )
+
 
 def test_dataset_item_metadata_update(dataset):
     items = make_dataset_items()
