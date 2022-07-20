@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.14.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.9) - 2022-07-14
 
+### Added
+- `Dataset.items_and_annotation_generator()`
+
+### Fixed
+- `Slice.items_and_annotation_generator()` bug
+
+## [0.14.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.9) - 2022-07-14
+
 ### Fixed
 - NoneType errors in Validate
 

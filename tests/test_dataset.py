@@ -528,6 +528,24 @@ def test_append_and_export(dataset):
         == multicategory_annotation
     )
 
+    # test async export
+    for row in dataset.items_and_annotation_generator():
+        assert row[ITEM_KEY] == ds_items[0]
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][0] == box_annotation
+        assert sort_labelmap(
+            row[ANNOTATIONS_KEY][SEGMENTATION_TYPE][0]
+        ) == sort_labelmap(clear_fields(segmentation_annotation))
+        assert row[ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
+        assert row[ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
+        row[ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels = set(
+            row[ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels
+        )
+        multicategory_annotation.labels = set(multicategory_annotation.labels)
+        assert (
+            row[ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0]
+            == multicategory_annotation
+        )
+
 
 def test_dataset_item_metadata_update(dataset):
     items = make_dataset_items()

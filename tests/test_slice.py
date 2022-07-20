@@ -100,8 +100,15 @@ def test_slice_create_and_export(dataset):
             if item.reference_id == reference_id:
                 return item
 
-    exported = slc.items_and_annotations()
-    for row in exported:
+    for row in slc.items_and_annotations():
+        reference_id = row[ITEM_KEY].reference_id
+        assert row[ITEM_KEY] == get_expected_item(reference_id)
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][
+            0
+        ] == get_expected_box_annotation(reference_id)
+
+    # test async
+    for row in slc.items_and_annotation_generator():
         reference_id = row[ITEM_KEY].reference_id
         assert row[ITEM_KEY] == get_expected_item(reference_id)
         assert row[ANNOTATIONS_KEY][BOX_TYPE][

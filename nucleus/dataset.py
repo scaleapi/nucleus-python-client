@@ -707,7 +707,7 @@ class Dataset:
         return response
 
     def iloc(self, i: int) -> dict:
-        """Retrieves dataset item by absolute numerical index.
+        """Retrieves dataset item and associated annotations by absolute numerical index.
 
         Parameters:
             i: Absolute numerical index of the dataset item within the dataset.
@@ -735,7 +735,7 @@ class Dataset:
 
     @sanitize_string_args
     def refloc(self, reference_id: str) -> dict:
-        """Retrieves a dataset item by reference ID.
+        """Retrieves a dataset item and associated annotations by reference ID.
 
         Parameters:
             reference_id: User-defined reference ID of the dataset item.
@@ -762,7 +762,7 @@ class Dataset:
         return format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
-        """Retrieves a dataset item by Nucleus-generated ID.
+        """Retrieves a dataset item and associated annotations by Nucleus-generated ID.
 
         Parameters:
             dataset_item_id: Nucleus-generated dataset item ID (starts with ``di_``).
@@ -1178,9 +1178,9 @@ class Dataset:
                         "cuboid": Optional[List[CuboidAnnotation]],
                         "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
-                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                     }
                 }]
         """
@@ -1190,6 +1190,32 @@ class Dataset:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
+
+    def items_and_annotation_generator(
+        self,
+    ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Provides a generator of all DatasetItems and Annotations in the dataset.
+
+        Returns:
+            Generator where each element is a dict containing the DatasetItem
+            and all of its associated Annotations, grouped by type.
+            ::
+
+                Iterable[{
+                    "item": DatasetItem,
+                    "annotations": {
+                        "box": List[BoxAnnotation],
+                        "polygon": List[PolygonAnnotation],
+                        "cuboid": List[CuboidAnnotation],
+                        "line": Optional[List[LineAnnotation]],
+                        "segmentation": List[SegmentationAnnotation],
+                        "category": List[CategoryAnnotation],
+                        "keypoints": List[KeypointsAnnotation],
+                    }
+                }]
+        """
+        for item in self.items_generator():
+            yield self.refloc(reference_id=item.reference_id)
 
     def export_embeddings(
         self,

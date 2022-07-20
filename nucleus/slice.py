@@ -185,7 +185,7 @@ class Slice:
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
-            and all of its associated Annotations, grouped by type.
+            and all of its associated Annotations, grouped by type (e.g. box).
             ::
 
                 Iterable[{
@@ -194,16 +194,18 @@ class Slice:
                         "box": List[BoxAnnotation],
                         "polygon": List[PolygonAnnotation],
                         "cuboid": List[CuboidAnnotation],
+                        "line": List[LineAnnotation],
                         "segmentation": List[SegmentationAnnotation],
                         "category": List[CategoryAnnotation],
+                        "keypoints": List[KeypointsAnnotation],
                     }
                 }]
         """
-        for item_metadata in self.items:
+        for item in self.items_generator():
             yield format_dataset_item_response(
-                self._client.dataitem_loc(
+                self._client.dataitem_ref_id(
                     dataset_id=self.dataset_id,
-                    dataset_item_id=item_metadata["id"],
+                    reference_id=item.reference_id,
                 )
             )
 
@@ -223,8 +225,10 @@ class Slice:
                         "box": List[BoxAnnotation],
                         "polygon": List[PolygonAnnotation],
                         "cuboid": List[CuboidAnnotation],
+                        "line": List[LineAnnotation],
                         "segmentation": List[SegmentationAnnotation],
                         "category": List[CategoryAnnotation],
+                        "keypoints": List[KeypointsAnnotation],
                     }
                 }]
         """
