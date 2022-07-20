@@ -2,8 +2,6 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Set, Tuple, Union
 
-from sklearn.metrics import f1_score
-
 from nucleus.annotation import AnnotationList, CategoryAnnotation
 from nucleus.metrics.base import Metric, MetricResult, ScalarResult
 from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
@@ -35,6 +33,9 @@ class CategorizationResult(MetricResult):
 
     @property
     def value(self):
+        # late import to avoid slow CLI init
+        from sklearn.metrics import f1_score
+
         annotation_labels = to_taxonomy_labels(self.annotations)
         prediction_labels = to_taxonomy_labels(self.predictions)
 
@@ -245,6 +246,9 @@ class CategorizationF1(CategorizationMetric):
         )
 
     def aggregate_score(self, results: List[CategorizationResult]) -> ScalarResult:  # type: ignore[override]
+        # late import to avoid slow CLI init
+        from sklearn.metrics import f1_score
+
         gt = []
         predicted = []
         for result in results:
