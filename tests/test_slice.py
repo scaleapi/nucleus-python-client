@@ -215,3 +215,40 @@ def test_slice_dataset_item_iterator(dataset):
     }
     for key in actual_items:
         assert actual_items[key] == expected_items[key]
+
+def test_slice_create_and_async_export(dataset):
+    # Dataset upload
+    ds_items = dataset.items
+
+    slice_ref_ids = [item.reference_id for item in ds_items[:1]]
+    # This test assumes one box annotation per item.
+    annotations = [
+        BoxAnnotation.from_json(json_data)
+        for json_data in TEST_BOX_ANNOTATIONS
+    ]
+    # Slice creation
+    slc = dataset.create_slice(
+        name=TEST_SLICE_NAME,
+        reference_ids=slice_ref_ids,
+    )
+
+    dataset.annotate(annotations=annotations)
+
+    def get_expected_box_annotation(reference_id):
+        for annotation in annotations:
+            if annotation.reference_id == reference_id:
+                return annotation
+
+    def get_expected_item(reference_id):
+        if reference_id not in slice_ref_ids:
+            raise ValueError("Got results outside the slice")
+        for item in ds_items:
+            if item.reference_id == reference_id:
+                return item
+
+    for row in slc.items_and_annotation_generator():
+        reference_id = row[ITEM_KEY].reference_id
+        assert row[ITEM_KEY] == get_expected_item(reference_id)
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][
+            0
+        ] == get_expected_box_annotation(reference_id)
