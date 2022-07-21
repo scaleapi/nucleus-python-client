@@ -75,7 +75,7 @@ class SegmentationPrediction(SegmentationAnnotation):
         from nucleus import SegmentationPrediction
 
         segmentation = SegmentationPrediction(
-            mask_url="s3://your-bucket-name/pred-seg-masks/image_2_pred_mask_id1.png",
+            mask_url="s3://your-bucket-name/pred-seg-masks/image_2_pred_mask_id_1.png",
             annotations=[
                 Segment(label="grass", index="1"),
                 Segment(label="road", index="2"),
@@ -88,7 +88,7 @@ class SegmentationPrediction(SegmentationAnnotation):
 
     Parameters:
         mask_url (str): A URL pointing to the segmentation prediction mask which is
-          accessible to Scale. This URL can be a path to a local file.
+          accessible to Scale. This "URL" can also be a path to a local file.
           The mask is an HxW int8 array saved in PNG format,
           with each pixel value ranging from [0, N), where N is the number of
           possible classes (for semantic segmentation) or instances (for instance
@@ -226,7 +226,7 @@ class LinePrediction(LineAnnotation):
 
     Parameters:
         label (str): The label for this prediction (e.g. car, pedestrian, bicycle).
-        vertices List[:class:`Point`]: The list of points making up the line.
+        vertices (List[:class:`Point`]): The list of points making up the line.
         reference_id (str): User-defined ID of the image to which to apply this
             annotation.
         confidence: 0-1 indicating the confidence of the prediction.

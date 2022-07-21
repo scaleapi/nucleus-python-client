@@ -27,7 +27,7 @@ class Model:
 
     Within Nucleus, Models work in the following way:
 
-    1. You first :meth:`create a Model<NucleusClient.add_model>`. You can do this
+    1. You first :meth:`create a Model<NucleusClient.create_model>`. You can do this
        just once and reuse the model on multiple datasets.
     2. You then :meth:`upload predictions <Dataset.upload_predictions>` to a dataset.
     3. Trigger :meth:`calculation of metrics <Dataset.calculate_evaluation_metrics>`
@@ -68,7 +68,7 @@ class Model:
             class_pdf={"label": 0.2, "other_label": 0.8},
         )
 
-        model = client.add_model(
+        model = client.create_model(
             name="My Model", reference_id="My-CNN", metadata={"timestamp": "121012401"}
         )
 
@@ -89,7 +89,7 @@ class Model:
         dataset.calculate_evaluation_metrics(model)
 
     Models cannot be instantiated directly and instead must be created via API
-    endpoint, using :meth:`NucleusClient.add_model`.
+    endpoint, using :meth:`NucleusClient.create_model`.
     """
 
     def __init__(
@@ -100,7 +100,7 @@ class Model:
         metadata,
         client,
         bundle_name=None,
-        tags: List[str] = None,
+        tags=None,
     ):
         self.id = model_id
         self.name = name
@@ -111,7 +111,7 @@ class Model:
         self._client = client
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, client={self._client})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client})"
 
     def __eq__(self, other):
         return (
@@ -210,9 +210,9 @@ class Model:
             model.run("ds_123456")
 
         Args:
-            dataset_id: id of dataset to run inference on
-            job_id: nucleus job used to track async job progress
-            slice_id: (optional) id of slice of the dataset to run inference on
+            dataset_id: The ID of the dataset to run inference on.
+            job_id: The ID of the :class:`AsyncJob` used to track job progress.
+            slice_id: The ID of the slice of the dataset to run inference on.
         """
         response = self._client.make_request(
             {"dataset_id": dataset_id, "slice_id": slice_id},
