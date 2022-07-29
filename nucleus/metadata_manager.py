@@ -3,9 +3,10 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from .camera_params import CameraParams
 from .constants import CAMERA_PARAMS_KEY
+from .job import AsyncJob
 
 if TYPE_CHECKING:
-    from . import AsyncJob, NucleusClient
+    from . import NucleusClient
 
 
 # Wording set to match with backend enum
@@ -33,6 +34,11 @@ class MetadataManager:
         self.raw_mappings = raw_mappings
         self.level = level
         self.asynchronous = asynchronous
+
+        if len(self.raw_mappings) > 500 and not self.asynchronous:
+            print(
+                "Consider running the metadata_update with `asynchronous=True`, to avoid timeouts."
+            )
 
         self._payload = self._format_mappings()
 
