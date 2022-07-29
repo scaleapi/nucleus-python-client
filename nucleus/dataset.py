@@ -132,7 +132,7 @@ class Dataset:
 
     @property
     def is_scene(self) -> bool:
-        """If the dataset can contain scenes or not."""
+        """Whether or not the dataset contains scenes exclusively."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/is_scene", requests.get
         )[DATASET_IS_SCENE_KEY]
@@ -167,11 +167,12 @@ class Dataset:
     def items_generator(self, page_size=100000) -> Iterable[DatasetItem]:
         """Generator yielding all dataset items in the dataset.
 
-
         ::
-            sum_example_field = 0
+
+            collected_ref_ids = []
             for item in dataset.items_generator():
-                sum += item.metadata["example_field"]
+                print(f"Exporting item: {item.reference_id}")
+                collected_ref_ids.append(item.reference_id)
 
         Args:
             page_size (int, optional): Number of items to return per page. If you are
@@ -179,7 +180,7 @@ class Dataset:
                 the page size.
 
         Yields:
-            an iterable of DatasetItem objects.
+            :class:`DatasetItem`: A single DatasetItem object.
         """
         json_generator = paginate_generator(
             client=self._client,
@@ -194,7 +195,7 @@ class Dataset:
     def items(self) -> List[DatasetItem]:
         """List of all DatasetItem objects in the Dataset.
 
-        For fetching more than 200k items see :meth:`NucleusDataset.items_generator`.
+        We recommend using :meth:`Dataset.items_generator` if the Dataset has more than 200k items.
         """
         try:
             response = self._client.make_request(
@@ -269,11 +270,11 @@ class Dataset:
             dict as follows::
 
                 {
-                    "autotagPositiveTrainingItems": {
+                    "autotagPositiveTrainingItems": List[{
                         ref_id: str,
                         model_prediction_annotation_id: str | None,
                         ground_truth_annotation_id: str | None,
-                    }[],
+                    }],
                     "autotag": {
                         id: str,
                         name: str,
@@ -293,10 +294,11 @@ class Dataset:
         return response
 
     def info(self) -> DatasetInfo:
-        """Retrieve information about the dataset
+        """Fetches information about the dataset.
 
         Returns:
-            :class:`DatasetInfo`
+            :class:`DatasetInfo`: Information about the dataset including its
+            Scale-generated ID, name, length, associated Models, Slices, and more.
         """
         response = self._client.make_request(
             {}, f"dataset/{self.id}/info", requests.get
@@ -513,7 +515,7 @@ class Dataset:
             )
 
         Parameters:
-            dataset_items ( \
+            items: ( \
               Union[ \
                 Sequence[:class:`DatasetItem`], \
                 Sequence[:class:`LidarScene`] \
@@ -527,13 +529,12 @@ class Dataset:
             asynchronous: Whether or not to process the upload asynchronously (and
               return an :class:`AsyncJob` object). This is required when uploading
               scenes. Default is False.
-            files_per_upload_request: How large to make each upload request when your
-                files are local. If you get timeouts, you may need to lower this from
-                its default of 10. The default is 10.
-            local_file_upload_concurrency: How many local file requests to send
-                concurrently. If you start to see gateway timeouts or cloudflare related
-                errors, you may need to lower this from its default of 30.
-
+            files_per_upload_request: Optional; default is 10. We recommend lowering
+                this if you encounter timeouts.
+            local_files_per_upload_request: Optional; default is 10. We recommend
+                lowering this if you encounter timeouts.
+            local_file_upload_concurrency: Optional; default is 30. We recommend
+                lowering this if you encounter gateway timeouts or Cloudflare errors.
         Returns:
             For scenes
                 If synchronous, returns a payload describing the upload result::
@@ -548,7 +549,8 @@ class Dataset:
 
                 Otherwise, returns an :class:`AsyncJob` object.
             For images
-                If synchronous returns UploadResponse otherwise :class:`AsyncJob`
+                If synchronous returns :class:`nucleus.upload_response.UploadResponse`
+                otherwise :class:`AsyncJob`
         """
         assert (
             batch_size is None or batch_size < 30
@@ -707,7 +709,7 @@ class Dataset:
         return response
 
     def iloc(self, i: int) -> dict:
-        """Retrieves dataset item by absolute numerical index.
+        """Fetches dataset item and associated annotations by absolute numerical index.
 
         Parameters:
             i: Absolute numerical index of the dataset item within the dataset.
@@ -735,7 +737,7 @@ class Dataset:
 
     @sanitize_string_args
     def refloc(self, reference_id: str) -> dict:
-        """Retrieves a dataset item by reference ID.
+        """Fetches a dataset item and associated annotations by reference ID.
 
         Parameters:
             reference_id: User-defined reference ID of the dataset item.
@@ -762,7 +764,7 @@ class Dataset:
         return format_dataset_item_response(response)
 
     def loc(self, dataset_item_id: str) -> dict:
-        """Retrieves a dataset item by Nucleus-generated ID.
+        """Fetches a dataset item and associated annotations by Nucleus-generated ID.
 
         Parameters:
             dataset_item_id: Nucleus-generated dataset item ID (starts with ``di_``).
@@ -790,7 +792,7 @@ class Dataset:
         return format_dataset_item_response(response)
 
     def ground_truth_loc(self, reference_id: str, annotation_id: str):
-        """Fetches a single ground truth annotation by id.
+        """Fetches a single ground truth annotation by ID.
 
         Parameters:
             reference_id: User-defined reference ID of the dataset item associated
@@ -856,9 +858,9 @@ class Dataset:
 
     @sanitize_string_args
     def delete_scene(self, reference_id: str):
-        """Deletes a Scene associated with the Dataset
+        """Deletes a sene from the Dataset by scene reference ID.
 
-        All items, annotations and predictions associated with the scene will be
+        All items, annotations, and predictions associated with the scene will be
         deleted as well.
 
         Parameters:
@@ -917,21 +919,25 @@ class Dataset:
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             dataset = client.get_dataset("YOUR_DATASET_ID")
 
-            embeddings = {
+            all_embeddings = {
                 "reference_id_0": [0.1, 0.2, 0.3],
                 "reference_id_1": [0.4, 0.5, 0.6],
-            } # uploaded to s3 with the below URL
+                ...
+                "reference_id_10000": [0.7, 0.8, 0.9]
+            } # sharded and uploaded to s3 with the two below URLs
 
-            embeddings_url = "s3://dataset/embeddings_map.json"
+            embeddings_url_1 = "s3://dataset/embeddings_map_1.json"
+            embeddings_url_2 = "s3://dataset/embeddings_map_2.json"
 
             response = dataset.create_custom_index(
-                embeddings_url=[embeddings_url],
+                embeddings_url=[embeddings_url_1, embeddings_url_2],
                 embedding_dim=3
             )
 
         Parameters:
             embeddings_urls:  List of URLs, each of which pointing to
-              a JSON mapping reference_id -> embedding vector.
+              a JSON mapping reference_id -> embedding vector. Each embedding JSON must
+              contain <5000 rows.
             embedding_dim: The dimension of the embedding vectors. Must be consistent
               across all embedding vectors in the index.
 
@@ -967,6 +973,11 @@ class Dataset:
     def set_primary_index(self, image: bool = True, custom: bool = False):
         """Sets the primary index used for Autotag and Similarity Search on this dataset.
 
+        Parameters:
+            image: Whether to configure the primary index for images or objects.
+                Default is True (set primary image index).
+            custom: Whether to set the primary index to use custom or Nucleus-generated
+                embeddings. Default is True (use custom embeddings as the primary index).
         Returns:
 
             {
@@ -1055,7 +1066,7 @@ class Dataset:
         This endpoint is limited to index up to 2 million images at a time and the
         job will fail for payloads that exceed this limit.
 
-        Response:
+        Returns:
             :class:`AsyncJob`: Asynchronous job object to track processing status.
         """
         response = self._client.create_image_index(self.id)
@@ -1096,7 +1107,7 @@ class Dataset:
               in the absence of ``model_run_id``.
 
         Returns:
-            Payload containing an :class:`AsyncJob` object to monitor progress.
+            :class:`AsyncJob`: Asynchronous job object to track processing status.
         """
         response = self._client.create_object_index(
             self.id, model_run_id, gt_only
@@ -1111,11 +1122,15 @@ class Dataset:
         update: bool = False,
     ):
         """Creates a new taxonomy.
+
+        At the moment we only support taxonomies for category annotations and
+        predictions.
+
         ::
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
-            dataset = client.get_dataset("YOUR_DATASET_ID")
+            dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
 
             response = dataset.add_taxonomy(
                 taxonomy_name="clothing_type",
@@ -1128,12 +1143,23 @@ class Dataset:
             taxonomy_name: The name of the taxonomy. Taxonomy names must be
               unique within a dataset.
             taxonomy_type: The type of this taxonomy as a string literal.
-              Currently, the only supported taxonomy type is "category".
+              Currently, the only supported taxonomy type is "category."
             labels: The list of possible labels for the taxonomy.
-            update: Whether or not to update taxonomy labels on taxonomy name collision. Default is False. Note that taxonomy labels will not be deleted on update, they can only be appended.
+            update: Whether or not to update taxonomy labels on taxonomy name
+              collision. Default is False. Note that taxonomy labels will not be
+              deleted on update, they can only be appended.
 
         Returns:
-            Returns a response with dataset_id, taxonomy_name and status of the add taxonomy operation.
+            Returns a response with dataset_id, taxonomy_name, and status of the
+            add taxonomy operation.
+
+            ::
+
+                {
+                    "dataset_id": str,
+                    "taxonomy_name": str,
+                    "status": "Taxonomy created"
+                }
         """
         return self._client.make_request(
             construct_taxonomy_payload(
@@ -1149,13 +1175,23 @@ class Dataset:
     ):
         """Deletes the given taxonomy.
 
-        All annotations and predictions associated with the taxonomy will be deleted as well.
+        All annotations and predictions associated with the taxonomy will be
+        deleted as well.
 
         Parameters:
             taxonomy_name: The name of the taxonomy.
 
         Returns:
-            Returns a response with dataset_id, taxonomy_name and status of the delete taxonomy operation.
+            Returns a response with dataset_id, taxonomy_name, and status of the
+            delete taxonomy operation.
+
+            ::
+
+                {
+                    "dataset_id": str,
+                    "taxonomy_name": str,
+                    "status": "Taxonomy successfully deleted"
+                }
         """
         return self._client.make_request(
             {},
@@ -1166,7 +1202,7 @@ class Dataset:
     def items_and_annotations(
         self,
     ) -> List[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Returns a list of all DatasetItems and Annotations in this slice.
+        """Returns a list of all DatasetItems and Annotations in this dataset.
 
         Returns:
             A list of dicts, each with two keys representing a row in the dataset::
@@ -1178,9 +1214,9 @@ class Dataset:
                         "cuboid": Optional[List[CuboidAnnotation]],
                         "line": Optional[List[LineAnnotation]],
                         "polygon": Optional[List[PolygonAnnotation]],
-                        "keypoints": Optional[List[KeypointsAnnotation]],
                         "segmentation": Optional[List[SegmentationAnnotation]],
                         "category": Optional[List[CategoryAnnotation]],
+                        "keypoints": Optional[List[KeypointsAnnotation]],
                     }
                 }]
         """
@@ -1190,6 +1226,32 @@ class Dataset:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
+
+    def items_and_annotation_generator(
+        self,
+    ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Provides a generator of all DatasetItems and Annotations in the dataset.
+
+        Returns:
+            Generator where each element is a dict containing the DatasetItem
+            and all of its associated Annotations, grouped by type.
+            ::
+
+                Iterable[{
+                    "item": DatasetItem,
+                    "annotations": {
+                        "box": List[BoxAnnotation],
+                        "polygon": List[PolygonAnnotation],
+                        "cuboid": List[CuboidAnnotation],
+                        "line": Optional[List[LineAnnotation]],
+                        "segmentation": List[SegmentationAnnotation],
+                        "category": List[CategoryAnnotation],
+                        "keypoints": List[KeypointsAnnotation],
+                    }
+                }]
+        """
+        for item in self.items_generator():
+            yield self.refloc(reference_id=item.reference_id)
 
     def export_embeddings(
         self,
@@ -1213,18 +1275,15 @@ class Dataset:
         return api_payload  # type: ignore
 
     def delete_annotations(
-        self, reference_ids: list = None, keep_history=True
+        self, reference_ids: list = None, keep_history: bool = True
     ) -> AsyncJob:
         """Deletes all annotations associated with the specified item reference IDs.
 
         Parameters:
             reference_ids: List of user-defined reference IDs of the dataset items
               from which to delete annotations. Defaults to an empty list.
-            keep_history: Whether to preserve version history. If False, all
-                previous versions will be deleted along with the annotations. If
-                True, the version history (including deletion) wil persist.
-                Default is True.
-
+            keep_history: Whether to preserve version history. We recommend
+              skipping this parameter and using the default value of True.
         Returns:
             :class:`AsyncJob`: Empty payload response.
         """
@@ -1245,7 +1304,7 @@ class Dataset:
         """Fetches a single scene in the dataset by its reference ID.
 
         Parameters:
-            reference_id: User-defined reference ID of the scene.
+            reference_id: The user-defined reference ID of the scene to fetch.
 
         Returns:
             :class:`Scene<LidarScene>`: A scene object containing frames, which
@@ -1272,6 +1331,8 @@ class Dataset:
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
                 :class:`SegmentationPrediction` \
+                :class:`CategoryPrediction`, \
+                :class:`KeypointsPrediction`, \
             ]]: List of prediction objects from the model.
 
         """
@@ -1518,9 +1579,15 @@ class Dataset:
             index (int): Absolute index of the dataset item within the dataset.
 
         Returns:
-            Dict[str, List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction,
-            SegmentationPrediction, CategoryPrediction]]]: Dictionary mapping prediction
-            type to a list of such prediction objects from the given model::
+            List[Union[\
+                :class:`BoxPrediction`, \
+                :class:`PolygonPrediction`, \
+                :class:`CuboidPrediction`, \
+                :class:`SegmentationPrediction` \
+                :class:`CategoryPrediction`, \
+                :class:`KeypointsPrediction`, \
+            ]]: Dictionary mapping prediction type to a list of such prediction
+            objects from the given model::
 
                 {
                     "box": List[BoxPrediction],
@@ -1528,6 +1595,7 @@ class Dataset:
                     "cuboid": List[CuboidPrediction],
                     "segmentation": List[SegmentationPrediction],
                     "category": List[CategoryPrediction],
+                    "keypoints": List[KeypointsPrediction],
                 }
         """
         return format_prediction_response(
@@ -1547,9 +1615,15 @@ class Dataset:
               all predictions.
 
         Returns:
-            Dict[str, List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction,
-            SegmentationPrediction, CategoryPrediction]]]: Dictionary mapping prediction
-            type to a list of such prediction objects from the given model::
+            List[Union[\
+                :class:`BoxPrediction`, \
+                :class:`PolygonPrediction`, \
+                :class:`CuboidPrediction`, \
+                :class:`SegmentationPrediction` \
+                :class:`CategoryPrediction`, \
+                :class:`KeypointsPrediction`, \
+            ]]: Dictionary mapping prediction type to a list of such prediction
+            objects from the given model::
 
                 {
                     "box": List[BoxPrediction],
@@ -1557,6 +1631,7 @@ class Dataset:
                     "cuboid": List[CuboidPrediction],
                     "segmentation": List[SegmentationPrediction],
                     "category": List[CategoryPrediction],
+                    "keypoints": List[KeypointsPrediction],
                 }
         """
         return format_prediction_response(
@@ -1583,6 +1658,7 @@ class Dataset:
                 :class:`CuboidPrediction`, \
                 :class:`SegmentationPrediction` \
                 :class:`CategoryPrediction` \
+                :class:`KeypointsPrediction` \
             ]: Model prediction object with the specified annotation ID.
         """
         return from_json(
@@ -1639,7 +1715,7 @@ class Dataset:
     def update_scene_metadata(self, mapping: Dict[str, dict], asynchronous: bool = False):
         """
         Update (merge) scene metadata for each reference_id given in the mapping.
-        The backed will join the specified mapping metadata to the exisiting metadata.
+        The backend will join the specified mapping metadata to the existing metadata.
         If there is a key-collision, the value given in the mapping will take precedence.
 
         Args:
@@ -1661,7 +1737,7 @@ class Dataset:
     def update_item_metadata(self, mapping: Dict[str, dict], asynchronous: bool = False):
         """
         Update (merge) dataset item metadata for each reference_id given in the mapping.
-        The backed will join the specified mapping metadata to the exisiting metadata.
+        The backend will join the specified mapping metadata to the existing metadata.
         If there is a key-collision, the value given in the mapping will take precedence.
 
         This method may also be used to udpate the `camera_params` for a particular set of items.
