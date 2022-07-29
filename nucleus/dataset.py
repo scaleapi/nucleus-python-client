@@ -1712,7 +1712,9 @@ class Dataset:
             local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
-    def update_scene_metadata(self, mapping: Dict[str, dict], asynchronous: bool = False):
+    def update_scene_metadata(
+        self, mapping: Dict[str, dict], asynchronous: bool = False
+    ):
         """
         Update (merge) scene metadata for each reference_id given in the mapping.
         The backend will join the specified mapping metadata to the existing metadata.
@@ -1730,11 +1732,17 @@ class Dataset:
             A dictionary outlining success or failures.
         """
         mm = MetadataManager(
-            self.id, self._client, mapping, ExportMetadataType.SCENES, asynchronous
+            self.id,
+            self._client,
+            mapping,
+            ExportMetadataType.SCENES,
+            asynchronous,
         )
         return mm.update()
 
-    def update_item_metadata(self, mapping: Dict[str, dict], asynchronous: bool = False):
+    def update_item_metadata(
+        self, mapping: Dict[str, dict], asynchronous: bool = False
+    ):
         """
         Update (merge) dataset item metadata for each reference_id given in the mapping.
         The backend will join the specified mapping metadata to the existing metadata.
@@ -1755,7 +1763,11 @@ class Dataset:
             A dictionary outlining success or failures.
         """
         mm = MetadataManager(
-            self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS, asynchronous
+            self.id,
+            self._client,
+            mapping,
+            ExportMetadataType.DATASET_ITEMS,
+            asynchronous,
         )
         return mm.update()
 
