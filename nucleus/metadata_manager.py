@@ -5,7 +5,7 @@ from .camera_params import CameraParams
 from .constants import CAMERA_PARAMS_KEY
 
 if TYPE_CHECKING:
-    from . import NucleusClient
+    from . import AsyncJob, NucleusClient
 
 
 # Wording set to match with backend enum
@@ -26,11 +26,14 @@ class MetadataManager:
         client: "NucleusClient",
         raw_mappings: Dict[str, dict],
         level: ExportMetadataType,
+        asynchronous: bool,
+
     ):
         self.dataset_id = dataset_id
         self._client = client
         self.raw_mappings = raw_mappings
         self.level = level
+        self.asynchronous = asynchronous
 
         self._payload = self._format_mappings()
 
@@ -55,7 +58,10 @@ class MetadataManager:
 
     def update(self):
         payload = {"metadata": self._payload, "level": self.level.value}
+        is_async = int(self.asynchronous)
         resp = self._client.make_request(
-            payload=payload, route=f"dataset/{self.dataset_id}/metadata"
+            payload=payload, route=f"dataset/{self.dataset_id}/metadata?async={is_async}"
         )
+        if self.asynchronous:
+            return AsyncJob.from_json(resp, self._client)
         return resp

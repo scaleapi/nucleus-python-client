@@ -1636,7 +1636,7 @@ class Dataset:
             local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
-    def update_scene_metadata(self, mapping: Dict[str, dict]):
+    def update_scene_metadata(self, mapping: Dict[str, dict], asynchronous: bool = False):
         """
         Update (merge) scene metadata for each reference_id given in the mapping.
         The backed will join the specified mapping metadata to the exisiting metadata.
@@ -1644,6 +1644,7 @@ class Dataset:
 
         Args:
             mapping: key-value pair of <reference_id>: <metadata>
+            asynchronous: if True, run the update as a background job
 
         Examples:
             >>> mapping = {"scene_ref_1": {"new_key": "foo"}, "scene_ref_2": {"some_value": 123}}
@@ -1653,11 +1654,11 @@ class Dataset:
             A dictionary outlining success or failures.
         """
         mm = MetadataManager(
-            self.id, self._client, mapping, ExportMetadataType.SCENES
+            self.id, self._client, mapping, ExportMetadataType.SCENES, asynchronous
         )
         return mm.update()
 
-    def update_item_metadata(self, mapping: Dict[str, dict]):
+    def update_item_metadata(self, mapping: Dict[str, dict], asynchronous: bool = False):
         """
         Update (merge) dataset item metadata for each reference_id given in the mapping.
         The backed will join the specified mapping metadata to the exisiting metadata.
@@ -1668,6 +1669,7 @@ class Dataset:
 
         Args:
             mapping: key-value pair of <reference_id>: <metadata>
+            asynchronous: if True, run the update as a background job
 
         Examples:
             >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123, "camera_params": {...}}}
@@ -1677,7 +1679,7 @@ class Dataset:
             A dictionary outlining success or failures.
         """
         mm = MetadataManager(
-            self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS
+            self.id, self._client, mapping, ExportMetadataType.DATASET_ITEMS, asynchronous
         )
         return mm.update()
 
