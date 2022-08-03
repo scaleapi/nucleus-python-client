@@ -18,10 +18,7 @@ from .constants import (
     THRESHOLD_KEY,
     ThresholdComparison,
 )
-from .data_transfer_objects.scenario_test_evaluations import (
-    EvaluationResult,
-    GetEvalHistory,
-)
+from .data_transfer_objects.scenario_test_evaluations import EvaluationResult
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
 from .eval_functions.available_eval_functions import (
     EvalFunction,
@@ -148,13 +145,13 @@ class ScenarioTest:
             A list of :class:`ScenarioTestEvaluation` objects.
         """
         response = self.connection.get(
-            f"validate/scenario_test/{self.id}/eval_history",
+            f"validate/scenario_test/{self.id}/eval_history/details",
         )
-        eval_history = GetEvalHistory.parse_obj(response)
-        return [
-            ScenarioTestEvaluation(evaluation.id, self.connection)
-            for evaluation in eval_history.evaluations
+        evaluations = [
+            ScenarioTestEvaluation.from_request(eval_payload, self.connection)
+            for eval_payload in response
         ]
+        return evaluations
 
     def get_items(self) -> List[DatasetItem]:
         response = self.connection.get(
