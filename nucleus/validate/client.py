@@ -131,12 +131,13 @@ class Validate:
             A list of ScenarioTest objects.
         """
         response = self.connection.get(
-            "validate/scenario_test",
+            "validate/scenario_test/details",
         )
-        return [
-            ScenarioTest(test_id, self.connection)
-            for test_id in response["scenario_test_ids"]
+        tests = [
+            ScenarioTest.from_response(payload, self.connection)
+            for payload in response
         ]
+        return tests
 
     def delete_scenario_test(self, scenario_test_id: str) -> bool:
         """Deletes a Scenario Test. ::

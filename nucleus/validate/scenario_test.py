@@ -52,13 +52,13 @@ class ScenarioTest:
     slice_id: str = field(init=False)
     baseline_model_id: Optional[str] = None
 
-    def __post_init__(self):
-        # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
-        response = self.connection.get(
-            f"validate/scenario_test/{self.id}/info",
-        )
-        self.name = response[NAME_KEY]
-        self.slice_id = response[SLICE_ID_KEY]
+    @classmethod
+    def from_response(cls, response, connection: Connection):
+        instance = cls(response["id"], connection)
+        instance.name = response[NAME_KEY]
+        instance.slice_id = response[SLICE_ID_KEY]
+        instance.baseline_model_id = response.get("baseline_model_id", None)
+        return instance
 
     def add_eval_function(
         self, eval_function: EvalFunction
