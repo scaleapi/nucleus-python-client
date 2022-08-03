@@ -23,12 +23,9 @@ def slices(ctx, web):
 @slices.command("list")
 def list_slices():
     """List all available Slices"""
-    with Live(
-        Spinner("dots4", text="Finding your Slices!"),
-        vertical_overflow="visible",
-    ) as live:
-        client = init_client()
-        datasets = client.datasets
+    client = init_client()
+    console = Console()
+    with console.status("Finding your Slices!", spinner="dots4"):
         table = Table(
             Column("id", overflow="fold", min_width=24),
             "name",
@@ -37,26 +34,15 @@ def list_slices():
             title=":cake: Slices",
             title_justify="left",
         )
-        errors = {}
-        for ds in datasets:
-            try:
-                ds_slices = ds.slices
-                if ds_slices:
-                    for slc_id in ds_slices:
-                        slice_url = nucleus_url(f"{ds.id}/{slc_id}")
-                        slice_info = client.get_slice(slc_id).info()
-                        table.add_row(
-                            slc_id, slice_info["name"], ds.name, slice_url
-                        )
-                        live.update(table)
-            except NucleusAPIError as e:
-                errors[ds.id] = e
+        datasets = client.datasets
+        id_to_datasets = {d.id: d for d in datasets}
+        all_slices = client.slices
+        for s in all_slices:
+            table.add_row(
+                s.id,
+                s.name,
+                id_to_datasets[s.dataset_id].name,
+                nucleus_url(f"{s.dataset_id}/{s.id}"),
+            )
 
-        error_tree = Tree(
-            ":x: Encountered the following errors while fetching information"
-        )
-        for ds_id, error in errors.items():
-            dataset_branch = error_tree.add(f"Dataset: {ds_id}")
-            dataset_branch.add(f"Error: {error}")
-
-        Console().print(error_tree)
+    console.print(table)
