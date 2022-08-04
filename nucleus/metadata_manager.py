@@ -65,10 +65,17 @@ class MetadataManager:
     def update(self):
         payload = {"metadata": self._payload, "level": self.level.value}
         is_async = int(self.asynchronous)
-        resp = self._client.make_request(
-            payload=payload,
-            route=f"dataset/{self.dataset_id}/metadata?async={is_async}",
-        )
-        if self.asynchronous:
-            return AsyncJob.from_json(resp, self._client)
-        return resp
+        try:
+            resp = self._client.make_request(
+                payload=payload,
+                route=f"dataset/{self.dataset_id}/metadata?async={is_async}",
+            )
+            if self.asynchronous:
+                return AsyncJob.from_json(resp, self._client)
+            return resp
+        except Exception as e:
+            print(
+                "Failed to complete the request. If a timeout occurred, consider running the "
+                "metadata_update with `asynchronous=True`."
+            )
+            print(f"Request failed with:\n\n{e}")
