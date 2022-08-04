@@ -36,7 +36,8 @@ class MetadataManager:
         self.asynchronous = asynchronous
 
         if len(self.raw_mappings) > 500 and not self.asynchronous:
-            print(
+            raise Exception(
+                "Number of items to update is too large to perform it synchronously. "
                 "Consider running the metadata_update with `asynchronous=True`, to avoid timeouts."
             )
 
