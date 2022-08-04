@@ -1021,7 +1021,8 @@ class NucleusClient:
         payload: Optional[dict],
         route: str,
         requests_command=requests.post,
-    ) -> dict:
+        get_raw_response: bool = False,
+    ) -> Union[dict, requests.Response]:
         """Makes a request to a Nucleus API endpoint.
 
         Logs a warning if not successful.
@@ -1030,9 +1031,10 @@ class NucleusClient:
             payload: Given request payload.
             route: Route for the request.
             Requests command: ``requests.post``, ``requests.get``, or ``requests.delete``.
+            get_raw_response: return the request's response object entirely
 
         Returns:
-            Response payload as JSON dict.
+            Response payload as JSON dict or request object.
         """
         if payload is None:
             payload = {}
@@ -1042,18 +1044,7 @@ class NucleusClient:
                     "Received defined payload with GET request! Will ignore payload"
                 )
             payload = None
-        return self._connection.make_request(payload, route, requests_command)  # type: ignore
-
-    def handle_bad_response(
-        self,
-        endpoint,
-        requests_command,
-        requests_response=None,
-        aiohttp_response=None,
-    ):
-        self._connection.handle_bad_response(
-            endpoint, requests_command, requests_response, aiohttp_response
-        )
+        return self._connection.make_request(payload, route, requests_command, get_raw_response)  # type: ignore
 
     def _set_api_key(self, api_key):
         """Fetch API key from environment variable NUCLEUS_API_KEY if not set"""
