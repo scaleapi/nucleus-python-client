@@ -284,7 +284,7 @@ class Slice:
             model (Model): the nucleus model objects representing the model for which to export predictions.
 
         Returns:
-            List where each element is a dict containing the DatasetItem
+            Iterable where each element is a dict containing the DatasetItem
             and all of its associated Predictions, grouped by type (e.g. box).
             ::
 
