@@ -73,9 +73,10 @@ class MetadataManager:
             if self.asynchronous:
                 return AsyncJob.from_json(resp, self._client)
             return resp
-        except Exception as e:
+        except Exception as e:  # pylint: disable=W0703
             print(
                 "Failed to complete the request. If a timeout occurred, consider running the "
                 "metadata_update with `asynchronous=True`."
             )
             print(f"Request failed with:\n\n{e}")
+            return None
