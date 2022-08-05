@@ -1022,7 +1022,7 @@ class NucleusClient:
         route: str,
         requests_command=requests.post,
         return_raw_response: bool = False,
-    ) -> Union[dict, requests.Response]:
+    ) -> dict:
         """Makes a request to a Nucleus API endpoint.
 
         Logs a warning if not successful.

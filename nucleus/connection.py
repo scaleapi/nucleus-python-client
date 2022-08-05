@@ -1,5 +1,4 @@
 import time
-from typing import Union
 
 import requests
 
@@ -46,7 +45,7 @@ class Connection:
         route: str,
         requests_command=requests.post,
         return_raw_response: bool = False,
-    ) -> Union[dict]:
+    ) -> dict:
         """
         Makes a request to Nucleus endpoint and logs a warning if not
         successful.
