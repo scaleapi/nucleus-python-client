@@ -234,16 +234,17 @@ class Model:
         Args:
             tags: list of tag names
         """
-        response = self._client.make_request(
+        response: requests.Response = self._client.make_request(
             {MODEL_TAGS_KEY: tags},
             f"model/{self.id}/tag",
             requests_command=requests.post,
+            return_raw_response=True,
         )
 
-        if response.get("msg", False):
+        if response.ok:
             self.tags.extend(tags)
 
-        return response
+        return response.json()
 
     def remove_tags(self, tags: List[str]):
         """Remove tag(s) from the model. ::
@@ -257,13 +258,14 @@ class Model:
         Args:
             tags: list of tag names to remove
         """
-        response = self._client.make_request(
+        response: requests.Response = self._client.make_request(
             {MODEL_TAGS_KEY: tags},
             f"model/{self.id}/tag",
             requests_command=requests.delete,
+            return_raw_response=True,
         )
 
-        if response.get("msg", False):
+        if response.ok:
             self.tags = list(filter(lambda t: t not in tags, self.tags))
 
-        return response
+        return response.json()
