@@ -238,7 +238,7 @@ class Model:
             {MODEL_TAGS_KEY: tags},
             f"model/{self.id}/tag",
             requests_command=requests.post,
-            get_raw_response=True,
+            return_raw_response=True,
         )
 
         if response.ok:
@@ -262,7 +262,7 @@ class Model:
             {MODEL_TAGS_KEY: tags},
             f"model/{self.id}/tag",
             requests_command=requests.delete,
-            get_raw_response=True,
+            return_raw_response=True,
         )
 
         if response.ok:

@@ -45,8 +45,8 @@ class Connection:
         payload: dict,
         route: str,
         requests_command=requests.post,
-        get_raw_response: bool = False,
-    ) -> Union[dict, requests.Response]:
+        return_raw_response: bool = False,
+    ) -> Union[dict]:
         """
         Makes a request to Nucleus endpoint and logs a warning if not
         successful.
@@ -54,7 +54,7 @@ class Connection:
         :param payload: given payload
         :param route: route for the request
         :param requests_command: requests.post, requests.get, requests.delete
-        :param get_raw_response: return the request's response object entirely
+        :param return_raw_response: return the request's response object entirely
         :return: response JSON
         """
         endpoint = f"{self.endpoint}/{route}"
@@ -79,7 +79,7 @@ class Connection:
         if not response.ok:
             self.handle_bad_response(endpoint, requests_command, response)
 
-        if get_raw_response:
+        if return_raw_response:
             return response
 
         return response.json()

@@ -1021,7 +1021,7 @@ class NucleusClient:
         payload: Optional[dict],
         route: str,
         requests_command=requests.post,
-        get_raw_response: bool = False,
+        return_raw_response: bool = False,
     ) -> Union[dict, requests.Response]:
         """Makes a request to a Nucleus API endpoint.
 
@@ -1031,7 +1031,7 @@ class NucleusClient:
             payload: Given request payload.
             route: Route for the request.
             Requests command: ``requests.post``, ``requests.get``, or ``requests.delete``.
-            get_raw_response: return the request's response object entirely
+            return_raw_response: return the request's response object entirely
 
         Returns:
             Response payload as JSON dict or request object.
@@ -1044,7 +1044,7 @@ class NucleusClient:
                     "Received defined payload with GET request! Will ignore payload"
                 )
             payload = None
-        return self._connection.make_request(payload, route, requests_command, get_raw_response)  # type: ignore
+        return self._connection.make_request(payload, route, requests_command, return_raw_response)  # type: ignore
 
     def _set_api_key(self, api_key):
         """Fetch API key from environment variable NUCLEUS_API_KEY if not set"""
