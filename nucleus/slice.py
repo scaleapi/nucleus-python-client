@@ -11,7 +11,6 @@ from nucleus.job import AsyncJob
 from nucleus.utils import (
     KeyErrorDict,
     convert_export_payload,
-    format_dataset_item_response,
     format_scale_task_info_response,
     paginate_generator,
 )
@@ -212,7 +211,6 @@ class Slice:
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
                 yield ia
-
 
     def items_and_annotations(
         self,
