@@ -4,14 +4,13 @@ from typing import Dict, Iterable, List, Set, Tuple, Union
 import requests
 
 from nucleus.annotation import Annotation
-from nucleus.constants import EXPORTED_ROWS, ITEMS_KEY
+from nucleus.constants import EXPORT_FOR_TRAINING_KEY, EXPORTED_ROWS, ITEMS_KEY
 from nucleus.dataset_item import DatasetItem
 from nucleus.errors import NucleusAPIError
 from nucleus.job import AsyncJob
 from nucleus.utils import (
     KeyErrorDict,
     convert_export_payload,
-    format_dataset_item_response,
     format_scale_task_info_response,
     paginate_generator,
 )
@@ -203,13 +202,15 @@ class Slice:
                     }
                 }]
         """
-        for item in self.items_generator():
-            yield format_dataset_item_response(
-                self._client.dataitem_ref_id(
-                    dataset_id=self.dataset_id,
-                    reference_id=item.reference_id,
-                )
-            )
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"slice/{self.id}/exportForTrainingPage",
+            result_key=EXPORT_FOR_TRAINING_KEY,
+            page_size=100000,
+        )
+        for data in json_generator:
+            for ia in convert_export_payload([data], has_predictions=False):
+                yield ia
 
     def items_and_annotations(
         self,
@@ -256,7 +257,7 @@ class Slice:
 
                 List[{
                     "item": DatasetItem,
-                    "predicions": {
+                    "predictions": {
                         "box": List[BoxAnnotation],
                         "polygon": List[PolygonAnnotation],
                         "cuboid": List[CuboidAnnotation],
@@ -271,6 +272,40 @@ class Slice:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS], True)
+
+    def export_predictions_generator(
+        self, model
+    ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Provides a list of all DatasetItems and Predictions in the Slice for the given Model.
+
+        Parameters:
+            model (Model): the nucleus model objects representing the model for which to export predictions.
+
+        Returns:
+            Iterable where each element is a dict containing the DatasetItem
+            and all of its associated Predictions, grouped by type (e.g. box).
+            ::
+
+                List[{
+                    "item": DatasetItem,
+                    "predictions": {
+                        "box": List[BoxAnnotation],
+                        "polygon": List[PolygonAnnotation],
+                        "cuboid": List[CuboidAnnotation],
+                        "segmentation": List[SegmentationAnnotation],
+                        "category": List[CategoryAnnotation],
+                    }
+                }]
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"slice/{self.id}/{model.id}/exportForTrainingPage",
+            result_key=EXPORT_FOR_TRAINING_KEY,
+            page_size=100000,
+        )
+        for data in json_generator:
+            for ip in convert_export_payload([data], has_predictions=True):
+                yield ip
 
     def export_scale_task_info(self):
         """Fetches info for all linked Scale tasks of items/scenes in the slice.
