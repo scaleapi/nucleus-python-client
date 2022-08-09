@@ -397,6 +397,31 @@ TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION = [
     }
 ]
 
+TEST_SCENE_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Scene Category Label ${i}",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "taxonomy_name": "[Pytest] Scene Category Taxonomy 1",
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS = [
+    {
+        "label": f"[Pytest] Scene Category Label ${i}",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+    }
+    for i in range(len(TEST_IMG_URLS))
+]
+
+TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS = [
+    {
+        "label": "[Pytest] Scene Category Label 0",
+        "reference_id": reference_id_from_url(TEST_IMG_URLS[0]),
+        "taxonomy_name": "[Pytest] Scene Category Taxonomy Nonexistent",
+    }
+]
+
 TEST_MULTICATEGORY_ANNOTATIONS = [
     {
         "labels": [
@@ -572,6 +597,12 @@ TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION = [
         "confidence": 0.10,
     }
 ]
+
+TEST_SCENE_CATEGORY_PREDICTIONS = TEST_SCENE_CATEGORY_ANNOTATIONS
+
+TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS = TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS
+
+TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS = TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
 

@@ -31,6 +31,9 @@ from .helpers import (
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
     TEST_POLYGON_ANNOTATIONS,
+    TEST_SCENE_CATEGORY_ANNOTATIONS,
+    TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS,
+    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
     assert_category_annotation_matches_dict,
@@ -286,6 +289,41 @@ def test_default_multicategory_gt_upload(dataset):
     response_annotation = response[0]
     assert_multicategory_annotation_matches_dict(
         response_annotation, TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
+    )
+
+
+def test_scene_category_gt_upload(dataset):
+    annotation = SceneCategoryAnnotation.from_json(TEST_SCENE_CATEGORY_ANNOTATIONS[0])
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+
+def test_default_scene_category_gt_upload(dataset):
+    annotation = SceneCategoryAnnotation.from_json(
+        TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+
+def test_non_existent_taxonomy_scene_category_gt_upload(dataset):
+    annotation = SceneCategoryAnnotation.from_json(
+        TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == dataset.id
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 0
+    assert (
+        f'Taxonomy {TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS[0]["taxonomy_name"]} does not exist in dataset {dataset.id}'
+        in response["errors"][0]
     )
 
 

@@ -11,6 +11,7 @@ from nucleus import (
     ModelRun,
     Point,
     PolygonPrediction,
+    SceneCategoryPrediction,
     Segment,
     SegmentationPrediction,
 )
@@ -31,6 +32,9 @@ from .helpers import (
     TEST_MODEL_RUN,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
     TEST_POLYGON_PREDICTIONS,
+    TEST_SCENE_CATEGORY_PREDICTIONS,
+    TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS,
+    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS,
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
@@ -68,6 +72,16 @@ def test_reprs():
     [
         test_repr(CategoryPrediction.from_json(_))
         for _ in TEST_DEFAULT_CATEGORY_PREDICTIONS
+    ]
+
+    [
+        test_repr(SceneCategoryPrediction.from_json(_))
+        for _ in TEST_SCENE_CATEGORY_PREDICTIONS
+    ]
+
+    [
+        test_repr(SceneCategoryPrediction.from_json(_))
+        for _ in TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS
     ]
 
 
@@ -231,6 +245,40 @@ def test_non_existent_taxonomy_category_gt_upload(model_run):
     assert response["predictions_ignored"] == 0
     assert (
         f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
+        in response["errors"][0]
+    )
+
+
+def test_scene_category_pred_upload(model_run):
+    prediction = SceneSceneCategoryPrediction.from_json(TEST_SCENE_CATEGORY_PREDICTIONS[0])
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+
+def test_default_scene_category_pred_upload(model_run):
+    prediction = SceneCategoryPrediction.from_json(
+        TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+
+def test_non_existent_taxonomy_scene_category_pred_upload(model_run):
+    prediction = SceneCategoryPrediction.from_json(
+        TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS[0]
+    )
+    response = model_run.predict(annotations=[prediction])
+    assert response["model_run_id"] == model_run.model_run_id
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 0
+    assert (
+        f'Taxonomy {TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS[0]["taxonomy_name"]} does not exist in dataset'
         in response["errors"][0]
     )
 

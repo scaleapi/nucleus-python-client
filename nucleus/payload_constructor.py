@@ -32,6 +32,7 @@ from .prediction import (
     CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 )
 from .scene import LidarScene, VideoScene
@@ -112,6 +113,7 @@ def construct_box_predictions_payload(
             PolygonPrediction,
             CuboidPrediction,
             CategoryPrediction,
+            SceneCategoryPrediction,
         ]
     ],
     update: bool,

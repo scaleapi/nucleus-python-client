@@ -52,6 +52,7 @@ from .prediction import (
     KeypointsPrediction,
     LinePrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 )
 from .scene import LidarScene, VideoScene
@@ -112,6 +113,7 @@ def format_prediction_response(
             KeypointsPrediction,
             CuboidPrediction,
             CategoryPrediction,
+            SceneCategoryPrediction,
             SegmentationPrediction,
         ]
     ],
@@ -138,6 +140,7 @@ def format_prediction_response(
             Type[CuboidPrediction],
             Type[CategoryPrediction],
             Type[KeypointsPrediction],
+            Type[SceneCategoryPrediction],
             Type[SegmentationPrediction],
         ],
     ] = {
@@ -147,6 +150,7 @@ def format_prediction_response(
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
         KEYPOINTS_TYPE: KeypointsPrediction,
+        SCENECATEGORY_TYPE: SceneCategoryPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
     for type_key in annotation_payload:

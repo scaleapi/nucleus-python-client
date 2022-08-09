@@ -16,6 +16,7 @@ from .annotation import (
     Point,
     Point3D,
     PolygonAnnotation,
+    SceneCategoryAnnotation,
     Segment,
     SegmentationAnnotation,
 )
@@ -61,6 +62,7 @@ def from_json(payload: dict):
         KEYPOINTS_TYPE: KeypointsPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
+        SCENECATEGORY_TYPE: SceneCategoryPrediction,
     }
     type_key = payload.get(TYPE_KEY, None)
     PredictionCls = type_key_to_type.get(type_key, SegmentationPrediction)
@@ -571,6 +573,47 @@ class CategoryPrediction(CategoryAnnotation):
         )
 
 
+class SceneCategoryPrediction(SceneCategoryAnnotation):
+    """A prediction of a category for a scene.
+
+    Parameters:
+        label: The label for this annotation (e.g. action, subject, scenario).
+        reference_id: The reference ID of the scene you wish to apply this annotation to.
+        taxonomy_name: The name of the taxonomy this annotation conforms to.
+          See :meth:`Dataset.add_taxonomy`.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        reference_id: str,
+        taxonomy_name: Optional[str] = None,
+    ):
+        super().__init__(
+            label=label,
+            taxonomy_name=taxonomy_name,
+            reference_id=reference_id,
+            metadata=metadata,
+        )
+
+    def to_payload(self) -> dict:
+        payload = super().to_payload()
+        if self.confidence is not None:
+            payload[CONFIDENCE_KEY] = self.confidence
+        if self.class_pdf is not None:
+            payload[CLASS_PDF_KEY] = self.class_pdf
+
+        return payload
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
+        )
+
+
 Prediction = Union[
     BoxPrediction,
     LinePrediction,
@@ -578,6 +621,7 @@ Prediction = Union[
     KeypointsPrediction,
     CuboidPrediction,
     CategoryPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 ]
 
@@ -594,6 +638,9 @@ class PredictionList:
     )
     cuboid_predictions: List[CuboidPrediction] = field(default_factory=list)
     category_predictions: List[CategoryPrediction] = field(
+        default_factory=list
+    )
+    scene_category_predictions: List[CategoryPrediction] = field(
         default_factory=list
     )
     segmentation_predictions: List[SegmentationPrediction] = field(
@@ -617,6 +664,8 @@ class PredictionList:
                 self.cuboid_predictions.append(prediction)
             elif isinstance(prediction, CategoryPrediction):
                 self.category_predictions.append(prediction)
+            elif isinstance(prediction, SceneCategoryPrediction):
+                self.scene_category_predictions.append(prediction)
             else:
                 assert isinstance(
                     prediction, SegmentationPrediction
@@ -631,5 +680,6 @@ class PredictionList:
             + len(self.keypoints_predictions)
             + len(self.cuboid_predictions)
             + len(self.category_predictions)
+            + len(self.scene_category_predictions)
             + len(self.segmentation_predictions)
         )
