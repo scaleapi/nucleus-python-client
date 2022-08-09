@@ -17,7 +17,6 @@ from .constants import (
     REFERENCE_ID_KEY,
     TYPE_KEY,
     UPLOAD_TO_SCALE_KEY,
-    URL_KEY,
 )
 
 
