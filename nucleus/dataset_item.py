@@ -163,9 +163,9 @@ class DatasetItem:  # pylint: disable=R0902
 
         if is_scene:
             if self.image_location:
-                payload[URL_KEY] = self.image_location
+                payload[IMAGE_URL_KEY] = self.image_location
             elif self.pointcloud_location:
-                payload[URL_KEY] = self.pointcloud_location
+                payload[POINTCLOUD_URL_KEY] = self.pointcloud_location
             payload[TYPE_KEY] = self.type.value
             if self.camera_params:
                 payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
