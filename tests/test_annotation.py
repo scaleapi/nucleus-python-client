@@ -14,6 +14,7 @@ from nucleus import (
     Segment,
     SegmentationAnnotation,
 )
+from nucleus.annotation import SceneCategoryAnnotation
 from nucleus.constants import ERROR_PAYLOAD
 from nucleus.errors import DuplicateIDError
 from nucleus.job import AsyncJob, JobError
@@ -25,15 +26,15 @@ from .helpers import (
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_ANNOTATIONS,
     TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS,
+    TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS,
     TEST_IMG_URLS,
     TEST_KEYPOINTS_ANNOTATIONS,
     TEST_LINE_ANNOTATIONS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
+    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SCENE_CATEGORY_ANNOTATIONS,
-    TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS,
-    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_box_annotation_matches_dict,
     assert_category_annotation_matches_dict,
@@ -84,6 +85,7 @@ def dataset(CLIENT):
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
+
     response = ds.add_taxonomy(
         "[Pytest] MultiCategory Taxonomy 1",
         "multicategory",
@@ -92,6 +94,16 @@ def dataset(CLIENT):
             for i in range((len(TEST_IMG_URLS) + 1))
         ],
     )
+
+    response = ds.add_taxonomy(
+        "[Pytest] Scene Category Taxonomy 1",
+        "category",
+        [
+            f"[Pytest] Scene Category Label ${i}"
+            for i in range((len(TEST_IMG_URLS)))
+        ],
+    )
+
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
@@ -293,7 +305,9 @@ def test_default_multicategory_gt_upload(dataset):
 
 
 def test_scene_category_gt_upload(dataset):
-    annotation = SceneCategoryAnnotation.from_json(TEST_SCENE_CATEGORY_ANNOTATIONS[0])
+    annotation = SceneCategoryAnnotation.from_json(
+        TEST_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
     response = dataset.annotate(annotations=[annotation])
 
     assert response["dataset_id"] == dataset.id

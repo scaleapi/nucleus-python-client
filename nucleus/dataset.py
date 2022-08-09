@@ -10,6 +10,7 @@ from nucleus.prediction import (
     CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
     from_json,
 )

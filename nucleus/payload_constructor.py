@@ -6,6 +6,7 @@ from .annotation import (
     CuboidAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
+    SceneCategoryAnnotation,
     SegmentationAnnotation,
 )
 from .constants import (
@@ -70,6 +71,7 @@ def construct_annotation_payload(
             CuboidAnnotation,
             CategoryAnnotation,
             MultiCategoryAnnotation,
+            SceneCategoryAnnotation,
             SegmentationAnnotation,
         ]
     ],

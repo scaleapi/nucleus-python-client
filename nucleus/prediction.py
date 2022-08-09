@@ -43,6 +43,7 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
+    SCENE_CATEGORY_TYPE,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -62,7 +63,7 @@ def from_json(payload: dict):
         KEYPOINTS_TYPE: KeypointsPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
-        SCENECATEGORY_TYPE: SceneCategoryPrediction,
+        SCENE_CATEGORY_TYPE: SceneCategoryPrediction,
     }
     type_key = payload.get(TYPE_KEY, None)
     PredictionCls = type_key_to_type.get(type_key, SegmentationPrediction)
@@ -583,36 +584,6 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
           See :meth:`Dataset.add_taxonomy`.
     """
 
-    def __init__(
-        self,
-        label: str,
-        reference_id: str,
-        taxonomy_name: Optional[str] = None,
-    ):
-        super().__init__(
-            label=label,
-            taxonomy_name=taxonomy_name,
-            reference_id=reference_id,
-            metadata=metadata,
-        )
-
-    def to_payload(self) -> dict:
-        payload = super().to_payload()
-        if self.confidence is not None:
-            payload[CONFIDENCE_KEY] = self.confidence
-        if self.class_pdf is not None:
-            payload[CLASS_PDF_KEY] = self.class_pdf
-
-        return payload
-
-    @classmethod
-    def from_json(cls, payload: dict):
-        return cls(
-            label=payload.get(LABEL_KEY, 0),
-            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
-            reference_id=payload[REFERENCE_ID_KEY],
-        )
-
 
 Prediction = Union[
     BoxPrediction,
@@ -640,7 +611,7 @@ class PredictionList:
     category_predictions: List[CategoryPrediction] = field(
         default_factory=list
     )
-    scene_category_predictions: List[CategoryPrediction] = field(
+    scene_category_predictions: List[SceneCategoryPrediction] = field(
         default_factory=list
     )
     segmentation_predictions: List[SegmentationPrediction] = field(

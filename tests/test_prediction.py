@@ -25,16 +25,16 @@ from .helpers import (
     TEST_CATEGORY_PREDICTIONS,
     TEST_DATASET_NAME,
     TEST_DEFAULT_CATEGORY_PREDICTIONS,
+    TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS,
     TEST_IMG_URLS,
     TEST_KEYPOINTS_PREDICTIONS,
     TEST_LINE_PREDICTIONS,
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
+    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS,
     TEST_POLYGON_PREDICTIONS,
     TEST_SCENE_CATEGORY_PREDICTIONS,
-    TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS,
-    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS,
     TEST_SEGMENTATION_PREDICTIONS,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
@@ -105,6 +105,15 @@ def model_run(CLIENT):
         "[Pytest] Category Taxonomy 1",
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
+    )
+
+    response = ds.add_taxonomy(
+        "[Pytest] Scene Category Taxonomy 1",
+        "category",
+        [
+            f"[Pytest] Scene Category Label ${i}"
+            for i in range((len(TEST_IMG_URLS)))
+        ],
     )
 
     model = CLIENT.create_model(
@@ -250,7 +259,9 @@ def test_non_existent_taxonomy_category_gt_upload(model_run):
 
 
 def test_scene_category_pred_upload(model_run):
-    prediction = SceneSceneCategoryPrediction.from_json(TEST_SCENE_CATEGORY_PREDICTIONS[0])
+    prediction = SceneCategoryPrediction.from_json(
+        TEST_SCENE_CATEGORY_PREDICTIONS[0]
+    )
     response = model_run.predict(annotations=[prediction])
 
     assert response["model_run_id"] == model_run.model_run_id

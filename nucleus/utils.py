@@ -18,6 +18,7 @@ from nucleus.annotation import (
     LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
+    SceneCategoryAnnotation,
     SegmentationAnnotation,
 )
 from nucleus.errors import NucleusAPIError
@@ -41,6 +42,7 @@ from .constants import (
     PREDICTIONS_KEY,
     REFERENCE_ID_KEY,
     SCALE_TASK_INFO_KEY,
+    SCENE_CATEGORY_TYPE,
     SCENE_KEY,
     SEGMENTATION_TYPE,
 )
@@ -150,7 +152,7 @@ def format_prediction_response(
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
         KEYPOINTS_TYPE: KeypointsPrediction,
-        SCENECATEGORY_TYPE: SceneCategoryPrediction,
+        SCENE_CATEGORY_TYPE: SceneCategoryPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
     for type_key in annotation_payload:
@@ -271,6 +273,11 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
             multicategory[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[MULTICATEGORY_TYPE].append(
                 MultiCategoryAnnotation.from_json(multicategory)
+            )
+        for category in row[SCENE_CATEGORY_TYPE]:
+            category[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            annotations[CATEGORY_TYPE].append(
+                SceneCategoryAnnotation.from_json(category)
             )
         return_payload_row[
             ANNOTATIONS_KEY if not has_predictions else PREDICTIONS_KEY

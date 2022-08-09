@@ -30,6 +30,7 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
+    SCENE_CATEGORY_TYPE,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -40,6 +41,9 @@ from .constants import (
     YAW_KEY,
     Z_KEY,
 )
+
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
 
 
 class Annotation:
@@ -62,7 +66,7 @@ class Annotation:
             CUBOID_TYPE: CuboidAnnotation,
             CATEGORY_TYPE: CategoryAnnotation,
             MULTICATEGORY_TYPE: MultiCategoryAnnotation,
-            SCENECATEGORY_TYPE: SceneCategoryAnnotation,
+            SCENE_CATEGORY_TYPE: SceneCategoryAnnotation,
         }
         type_key = payload.get(TYPE_KEY, None)
         AnnotationCls = type_key_to_type.get(type_key, SegmentationAnnotation)
@@ -802,6 +806,7 @@ class AnnotationTypes(Enum):
     CUBOID = CUBOID_TYPE
     CATEGORY = CATEGORY_TYPE
     MULTICATEGORY = MULTICATEGORY_TYPE
+    SCENE_CATEGORY = SCENE_CATEGORY_TYPE
 
 
 @dataclass
@@ -926,7 +931,7 @@ class SceneCategoryAnnotation(CategoryAnnotation):
     def to_payload(self) -> dict:
         payload = {
             LABEL_KEY: self.label,
-            TYPE_KEY: CATEGORY_TYPE,
+            TYPE_KEY: SCENE_CATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: {},
