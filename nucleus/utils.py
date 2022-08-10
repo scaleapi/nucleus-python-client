@@ -18,7 +18,6 @@ from nucleus.annotation import (
     LineAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
-    SceneCategoryAnnotation,
     SegmentationAnnotation,
 )
 from nucleus.errors import NucleusAPIError
@@ -273,11 +272,6 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
             multicategory[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[MULTICATEGORY_TYPE].append(
                 MultiCategoryAnnotation.from_json(multicategory)
-            )
-        for category in row[SCENE_CATEGORY_TYPE]:
-            category[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[CATEGORY_TYPE].append(
-                SceneCategoryAnnotation.from_json(category)
             )
         return_payload_row[
             ANNOTATIONS_KEY if not has_predictions else PREDICTIONS_KEY

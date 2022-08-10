@@ -488,9 +488,6 @@ def test_append_and_export(dataset):
     multicategory_annotation = MultiCategoryAnnotation.from_json(
         TEST_MULTICATEGORY_ANNOTATIONS[0]
     )
-    scene_category_annotation = SceneCategoryAnnotation.from_json(
-        TEST_SCENE_CATEGORY_ANNOTATIONS[0]
-    )
 
     ds_items = [
         DatasetItem(
@@ -509,7 +506,6 @@ def test_append_and_export(dataset):
             segmentation_annotation,
             category_annotation,
             multicategory_annotation,
-            scene_category_annotation,
         ]
     )
     # We don't export everything on segmentation annotations in order to speed up export.
