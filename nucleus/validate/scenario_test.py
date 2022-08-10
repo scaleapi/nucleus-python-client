@@ -50,6 +50,17 @@ class ScenarioTest:
     baseline_model_id: Optional[str] = None
 
     @classmethod
+    def from_id(cls, unit_test_id: str, connection: Connection):
+        # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
+        response = connection.get(
+            f"validate/scenario_test/{unit_test_id}/info",
+        )
+        instance = cls(unit_test_id, connection)
+        instance.name = response[NAME_KEY]
+        instance.slice_id = response[SLICE_ID_KEY]
+        return instance
+
+    @classmethod
     def from_response(cls, response, connection: Connection):
         instance = cls(response["id"], connection)
         instance.name = response[NAME_KEY]

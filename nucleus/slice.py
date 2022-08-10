@@ -86,9 +86,16 @@ class Slice:
         instance = cls(request["id"], client)
         instance._name = request.get("name", None)
         instance._dataset_id = request.get("dataset_id", None)
-        instance._created_at = datetime.datetime.fromisoformat(
-            request.get("created_at").rstrip("Z")
-        )
+        created_at_str = request.get("created_at").rstrip("Z")
+        if hasattr(datetime.datetime, "fromisoformat"):
+            instance._created_at = datetime.datetime.fromisoformat(
+                created_at_str
+            )
+        else:
+            fmt_str = r"%Y-%m-%dT%H:%M:%S.%f"  # replaces the fromisoformatm, not available in python 3.6
+            instance._created_at = datetime.datetime.strptime(
+                created_at_str, fmt_str
+            )
         instance._pending_job_count = request.get("pending_job_count", None)
         return instance
 

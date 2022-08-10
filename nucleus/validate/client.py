@@ -107,13 +107,17 @@ class Validate:
             ).dict(),
             "validate/scenario_test",
         )
-        return ScenarioTest(response[SCENARIO_TEST_ID_KEY], self.connection)
+        return ScenarioTest.from_id(
+            response[SCENARIO_TEST_ID_KEY], self.connection
+        )
 
     def get_scenario_test(self, scenario_test_id: str) -> ScenarioTest:
         response = self.connection.get(
             f"validate/scenario_test/{scenario_test_id}",
         )
-        return ScenarioTest(response["unit_test"]["id"], self.connection)
+        return ScenarioTest.from_id(
+            response["unit_test"]["id"], self.connection
+        )
 
     @property
     def scenario_tests(self) -> List[ScenarioTest]:
