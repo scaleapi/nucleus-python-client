@@ -252,7 +252,6 @@ class SegmentationToPolyIOU(SegmentationMaskToPolyMetric):
             metric = SegmentationIOU(
                 self.annotation_filters,
                 self.prediction_filters,
-                self.iou_threshold,
             )
         else:
             metric = PolygonIOU(

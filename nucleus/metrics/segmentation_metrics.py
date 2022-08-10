@@ -38,7 +38,7 @@ class SegmentationMaskMetric(Metric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
+        iou_threshold: Optional[float] = None,
     ):
         """Initializes PolygonMetric abstract object.
 
@@ -61,6 +61,8 @@ class SegmentationMaskMetric(Metric):
                 each describe a single column predicate. The list of inner predicates is interpreted as a conjunction
                 (AND), forming a more selective `and` multiple field predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
+            iou_threshold: Threshold to consider detections under IOU to be false positives. None if no
+                non-max-suppression is supposed to happen.
         """
         # TODO -> add custom filtering to Segmentation(Annotation|Prediction).annotations.(metadata|label)
         super().__init__(annotation_filters, prediction_filters)
@@ -135,7 +137,7 @@ class SegmentationMaskMetric(Metric):
         annotation_img,
         prediction,
         prediction_img,
-        iou_threshold,
+        iou_threshold=None,
     ) -> Tuple[np.ndarray, Set[int]]:
         """This calculates a confusion matrix with ground_truth_index X predicted_index summary
 
@@ -166,17 +168,19 @@ class SegmentationMaskMetric(Metric):
         confusion = self._filter_confusion_matrix(
             confusion, annotation, prediction
         )
-        confusion = non_max_suppress_confusion(confusion, iou_threshold)
-        false_positive = Segment(FALSE_POSITIVES, index=confusion.shape[0] - 1)
-        if annotation.annotations[-1].label != FALSE_POSITIVES:
-            annotation.annotations.append(false_positive)
-            if annotation.annotations is not prediction.annotations:
-                # Probably likely that this structure is re-used -> check if same list instance and only append once
-                # TODO(gunnar): Should this uniqueness be handled by the base class?
-                prediction.annotations.append(false_positive)
+        if iou_threshold is not None:
+            confusion = non_max_suppress_confusion(confusion, iou_threshold)
+            false_positive = Segment(
+                FALSE_POSITIVES, index=confusion.shape[0] - 1
+            )
+            if annotation.annotations[-1].label != FALSE_POSITIVES:
+                annotation.annotations.append(false_positive)
+                if annotation.annotations is not prediction.annotations:
+                    # Probably likely that this structure is re-used -> check if same list instance and only append once
+                    # TODO(gunnar): Should this uniqueness be handled by the base class?
+                    prediction.annotations.append(false_positive)
 
         # TODO(gunnar): Detect non_taxonomy classes for segmentation as well as instance segmentation
-        non_taxonomy_classes = set()
         if self._is_instance_segmentation(annotation, prediction):
             (
                 confusion,
@@ -198,6 +202,12 @@ class SegmentationMaskMetric(Metric):
                 for segment in annotation.annotations
                 if segment.label in missing_or_filtered_labels
             }
+            missing_indexes = (
+                set(range(confusion.shape[0]))
+                - set(a.index for a in annotation.annotations)
+                - set(a.index for a in prediction.annotations)
+            )
+            non_taxonomy_classes.update(missing_indexes)
 
         return confusion, non_taxonomy_classes
 
@@ -246,7 +256,6 @@ class SegmentationIOU(SegmentationMaskMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
-        iou_threshold: float = 0.5,
     ):
         """Initializes PolygonIOU object.
 
@@ -273,7 +282,6 @@ class SegmentationIOU(SegmentationMaskMetric):
         super().__init__(
             annotation_filters,
             prediction_filters,
-            iou_threshold,
         )
 
     def _metric_impl(
@@ -288,18 +296,14 @@ class SegmentationIOU(SegmentationMaskMetric):
             annotation_img,
             prediction,
             prediction_img,
-            self.iou_threshold,
         )
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            tp = confusion[:-1, :-1]
-            fp = confusion[:, -1]
-            iou = np.diag(tp) / (
-                tp.sum(axis=1) + tp.sum(axis=0) + fp.sum() - np.diag(tp)
+            iou = np.diag(confusion) / (
+                confusion.sum(axis=1)
+                + confusion.sum(axis=0)
+                - np.diag(confusion)
             )
-            non_taxonomy_classes = non_taxonomy_classes - {
-                confusion.shape[1] - 1
-            }
             iou.put(list(non_taxonomy_classes), np.nan)
             mean_iou = np.nanmean(iou)
             return ScalarResult(value=mean_iou, weight=annotation_img.size)  # type: ignore

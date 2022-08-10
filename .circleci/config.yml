@@ -11,7 +11,7 @@ jobs:
       # Important: Don't change this otherwise we will stop testing the earliest
       # python version we have to support.
       - image: python:3.6-buster
-    resource_class: small
+    resource_class: medium
     parallelism: 6
     steps:
       - checkout # checkout source code to working directory

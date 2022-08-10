@@ -90,7 +90,7 @@ def compose_input_variables(setup: SegmentationTestSetup):
 def test_segmentation_iou(setup):
     annotation, prediction, url_to_img = compose_input_variables(setup)
 
-    metric = SegmentationIOU(iou_threshold=setup.iou_threshold)
+    metric = SegmentationIOU()
     metric.loader = InMemoryLoader(url_to_img)
     result = metric(
         AnnotationList(segmentation_annotations=[annotation]),
