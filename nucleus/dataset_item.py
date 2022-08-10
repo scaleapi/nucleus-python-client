@@ -17,6 +17,7 @@ from .constants import (
     REFERENCE_ID_KEY,
     TYPE_KEY,
     UPLOAD_TO_SCALE_KEY,
+    URL_KEY,
 )
 
 
@@ -138,11 +139,21 @@ class DatasetItem:  # pylint: disable=R0902
         image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
             ORIGINAL_IMAGE_URL_KEY, None
         )
+        pointcloud_url = payload.get(POINTCLOUD_URL_KEY, None)
+
+        # handle case when re-converting Scene.from_json
+        url = payload.get(URL_KEY, None)
+        if url and not image_url and not pointcloud_url:
+            if url.split(".")[-1] in ("jpg", "png"):
+                image_url = url
+            elif url.split(".")[-1] in ("json",):
+                pointcloud_url = url
+
         if BACKEND_REFERENCE_ID_KEY in payload:
             payload[REFERENCE_ID_KEY] = payload[BACKEND_REFERENCE_ID_KEY]
         return cls(
             image_location=image_url,
-            pointcloud_location=payload.get(POINTCLOUD_URL_KEY, None),
+            pointcloud_location=pointcloud_url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
@@ -162,9 +173,9 @@ class DatasetItem:  # pylint: disable=R0902
 
         if is_scene:
             if self.image_location:
-                payload[IMAGE_URL_KEY] = self.image_location
+                payload[URL_KEY] = self.image_location
             elif self.pointcloud_location:
-                payload[POINTCLOUD_URL_KEY] = self.pointcloud_location
+                payload[URL_KEY] = self.pointcloud_location
             payload[TYPE_KEY] = self.type.value
             if self.camera_params:
                 payload[CAMERA_PARAMS_KEY] = self.camera_params.to_payload()
