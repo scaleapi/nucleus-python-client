@@ -897,7 +897,7 @@ class MultiCategoryAnnotation(Annotation):
 
 
 @dataclass
-class SceneCategoryAnnotation(CategoryAnnotation):
+class SceneCategoryAnnotation(Annotation):
     """A scene category annotation.
 
     ::
@@ -916,6 +916,31 @@ class SceneCategoryAnnotation(CategoryAnnotation):
         taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
     """
+
+    label: str
+    reference_id: str
+    taxonomy_name: Optional[str] = None
+    # todo(546247): add metadata support when required
+    metadata: Optional[Dict] = {}
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            label=payload[LABEL_KEY],
+            reference_id=payload[REFERENCE_ID_KEY],
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+        )
+
+    def to_payload(self) -> dict:
+        payload = {
+            LABEL_KEY: self.label,
+            TYPE_KEY: CATEGORY_TYPE,
+            GEOMETRY_KEY: {},
+            REFERENCE_ID_KEY: self.reference_id,
+        }
+        if self.taxonomy_name is not None:
+            payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
+        return payload
 
 
 @dataclass
