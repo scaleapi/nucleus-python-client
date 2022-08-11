@@ -5,14 +5,6 @@ from pydantic import validator
 from nucleus.pydantic_base import ImmutableModel
 
 
-class EvalDetail(ImmutableModel):
-    id: str
-
-
-class GetEvalHistory(ImmutableModel):
-    evaluations: List[EvalDetail]
-
-
 class EvaluationResult(ImmutableModel):
     item_ref_id: str
     score: float
