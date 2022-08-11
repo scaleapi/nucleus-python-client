@@ -30,7 +30,6 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
-    SCENE_CATEGORY_TYPE,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -66,7 +65,6 @@ class Annotation:
             CUBOID_TYPE: CuboidAnnotation,
             CATEGORY_TYPE: CategoryAnnotation,
             MULTICATEGORY_TYPE: MultiCategoryAnnotation,
-            SCENE_CATEGORY_TYPE: SceneCategoryAnnotation,
         }
         type_key = payload.get(TYPE_KEY, None)
         AnnotationCls = type_key_to_type.get(type_key, SegmentationAnnotation)
@@ -806,7 +804,6 @@ class AnnotationTypes(Enum):
     CUBOID = CUBOID_TYPE
     CATEGORY = CATEGORY_TYPE
     MULTICATEGORY = MULTICATEGORY_TYPE
-    SCENE_CATEGORY = SCENE_CATEGORY_TYPE
 
 
 @dataclass
@@ -919,26 +916,6 @@ class SceneCategoryAnnotation(CategoryAnnotation):
         taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
     """
-
-    @classmethod
-    def from_json(cls, payload: dict):
-        return cls(
-            label=payload[LABEL_KEY],
-            reference_id=payload[REFERENCE_ID_KEY],
-            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
-        )
-
-    def to_payload(self) -> dict:
-        payload = {
-            LABEL_KEY: self.label,
-            TYPE_KEY: SCENE_CATEGORY_TYPE,
-            GEOMETRY_KEY: {},
-            REFERENCE_ID_KEY: self.reference_id,
-            METADATA_KEY: {},
-        }
-        if self.taxonomy_name is not None:
-            payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
-        return payload
 
 
 @dataclass

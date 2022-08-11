@@ -41,7 +41,6 @@ from .constants import (
     PREDICTIONS_KEY,
     REFERENCE_ID_KEY,
     SCALE_TASK_INFO_KEY,
-    SCENE_CATEGORY_TYPE,
     SCENE_KEY,
     SEGMENTATION_TYPE,
 )
@@ -151,7 +150,6 @@ def format_prediction_response(
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
         KEYPOINTS_TYPE: KeypointsPrediction,
-        SCENE_CATEGORY_TYPE: SceneCategoryPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
     for type_key in annotation_payload:

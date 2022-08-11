@@ -13,6 +13,7 @@ TEST_MODEL_NAME = "[PyTest] Test Model"
 TEST_MODEL_RUN = "[PyTest] Test Model Run"
 TEST_DATASET_NAME = "[PyTest] Test Dataset"
 TEST_DATASET_3D_NAME = "[PyTest] Test Dataset 3D"
+TEST_VIDEO_DATASET_NAME = "[PyTest] Test Video Dataset"
 TEST_SLICE_NAME = "[PyTest] Test Slice"
 TEST_PROJECT_ID = "60b699d70f139e002dd31bfc"
 
@@ -200,6 +201,33 @@ TEST_VIDEO_SCENES_INVALID_URLS = {
             "video_url": TEST_VIDEO_URL + "nonsense",
             "metadata": {"timestamp": "1234", "weather": "rainy"},
         },
+    ],
+    "update": False,
+}
+
+
+TEST_VIDEO_SCENES_FOR_ANNOTATION = {
+    "scenes": [
+        {
+            "reference_id": f"video_ann_scene_{i}",
+            "frame_rate": 15,
+            "frames": [
+                {
+                    "image_url": TEST_IMG_URLS[0],
+                    "type": "image",
+                    "reference_id": f"video_frame_{i}_0",
+                    "metadata": {"time": 123, "foo": "bar"},
+                },
+                {
+                    "image_url": TEST_IMG_URLS[1],
+                    "type": "image",
+                    "reference_id": f"video_frame_{i}_1",
+                    "metadata": {"time": 124, "foo": "bar_2"},
+                },
+            ],
+            "metadata": {"timestamp": str(i * 1000), "weather": "rainy"},
+        }
+        for i in range(5)
     ],
     "update": False,
 }
@@ -397,27 +425,32 @@ TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION = [
     }
 ]
 
+TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD = [
+    "[Pytest] Scene Category Taxonomy 1",
+    "category",
+    [
+        f"[Pytest] Scene Category Label ${i}"
+        for i in range((len(TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"])))
+    ],
+]
+
 TEST_SCENE_CATEGORY_ANNOTATIONS = [
     {
         "label": f"[Pytest] Scene Category Label ${i}",
-        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
+        "reference_id": TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"][i][
+            "reference_id"
+        ],
         "taxonomy_name": "[Pytest] Scene Category Taxonomy 1",
     }
-    for i in range(len(TEST_IMG_URLS))
-]
-
-TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS = [
-    {
-        "label": f"[Pytest] Scene Category Label ${i}",
-        "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
-    }
-    for i in range(len(TEST_IMG_URLS))
+    for i in range(len(TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"]))
 ]
 
 TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS = [
     {
         "label": "[Pytest] Scene Category Label 0",
-        "reference_id": reference_id_from_url(TEST_IMG_URLS[0]),
+        "reference_id": TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"][0][
+            "reference_id"
+        ],
         "taxonomy_name": "[Pytest] Scene Category Taxonomy Nonexistent",
     }
 ]
@@ -599,10 +632,6 @@ TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION = [
 ]
 
 TEST_SCENE_CATEGORY_PREDICTIONS = TEST_SCENE_CATEGORY_ANNOTATIONS
-
-TEST_DEFAULT_SCENE_CATEGORY_PREDICTIONS = (
-    TEST_DEFAULT_SCENE_CATEGORY_ANNOTATIONS
-)
 
 TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS = (
     TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS

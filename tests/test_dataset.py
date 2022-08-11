@@ -9,7 +9,6 @@ from nucleus.annotation import (
     CategoryAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
-    SceneCategoryAnnotation,
     SegmentationAnnotation,
 )
 from nucleus.constants import (
@@ -39,7 +38,6 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
-    TEST_SCENE_CATEGORY_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
     assert_partial_equality,
     reference_id_from_url,
@@ -62,15 +60,6 @@ def dataset(CLIENT):
         [
             f"[Pytest] MultiCategory Label ${i}"
             for i in range((len(TEST_IMG_URLS) + 1))
-        ],
-    )
-
-    response = ds.add_taxonomy(
-        "[Pytest] Scene Category Taxonomy 1",
-        "category",
-        [
-            f"[Pytest] Scene Category Label ${i}"
-            for i in range((len(TEST_IMG_URLS)))
         ],
     )
 

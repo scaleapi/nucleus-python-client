@@ -43,7 +43,6 @@ from .constants import (
     POLYGON_TYPE,
     POSITION_KEY,
     REFERENCE_ID_KEY,
-    SCENE_CATEGORY_TYPE,
     TAXONOMY_NAME_KEY,
     TYPE_KEY,
     VERTICES_KEY,
@@ -63,7 +62,6 @@ def from_json(payload: dict):
         KEYPOINTS_TYPE: KeypointsPrediction,
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
-        SCENE_CATEGORY_TYPE: SceneCategoryPrediction,
     }
     type_key = payload.get(TYPE_KEY, None)
     PredictionCls = type_key_to_type.get(type_key, SegmentationPrediction)
