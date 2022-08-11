@@ -1,5 +1,5 @@
 """Data types for Scenario Test Evaluation results."""
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
 
@@ -77,31 +77,30 @@ class ScenarioTestEvaluation:
     status: ScenarioTestEvaluationStatus = field(init=False)
     result: Optional[float] = field(init=False)
     passed: bool = field(init=False)
-    item_evals: List[ScenarioTestItemEvaluation] = field(init=False)
-    connection: InitVar[Connection]
+    connection: Connection = field(init=False, repr=False)
 
-    def __post_init__(self, connection: Connection):
-        # TODO(gunnar): Having the function call /info on every construction is too slow. The original
-        #  endpoint should rather return the necessary human-readable information
-        response = connection.make_request(
+    @classmethod
+    def from_request(cls, response, connection):
+        instance = cls(response["id"])
+        instance.connection = connection
+
+        instance.scenario_test_id = response[SCENARIO_TEST_ID_KEY]
+        instance.eval_function_id = response[EVAL_FUNCTION_ID_KEY]
+        instance.model_id = response[MODEL_ID_KEY]
+        instance.status = ScenarioTestEvaluationStatus(response[STATUS_KEY])
+        instance.result = try_convert_float(response[RESULT_KEY])
+        instance.passed = bool(response[PASS_KEY])
+        return instance
+
+    @property
+    def item_evals(self) -> List[ScenarioTestItemEvaluation]:
+        response = self.connection.make_request(
             {},
             f"validate/eval/{self.id}/info",
             requests_command=requests.get,
         )
-        eval_response = response[SCENARIO_TEST_EVAL_KEY]
         items_response = response[ITEM_EVAL_KEY]
-
-        self.scenario_test_id: str = eval_response[SCENARIO_TEST_ID_KEY]
-        self.eval_function_id: str = eval_response[EVAL_FUNCTION_ID_KEY]
-        self.model_id: str = eval_response[MODEL_ID_KEY]
-        self.status: ScenarioTestEvaluationStatus = (
-            ScenarioTestEvaluationStatus(eval_response[STATUS_KEY])
-        )
-        self.result: Optional[float] = try_convert_float(
-            eval_response[RESULT_KEY]
-        )
-        self.passed: bool = bool(eval_response[PASS_KEY])
-        self.item_evals: List[ScenarioTestItemEvaluation] = [
+        items = [
             ScenarioTestItemEvaluation(
                 evaluation_id=res[EVALUATION_ID_KEY],
                 scenario_test_id=res[SCENARIO_TEST_ID_KEY],
@@ -112,3 +111,4 @@ class ScenarioTestEvaluation:
             )
             for res in items_response
         ]
+        return items
