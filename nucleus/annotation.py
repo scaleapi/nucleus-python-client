@@ -921,7 +921,7 @@ class SceneCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     # todo(546247): add metadata support when required
-    metadata: Optional[Dict] = {}
+    metadata: Optional[Dict] = field(default_factory=dict)
 
     @classmethod
     def from_json(cls, payload: dict):
