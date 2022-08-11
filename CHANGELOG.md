@@ -5,11 +5,26 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.14.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.12) - 2022-07-29
+
+## [0.14.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.12) - 2022-08-11
 
 ### Added
 - Added optional parameter `asynchronous: bool` to `Dataset.update_item_metadata` and  `Dataset.update_scene_metadata`,
 allowing the update to run as a background job when set to `True`
+
+
+## [0.14.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.13) - 2022-08-10
+
+### Fixed
+- Fix payload parsing for scene export
+
+## [0.14.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.12) - 2022-08-05
+
+### Added
+- Added auto-paginated `Slice.export_predictions_generator`
+
+### Fixed
+- Change `{Dataset,Slice}.items_and_annotation_generator` to work with improved paginate endpoint
 
 
 ## [0.14.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.11) - 2022-07-20

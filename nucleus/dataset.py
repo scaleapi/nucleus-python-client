@@ -33,6 +33,7 @@ from .constants import (
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
+    EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
     ITEMS_KEY,
@@ -1250,8 +1251,15 @@ class Dataset:
                     }
                 }]
         """
-        for item in self.items_generator():
-            yield self.refloc(reference_id=item.reference_id)
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/exportForTrainingPage",
+            result_key=EXPORT_FOR_TRAINING_KEY,
+            page_size=100000,
+        )
+        for data in json_generator:
+            for ia in convert_export_payload([data], has_predictions=False):
+                yield ia
 
     def export_embeddings(
         self,

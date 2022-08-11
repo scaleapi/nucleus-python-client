@@ -40,7 +40,11 @@ class Connection:
         return self.make_request(payload, route, requests_command=requests.put)
 
     def make_request(
-        self, payload: dict, route: str, requests_command=requests.post
+        self,
+        payload: dict,
+        route: str,
+        requests_command=requests.post,
+        return_raw_response: bool = False,
     ) -> dict:
         """
         Makes a request to Nucleus endpoint and logs a warning if not
@@ -49,6 +53,7 @@ class Connection:
         :param payload: given payload
         :param route: route for the request
         :param requests_command: requests.post, requests.get, requests.delete
+        :param return_raw_response: return the request's response object entirely
         :return: response JSON
         """
         endpoint = f"{self.endpoint}/{route}"
@@ -72,6 +77,9 @@ class Connection:
 
         if not response.ok:
             self.handle_bad_response(endpoint, requests_command, response)
+
+        if return_raw_response:
+            return response
 
         return response.json()
 
