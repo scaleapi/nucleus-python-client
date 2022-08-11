@@ -2021,7 +2021,7 @@ metrics = ["Shapely", "rasterio"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.6.2,<4.0"
-content-hash = "5d4e7900f82ff2f4f4840b8808b27202325fa15d4722c515c6d895f42c809471"
+content-hash = "f5f895a4f96b81af8c547cfc08bded1261d4538021157b2df442d6ad37f8ea0f"
 
 [metadata.files]
 absl-py = [
