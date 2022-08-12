@@ -20,27 +20,23 @@ from nucleus.metrics.segmentation_utils import (
 )
 from nucleus.prediction import PredictionList
 
-from .segmentation_loader import InMemoryLoader, SegmentationMaskLoader
-from .segmentation_metrics import (
-    SegmentationIOU,
-    SegmentationMAP,
-    SegmentationPrecision,
-    SegmentationRecall,
-)
-
-try:
-    from s3fs import S3FileSystem
-except (ModuleNotFoundError, OSError):
-    from ..package_not_installed import PackageNotInstalled
-
-    S3FileSystem = PackageNotInstalled
-
 from .base import Metric, ScalarResult
 from .polygon_metrics import (
     PolygonAveragePrecision,
     PolygonIOU,
     PolygonPrecision,
     PolygonRecall,
+)
+from .segmentation_loader import (
+    DummyLoader,
+    InMemoryLoader,
+    SegmentationMaskLoader,
+)
+from .segmentation_metrics import (
+    SegmentationIOU,
+    SegmentationMAP,
+    SegmentationPrecision,
+    SegmentationRecall,
 )
 
 
@@ -93,7 +89,7 @@ class SegmentationMaskToPolyMetric(Metric):
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
-        self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
+        self.loader: SegmentationMaskLoader = DummyLoader()
         self.mode = mode
 
     def call_metric(
