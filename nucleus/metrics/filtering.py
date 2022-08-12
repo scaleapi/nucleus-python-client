@@ -36,6 +36,7 @@ from nucleus.prediction import (
     LinePrediction,
     PolygonPrediction,
     PredictionList,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 )
 
@@ -90,6 +91,7 @@ PredictionTypes = Union[
     CuboidPrediction,
     LinePrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 ]
 

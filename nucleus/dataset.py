@@ -10,6 +10,7 @@ from nucleus.prediction import (
     CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
     from_json,
 )
@@ -345,8 +346,8 @@ class Dataset:
 
         Nucleus supports :class:`Box<BoxAnnotation>`, :class:`Polygon<PolygonAnnotation>`,
         :class:`Cuboid<CuboidAnnotation>`, :class:`Segmentation<SegmentationAnnotation>`,
-        and :class:`Category<CategoryAnnotation>` annotations. Cuboid annotations
-        can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
+        :class:`Category<CategoryAnnotation>`, and :class:`Category<SceneCategoryAnnotation>` annotations.
+        Cuboid annotations can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
 
         When uploading an annotation, you need to specify which item you are
         annotating via the reference_id you provided when uploading the image
@@ -1474,6 +1475,7 @@ class Dataset:
                 CuboidPrediction,
                 SegmentationPrediction,
                 CategoryPrediction,
+                SceneCategoryPrediction,
             ]
         ],
         update: bool = False,
@@ -1492,7 +1494,7 @@ class Dataset:
 
         Nucleus supports :class:`Box<BoxPrediction>`, :class:`Polygon<PolygonPrediction>`,
         :class:`Cuboid<CuboidPrediction>`, :class:`Segmentation<SegmentationPrediction>`,
-        and :class:`Category<CategoryPrediction>` predictions. Cuboid predictions
+        :class:`Category<CategoryPrediction>`, and :class:`Category<SceneCategoryPrediction>` predictions. Cuboid predictions
         can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
 
         When uploading an prediction, you need to specify which item you are
@@ -1519,6 +1521,7 @@ class Dataset:
                 :class:`CuboidPrediction`, \
                 :class:`SegmentationPrediction`, \
                 :class:`CategoryPrediction` \
+                :class:`SceneCategoryPrediction` \
             ]]): List of prediction objects to upload.
             update: Whether or not to overwrite metadata or ignore on reference ID
               collision. Default is False.

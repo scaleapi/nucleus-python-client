@@ -41,6 +41,9 @@ from .constants import (
     Z_KEY,
 )
 
+# TODO: refactor to reduce this file to under 1000 lines.
+# pylint: disable=C0302
+
 
 class Annotation:
     """Internal base class, not to be used directly.
@@ -894,6 +897,53 @@ class MultiCategoryAnnotation(Annotation):
 
 
 @dataclass
+class SceneCategoryAnnotation(Annotation):
+    """A scene category annotation.
+
+    ::
+
+        from nucleus import CategoryAnnotation
+
+        category = SceneCategoryAnnotation(
+            label="running",
+            reference_id="scene_1",
+            taxonomy_name="action",
+        )
+
+    Parameters:
+        label (str): The label for this annotation.
+        reference_id (str): User-defined ID of the scene to which to apply this annotation.
+        taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
+          See :meth:`Dataset.add_taxonomy`.
+    """
+
+    label: str
+    reference_id: str
+    taxonomy_name: Optional[str] = None
+    # todo(546247): add metadata support when required
+    metadata: Optional[Dict] = field(default_factory=dict)
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            label=payload[LABEL_KEY],
+            reference_id=payload[REFERENCE_ID_KEY],
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+        )
+
+    def to_payload(self) -> dict:
+        payload = {
+            LABEL_KEY: self.label,
+            TYPE_KEY: CATEGORY_TYPE,
+            GEOMETRY_KEY: {},
+            REFERENCE_ID_KEY: self.reference_id,
+        }
+        if self.taxonomy_name is not None:
+            payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
+        return payload
+
+
+@dataclass
 class AnnotationList:
     """Wrapper class separating a list of annotations by type."""
 
@@ -908,6 +958,9 @@ class AnnotationList:
         default_factory=list
     )
     multi_category_annotations: List[MultiCategoryAnnotation] = field(
+        default_factory=list
+    )
+    scene_category_annotations: List[SceneCategoryAnnotation] = field(
         default_factory=list
     )
     segmentation_annotations: List[SegmentationAnnotation] = field(
@@ -934,6 +987,8 @@ class AnnotationList:
                 self.category_annotations.append(annotation)
             elif isinstance(annotation, MultiCategoryAnnotation):
                 self.multi_category_annotations.append(annotation)
+            elif isinstance(annotation, SceneCategoryAnnotation):
+                self.scene_category_annotations.append(annotation)
             else:
                 assert isinstance(
                     annotation, SegmentationAnnotation
@@ -952,6 +1007,7 @@ class AnnotationList:
             + len(self.cuboid_annotations)
             + len(self.category_annotations)
             + len(self.multi_category_annotations)
+            + len(self.scene_category_annotations)
             + len(self.segmentation_annotations)
         )
 

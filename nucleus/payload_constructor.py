@@ -6,6 +6,7 @@ from .annotation import (
     CuboidAnnotation,
     MultiCategoryAnnotation,
     PolygonAnnotation,
+    SceneCategoryAnnotation,
     SegmentationAnnotation,
 )
 from .constants import (
@@ -32,6 +33,7 @@ from .prediction import (
     CategoryPrediction,
     CuboidPrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 )
 from .scene import LidarScene, VideoScene
@@ -69,6 +71,7 @@ def construct_annotation_payload(
             CuboidAnnotation,
             CategoryAnnotation,
             MultiCategoryAnnotation,
+            SceneCategoryAnnotation,
             SegmentationAnnotation,
         ]
     ],
@@ -112,6 +115,7 @@ def construct_box_predictions_payload(
             PolygonPrediction,
             CuboidPrediction,
             CategoryPrediction,
+            SceneCategoryPrediction,
         ]
     ],
     update: bool,

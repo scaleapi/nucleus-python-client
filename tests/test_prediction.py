@@ -11,12 +11,14 @@ from nucleus import (
     ModelRun,
     Point,
     PolygonPrediction,
+    SceneCategoryPrediction,
     Segment,
     SegmentationPrediction,
 )
 from nucleus.constants import ERROR_PAYLOAD
 from nucleus.errors import DuplicateIDError
 from nucleus.job import AsyncJob, JobError
+from nucleus.scene import VideoScene
 
 from .helpers import (
     TEST_BOX_PREDICTIONS,
@@ -30,8 +32,13 @@ from .helpers import (
     TEST_MODEL_NAME,
     TEST_MODEL_RUN,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION,
+    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS,
     TEST_POLYGON_PREDICTIONS,
+    TEST_SCENE_CATEGORY_PREDICTIONS,
+    TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD,
     TEST_SEGMENTATION_PREDICTIONS,
+    TEST_VIDEO_DATASET_NAME,
+    TEST_VIDEO_SCENES_FOR_ANNOTATION,
     assert_box_prediction_matches_dict,
     assert_category_prediction_matches_dict,
     assert_keypoints_prediction_matches_dict,
@@ -92,6 +99,38 @@ def model_run(CLIENT):
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
+
+    ds.add_taxonomy(*TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD)
+
+    model = CLIENT.create_model(
+        name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
+    )
+
+    run = model.create_run(name=TEST_MODEL_RUN, dataset=ds, predictions=[])
+
+    yield run
+
+    response = CLIENT.delete_dataset(ds.id)
+    assert response == {"message": "Beginning dataset deletion..."}
+    response = CLIENT.delete_model(model.id)
+    assert response == {}
+
+
+@pytest.fixture()
+def scene_category_model_run(CLIENT):
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME, is_scene=True)
+    scenes = []
+    for scene in TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"]:
+        scenes.append(VideoScene.from_json(scene))
+
+    job = ds.append(
+        scenes,
+        asynchronous=True,
+        update=TEST_VIDEO_SCENES_FOR_ANNOTATION["update"],
+    )
+    job.sleep_until_complete()
+
+    ds.add_taxonomy(*TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD)
 
     model = CLIENT.create_model(
         name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
@@ -233,6 +272,31 @@ def test_non_existent_taxonomy_category_gt_upload(model_run):
         f'Input validation failed: Taxonomy {TEST_NONEXISTENT_TAXONOMY_CATEGORY_PREDICTION[0]["taxonomy_name"]} does not exist in dataset'
         in response["errors"][0]
     )
+
+
+def test_scene_category_pred_upload(scene_category_model_run):
+    prediction = SceneCategoryPrediction.from_json(
+        TEST_SCENE_CATEGORY_PREDICTIONS[0]
+    )
+    response = scene_category_model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == scene_category_model_run.model_run_id
+    assert response["predictions_processed"] == 1
+    assert response["predictions_ignored"] == 0
+
+
+def test_non_existent_taxonomy_scene_category_pred_upload(
+    scene_category_model_run,
+):
+    prediction = SceneCategoryPrediction.from_json(
+        TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS[0]
+    )
+    response = scene_category_model_run.predict(annotations=[prediction])
+
+    assert response["model_run_id"] == scene_category_model_run.model_run_id
+    assert response["predictions_processed"] == 0
+    assert response["predictions_ignored"] == 0
+    assert len(response["errors"]) > 0
 
 
 def test_box_pred_upload_update(model_run):
