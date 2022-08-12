@@ -18,10 +18,7 @@ from .constants import (
     THRESHOLD_KEY,
     ThresholdComparison,
 )
-from .data_transfer_objects.scenario_test_evaluations import (
-    EvaluationResult,
-    GetEvalHistory,
-)
+from .data_transfer_objects.scenario_test_evaluations import EvaluationResult
 from .data_transfer_objects.scenario_test_metric import AddScenarioTestFunction
 from .eval_functions.available_eval_functions import (
     EvalFunction,
@@ -52,13 +49,24 @@ class ScenarioTest:
     slice_id: str = field(init=False)
     baseline_model_id: Optional[str] = None
 
-    def __post_init__(self):
+    @classmethod
+    def from_id(cls, unit_test_id: str, connection: Connection):
         # TODO(gunnar): Remove this pattern. It's too slow. We should get all the info required in one call
-        response = self.connection.get(
-            f"validate/scenario_test/{self.id}/info",
+        response = connection.get(
+            f"validate/scenario_test/{unit_test_id}/info",
         )
-        self.name = response[NAME_KEY]
-        self.slice_id = response[SLICE_ID_KEY]
+        instance = cls(unit_test_id, connection)
+        instance.name = response[NAME_KEY]
+        instance.slice_id = response[SLICE_ID_KEY]
+        return instance
+
+    @classmethod
+    def from_response(cls, response, connection: Connection):
+        instance = cls(response["id"], connection)
+        instance.name = response[NAME_KEY]
+        instance.slice_id = response[SLICE_ID_KEY]
+        instance.baseline_model_id = response.get("baseline_model_id", None)
+        return instance
 
     def add_eval_function(
         self, eval_function: EvalFunction
@@ -148,13 +156,13 @@ class ScenarioTest:
             A list of :class:`ScenarioTestEvaluation` objects.
         """
         response = self.connection.get(
-            f"validate/scenario_test/{self.id}/eval_history",
+            f"validate/scenario_test/{self.id}/eval_history/details",
         )
-        eval_history = GetEvalHistory.parse_obj(response)
-        return [
-            ScenarioTestEvaluation(evaluation.id, self.connection)
-            for evaluation in eval_history.evaluations
+        evaluations = [
+            ScenarioTestEvaluation.from_request(eval_payload, self.connection)
+            for eval_payload in response
         ]
+        return evaluations
 
     def get_items(self) -> List[DatasetItem]:
         response = self.connection.get(

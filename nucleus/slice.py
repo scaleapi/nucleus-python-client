@@ -1,5 +1,6 @@
+import datetime
 import warnings
-from typing import Dict, Iterable, List, Set, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import requests
 
@@ -49,15 +50,54 @@ class Slice:
         self._client = client
         self._name = None
         self._dataset_id = None
+        self._created_at = None
+        self._pending_job_count = None
 
     def __repr__(self):
-        return f"Slice(slice_id='{self.id}', client={self._client})"
+        return f"Slice(slice_id='{self.id}', name={self._name}, dataset_id={self._dataset_id})"
 
     def __eq__(self, other):
         if self.id == other.id:
             if self._client == other._client:
                 return True
         return False
+
+    @property
+    def created_at(self) -> Optional[datetime.datetime]:
+        """Timestamp of creation of the slice
+
+        Returns:
+            datetime of creation or None if not created yet
+        """
+        if self._created_at is None:
+            self._created_at = self.info().get("created_at", None)
+        return self._created_at
+
+    @property
+    def pending_job_count(self) -> Optional[int]:
+        if self._pending_job_count is None:
+            self._pending_job_count = self.info().get(
+                "pending_job_count", None
+            )
+        return self._pending_job_count
+
+    @classmethod
+    def from_request(cls, request, client):
+        instance = cls(request["id"], client)
+        instance._name = request.get("name", None)
+        instance._dataset_id = request.get("dataset_id", None)
+        created_at_str = request.get("created_at").rstrip("Z")
+        if hasattr(datetime.datetime, "fromisoformat"):
+            instance._created_at = datetime.datetime.fromisoformat(
+                created_at_str
+            )
+        else:
+            fmt_str = r"%Y-%m-%dT%H:%M:%S.%f"  # replaces the fromisoformatm, not available in python 3.6
+            instance._created_at = datetime.datetime.strptime(
+                created_at_str, fmt_str
+            )
+        instance._pending_job_count = request.get("pending_job_count", None)
+        return instance
 
     @property
     def slice_id(self):

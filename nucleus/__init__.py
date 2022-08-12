@@ -239,6 +239,12 @@ class NucleusClient:
         """
         return self.list_jobs()
 
+    @property
+    def slices(self) -> List[Slice]:
+        response = self.make_request({}, "slice/", requests.get)
+        slices = [Slice.from_request(info, self) for info in response]
+        return slices
+
     @deprecated(msg="Use the NucleusClient.models property in the future.")
     def list_models(self) -> List[Model]:
         return self.models

@@ -166,7 +166,7 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
 
 
 def rasterize_polygons_to_segmentation_mask(
-    annotations: Sequence[BoxOrPolygonAnnotation], shape: Tuple[int, int]
+    annotations: Sequence[BoxOrPolygonAnnotation], shape: Tuple
 ) -> Tuple[np.ndarray, List[Segment]]:
     polys = [polygon_annotation_to_shape(a) for a in annotations]
     segments = [
