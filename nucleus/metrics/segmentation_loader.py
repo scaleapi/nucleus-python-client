@@ -1,27 +1,23 @@
+import abc
 from typing import Dict
 
 import numpy as np
-from PIL import Image
-
-try:
-    import fsspec
-except (ModuleNotFoundError, OSError):
-    from ..package_not_installed import PackageNotInstalled
-
-    fsspec = PackageNotInstalled
 
 
-class SegmentationMaskLoader:
-    def __init__(self, fs: fsspec):
-        self.fs = fs
-
-    def fetch(self, url: str):
-        with self.fs.open(url) as fh:
-            img = Image.open(fh)
-        return np.asarray(img)
+class SegmentationMaskLoader(abc.ABC):
+    @abc.abstractmethod
+    def fetch(self, url: str) -> np.ndarray:
+        pass
 
 
-class InMemoryLoader:
+class DummyLoader(SegmentationMaskLoader):
+    def fetch(self, url: str) -> np.ndarray:
+        raise NotImplementedError(
+            "This dummy loader has to be replaced with an actual implementation of an image loader"
+        )
+
+
+class InMemoryLoader(SegmentationMaskLoader):
     """We use this loader in the tests, this allows us to serve images from memory instead of fetching
     from a filesystem.
     """

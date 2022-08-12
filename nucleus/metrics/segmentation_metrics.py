@@ -9,7 +9,7 @@ from nucleus.metrics.filtering import ListOfAndFilters, ListOfOrAndFilters
 from nucleus.prediction import PredictionList, SegmentationPrediction
 
 from .base import Metric, ScalarResult
-from .segmentation_loader import SegmentationMaskLoader
+from .segmentation_loader import DummyLoader, SegmentationMaskLoader
 from .segmentation_utils import (
     FALSE_POSITIVES,
     convert_to_instance_seg_confusion,
@@ -17,14 +17,6 @@ from .segmentation_utils import (
     non_max_suppress_confusion,
     setup_iou_thresholds,
 )
-
-try:
-    from s3fs import S3FileSystem
-except (ModuleNotFoundError, OSError):
-    from ..package_not_installed import PackageNotInstalled
-
-    S3FileSystem = PackageNotInstalled
-
 
 # pylint: disable=useless-super-delegation
 
@@ -64,7 +56,7 @@ class SegmentationMaskMetric(Metric):
         """
         # TODO -> add custom filtering to Segmentation(Annotation|Prediction).annotations.(metadata|label)
         super().__init__(annotation_filters, prediction_filters)
-        self.loader = SegmentationMaskLoader(S3FileSystem(anon=False))
+        self.loader: SegmentationMaskLoader = DummyLoader()
         self.iou_threshold = iou_threshold
 
     def call_metric(

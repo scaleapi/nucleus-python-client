@@ -5,6 +5,16 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.16](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.15) - 2022-08-12
+
+### Added
+- Scene cateogorization support
+
+## [0.14.15](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.15) - 2022-08-11
+
+### Removed
+- Removed s3fs, fsspec dependencies for simpler installation in various environments
+
 ## [0.14.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.14) - 2022-08-11
 
 ### Added

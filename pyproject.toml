@@ -21,7 +21,7 @@ exclude = '''
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.14.14"
+version = "0.14.16"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -48,7 +48,6 @@ scikit-learn = ">=0.24.0"
 Shapely = { version = ">=1.8.0", optional = true }
 rasterio = { version = ">=1.2.0", optional = true }
 Pillow = ">=7.1.2"
-s3fs = {version = ">=2021.9.0", optional = true }
 scale-launch = { version = ">=0.1.0", python = ">=3.7,<4.0" , optional = true}
 
 [tool.poetry.dev-dependencies]
@@ -75,7 +74,7 @@ pytest-xdist = "^2.5.0"
 nu = "cli.nu:nu"
 
 [tool.poetry.extras]
-metrics = ["Shapely", "rasterio", "s3fs"]
+metrics = ["Shapely", "rasterio"]
 launch = ["scale-launch"]
 
 

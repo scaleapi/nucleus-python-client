@@ -31,6 +31,8 @@ __all__ = [
     "PolygonAnnotation",
     "PolygonPrediction",
     "Quaternion",
+    "SceneCategoryAnnotation",
+    "SceneCategoryPrediction",
     "Segment",
     "SegmentationAnnotation",
     "SegmentationPrediction",
@@ -61,6 +63,7 @@ from .annotation import (
     Point,
     Point3D,
     PolygonAnnotation,
+    SceneCategoryAnnotation,
     Segment,
     SegmentationAnnotation,
 )
@@ -132,6 +135,7 @@ from .prediction import (
     KeypointsPrediction,
     LinePrediction,
     PolygonPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 )
 from .quaternion import Quaternion

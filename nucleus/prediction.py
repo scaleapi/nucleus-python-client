@@ -16,6 +16,7 @@ from .annotation import (
     Point,
     Point3D,
     PolygonAnnotation,
+    SceneCategoryAnnotation,
     Segment,
     SegmentationAnnotation,
 )
@@ -571,6 +572,17 @@ class CategoryPrediction(CategoryAnnotation):
         )
 
 
+class SceneCategoryPrediction(SceneCategoryAnnotation):
+    """A prediction of a category for a scene.
+
+    Parameters:
+        label: The label for this annotation (e.g. action, subject, scenario).
+        reference_id: The reference ID of the scene you wish to apply this annotation to.
+        taxonomy_name: The name of the taxonomy this annotation conforms to.
+          See :meth:`Dataset.add_taxonomy`.
+    """
+
+
 Prediction = Union[
     BoxPrediction,
     LinePrediction,
@@ -578,6 +590,7 @@ Prediction = Union[
     KeypointsPrediction,
     CuboidPrediction,
     CategoryPrediction,
+    SceneCategoryPrediction,
     SegmentationPrediction,
 ]
 
@@ -594,6 +607,9 @@ class PredictionList:
     )
     cuboid_predictions: List[CuboidPrediction] = field(default_factory=list)
     category_predictions: List[CategoryPrediction] = field(
+        default_factory=list
+    )
+    scene_category_predictions: List[SceneCategoryPrediction] = field(
         default_factory=list
     )
     segmentation_predictions: List[SegmentationPrediction] = field(
@@ -617,6 +633,8 @@ class PredictionList:
                 self.cuboid_predictions.append(prediction)
             elif isinstance(prediction, CategoryPrediction):
                 self.category_predictions.append(prediction)
+            elif isinstance(prediction, SceneCategoryPrediction):
+                self.scene_category_predictions.append(prediction)
             else:
                 assert isinstance(
                     prediction, SegmentationPrediction
@@ -631,5 +649,6 @@ class PredictionList:
             + len(self.keypoints_predictions)
             + len(self.cuboid_predictions)
             + len(self.category_predictions)
+            + len(self.scene_category_predictions)
             + len(self.segmentation_predictions)
         )

@@ -14,9 +14,11 @@ from nucleus import (
     Segment,
     SegmentationAnnotation,
 )
+from nucleus.annotation import SceneCategoryAnnotation
 from nucleus.constants import ERROR_PAYLOAD
 from nucleus.errors import DuplicateIDError
 from nucleus.job import AsyncJob, JobError
+from nucleus.scene import VideoScene
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,
@@ -30,8 +32,13 @@ from .helpers import (
     TEST_LINE_ANNOTATIONS,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_NONEXISTENT_TAXONOMY_CATEGORY_ANNOTATION,
+    TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
+    TEST_SCENE_CATEGORY_ANNOTATIONS,
+    TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD,
     TEST_SEGMENTATION_ANNOTATIONS,
+    TEST_VIDEO_DATASET_NAME,
+    TEST_VIDEO_SCENES_FOR_ANNOTATION,
     assert_box_annotation_matches_dict,
     assert_category_annotation_matches_dict,
     assert_keypoints_annotation_matches_dict,
@@ -81,6 +88,7 @@ def dataset(CLIENT):
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
+
     response = ds.add_taxonomy(
         "[Pytest] MultiCategory Taxonomy 1",
         "multicategory",
@@ -89,6 +97,29 @@ def dataset(CLIENT):
             for i in range((len(TEST_IMG_URLS) + 1))
         ],
     )
+
+    yield ds
+
+    response = CLIENT.delete_dataset(ds.id)
+    assert response == {"message": "Beginning dataset deletion..."}
+
+
+@pytest.fixture()
+def scene_category_dataset(CLIENT):
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME, is_scene=True)
+    scenes = []
+    for scene in TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"]:
+        scenes.append(VideoScene.from_json(scene))
+
+    job = ds.append(
+        scenes,
+        asynchronous=True,
+        update=TEST_VIDEO_SCENES_FOR_ANNOTATION["update"],
+    )
+    job.sleep_until_complete()
+
+    ds.add_taxonomy(*TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD)
+
     yield ds
 
     response = CLIENT.delete_dataset(ds.id)
@@ -287,6 +318,31 @@ def test_default_multicategory_gt_upload(dataset):
     assert_multicategory_annotation_matches_dict(
         response_annotation, TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]
     )
+
+
+def test_scene_category_gt_upload(scene_category_dataset):
+    annotation = SceneCategoryAnnotation.from_json(
+        TEST_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = scene_category_dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == scene_category_dataset.id
+    assert response["annotations_processed"] == 1
+    assert response["annotations_ignored"] == 0
+
+
+def test_non_existent_taxonomy_scene_category_gt_upload(
+    scene_category_dataset,
+):
+    annotation = SceneCategoryAnnotation.from_json(
+        TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_ANNOTATIONS[0]
+    )
+    response = scene_category_dataset.annotate(annotations=[annotation])
+
+    assert response["dataset_id"] == scene_category_dataset.id
+    assert response["annotations_processed"] == 0
+    assert response["annotations_ignored"] == 0
+    assert len(response["errors"]) > 0
 
 
 def test_mixed_annotation_upload(dataset):
