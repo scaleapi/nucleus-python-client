@@ -19,9 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - client.slices to list all of users slices independent of dataset
+- Added optional parameter `asynchronous: bool` to `Dataset.update_item_metadata` and  `Dataset.update_scene_metadata`,
+allowing the update to run as a background job when set to `True`
 
 ### Fixed
 - Validate unit test listing and evaluation history listing. Now uses new bulk fetch endpoints for faster listing.
+
 
 ## [0.14.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.13) - 2022-08-10
 
@@ -36,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Change `{Dataset,Slice}.items_and_annotation_generator` to work with improved paginate endpoint
+
 
 ## [0.14.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.11) - 2022-07-20
 

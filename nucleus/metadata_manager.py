@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from .camera_params import CameraParams
 from .constants import CAMERA_PARAMS_KEY
+from .job import AsyncJob
 
 if TYPE_CHECKING:
     from . import NucleusClient
@@ -26,11 +27,19 @@ class MetadataManager:
         client: "NucleusClient",
         raw_mappings: Dict[str, dict],
         level: ExportMetadataType,
+        asynchronous: bool,
     ):
         self.dataset_id = dataset_id
         self._client = client
         self.raw_mappings = raw_mappings
         self.level = level
+        self.asynchronous = asynchronous
+
+        if len(self.raw_mappings) > 500 and not self.asynchronous:
+            raise Exception(
+                "Number of items to update is too large to perform it synchronously. "
+                "Consider running the metadata_update with `asynchronous=True`, to avoid timeouts."
+            )
 
         self._payload = self._format_mappings()
 
@@ -55,7 +64,19 @@ class MetadataManager:
 
     def update(self):
         payload = {"metadata": self._payload, "level": self.level.value}
-        resp = self._client.make_request(
-            payload=payload, route=f"dataset/{self.dataset_id}/metadata"
-        )
-        return resp
+        is_async = int(self.asynchronous)
+        try:
+            resp = self._client.make_request(
+                payload=payload,
+                route=f"dataset/{self.dataset_id}/metadata?async={is_async}",
+            )
+            if self.asynchronous:
+                return AsyncJob.from_json(resp, self._client)
+            return resp
+        except Exception as e:  # pylint: disable=W0703
+            print(
+                "Failed to complete the request. If a timeout occurred, consider running the "
+                "metadata_update with `asynchronous=True`."
+            )
+            print(f"Request failed with:\n\n{e}")
+            return None
