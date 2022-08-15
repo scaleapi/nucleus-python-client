@@ -24,7 +24,7 @@ def test_reprs():
 
 
 def test_job_listing_and_retrieval(CLIENT):
-    jobs = sorted(CLIENT.list_jobs())
+    jobs = CLIENT.list_jobs()
 
     if not jobs:
         return
