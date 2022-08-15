@@ -246,7 +246,7 @@ class Slice:
             client=self._client,
             endpoint=f"slice/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
-            page_size=10000, # max ES page size
+            page_size=10000,  # max ES page size
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
