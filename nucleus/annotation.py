@@ -902,12 +902,15 @@ class SceneCategoryAnnotation(Annotation):
 
     ::
 
-        from nucleus import CategoryAnnotation
+        from nucleus import SceneCategoryAnnotation
 
         category = SceneCategoryAnnotation(
             label="running",
             reference_id="scene_1",
             taxonomy_name="action",
+            metadata={
+                "weather": "clear",
+            },
         )
 
     Parameters:
@@ -915,12 +918,15 @@ class SceneCategoryAnnotation(Annotation):
         reference_id (str): User-defined ID of the scene to which to apply this annotation.
         taxonomy_name (Optional[str]): The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
+        metadata: Arbitrary key/value dictionary of info to attach to this annotation.
+            Strings, floats and ints are supported best by querying and insights
+            features within Nucleus. For more details see our `metadata guide
+            <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
 
     label: str
     reference_id: str
     taxonomy_name: Optional[str] = None
-    # todo(546247): add metadata support when required
     metadata: Optional[Dict] = field(default_factory=dict)
 
     @classmethod
@@ -929,6 +935,7 @@ class SceneCategoryAnnotation(Annotation):
             label=payload[LABEL_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
         )
 
     def to_payload(self) -> dict:
@@ -937,6 +944,7 @@ class SceneCategoryAnnotation(Annotation):
             TYPE_KEY: CATEGORY_TYPE,
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
+            METADATA_KEY: self.metadata,
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
