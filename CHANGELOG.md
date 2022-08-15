@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.17](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.17) - 2022-08-15
 
 ### Fixed
-- New AsyncJob status payload keys causing test failures
-- Simple dependency install step to fix CircleCI caching failures
+- Fix `AsyncJob` status payload keys causing test failures
+- Fix `AsyncJob` export test
+- Fix `page_size` for `{Dataset,Slice}.items_and_annotatation_generator()`
+- Change to simple dependency install step to fix CircleCI caching failures
 
 ## [0.14.16](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.16) - 2022-08-12
 
