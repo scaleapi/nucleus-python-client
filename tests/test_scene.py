@@ -420,6 +420,7 @@ def test_scene_upload_async(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
+    del status["job_creation_time"]  # HACK: too flaky to try syncing
     assert status == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -436,6 +437,8 @@ def test_scene_upload_async(dataset_scene):
         "job_progress": "1.00",
         "completed_steps": 1,
         "total_steps": 1,
+        "job_last_known_status": "Completed",
+        "job_type": "uploadLidarScene",
     }
 
     uploaded_scenes = dataset_scene.scenes
@@ -462,6 +465,7 @@ def test_scene_upload_and_update(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
+    del status["job_creation_time"]  # HACK: too flaky to try syncing
     assert status == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -478,6 +482,8 @@ def test_scene_upload_and_update(dataset_scene):
         "job_progress": "1.00",
         "completed_steps": 1,
         "total_steps": 1,
+        "job_last_known_status": "Completed",
+        "job_type": "uploadLidarScene",
     }
 
     uploaded_scenes = dataset_scene.scenes
@@ -495,6 +501,7 @@ def test_scene_upload_and_update(dataset_scene):
     job2.sleep_until_complete()
     status2 = job2.status()
 
+    del status2["job_creation_time"]  # HACK: too flaky to try syncing
     assert status2 == {
         "job_id": job2.job_id,
         "status": "Completed",
@@ -511,6 +518,8 @@ def test_scene_upload_and_update(dataset_scene):
         "job_progress": "1.00",
         "completed_steps": 1,
         "total_steps": 1,
+        "job_last_known_status": "Completed",
+        "job_type": "uploadLidarScene",
     }
 
 
@@ -585,6 +594,7 @@ def test_video_scene_upload_async(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
+    del status["job_creation_time"]  # HACK: too flaky to try syncing
     assert status == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -601,6 +611,8 @@ def test_video_scene_upload_async(dataset_scene):
         "job_progress": "1.00",
         "completed_steps": len(scenes),
         "total_steps": len(scenes),
+        "job_last_known_status": "Completed",
+        "job_type": "uploadVideoScene",
     }
 
     uploaded_scenes = dataset_scene.scenes
@@ -681,6 +693,7 @@ def test_video_scene_upload_and_update(dataset_scene):
     job.sleep_until_complete()
     status = job.status()
 
+    del status["job_creation_time"]  # HACK: too flaky to try syncing
     assert status == {
         "job_id": job.job_id,
         "status": "Completed",
@@ -697,6 +710,8 @@ def test_video_scene_upload_and_update(dataset_scene):
         "job_progress": "1.00",
         "completed_steps": len(scenes),
         "total_steps": len(scenes),
+        "job_last_known_status": "Completed",
+        "job_type": "uploadVideoScene",
     }
 
     uploaded_scenes = dataset_scene.scenes
@@ -715,6 +730,7 @@ def test_video_scene_upload_and_update(dataset_scene):
     job2.sleep_until_complete()
     status2 = job2.status()
 
+    del status2["job_creation_time"]  # HACK: too flaky to try syncing
     assert status2 == {
         "job_id": job2.job_id,
         "status": "Completed",
@@ -731,6 +747,8 @@ def test_video_scene_upload_and_update(dataset_scene):
         "job_progress": "1.00",
         "completed_steps": len(scenes),
         "total_steps": len(scenes),
+        "job_last_known_status": "Completed",
+        "job_type": "uploadVideoScene",
     }
 
 
