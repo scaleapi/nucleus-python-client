@@ -1256,7 +1256,7 @@ class Dataset:
             client=self._client,
             endpoint=f"dataset/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
-            page_size=100000,
+            page_size=10000,  # max ES page size
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):

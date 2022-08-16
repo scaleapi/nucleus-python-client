@@ -23,15 +23,16 @@ jobs:
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
-      - python/install-packages:
-          include-python-in-cache-key: false
-          pkg-manager: poetry
+      - run:
+          name: Install Python Dependencies
+          command: |
+              poetry install
       - run:
           name: Test Imports (extras need to be guarded!)
           command: | # Make sure that importing works without extras installed
             poetry run python -c 'import nucleus'
       - run:
-          name: Install Extra Dependencies
+          name: Install Extra Python Dependencies
           command: | # install dependencies
             poetry install -E metrics -E launch
       - run:

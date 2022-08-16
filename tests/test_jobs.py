@@ -23,7 +23,7 @@ def test_reprs():
     )
 
 
-def test_job_creation_and_listing_and_retrieval(CLIENT):
+def test_job_listing_and_retrieval(CLIENT):
     jobs = CLIENT.list_jobs()
 
     if not jobs:
