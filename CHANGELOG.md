@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.16](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.16) - 2022-08-12
 
 ### Added
-- Scene cateogorization support
+- Scene categorization support
 
 ## [0.14.15](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.15) - 2022-08-11
 
