@@ -575,12 +575,64 @@ class CategoryPrediction(CategoryAnnotation):
 class SceneCategoryPrediction(SceneCategoryAnnotation):
     """A prediction of a category for a scene.
 
+    ::
+
+        from nucleus import SceneCategoryPrediction
+
+        category = SceneCategoryPrediction(
+            label="running",
+            reference_id="scene_1",
+            taxonomy_name="action",
+            confidence=0.83,
+            metadata={
+                "weather": "clear",
+            },
+        )
+
     Parameters:
         label: The label for this annotation (e.g. action, subject, scenario).
         reference_id: The reference ID of the scene you wish to apply this annotation to.
         taxonomy_name: The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
+        confidence: 0-1 indicating the confidence of the prediction.
+        metadata: Arbitrary key/value dictionary of info to attach to this annotation.
+            Strings, floats and ints are supported best by querying and insights
+            features within Nucleus. For more details see our `metadata guide
+            <https://nucleus.scale.com/docs/upload-metadata>`_.
     """
+
+    def __init__(
+        self,
+        label: str,
+        reference_id: str,
+        taxonomy_name: Optional[str] = None,
+        confidence: Optional[float] = None,
+        metadata: Optional[Dict] = None,
+    ):
+        super().__init__(
+            label=label,
+            taxonomy_name=taxonomy_name,
+            reference_id=reference_id,
+            metadata=metadata,
+        )
+        self.confidence = confidence
+
+    def to_payload(self) -> dict:
+        payload = super().to_payload()
+        if self.confidence is not None:
+            payload[CONFIDENCE_KEY] = self.confidence
+
+        return payload
+
+    @classmethod
+    def from_json(cls, payload: dict):
+        return cls(
+            label=payload.get(LABEL_KEY, 0),
+            taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
+            reference_id=payload[REFERENCE_ID_KEY],
+            confidence=payload.get(CONFIDENCE_KEY, None),
+            metadata=payload.get(METADATA_KEY, {}),
+        )
 
 
 Prediction = Union[
