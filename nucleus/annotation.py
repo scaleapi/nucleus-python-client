@@ -132,6 +132,10 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+
+            Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
+            These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
+
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
