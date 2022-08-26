@@ -34,4 +34,4 @@ def test_job_listing_and_retrieval(CLIENT):
 
     fetch_id = jobs[0].job_id
     fetched_job = CLIENT.get_job(fetch_id)
-    assert fetched_job.status() == jobs[0].status()
+    assert fetched_job == jobs[0]
