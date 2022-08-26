@@ -86,6 +86,9 @@ class DatasetItem:  # pylint: disable=R0902
           <https://nucleus.scale.com/docs/uploading-3d-data>`_ for more
           info.
 
+          Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
+          These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
+
           .. todo ::
               Shorten this once we have a guide migrated for metadata, or maybe link
               from other places to here.

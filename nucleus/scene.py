@@ -381,7 +381,10 @@ class LidarScene(Scene):
         frames (Optional[List[:class:`Frame`]]): List of frames to be a part of
           the scene. A scene can be created before frames or items have been
           added to it, but must be non-empty when uploading to a :class:`Dataset`.
-        metadata (Optional[Dict]): Optional metadata to include with the scene.
+        metadata (Optional[Dict]):
+            Optional metadata to include with the scene.
+            Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
+            These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
 
     Refer to our `guide to uploading 3D data
     <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!

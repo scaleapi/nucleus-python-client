@@ -158,6 +158,10 @@ class BoxPrediction(BoxAnnotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+
+            Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
+            These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
+
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
