@@ -50,9 +50,7 @@ def test_segmentation_pred_upload_ignore(dataset: Dataset, model: Model):
     prediction = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
     )
-    response1 = dataset.upload_predictions(model, [prediction])
-
-    assert response1["predictions_processed"] == 1
+    dataset.upload_predictions(model, [prediction])
 
     # Upload Duplicate annotation
     response = dataset.upload_predictions(model, [prediction])
