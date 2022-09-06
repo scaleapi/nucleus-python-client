@@ -152,6 +152,21 @@ async def form_data_request_helper(
         return await gather_with_concurrency(concurrency, *tasks)
 
 
+def is_bad_response(response: aiohttp.ClientResponse) -> bool:
+    if not response:
+        return True
+
+    if hasattr(response, 'ok'):
+        return not response.ok
+
+    if hasattr(response, 'status'):
+        return response.status != 200
+
+    # could not find a valid attribute to check the response's status. 
+    return True
+
+
+
 async def _post_form_data(
     client: "NucleusClient",
     request: FormDataContextHandler,
@@ -201,7 +216,7 @@ async def _post_form_data(
                         "The request to upload your max is timing out, please lower local_files_per_upload_request in your api call."
                     )
 
-                if not response.ok:
+                if is_bad_response(response):
                     raise NucleusAPIError(
                         endpoint,
                         session.post,
