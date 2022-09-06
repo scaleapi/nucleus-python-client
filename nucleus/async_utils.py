@@ -156,15 +156,14 @@ def is_bad_response(response: aiohttp.ClientResponse) -> bool:
     if not response:
         return True
 
-    if hasattr(response, 'ok'):
+    if hasattr(response, "ok"):
         return not response.ok
 
-    if hasattr(response, 'status'):
+    if hasattr(response, "status"):
         return response.status != 200
 
     # could not find a valid attribute to check the response's status.
     return True
-
 
 
 async def _post_form_data(
@@ -221,8 +220,12 @@ async def _post_form_data(
                         endpoint,
                         session.post,
                         aiohttp_response=(
-                            response.status if hasattr(response, 'status') else 'UnknownStatus',
-                            response.reason if hasattr(response, 'reason') else 'UnknownReason',
+                            response.status
+                            if hasattr(response, "status")
+                            else "UnknownStatus",
+                            response.reason
+                            if hasattr(response, "reason")
+                            else "UnknownReason",
                             data,
                         ),
                     )
