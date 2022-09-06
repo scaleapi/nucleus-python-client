@@ -37,8 +37,9 @@ class DatasetItem:  # pylint: disable=R0902
     Args:
         image_location (Optional[str]): Required if pointcloud_location is not present:
           The location containing the image for the given row of data. This can be a local
-          path, or a remote URL. Remote formats supported include any URL (``http://`` or
-          ``https://``) or URIs for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
+          path (if not using async upload), or a remote URL.
+          Remote formats supported include any URL (``http://`` or ``https://``) or URIs
+          for AWS S3, Azure, or GCS (i.e. ``s3://``, ``gcs://``).
 
         pointcloud_location (Optional[str]): Required if image_location is not present:
           The remote URL containing the pointcloud JSON. Remote formats supported include
