@@ -138,3 +138,6 @@ dmypy.json
 
 # JetBrains
 .idea/
+
+# Poetry lock file -> We only rely on .poetry.circleci.lock for CI
+poetry.lock

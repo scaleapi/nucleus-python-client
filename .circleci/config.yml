@@ -3,7 +3,7 @@
 version: 2.1
 orbs:
   slack: circleci/slack@4.4.2
-  python: circleci/python@2.0.3
+  python: circleci/python@2.1.0
 
 jobs:
   build_test:
@@ -24,17 +24,18 @@ jobs:
             pip install --upgrade pip
             pip install poetry
       - run:
-          name: Install Python Dependencies
+          name: Move CI lock file to expected place
           command: |
-              poetry install
+              cp poetry.circleci.lock poetry.lock
+      - python/install-packages:
+            pkg-manager: poetry
       - run:
           name: Test Imports (extras need to be guarded!)
           command: | # Make sure that importing works without extras installed
             poetry run python -c 'import nucleus'
-      - run:
-          name: Install Extra Python Dependencies
-          command: | # install dependencies
-            poetry install -E metrics -E launch
+      - python/install-packages:
+            pkg-manager: poetry
+            args: -E metrics -E launch
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
           command: |
@@ -110,24 +111,6 @@ jobs:
                 exit 1
             fi
             poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
-  test_poetry_installation:
-    parameters:
-      python_version:
-        type: string
-    docker:
-      - image: cimg/python:<<parameters.python_version>>
-    steps:
-      - checkout
-      - run:
-          command: |
-            pip install --upgrade pip
-          name: Upgrade pip
-      - python/install-packages:
-            pkg-manager: poetry
-      - run:
-          command: |
-            poetry run python -c 'import nucleus'
-          name: Test import nucleus
   test_client_installation:
     parameters:
       python_version:
@@ -145,10 +128,26 @@ jobs:
             poetry build
           name: Build the package
       - run:
+          name: Install - no extras
           command: |
             export FOUND_PKG=$(find ./dist -name "*.tar.gz")
             pip install $FOUND_PKG
           name: Install with Python Version
+      - run:
+          name: Install with extra metrics
+          command: |
+            export FOUND_PKG=$(find ./dist -name "*.tar.gz")
+            pip install "$FOUND_PKG[metrics]"
+      - run:
+          name: Install with extra launch
+          command: |
+            export FOUND_PKG=$(find ./dist -name "*.tar.gz")
+            pip install "$FOUND_PKG[launch]"
+      - run:
+          name: Install with extra launch and metrics
+          command: |
+            export FOUND_PKG=$(find ./dist -name "*.tar.gz")
+            pip install "$FOUND_PKG[metrics, launch]"
 workflows:
   nightly_build_test:
     triggers:
@@ -163,11 +162,6 @@ workflows:
           context: Nucleus
   installation_matrix:
     jobs:
-      - test_poetry_installation:
-          matrix:
-            parameters:
-              python_version: ['3.6', '3.7', '3.8', '3.9'] #, '3.10'] Need to work out a solution to support dev on 3.10
-          context: Nucleus
       - test_client_installation:
           matrix:
             parameters:
