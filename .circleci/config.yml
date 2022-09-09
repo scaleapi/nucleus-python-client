@@ -29,6 +29,7 @@ jobs:
               cp poetry.circleci.lock poetry.lock
       - python/install-packages:
             pkg-manager: poetry
+            include-python-in-cache-key: false
       - run:
           name: Test Imports (extras need to be guarded!)
           command: | # Make sure that importing works without extras installed
@@ -36,6 +37,7 @@ jobs:
       - python/install-packages:
             pkg-manager: poetry
             args: -E metrics -E launch
+            include-python-in-cache-key: false
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
           command: |
