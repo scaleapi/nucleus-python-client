@@ -134,21 +134,25 @@ jobs:
           command: |
             export FOUND_PKG=$(find ./dist -name "*.tar.gz")
             pip install $FOUND_PKG
+            python -c 'import nucleus'
       - run:
           name: Install with extra metrics
           command: |
             export FOUND_PKG=$(find ./dist -name "*.tar.gz")
             pip install "$FOUND_PKG[metrics]"
+            python -c 'import nucleus'
       - run:
           name: Install with extra launch
           command: |
             export FOUND_PKG=$(find ./dist -name "*.tar.gz")
             pip install "$FOUND_PKG[launch]"
+            python -c 'import nucleus'
       - run:
           name: Install with extra launch and metrics
           command: |
             export FOUND_PKG=$(find ./dist -name "*.tar.gz")
             pip install "$FOUND_PKG[metrics, launch]"
+            python -c 'import nucleus'
 workflows:
   nightly_build_test:
     triggers:
