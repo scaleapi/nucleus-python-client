@@ -206,6 +206,3 @@ apt-get install libgeos-dev
 To develop it locally use
 
 `poetry install --extras metrics`
-
-### CircleCI Poetry lock file
-When adding dependencies we have to update the CircleCI `poetry.circleci.lock` by running `./update_circleci_lock.sh`. Be aware that this can take a long while!

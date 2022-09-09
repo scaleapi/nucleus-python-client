@@ -23,10 +23,6 @@ jobs:
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
-      - run:
-          name: Move CI lock file to expected place
-          command: |
-              cp poetry.circleci.lock poetry.lock
       - python/install-packages:
             pkg-manager: poetry
             include-python-in-cache-key: false
