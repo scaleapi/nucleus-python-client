@@ -132,7 +132,6 @@ jobs:
           command: |
             export FOUND_PKG=$(find ./dist -name "*.tar.gz")
             pip install $FOUND_PKG
-          name: Install with Python Version
       - run:
           name: Install with extra metrics
           command: |
@@ -182,3 +181,4 @@ workflows:
               ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
+
