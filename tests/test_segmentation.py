@@ -29,6 +29,8 @@ def test_segmentation_pred_upload_local(dataset: Dataset, model: Model):
     assert response == prediction
 
 
+# TODO(drake): investigate why this only flakes in circleci
+@pytest.mark.skip(reason="Flaky test")
 def test_segmentation_pred_upload(dataset: Dataset, model: Model):
     prediction = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
