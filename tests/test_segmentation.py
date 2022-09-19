@@ -1,3 +1,5 @@
+import pytest
+
 from nucleus.annotation import SegmentationAnnotation
 from nucleus.dataset import Dataset
 from nucleus.model import Model
@@ -46,6 +48,8 @@ def test_segmentation_pred_upload(dataset: Dataset, model: Model):
     )
 
 
+# TODO(drake): investigate why this only flakes in circleci
+@pytest.mark.skip(reason="Flaky test")
 def test_segmentation_pred_upload_ignore(dataset: Dataset, model: Model):
     prediction = SegmentationPrediction.from_json(
         TEST_SEGMENTATION_PREDICTIONS[0]
