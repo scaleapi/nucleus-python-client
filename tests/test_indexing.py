@@ -87,6 +87,7 @@ def test_create_and_delete_custom_index(dataset):
     # Starts custom indexing job
     signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
     job = dataset.create_custom_index([signed_embeddings_url], embedding_dim=3)
+    job.sleep_until_complete()
 
     resp = dataset.set_primary_index(image=True, custom=True)
     assert resp["success"]
