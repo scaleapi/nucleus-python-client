@@ -35,6 +35,8 @@ def slc(CLIENT, dataset):
     CLIENT.delete_slice(slc.id)
 
 
+# TODO(drake): investigate why this only flakes in circleci
+@pytest.mark.skip(reason="Flaky test")
 def test_slice_create_and_delete_and_list(dataset: Dataset):
     ds_items = dataset.items
 
@@ -107,6 +109,8 @@ def test_slice_create_and_export(dataset):
         ] == get_expected_box_annotation(reference_id)
 
 
+# TODO(drake): investigate why this only flakes in circleci
+@pytest.mark.skip(reason="Flaky test")
 def test_slice_create_and_prediction_export(dataset, slc, model):
     # Dataset upload
     ds_items = dataset.items
