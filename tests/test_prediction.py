@@ -285,6 +285,9 @@ def test_scene_category_pred_upload(scene_category_model_run):
     assert response["predictions_ignored"] == 0
 
 
+@pytest.mark.skip(
+    reason="Triggers SFN failed warning - need to find better unhappy tests"
+)
 def test_non_existent_taxonomy_scene_category_pred_upload(
     scene_category_model_run,
 ):
@@ -756,6 +759,9 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
     assert status["job_progress"] == "1.00"
 
 
+@pytest.mark.skip(
+    reason="Triggers SFN failed warning - need to find better unhappy tests"
+)
 @pytest.mark.integration
 def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     prediction = CategoryPrediction.from_json(
