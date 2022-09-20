@@ -550,6 +550,8 @@ def test_category_gt_upload_ignore(dataset):
     )
 
 
+# TODO(drake): investigate why this only flakes in circleci
+@pytest.mark.skip(reason="Flaky test")
 def test_default_category_gt_upload_update(dataset):
     annotation = CategoryAnnotation.from_json(
         TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]
