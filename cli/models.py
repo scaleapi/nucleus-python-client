@@ -1,6 +1,7 @@
 import click
 import questionary
 from rich.console import Console
+from rich.pretty import pretty_repr
 from rich.table import Column, Table
 
 from cli.client import init_client
@@ -19,6 +20,19 @@ def models(ctx, web):
     launch_web_or_invoke("models", ctx, web, list_models)
 
 
+STRING_REPLACEMENTS = {
+    "\\n": "\n",
+    "\\t": "\t",
+    '\\"': '"',
+}
+
+
+def json_string_to_string(s: str) -> str:
+    for key, val in STRING_REPLACEMENTS.items():
+        s = s.replace(key, val)
+    return s
+
+
 @models.command("calculate-metrics")
 def metrics():
     client = init_client()
@@ -34,7 +48,15 @@ def metrics():
     with console.status("Calculating metrics"):
         for job in jobs:
             job.sleep_until_complete()
-    click.echo(click.style("Done", fg="green"))
+
+    if len(job.errors()) == 0:
+        click.echo(click.style("Done", fg="green"))
+    else:
+        click.echo(
+            click.style("Encountered errors during running", fg="green")
+        )
+        for error in job.errors():
+            click.echo(json_string_to_string(error))
 
 
 @models.command("list")
