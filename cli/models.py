@@ -1,4 +1,5 @@
 import click
+import questionary
 from rich.console import Console
 from rich.table import Column, Table
 
@@ -16,6 +17,24 @@ def models(ctx, web):
     https://dashboard.scale.com/nucleus/models
     """
     launch_web_or_invoke("models", ctx, web, list_models)
+
+
+@models.command("calculate-metrics")
+def metrics():
+    client = init_client()
+    models = client.models
+    prompt_to_id = {f"{m.id}: {m.name}": m.id for m in models}
+    ans = questionary.select(
+        "What model do you want to run metrics for?",
+        choices=list(prompt_to_id.keys()),
+    ).ask()
+    model_id = prompt_to_id[ans]
+    jobs = client.validate.metrics(model_id)
+    console = Console()
+    with console.status("Calculating metrics"):
+        for job in jobs:
+            job.sleep_until_complete()
+    click.echo(click.style("Done", fg="green"))
 
 
 @models.command("list")
