@@ -47,10 +47,12 @@ def metrics():
     console = Console()
     with console.status("Calculating metrics"):
         for job in jobs:
-            job.sleep_until_complete()
+            job.sleep_until_complete(False)
 
     if len(job.errors()) == 0:
+        status = job.status()
         click.echo(click.style("Done", fg="green"))
+        console.print(pretty_repr(status))
     else:
         click.echo(
             click.style("Encountered errors during running", fg="green")
