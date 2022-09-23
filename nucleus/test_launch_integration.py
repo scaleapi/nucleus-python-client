@@ -1,5 +1,5 @@
 import io
-from typing import Any, Callable
+from typing import Any, Callable, Dict, List, Set
 
 from PIL import Image, ImageDraw
 
@@ -11,29 +11,57 @@ _TOP_LEVEL_BOX_ALL_KEYS = _TOP_LEVEL_BOX_REQUIRED_KEYS.union(
     _TOP_LEVEL_OPTIONAL_KEYS
 )
 _BOX_GEOMETRY_KEYS = {"x", "y", "width", "height"}
+_TOP_LEVEL_CATEGORY_REQUIRED_KEYS = {"geometry", "type"}
+_TOP_LEVEL_LINE_REQUIRED_KEYS = {"geometry", "type"}
+
+
+def verify_output(
+    annotation_list: List[Dict[str, Any]],
+    required_keys: Set,
+    all_keys: Set,
+    expected_geometry_keys: Set,
+    annotation_type: str,
+):
+    for annotation in annotation_list:
+        keys = set(annotation.keys())
+        missing_keys = required_keys.difference(keys)
+        extra_keys = keys.difference(all_keys)
+        if len(missing_keys):
+            raise ValueError(f"Missing keys {missing_keys} in annotation")
+        if len(extra_keys):
+            raise ValueError(f"Extra keys {extra_keys} in annotation")
+        # All annotations we care about have this geometry field, so we can do the check here
+        actual_geometry_keys = set(annotation["geometry"].keys())
+        if actual_geometry_keys != expected_geometry_keys:
+            raise ValueError(
+                f"Keys {actual_geometry_keys} in geometry not equal to expected {expected_geometry_keys}"
+            )
+        if annotation["type"] != annotation_type:
+            raise ValueError(
+                f"Bounding box type {annotation['type']} should equal {annotation_type}"
+            )
 
 
 def verify_box_output(bbox_list):
-    for bbox in bbox_list:
-        keys = set(bbox.keys())
-        missing_keys = _TOP_LEVEL_BOX_REQUIRED_KEYS.difference(keys)
-        extra_keys = keys.difference(_TOP_LEVEL_BOX_ALL_KEYS)
-        if len(missing_keys):
-            raise ValueError(f"Missing keys {missing_keys} in box annotation")
-        if len(extra_keys):
-            raise ValueError(f"Extra keys {extra_keys} in box annotation")
-        geometry_keys = set(bbox["geometry"].keys())
-        if geometry_keys != _BOX_GEOMETRY_KEYS:
-            raise ValueError(
-                f"Keys {geometry_keys} in geometry not equal to expected {_BOX_GEOMETRY_KEYS}"
-            )
-        if bbox["type"] != "box":
-            raise ValueError(
-                f"Bounding box type {bbox['type']} should equal 'box'"
-            )
+    required_keys = _TOP_LEVEL_BOX_REQUIRED_KEYS
+    all_keys = _TOP_LEVEL_BOX_ALL_KEYS
+    expected_geometry_keys = _BOX_GEOMETRY_KEYS
+    annotation_type = "box"
+    return verify_output(
+        bbox_list,
+        required_keys,
+        all_keys,
+        expected_geometry_keys,
+        annotation_type,
+    )
 
 
-def visualize_bbox_launch_bundle(
+def verify_category_output(category_annotation):
+    """"""
+    pass
+
+
+def visualize_box_launch_bundle(
     img_file: str,
     load_predict_fn: Callable,
     load_model_fn: Callable = None,
