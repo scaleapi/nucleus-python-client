@@ -5,25 +5,7 @@ from PIL import Image, ImageDraw
 from pydantic import BaseModel, Extra, ValidationError
 
 # From scaleapi/server/src/lib/select/api/types.ts
-
-# TODO use pydantic models here actually
-_TOP_LEVEL_BOX_REQUIRED_KEYS = {"geometry", "type"}
-_TOP_LEVEL_OPTIONAL_KEYS = {"label", "confidence", "classPdf", "metadata"}
-# TODO idk which ones are right for nucleus
-_TOP_LEVEL_BOX_ALL_KEYS = _TOP_LEVEL_BOX_REQUIRED_KEYS.union(
-    _TOP_LEVEL_OPTIONAL_KEYS
-)
-_BOX_GEOMETRY_KEYS = {"x", "y", "width", "height"}
-_TOP_LEVEL_CATEGORY_REQUIRED_KEYS = {"geometry", "type"}
-_TOP_LEVEL_CATEGORY_ALL_KEYS = _TOP_LEVEL_CATEGORY_REQUIRED_KEYS.union(
-    _TOP_LEVEL_OPTIONAL_KEYS
-)
-_CATEGORY_GEOMETRY_KEYS = {}
-_TOP_LEVEL_LINE_REQUIRED_KEYS = {"geometry", "type"}
-_TOP_LEVEL_LINE_ALL_KEYS = _TOP_LEVEL_LINE_REQUIRED_KEYS.union(
-    _TOP_LEVEL_OPTIONAL_KEYS
-)
-_LINE_GEOMETRY_KEYS = {"vertices"}
+# These classes specify how user models must pass output to Launch + Nucleus.
 
 
 class BoxGeometryModel(BaseModel, extra=Extra.forbid):
@@ -35,6 +17,19 @@ class BoxGeometryModel(BaseModel, extra=Extra.forbid):
 
 class BoxAnnotationModel(BaseModel, extra=Extra.forbid):
     geometry: BoxGeometryModel
+    type: str
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    classPdf: Optional[Dict[str, float]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class NoneGeometryModel(BaseModel, extra=Extra.forbid):
+    pass
+
+
+class CategoryAnnotationModel(BaseModel, extra=Extra.forbid):
+    geometry: NoneGeometryModel
     type: str
     label: Optional[str] = None
     confidence: Optional[float] = None
@@ -70,8 +65,10 @@ def verify_box_output(bbox_list):
 
 def verify_category_output(category_list):
     """I think the annotation needs to be a list with a single element in the Launch+Nucleus sfn."""
-    pass
-    required_keys = _TOP_LEVEL_CATEGORY_REQUIRED_KEYS
+    annotation_type = "category"
+    return verify_output(
+        category_list, CategoryAnnotationModel, annotation_type
+    )
 
 
 def visualize_box_launch_bundle(
