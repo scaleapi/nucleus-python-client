@@ -1,9 +1,3 @@
-import os
-import logging
-import warnings
-os.environ['PYTHONASYNCIODEBUG'] = '1'
-logging.basicConfig(level=logging.DEBUG)
-warnings.resetwarnings()
 import asyncio
 import time
 from dataclasses import dataclass
@@ -33,7 +27,7 @@ class FileFormField:
 
 FileFormData = Sequence[FileFormField]
 
-semaphore = asyncio.Semaphore(5)
+UPLOAD_SEMAPHORE = asyncio.Semaphore(10)
 
 
 class FormDataContextHandler:
@@ -105,14 +99,10 @@ def make_many_form_data_requests_concurrently(
             handle generating form data, and opening/closing files for each request.
         route: route for the request.
         progressbar: A tqdm progress bar to use for showing progress to the user.
-        concurrency: How many concurrent requests to run at once. Should be exposed
-            to the user.
     """
     loop = get_event_loop()
     return loop.run_until_complete(
-        form_data_request_helper(
-            client, requests, route, progressbar
-        )
+        form_data_request_helper(client, requests, route, progressbar)
     )
 
 
@@ -127,7 +117,7 @@ async def form_data_request_helper(
 
     Args:
         client: The client to use for the request.
-        requests: Each requst should be a FormDataContextHandler object which will
+        requests: Each request should be a FormDataContextHandler object which will
             handle generating form data, and opening/closing files for each request.
         route: route for the request.
     """
@@ -142,9 +132,10 @@ async def form_data_request_helper(
                     progressbar=progressbar,
                 )
             )
-            for i, request in enumerate(requests)
+            for request in requests
         ]
         return await asyncio.gather(*tasks)
+
 
 async def _post_form_data(
     client: "NucleusClient",
@@ -165,7 +156,7 @@ async def _post_form_data(
     endpoint = f"{client.endpoint}/{route}"
     logger.info("Posting to %s", endpoint)
 
-    async with semaphore:
+    async with UPLOAD_SEMAPHORE:
         for sleep_time in RetryStrategy.sleep_times() + [-1]:
             with request as form:
                 async with session.post(
