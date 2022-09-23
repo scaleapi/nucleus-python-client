@@ -1,6 +1,24 @@
+from typing import Any, Callable, List
+
 import pytest
 
-from nucleus.test_launch_integration import verify_box_output
+from nucleus.test_launch_integration import (
+    verify_box_output,
+    verify_category_output,
+    verify_line_output,
+    verify_polygon_output,
+)
+
+
+def _assert_all_valueerror(fn: Callable[[Any], Any], items: List[Any]):
+    for item in items:
+        try:
+            fn(item)
+        except ValueError:
+            pass
+        else:
+            print(item)
+            pytest.fail("Expected function to throw ValueError")
 
 
 def test_verify_box_output_good():
@@ -153,10 +171,75 @@ def test_verify_box_output_bad():
         bad_bboxes_5,
     ]
 
-    for bad_bbox in bad_bboxes:
-        try:
-            verify_box_output(bad_bbox)
-        except ValueError:
-            pass
-        else:
-            pytest.fail("Expected verify_box_output to throw ValueError")
+    _assert_all_valueerror(verify_box_output, bad_bboxes)
+
+
+def test_verify_category_output_good():
+    good_category = [
+        {
+            "geometry": {},
+            "type": "category",
+            "label": "person",
+            "confidence": 0.42,
+        }
+    ]
+    verify_category_output(good_category)
+
+
+def test_verify_category_output_bad():
+    # missing category
+    bad_category_1 = [
+        {
+            "type": "category",
+            "label": "person",
+            "confidence": 0.42,
+        }
+    ]
+    # extra category
+    bad_category_2 = [
+        {
+            "geometry": {},
+            "type": "category",
+            "label": "person",
+            "confidence": 0.42,
+            "extra": "extra",
+        }
+    ]
+    # wrong type of a field
+    bad_category_3 = [
+        {
+            "geometry": {},
+            "type": "category",
+            "label": "person",
+            "confidence": "extremely",  # Note: passing in "0.42" will not cause pydantic to throw an error
+        }
+    ]
+    # incorrect geometry
+    bad_category_4 = [
+        {
+            "geometry": {"x": 3.1, "y": 4.2, "width": 5.3, "height": 6.4},
+            "type": "category",
+            "label": "person",
+            "confidence": 0.42,
+            "extra": "extra",
+        }
+    ]
+    # wrong type
+    bad_category_5 = [
+        {
+            "geometry": {},
+            "type": "box",
+            "label": "person",
+            "confidence": 0.42,
+            "extra": "extra",
+        }
+    ]
+    bad_categories = [
+        bad_category_1,
+        bad_category_2,
+        bad_category_3,
+        bad_category_4,
+        bad_category_5,
+    ]
+
+    _assert_all_valueerror(verify_category_output, bad_categories)
