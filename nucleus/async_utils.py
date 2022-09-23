@@ -123,7 +123,7 @@ async def form_data_request_helper(
     """
     async with aiohttp.ClientSession() as session:
         tasks = [
-            asyncio.create_task(
+            asyncio.ensure_future(
                 _post_form_data(
                     client=client,
                     request=request,
