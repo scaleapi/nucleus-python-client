@@ -137,6 +137,10 @@ def _run_model(
     return predict_fn(input_bytes)
 
 
+_FILL_COLOR = (0, 255, 0, 50)
+_OUTLINE_COLOR = (0, 255, 0, 255)
+
+
 def visualize_box_launch_bundle(
     img_file: str,
     load_predict_fn: Callable,
@@ -161,11 +165,13 @@ def visualize_box_launch_bundle(
     verify_box_output(output)
 
     image = Image.open(io.BytesIO(img_bytes))
-    draw = ImageDraw.Draw(image)
+    draw = ImageDraw.Draw(image, "RGBA")
     for bbox in output[:max_annotations]:
         geo = bbox["geometry"]
         x, y, w, h = geo["x"], geo["y"], geo["width"], geo["height"]
-        draw.rectangle([(x, y), (x + w, y + h)])
+        draw.rectangle(
+            [(x, y), (x + w, y + h)], outline=_OUTLINE_COLOR, fill=_FILL_COLOR
+        )
 
     if show_image:
         image.show()
@@ -216,11 +222,11 @@ def visualize_line_launch_bundle(
     verify_line_output(output)
 
     image = Image.open(io.BytesIO(img_bytes))
-    draw = ImageDraw.Draw(image)
+    draw = ImageDraw.Draw(image, "RGBA")
     for bbox in output[:max_annotations]:
         geo = bbox["geometry"]
         vertices = [(v["x"], v["y"]) for v in geo["vertices"]]
-        draw.line(vertices)
+        draw.line(vertices, fill=_OUTLINE_COLOR)
 
     if show_image:
         image.show()
@@ -254,11 +260,11 @@ def visualize_polygon_launch_bundle(
     verify_polygon_output(output)
 
     image = Image.open(io.BytesIO(img_bytes))
-    draw = ImageDraw.Draw(image)
+    draw = ImageDraw.Draw(image, "RGBA")
     for bbox in output[:max_annotations]:
         geo = bbox["geometry"]
         vertices = [(v["x"], v["y"]) for v in geo["vertices"]]
-        draw.polygon(vertices)
+        draw.polygon(vertices, outline=_OUTLINE_COLOR, fill=_FILL_COLOR)
 
     if show_image:
         image.show()

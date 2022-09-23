@@ -9,6 +9,24 @@ from nucleus.test_launch_integration import (
     verify_polygon_output,
 )
 
+_GOOD_POINT_ARRAY = [
+    {"x": 1, "y": 2},
+    {"x": 3, "y": 4},
+    {"x": 5, "y": 6},
+]
+
+_BAD_POINT_ARRAY_KEYS = [
+    {"x": 1, "z": 2},
+    {"x": 3, "y": 4},
+    {"x": 5, "y": 6},
+]
+
+_BAD_POINT_ARRAY_TYPES = [
+    {"x": 1, "y": "hi"},
+    {"x": 3, "y": "here"},
+    {"x": 5, "y": "there"},
+]
+
 
 def _assert_all_valueerror(fn: Callable[[Any], Any], items: List[Any]):
     for item in items:
@@ -243,3 +261,154 @@ def test_verify_category_output_bad():
     ]
 
     _assert_all_valueerror(verify_category_output, bad_categories)
+
+
+def test_verify_line_output_good():
+    good_line = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "line",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+
+    verify_line_output(good_line)
+
+
+def test_verify_line_output_bad():
+    bad_line_1 = [
+        {
+            "geometry": {"vertices": _BAD_POINT_ARRAY_TYPES},
+            "type": "line",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_line_2 = [
+        {
+            "geometry": {"vertices": _BAD_POINT_ARRAY_KEYS},
+            "type": "line",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_line_3 = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "notline",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_line_4 = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "line",
+            "label": "label1",
+            "confidence": "extremely",
+        }
+    ]
+    bad_line_5 = [
+        {"geometry": {}, "type": "line", "label": "label1", "confidence": 0.99}
+    ]
+    bad_line_6 = [{"type": "line", "label": "label1", "confidence": 0.99}]
+    bad_line_7 = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "line",
+            "label": "label1",
+            "confidence": 0.99,
+            "extra": "extra",
+        }
+    ]
+
+    bad_lines = [
+        bad_line_1,
+        bad_line_2,
+        bad_line_3,
+        bad_line_4,
+        bad_line_5,
+        bad_line_6,
+        bad_line_7,
+    ]
+    _assert_all_valueerror(verify_line_output, bad_lines)
+
+
+def test_verify_polygon_output_good():
+    good_polygon = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "polygon",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+
+    verify_polygon_output(good_polygon)
+
+
+def test_verify_polygon_output_bad():
+    bad_polygon_1 = [
+        {
+            "geometry": {"vertices": _BAD_POINT_ARRAY_TYPES},
+            "type": "polygon",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_polygon_2 = [
+        {
+            "geometry": {"vertices": _BAD_POINT_ARRAY_KEYS},
+            "type": "polygon",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_polygon_3 = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "notpolygon",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_polygon_4 = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "polygon",
+            "label": "label1",
+            "confidence": "extremely",
+        }
+    ]
+    bad_polygon_5 = [
+        {
+            "geometry": {},
+            "type": "polygon",
+            "label": "label1",
+            "confidence": 0.99,
+        }
+    ]
+    bad_polygon_6 = [
+        {"type": "polygon", "label": "label1", "confidence": 0.99}
+    ]
+    bad_polygon_7 = [
+        {
+            "geometry": {"vertices": _GOOD_POINT_ARRAY},
+            "type": "polygon",
+            "label": "label1",
+            "confidence": 0.99,
+            "extra": "extra",
+        }
+    ]
+
+    bad_polygons = [
+        bad_polygon_1,
+        bad_polygon_2,
+        bad_polygon_3,
+        bad_polygon_4,
+        bad_polygon_5,
+        bad_polygon_6,
+        bad_polygon_7,
+    ]
+    _assert_all_valueerror(verify_polygon_output, bad_polygons)
