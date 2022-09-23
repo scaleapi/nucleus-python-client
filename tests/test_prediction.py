@@ -776,7 +776,7 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
 
     status = job.status()
     assert status["job_id"] == job.job_id
-    assert status["status"] == "Errored"
+    assert status["status"] == "Errored_Server"
     assert status["job_progress"] == "0.00"
 
 
