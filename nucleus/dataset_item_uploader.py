@@ -78,7 +78,6 @@ class DatasetItemUploader:
                     self.dataset_id,
                     items=local_items,
                     update=update,
-                    batch_size=batch_size,
                     local_files_per_upload_request=local_files_per_upload_request,
                     local_file_upload_concurrency=local_file_upload_concurrency,
                 )
@@ -112,7 +111,6 @@ class DatasetItemUploader:
         dataset_id: str,
         items: Sequence[DatasetItem],
         update: bool,
-        batch_size: int,
         local_files_per_upload_request: int,
         local_file_upload_concurrency: int,
     ):
@@ -127,7 +125,7 @@ class DatasetItemUploader:
             requests.append(request)
 
         progressbar = self._client.tqdm_bar(
-            total=len(requests), desc="Local file batches"
+            total=len(requests), desc=f"Uploading {len(items)} items in {len(requests)} batches"
         )
 
         return make_many_form_data_requests_concurrently(
@@ -135,7 +133,6 @@ class DatasetItemUploader:
             requests,
             f"dataset/{dataset_id}/append",
             progressbar=progressbar,
-            concurrency=local_file_upload_concurrency,
         )
 
     def _process_append_requests(

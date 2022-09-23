@@ -158,7 +158,6 @@ class AnnotationUploader:
             requests=requests,
             route=self._route,
             progressbar=progressbar,
-            concurrency=local_file_upload_concurrency,
         )
 
     def get_form_data_and_file_pointers_fn(
