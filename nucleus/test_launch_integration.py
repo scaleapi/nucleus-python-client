@@ -1,5 +1,5 @@
 import io
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 from PIL import Image, ImageDraw
 
@@ -33,7 +33,6 @@ def verify_box_output(bbox_list):
 
 def visualize_bbox_launch_bundle(
     img_file: str,
-    config: Dict[str, Any],
     load_predict_fn: Callable,
     load_model_fn: Callable = None,
     model: Any = None,
@@ -55,9 +54,9 @@ def visualize_bbox_launch_bundle(
         )
 
     if load_model_fn:
-        model = load_model_fn(config)
+        model = load_model_fn()
 
-    predict_fn = load_predict_fn(config, model)
+    predict_fn = load_predict_fn(model)
 
     with open(img_file, "rb") as f:
         img_bytes = f.read()
