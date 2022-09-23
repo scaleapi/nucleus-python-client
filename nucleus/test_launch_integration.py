@@ -4,26 +4,28 @@ from typing import Any, Callable
 from PIL import Image, ImageDraw
 
 # From scaleapi/server/src/lib/select/api/types.ts
-_TOP_LEVEL_REQUIRED_KEYS = {"geometry", "type"}
+_TOP_LEVEL_BOX_REQUIRED_KEYS = {"geometry", "type"}
 _TOP_LEVEL_OPTIONAL_KEYS = {"label", "confidence", "classPdf", "metadata"}
 # TODO idk which ones are right for nucleus
-_TOP_LEVEL_ALL_KEYS = _TOP_LEVEL_REQUIRED_KEYS.union(_TOP_LEVEL_OPTIONAL_KEYS)
-_GEOMETRY_KEYS = {"x", "y", "width", "height"}
+_TOP_LEVEL_BOX_ALL_KEYS = _TOP_LEVEL_BOX_REQUIRED_KEYS.union(
+    _TOP_LEVEL_OPTIONAL_KEYS
+)
+_BOX_GEOMETRY_KEYS = {"x", "y", "width", "height"}
 
 
 def verify_box_output(bbox_list):
     for bbox in bbox_list:
         keys = set(bbox.keys())
-        missing_keys = _TOP_LEVEL_REQUIRED_KEYS.difference(keys)
-        extra_keys = keys.difference(_TOP_LEVEL_ALL_KEYS)
+        missing_keys = _TOP_LEVEL_BOX_REQUIRED_KEYS.difference(keys)
+        extra_keys = keys.difference(_TOP_LEVEL_BOX_ALL_KEYS)
         if len(missing_keys):
             raise ValueError(f"Missing keys {missing_keys} in box annotation")
         if len(extra_keys):
             raise ValueError(f"Extra keys {extra_keys} in box annotation")
         geometry_keys = set(bbox["geometry"].keys())
-        if geometry_keys != _GEOMETRY_KEYS:
+        if geometry_keys != _BOX_GEOMETRY_KEYS:
             raise ValueError(
-                f"Keys {geometry_keys} in geometry not equal to expected {_GEOMETRY_KEYS}"
+                f"Keys {geometry_keys} in geometry not equal to expected {_BOX_GEOMETRY_KEYS}"
             )
         if bbox["type"] != "box":
             raise ValueError(
