@@ -55,6 +55,19 @@ class LineAnnotationModel(BaseModel, extra=Extra.forbid):
     metadata: Optional[Dict[str, Any]] = None
 
 
+class PolygonGeometryModel(BaseModel, extra=Extra.forbid):
+    vertices: List[PointModel]
+
+
+class PolygonAnnotationModel(BaseModel, extra=Extra.forbid):
+    geometry: PolygonGeometryModel
+    type: str
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    classPdf: Optional[Dict[str, float]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
 def verify_output(
     annotation_list: List[Dict[str, Any]],
     model: Type[BaseModel],
@@ -93,6 +106,15 @@ def verify_line_output(line_list):
     return verify_output(
         line_list,
         LineAnnotationModel,
+        annotation_type,
+    )
+
+
+def verify_polygon_output(polygon_list):
+    annotation_type = "polygon"
+    return verify_output(
+        polygon_list,
+        PolygonAnnotationModel,
         annotation_type,
     )
 
@@ -197,9 +219,46 @@ def visualize_line_launch_bundle(
     draw = ImageDraw.Draw(image)
     for bbox in output[:max_annotations]:
         geo = bbox["geometry"]
-        vertices = geo["vertices"]
-        for v1, v2 in zip(vertices[:-1], vertices[1:]):
-            draw.line(v1, v2)
+        vertices = [(v["x"], v["y"]) for v in geo["vertices"]]
+        draw.line(vertices)
+
+    if show_image:
+        image.show()
+
+    return image
+
+
+def visualize_polygon_launch_bundle(
+    img_file: str,
+    load_predict_fn: Callable,
+    load_model_fn: Callable = None,
+    model: Any = None,
+    show_image: bool = False,
+    max_annotations: int = 5,
+) -> Image:
+    """
+    Run this function locally to visualize what your Launch bundle will do on a local image
+    Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
+    any coordinate systems used for the image.
+    Will display the image in a separate window if show_image == True.
+    Returns the image
+    """
+    # Basically do the same thing as what Launch does but locally
+    # TODO test
+    # TODO are there even models that return a sequence of lines?
+
+    with open(img_file, "rb") as f:
+        img_bytes = f.read()
+
+    output = _run_model(img_bytes, load_predict_fn, load_model_fn, model)
+    verify_polygon_output(output)
+
+    image = Image.open(io.BytesIO(img_bytes))
+    draw = ImageDraw.Draw(image)
+    for bbox in output[:max_annotations]:
+        geo = bbox["geometry"]
+        vertices = [(v["x"], v["y"]) for v in geo["vertices"]]
+        draw.polygon(vertices)
 
     if show_image:
         image.show()
