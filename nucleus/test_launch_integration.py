@@ -40,6 +40,12 @@ def visualize_bbox_launch_bundle(
     show_image: bool = False,
     max_boxes: int = 5,
 ):
+    """
+    Run this function locally to visualize what your Launch bundle will do on a local image
+    Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
+    any coordinate systems used for the image.
+    Will display the image in a separate window if show_image == True.
+    """
     # Basically do the same thing as what Launch does but locally
 
     if not (model is None) ^ (load_model_fn is None):
