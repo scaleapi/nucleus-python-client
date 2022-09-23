@@ -1,9 +1,12 @@
 import io
-from typing import Any, Callable, Dict, List, Set
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from PIL import Image, ImageDraw
+from pydantic import BaseModel, Extra, ValidationError
 
 # From scaleapi/server/src/lib/select/api/types.ts
+
+# TODO use pydantic models here actually
 _TOP_LEVEL_BOX_REQUIRED_KEYS = {"geometry", "type"}
 _TOP_LEVEL_OPTIONAL_KEYS = {"label", "confidence", "classPdf", "metadata"}
 # TODO idk which ones are right for nucleus
@@ -12,30 +15,44 @@ _TOP_LEVEL_BOX_ALL_KEYS = _TOP_LEVEL_BOX_REQUIRED_KEYS.union(
 )
 _BOX_GEOMETRY_KEYS = {"x", "y", "width", "height"}
 _TOP_LEVEL_CATEGORY_REQUIRED_KEYS = {"geometry", "type"}
+_TOP_LEVEL_CATEGORY_ALL_KEYS = _TOP_LEVEL_CATEGORY_REQUIRED_KEYS.union(
+    _TOP_LEVEL_OPTIONAL_KEYS
+)
+_CATEGORY_GEOMETRY_KEYS = {}
 _TOP_LEVEL_LINE_REQUIRED_KEYS = {"geometry", "type"}
+_TOP_LEVEL_LINE_ALL_KEYS = _TOP_LEVEL_LINE_REQUIRED_KEYS.union(
+    _TOP_LEVEL_OPTIONAL_KEYS
+)
+_LINE_GEOMETRY_KEYS = {"vertices"}
+
+
+class BoxGeometryModel(BaseModel, extra=Extra.forbid):
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+class BoxAnnotationModel(BaseModel, extra=Extra.forbid):
+    geometry: BoxGeometryModel
+    type: str
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    classPdf: Optional[Dict[str, float]] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 def verify_output(
     annotation_list: List[Dict[str, Any]],
-    required_keys: Set,
-    all_keys: Set,
-    expected_geometry_keys: Set,
+    model: Type[BaseModel],
     annotation_type: str,
 ):
     for annotation in annotation_list:
-        keys = set(annotation.keys())
-        missing_keys = required_keys.difference(keys)
-        extra_keys = keys.difference(all_keys)
-        if len(missing_keys):
-            raise ValueError(f"Missing keys {missing_keys} in annotation")
-        if len(extra_keys):
-            raise ValueError(f"Extra keys {extra_keys} in annotation")
-        # All annotations we care about have this geometry field, so we can do the check here
-        actual_geometry_keys = set(annotation["geometry"].keys())
-        if actual_geometry_keys != expected_geometry_keys:
-            raise ValueError(
-                f"Keys {actual_geometry_keys} in geometry not equal to expected {expected_geometry_keys}"
-            )
+        try:
+            obj = model.parse_obj(annotation)
+            print(obj)
+        except ValidationError as e:
+            raise ValueError("Failed validation") from e
         if annotation["type"] != annotation_type:
             raise ValueError(
                 f"Bounding box type {annotation['type']} should equal {annotation_type}"
@@ -43,22 +60,18 @@ def verify_output(
 
 
 def verify_box_output(bbox_list):
-    required_keys = _TOP_LEVEL_BOX_REQUIRED_KEYS
-    all_keys = _TOP_LEVEL_BOX_ALL_KEYS
-    expected_geometry_keys = _BOX_GEOMETRY_KEYS
     annotation_type = "box"
     return verify_output(
         bbox_list,
-        required_keys,
-        all_keys,
-        expected_geometry_keys,
+        BoxAnnotationModel,
         annotation_type,
     )
 
 
-def verify_category_output(category_annotation):
-    """"""
+def verify_category_output(category_list):
+    """I think the annotation needs to be a list with a single element in the Launch+Nucleus sfn."""
     pass
+    required_keys = _TOP_LEVEL_CATEGORY_REQUIRED_KEYS
 
 
 def visualize_box_launch_bundle(
