@@ -42,7 +42,7 @@ def visualize_bbox_launch_bundle(
 ):
     # Basically do the same thing as what Launch does but locally
 
-    if (model is None) ^ (load_model_fn is None):
+    if not (model is None) ^ (load_model_fn is None):
         raise ValueError(
             "Exactly one of `model` and `load_model_fn` must not be None."
         )
