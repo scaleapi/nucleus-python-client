@@ -39,12 +39,13 @@ def visualize_bbox_launch_bundle(
     model: Any = None,
     show_image: bool = False,
     max_boxes: int = 5,
-):
+) -> Image:
     """
     Run this function locally to visualize what your Launch bundle will do on a local image
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
     any coordinate systems used for the image.
     Will display the image in a separate window if show_image == True.
+    Returns the image
     """
     # Basically do the same thing as what Launch does but locally
 
@@ -64,11 +65,14 @@ def visualize_bbox_launch_bundle(
     output = predict_fn(img_bytes)
     verify_box_output(output)
 
+    image = Image.open(io.BytesIO(img_bytes))
+    draw = ImageDraw.Draw(image)
+    for bbox in output[:max_boxes]:
+        geo = bbox["geometry"]
+        x, y, w, h = geo["x"], geo["y"], geo["width"], geo["height"]
+        draw.rectangle([(x, y), (x + w, y + h)])
+
     if show_image:
-        image = Image.open(io.BytesIO(img_bytes))
-        draw = ImageDraw.Draw(image)
-        for bbox in output[:max_boxes]:
-            geo = bbox["geometry"]
-            x, y, w, h = geo["x"], geo["y"], geo["width"], geo["height"]
-            draw.rectangle([(x, y), (x + w, y + h)])
         image.show()
+
+    return image
