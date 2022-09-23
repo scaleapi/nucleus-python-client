@@ -23,7 +23,7 @@ def verify_box_output(bbox_list):
         geometry_keys = set(bbox["geometry"].keys())
         if geometry_keys != _GEOMETRY_KEYS:
             raise ValueError(
-                f"Keys {geometry_keys} in geometry not equal to {_GEOMETRY_KEYS}"
+                f"Keys {geometry_keys} in geometry not equal to expected {_GEOMETRY_KEYS}"
             )
         if bbox["type"] != "box":
             raise ValueError(
