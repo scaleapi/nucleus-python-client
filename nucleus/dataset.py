@@ -72,7 +72,7 @@ from .upload_response import UploadResponse
 # pylint: disable=C0302
 
 
-WARN_FOR_LARGE_UPLOAD = 50000
+WARN_FOR_LARGE_UPLOAD = 10000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
