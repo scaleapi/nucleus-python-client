@@ -52,17 +52,11 @@ def dataset_scene(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=True)
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
 
 @pytest.fixture()
 def dataset_item(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=False)
     yield ds
-
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_frame_add_item():
