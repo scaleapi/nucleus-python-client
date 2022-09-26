@@ -257,7 +257,7 @@ class Dataset:
         response = self._client.make_request(
             payload={AUTOTAG_SCORE_THRESHOLD: for_scores_greater_than},
             route=f"dataset/{self.id}/autotag/{autotag_name}/taggedItems",
-            requests_command=requests.get,
+            requests_command=requests.post,
         )
         return response
 
