@@ -110,8 +110,6 @@ def model_run(CLIENT):
 
     yield run
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
     response = CLIENT.delete_model(model.id)
     assert response == {}
 
@@ -140,8 +138,6 @@ def scene_category_model_run(CLIENT):
 
     yield run
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
     response = CLIENT.delete_model(model.id)
     assert response == {}
 

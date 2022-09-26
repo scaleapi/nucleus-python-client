@@ -34,9 +34,6 @@ def dataset(CLIENT):
     assert ERROR_PAYLOAD not in response.json()
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
 
 @pytest.mark.integration
 def test_set_continuous_indexing(dataset):

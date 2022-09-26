@@ -18,8 +18,6 @@ def validate_dataset(CLIENT):
     ds = CLIENT.create_dataset("[Test Model CI] Dataset", is_scene=False)
     yield ds
 
-    CLIENT.delete_dataset(ds.id)
-
 
 @pytest.fixture(scope="module")
 def dataset_items(validate_dataset):

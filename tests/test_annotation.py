@@ -100,9 +100,6 @@ def dataset(CLIENT):
 
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
 
 @pytest.fixture()
 def scene_category_dataset(CLIENT):
@@ -121,9 +118,6 @@ def scene_category_dataset(CLIENT):
     ds.add_taxonomy(*TEST_SCENE_CATEGORY_TAXONOMY_PAYLOAD)
 
     yield ds
-
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
 
 
 def test_box_gt_upload(dataset):
