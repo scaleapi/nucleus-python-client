@@ -24,3 +24,6 @@ reports=no
 
 [tool.pylint.FORMAT]
 max-line-length=79
+
+[tool.pylint.MASTER]
+extension-pkg-whitelist=pydantic
