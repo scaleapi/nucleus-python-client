@@ -120,7 +120,6 @@ class ModelRun:
         batch_size: int = 5000,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-        local_file_upload_concurrency: int = 30,
     ) -> Union[dict, AsyncJob]:
         """
         Uploads model outputs as predictions for a model_run. Returns info about the upload.
@@ -144,8 +143,6 @@ class ModelRun:
                 request. Segmentations have either local or remote files, if you are
                 getting timeouts while uploading segmentations with local files, you
                 should lower this value from its default of 10. The maximum is 10.
-                This is only relevant for asynchronous=False
-            local_file_upload_concurrency: Number of concurrent local file uploads.
                 This is only relevant for asynchronous=False
         :return:
         {
@@ -177,7 +174,6 @@ class ModelRun:
             batch_size=batch_size,
             remote_files_per_upload_request=remote_files_per_upload_request,
             local_files_per_upload_request=local_files_per_upload_request,
-            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     def iloc(self, i: int):

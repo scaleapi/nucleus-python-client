@@ -57,7 +57,6 @@ class AnnotationUploader:
         update: bool = False,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-        local_file_upload_concurrency: int = 30,
     ):
         """For more details on parameters and functionality, see dataset.annotate."""
         if local_files_per_upload_request > 10:
@@ -84,7 +83,6 @@ class AnnotationUploader:
                     segmentations=segmentations_with_local_files,
                     update=update,
                     local_files_per_upload_request=local_files_per_upload_request,
-                    local_file_upload_concurrency=local_file_upload_concurrency,
                 )
             )
         if segmentations_with_remote_files:
@@ -138,7 +136,6 @@ class AnnotationUploader:
         segmentations: Sequence[SegmentationAnnotation],
         update,
         local_files_per_upload_request: int,
-        local_file_upload_concurrency: int,
     ):
         requests = []
         for i in range(0, len(segmentations), local_files_per_upload_request):
@@ -158,7 +155,6 @@ class AnnotationUploader:
             requests=requests,
             route=self._route,
             progressbar=progressbar,
-            concurrency=local_file_upload_concurrency,
         )
 
     def get_form_data_and_file_pointers_fn(
