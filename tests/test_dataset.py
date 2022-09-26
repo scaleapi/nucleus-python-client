@@ -48,13 +48,13 @@ from .helpers import (
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
 
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] Category Taxonomy 1",
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
 
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] MultiCategory Taxonomy 1",
         "multicategory",
         [
