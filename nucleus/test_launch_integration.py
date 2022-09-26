@@ -154,7 +154,19 @@ def visualize_box_launch_bundle(
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
     any coordinate systems used for the image.
     Will display the image in a separate window if show_image == True.
-    Returns the image
+    Returns the image as well.
+
+    Parameters:
+        img_file: The path to a local image file.
+        load_predict_fn: The load_predict_fn as part of your Launch bundle
+        load_model_fn: The load_model_fn as part of your Launch bundle
+        model: The model as part of your Launch bundle. Note: exactly one of load_model_fn and model must be specified
+        show_image: Whether to automatically pop up the image + predictions in a separate window. Can be useful in a
+          script.
+        max_annotations: How many annotations you want to draw
+
+    Returns:
+        Image: The image with annotations drawn on top.
     """
     # Basically do the same thing as what Launch does but locally
 
@@ -186,7 +198,14 @@ def run_category_launch_bundle(
     model: Any = None,
 ):
     """
-    Not much visualization to be done for category, so we just run it and make sure it works
+    Run this function locally to test if your image categorization model returns a format consumable by Launch + Nucleus
+    Parameters:
+        img_file: The path to a local image file.
+        load_predict_fn: The load_predict_fn as part of your Launch bundle
+        load_model_fn: The load_model_fn as part of your Launch bundle
+        model: The model as part of your Launch bundle. Note: exactly one of load_model_fn and model must be specified
+    Returns:
+        The raw output (as a json) of your categorization model.
     """
     with open(img_file, "rb") as f:
         img_bytes = f.read()
@@ -209,11 +228,21 @@ def visualize_line_launch_bundle(
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
     any coordinate systems used for the image.
     Will display the image in a separate window if show_image == True.
-    Returns the image
+    Returns the image as well.
+
+    Parameters:
+        img_file: The path to a local image file.
+        load_predict_fn: The load_predict_fn as part of your Launch bundle
+        load_model_fn: The load_model_fn as part of your Launch bundle
+        model: The model as part of your Launch bundle. Note: exactly one of load_model_fn and model must be specified
+        show_image: Whether to automatically pop up the image + predictions in a separate window. Can be useful in a
+          script.
+        max_annotations: How many annotations you want to draw
+
+    Returns:
+        Image: The image with annotations drawn on top.
     """
     # Basically do the same thing as what Launch does but locally
-    # TODO test
-    # TODO are there even models that return a sequence of lines?
 
     with open(img_file, "rb") as f:
         img_bytes = f.read()
@@ -247,11 +276,21 @@ def visualize_polygon_launch_bundle(
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
     any coordinate systems used for the image.
     Will display the image in a separate window if show_image == True.
-    Returns the image
+    Returns the image as well.
+
+    Parameters:
+        img_file: The path to a local image file.
+        load_predict_fn: The load_predict_fn as part of your Launch bundle
+        load_model_fn: The load_model_fn as part of your Launch bundle
+        model: The model as part of your Launch bundle. Note: exactly one of load_model_fn and model must be specified
+        show_image: Whether to automatically pop up the image + predictions in a separate window. Can be useful in a
+          script.
+        max_annotations: How many annotations you want to draw
+
+    Returns:
+        Image: The image with annotations drawn on top.
     """
     # Basically do the same thing as what Launch does but locally
-    # TODO test
-    # TODO are there even models that return a sequence of lines?
 
     with open(img_file, "rb") as f:
         img_bytes = f.read()
