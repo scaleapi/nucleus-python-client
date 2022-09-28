@@ -110,8 +110,6 @@ def model_run(CLIENT):
 
     yield run
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
     response = CLIENT.delete_model(model.id)
     assert response == {}
 
@@ -140,8 +138,6 @@ def scene_category_model_run(CLIENT):
 
     yield run
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
     response = CLIENT.delete_model(model.id)
     assert response == {}
 
@@ -285,6 +281,9 @@ def test_scene_category_pred_upload(scene_category_model_run):
     assert response["predictions_ignored"] == 0
 
 
+@pytest.mark.skip(
+    reason="Triggers SFN failed warning - need to find better unhappy tests"
+)
 def test_non_existent_taxonomy_scene_category_pred_upload(
     scene_category_model_run,
 ):
@@ -756,6 +755,9 @@ def test_default_category_pred_upload_async(model_run: ModelRun):
     assert status["job_progress"] == "1.00"
 
 
+@pytest.mark.skip(
+    reason="Triggers SFN failed warning - need to find better unhappy tests"
+)
 @pytest.mark.integration
 def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
     prediction = CategoryPrediction.from_json(
@@ -776,7 +778,7 @@ def test_non_existent_taxonomy_category_pred_upload_async(model_run: ModelRun):
 
     status = job.status()
     assert status["job_id"] == job.job_id
-    assert status["status"] == "Errored"
+    assert status["status"] == "Errored_Server"
     assert status["job_progress"] == "0.00"
 
 

@@ -27,16 +27,7 @@ class FileFormField:
 
 FileFormData = Sequence[FileFormField]
 
-
-async def gather_with_concurrency(n, *tasks):
-    """Helper method to limit the concurrency when gathering the results from multiple tasks."""
-    semaphore = asyncio.Semaphore(n)
-
-    async def sem_task(task):
-        async with semaphore:
-            return await task
-
-    return await asyncio.gather(*(sem_task(task) for task in tasks))
+UPLOAD_SEMAPHORE = asyncio.Semaphore(10)
 
 
 class FormDataContextHandler:
@@ -98,7 +89,6 @@ def make_many_form_data_requests_concurrently(
     requests: Sequence[FormDataContextHandler],
     route: str,
     progressbar: tqdm,
-    concurrency: int = 30,
 ):
     """
     Makes an async post request with form data to a Nucleus endpoint.
@@ -109,14 +99,10 @@ def make_many_form_data_requests_concurrently(
             handle generating form data, and opening/closing files for each request.
         route: route for the request.
         progressbar: A tqdm progress bar to use for showing progress to the user.
-        concurrency: How many concurrent requests to run at once. Should be exposed
-            to the user.
     """
     loop = get_event_loop()
     return loop.run_until_complete(
-        form_data_request_helper(
-            client, requests, route, progressbar, concurrency
-        )
+        form_data_request_helper(client, requests, route, progressbar)
     )
 
 
@@ -125,14 +111,13 @@ async def form_data_request_helper(
     requests: Sequence[FormDataContextHandler],
     route: str,
     progressbar: tqdm,
-    concurrency: int = 30,
 ):
     """
     Makes an async post request with files to a Nucleus endpoint.
 
     Args:
         client: The client to use for the request.
-        requests: Each requst should be a FormDataContextHandler object which will
+        requests: Each request should be a FormDataContextHandler object which will
             handle generating form data, and opening/closing files for each request.
         route: route for the request.
     """
@@ -149,7 +134,7 @@ async def form_data_request_helper(
             )
             for request in requests
         ]
-        return await gather_with_concurrency(concurrency, *tasks)
+        return await asyncio.gather(*tasks)
 
 
 async def _post_form_data(
@@ -169,47 +154,47 @@ async def _post_form_data(
         session: The session to use for the request.
     """
     endpoint = f"{client.endpoint}/{route}"
-
     logger.info("Posting to %s", endpoint)
 
-    for sleep_time in RetryStrategy.sleep_times() + [-1]:
-        with request as form:
-            async with session.post(
-                endpoint,
-                data=form,
-                auth=aiohttp.BasicAuth(client.api_key, ""),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
-            ) as response:
-                logger.info(
-                    "API request has response code %s", response.status
-                )
-
-                try:
-                    data = await response.json()
-                except aiohttp.client_exceptions.ContentTypeError:
-                    # In case of 404, the server returns text
-                    data = await response.text()
-                if (
-                    response.status in RetryStrategy.statuses
-                    and sleep_time != -1
-                ):
-                    time.sleep(sleep_time)
-                    continue
-
-                if response.status == 503:
-                    raise TimeoutError(
-                        "The request to upload your max is timing out, please lower local_files_per_upload_request in your api call."
+    async with UPLOAD_SEMAPHORE:
+        for sleep_time in RetryStrategy.sleep_times() + [-1]:
+            with request as form:
+                async with session.post(
+                    endpoint,
+                    data=form,
+                    auth=aiohttp.BasicAuth(client.api_key, ""),
+                    timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+                ) as response:
+                    logger.info(
+                        "API request has response code %s", response.status
                     )
 
-                if not response.ok:
-                    raise NucleusAPIError(
-                        endpoint,
-                        session.post,
-                        aiohttp_response=(
-                            response.status,
-                            response.reason,
-                            data,
-                        ),
-                    )
-                progressbar.update(1)
-                return data
+                    try:
+                        data = await response.json()
+                    except aiohttp.client_exceptions.ContentTypeError:
+                        # In case of 404, the server returns text
+                        data = await response.text()
+                    if (
+                        response.status in RetryStrategy.statuses
+                        and sleep_time != -1
+                    ):
+                        time.sleep(sleep_time)
+                        continue
+
+                    if response.status == 503:
+                        raise TimeoutError(
+                            "The request to upload your max is timing out, please lower local_files_per_upload_request in your api call."
+                        )
+
+                    if not response.ok:
+                        raise NucleusAPIError(
+                            endpoint,
+                            session.post,
+                            aiohttp_response=(
+                                response.status,
+                                response.reason,
+                                data,
+                            ),
+                        )
+                    progressbar.update(1)
+                    return data

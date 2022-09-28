@@ -24,15 +24,11 @@ def module_scope_datasets(CLIENT):
         )
     yield test_datasets
 
-    for test_dataset in test_datasets:
-        CLIENT.delete_dataset(test_dataset.id)
-
 
 @pytest.fixture(scope="function")
 def function_scope_dataset(CLIENT):
     dataset = CLIENT.create_dataset(f"[PyTest] Dataset {get_uuid()}")
     yield dataset
-    CLIENT.delete_dataset(dataset.id)
 
 
 @pytest.fixture(scope="module")

@@ -72,7 +72,7 @@ from .upload_response import UploadResponse
 # pylint: disable=C0302
 
 
-WARN_FOR_LARGE_UPLOAD = 50000
+WARN_FOR_LARGE_UPLOAD = 10000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
@@ -336,7 +336,6 @@ class Dataset:
         asynchronous: bool = False,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-        local_file_upload_concurrency: int = 30,
     ) -> Union[Dict[str, Any], AsyncJob]:
         """Uploads ground truth annotations to the dataset.
 
@@ -381,8 +380,6 @@ class Dataset:
                 request. Segmentations have either local or remote files, if you are
                 getting timeouts while uploading segmentations with local files, you
                 should lower this value from its default of 10. The maximum is 10.
-            local_file_upload_concurrency: Number of concurrent local file uploads.
-
 
         Returns:
             If synchronous, payload describing the upload result::
@@ -414,7 +411,6 @@ class Dataset:
             batch_size=batch_size,
             remote_files_per_upload_request=remote_files_per_upload_request,
             local_files_per_upload_request=local_files_per_upload_request,
-            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     def ingest_tasks(self, task_ids: List[str]) -> dict:
@@ -452,7 +448,6 @@ class Dataset:
         batch_size: int = 20,
         asynchronous: bool = False,
         local_files_per_upload_request: int = 10,
-        local_file_upload_concurrency: int = 30,
     ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
         """Appends items or scenes to a dataset.
 
@@ -535,8 +530,6 @@ class Dataset:
                 this if you encounter timeouts.
             local_files_per_upload_request: Optional; default is 10. We recommend
                 lowering this if you encounter timeouts.
-            local_file_upload_concurrency: Optional; default is 30. We recommend
-                lowering this if you encounter gateway timeouts or Cloudflare errors.
         Returns:
             For scenes
                 If synchronous, returns a payload describing the upload result::
@@ -608,7 +601,6 @@ class Dataset:
             update=update,
             batch_size=batch_size,
             local_files_per_upload_request=local_files_per_upload_request,
-            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     @deprecated("Prefer using Dataset.append instead.")
@@ -1483,7 +1475,6 @@ class Dataset:
         batch_size: int = 5000,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-        local_file_upload_concurrency: int = 30,
     ):
         """Uploads predictions and associates them with an existing :class:`Model`.
 
@@ -1541,7 +1532,6 @@ class Dataset:
                 getting timeouts while uploading segmentations with local files, you
                 should lower this value from its default of 10. The maximum is 10.
                 This is only relevant for asynchronous=False
-            local_file_upload_concurrency: Number of concurrent local file uploads.
 
         Returns:
             Payload describing the synchronous upload::
@@ -1579,7 +1569,6 @@ class Dataset:
             update=update,
             remote_files_per_upload_request=remote_files_per_upload_request,
             local_files_per_upload_request=local_files_per_upload_request,
-            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     def predictions_iloc(self, model, index):
@@ -1686,7 +1675,6 @@ class Dataset:
         batch_size: int = 20,
         update: bool = False,
         local_files_per_upload_request: int = 10,
-        local_file_upload_concurrency: int = 30,
     ) -> UploadResponse:
         """
         Appends images to a dataset with given dataset_id.
@@ -1700,9 +1688,6 @@ class Dataset:
             local_files_per_upload_request: How large to make each upload request when your
                 files are local. If you get timeouts, you may need to lower this from
                 its default of 10. The maximum is 10.
-            local_file_upload_concurrency: How many local file requests to send
-                concurrently. If you start to see gateway timeouts or cloudflare related
-                errors, you may need to lower this from its default of 30.
 
         Returns:
             UploadResponse
@@ -1720,7 +1705,6 @@ class Dataset:
             batch_size=batch_size,
             update=update,
             local_files_per_upload_request=local_files_per_upload_request,
-            local_file_upload_concurrency=local_file_upload_concurrency,
         )
 
     def update_scene_metadata(

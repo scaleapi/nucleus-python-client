@@ -48,13 +48,13 @@ from .helpers import (
 def dataset(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
 
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] Category Taxonomy 1",
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
 
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] MultiCategory Taxonomy 1",
         "multicategory",
         [
@@ -65,15 +65,11 @@ def dataset(CLIENT):
 
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
 
 @pytest.fixture()
 def dataset_scene(CLIENT):
     ds = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=True)
     yield ds
-    CLIENT.delete_dataset(ds.id)
 
 
 def make_dataset_items():

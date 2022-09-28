@@ -150,17 +150,6 @@ jobs:
             pip install "$FOUND_PKG[metrics, launch]"
             python -c 'import nucleus'
 workflows:
-  nightly_build_test:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-    jobs:
-      - build_test:
-          context: Nucleus
   installation_matrix:
     jobs:
       - test_client_installation:

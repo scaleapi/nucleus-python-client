@@ -62,6 +62,8 @@ def test_export_embeddings(CLIENT):
         assert "reference_id" in embeddings[0]
 
 
+# TODO(drake): investigate why this only flakes in circleci
+@pytest.mark.skip(reason="Flaky test")
 def test_dataset_export_autotag_tagged_items(CLIENT):
     # This test can only run for the test user who has an indexed dataset.
     # TODO: if/when we can create autotags via api, create one instead.

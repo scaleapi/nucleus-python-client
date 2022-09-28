@@ -31,8 +31,6 @@ def dataset(CLIENT: "NucleusClient"):
     test_dataset.append(TEST_DATASET_ITEMS)
     yield test_dataset
 
-    CLIENT.delete_dataset(test_dataset.id)
-
 
 @pytest.fixture()
 def model(CLIENT):

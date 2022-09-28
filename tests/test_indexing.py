@@ -34,9 +34,6 @@ def dataset(CLIENT):
     assert ERROR_PAYLOAD not in response.json()
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
 
 @pytest.mark.integration
 def test_set_continuous_indexing(dataset):
@@ -76,6 +73,8 @@ def test_create_custom_index(dataset):
     assert JOB_ID_KEY in job_status_response
     assert MESSAGE_KEY in job_status_response
 
+    job.sleep_until_complete()
+
 
 @pytest.mark.integration
 def test_create_and_delete_custom_index(dataset):
@@ -84,7 +83,8 @@ def test_create_and_delete_custom_index(dataset):
 
     # Starts custom indexing job
     signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
-    dataset.create_custom_index([signed_embeddings_url], embedding_dim=3)
+    job = dataset.create_custom_index([signed_embeddings_url], embedding_dim=3)
+    job.sleep_until_complete()
 
     resp = dataset.set_primary_index(image=True, custom=True)
     assert resp["success"]

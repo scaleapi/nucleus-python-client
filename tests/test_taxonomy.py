@@ -14,9 +14,6 @@ def taxonomy_dataset(CLIENT):
     )
     yield ds
 
-    response = CLIENT.delete_dataset(ds.id)
-    assert response == {"message": "Beginning dataset deletion..."}
-
 
 def test_create_taxonomy(taxonomy_dataset):
     response = taxonomy_dataset.add_taxonomy(
