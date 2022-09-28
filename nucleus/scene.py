@@ -383,8 +383,13 @@ class LidarScene(Scene):
           added to it, but must be non-empty when uploading to a :class:`Dataset`.
         metadata (Optional[Dict]):
             Optional metadata to include with the scene.
+
             Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
-            These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
+            These values can be specified as `{ "lat": 52.5, "lon": 13.3, ... }`.
+
+            Context Attachments may be provided to display the attachments side by side with the dataset
+            item in the Detail View by specifying
+            `{ "context_attachments": [ { "attachment": 'https://example.com/1' }, { "attachment": 'https://example.com/2' }, ... ] }`.
 
     Refer to our `guide to uploading 3D data
     <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!
@@ -455,7 +460,15 @@ class VideoScene(ABC):
             List of items representing frames, to be a part of the scene. A scene can be created
             before items have been added to it, but must be non-empty when uploading to
             a :class:`Dataset`. A video scene can contain a maximum of 3000 items.
-        metadata (Optional[Dict]): Optional metadata to include with the scene.
+        metadata (Optional[Dict]):
+            Optional metadata to include with the scene.
+
+            Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
+            These values can be specified as `{ "lat": 52.5, "lon": 13.3, ... }`.
+
+            Context Attachments may be provided to display the attachments side by side with the dataset
+            item in the Detail View by specifying
+            `{ "context_attachments": [ { "attachment": 'https://example.com/1' }, { "attachment": 'https://example.com/2' }, ... ] }`.
         upload_to_scale (Optional[bool]): Set this to false in order to use
             `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_. If using privacy mode
             you must upload both a video_location and items to the VideoScene.

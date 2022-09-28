@@ -87,7 +87,11 @@ class DatasetItem:  # pylint: disable=R0902
           info.
 
           Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
-          These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
+          These values can be specified as `{ "lat": 52.5, "lon": 13.3, ... }`.
+
+          Context Attachments may be provided to display the attachments side by side with the dataset
+          item in the Detail View by specifying
+          `{ "context_attachments": [ { "attachment": 'https://example.com/1' }, { "attachment": 'https://example.com/2' }, ... ] }`.
 
           .. todo ::
               Shorten this once we have a guide migrated for metadata, or maybe link

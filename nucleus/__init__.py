@@ -416,7 +416,7 @@ class NucleusClient:
 
                     {
                         "field_name": {
-                            "type": "category" | "number" | "text"
+                            "type": "category" | "number" | "text" | "json"
                             "choices": List[str] | None
                             "description": str | None
                         },
