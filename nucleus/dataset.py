@@ -856,13 +856,14 @@ class Dataset:
             from nucleus.slice import SliceBuilderFilters, SliceBuilderMethods, SliceBuilderFilterAutotag
 
             # random slice
-            job = dataset.build_slice('RandomSlice', 20, SliceBuilderMethods.RANDOM)
+            job = dataset.build_slice("RandomSlice", 20, SliceBuilderMethods.RANDOM)
 
             # slice with filters
-            autotagFilters = SliceBuilderFilterAutotag('tag_cd41jhjdqyti07h8m1n1', [-0.5, 0.5])
-            sliceFilters = SliceBuilderFilters(slice_id="<some slice id>")
-            filters = SliceBuilderFilters(sliceFilters, autotagFilters)
-            job = dataset.build_slice('NewSlice', 20, SliceBuilderMethods.RANDOM, filters)
+            filters = SliceBuilderFilters(
+                slice_id="<some slice id>",
+                autotag=SliceBuilderFilterAutotag("tag_cd41jhjdqyti07h8m1n1", [-0.5, 0.5])
+            )
+            job = dataset.build_slice("NewSlice", 20, SliceBuilderMethods.RANDOM, filters)
 
         Returns: An async job
 
