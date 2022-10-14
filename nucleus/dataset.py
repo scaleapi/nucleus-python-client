@@ -850,7 +850,7 @@ class Dataset:
             name: Name for the slice being created. Must be unique per dataset.
             sample_size: Size of the slice to create. Capped by the size of the dataset and the applied filters.
             sample_method: How to sample the dataset, currently supports 'Random' and 'Uniqueness'
-            filters: Apply filters based on an existing slice, or autotag.
+            filters: Apply filters to only sample from an existing slice or autotag
 
         Examples:
             from nucleus.slice import SliceBuilderFilters, SliceBuilderMethods, SliceBuilderFilterAutotag
