@@ -543,7 +543,7 @@ def create_slice_builder_payload(
         else sample_method
     )
 
-    filter_payload = dict()
+    filter_payload = {}
     if filters is not None:
         if filters.slice_id is not None:
             filter_payload["sliceId"] = filters.slice_id
