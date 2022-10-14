@@ -1,5 +1,7 @@
 import datetime
 import warnings
+from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import requests
@@ -15,6 +17,30 @@ from nucleus.utils import (
     format_scale_task_info_response,
     paginate_generator,
 )
+
+
+class SliceBuilderMethods(str, Enum):
+    RANDOM = "Random"
+    UNIQUENESS = "Uniqueness"
+
+
+@dataclass
+class SliceBuilderFilterAutotag:
+    autotag_id: str
+    score_range: List[int]
+
+    def __post_init__(self):
+        warn_msg = f"Autotag score range must be within [-1, 1]. But got {self.score_range}."
+        assert len(self.score_range) == 2, warn_msg
+        assert (
+            min(self.score_range) >= -1 and max(self.score_range) <= 1
+        ), warn_msg
+
+
+@dataclass
+class SliceBuilderFilters:
+    slice_id: Optional[str] = None
+    autotag: Optional[SliceBuilderFilterAutotag] = None
 
 
 class Slice:
@@ -502,3 +528,34 @@ def check_annotations_are_in_slice(
         annotations_are_in_slice,
         reference_ids_not_found_in_slice,
     )
+
+
+def create_slice_builder_payload(
+    name: str,
+    sample_size: int,
+    sample_method: Union[str, "SliceBuilderMethods"],
+    filters: Optional["SliceBuilderFilters"],
+):
+    # enum or string
+    sampleMethod = (
+        sample_method.value
+        if isinstance(sample_method, SliceBuilderMethods)
+        else sample_method
+    )
+
+    filter_payload = dict()
+    if filters is not None:
+        if filters.slice_id is not None:
+            filter_payload["sliceId"] = filters.slice_id
+        if filters.autotag is not None:
+            filter_payload["autotag"] = {
+                "autotagId": filters.autotag.autotag_id,
+                "range": filters.autotag.score_range,
+            }
+
+    return {
+        "name": name,
+        "sampleSize": sample_size,
+        "sampleMethod": sampleMethod,
+        "filters": filter_payload,
+    }
