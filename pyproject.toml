@@ -48,8 +48,9 @@ scikit-learn = ">=0.24.0"
 Shapely = { version = ">=1.8.0", optional = true }
 rasterio = { version = ">=1.2.0", optional = true }
 Pillow = ">=7.1.2"
-scale-launch = { version = ">=0.1.0", python = ">=3.7,<4.0" , optional = true}
+scale-launch = { version = ">=0.1.0", python = ">=3.7,<4.0",  optional = true}
 astroid = { version = "<=2.12", python = "<=3.7"} # This hint is vital for dependency resolution ¯\_(ツ)_/¯
+questionary = "^1.10.0"
 
 [tool.poetry.dev-dependencies]
 pytest = [
@@ -69,7 +70,6 @@ Sphinx = "^4.2.0"
 sphinx-autobuild = "^2021.3.14"
 furo = ">=2021.10.9"
 sphinx-autoapi = "^1.8.4"
-pytest-xdist = "^2.5.0"
 
 [tool.poetry.scripts]
 nu = "cli.nu:nu"

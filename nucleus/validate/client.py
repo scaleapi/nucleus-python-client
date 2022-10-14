@@ -194,6 +194,14 @@ class Validate:
         )
         return AsyncJob.from_json(response, self.connection)
 
+    def metrics(self, model_id: str):
+        response = self.connection.post(
+            {},
+            f"validate/{model_id}/metrics",
+        )
+        jobs = [AsyncJob.from_json(job, self.connection) for job in response]
+        return jobs
+
     def create_external_eval_function(
         self,
         name: str,
