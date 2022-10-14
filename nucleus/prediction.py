@@ -160,7 +160,7 @@ class BoxPrediction(BoxAnnotation):
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
 
             Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
-            These values can be specified as `{"lat": 52.5, "lon": 13.3, ... }`.
+            These values can be specified as `{ "lat": 52.5, "lon": 13.3, ... }`.
 
         class_pdf: An optional complete class probability distribution on this
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
