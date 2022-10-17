@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import requests
 
@@ -842,7 +842,7 @@ class Dataset:
         sample_size: int,
         sample_method: Union[str, SliceBuilderMethods],
         filters: Optional[SliceBuilderFilters] = None,
-    ) -> Union[str, AsyncJob]:
+    ) -> Union[str, Tuple[AsyncJob, str]]:
         """Build a slice using Nucleus' Smart Sample tool. Allowing slices to be built
         based on certain criteria, and filters.
 
@@ -877,8 +877,11 @@ class Dataset:
             f"dataset/{self.id}/build_slice",
         )
 
+        slice_id = ""
+        if "sliceId" in response:
+            slice_id = response["sliceId"]
         if "job_id" in response:
-            return AsyncJob.from_json(response, self._client)
+            return AsyncJob.from_json(response, self._client), slice_id
         return response
 
     @sanitize_string_args
