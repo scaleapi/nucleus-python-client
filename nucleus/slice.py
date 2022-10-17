@@ -25,6 +25,7 @@ class SliceBuilderMethods(str, Enum):
       - Random: randomly select items
       - Uniqueness: Prioritizes more unique images based on model embedding distance, so that the final sample has fewer similar images.
     """
+
     RANDOM = "Random"
     UNIQUENESS = "Uniqueness"
 
@@ -39,6 +40,7 @@ class SliceBuilderMethods(str, Enum):
     def options():
         return list(map(lambda c: c.value, SliceBuilderMethods))
 
+
 @dataclass
 class SliceBuilderFilterAutotag:
     """
@@ -49,6 +51,7 @@ class SliceBuilderFilterAutotag:
         score_range: Specify the range of the autotag items' score that should be considered, between [-1, 1].
             For example, [-0.3, 0.7].
     """
+
     autotag_id: str
     score_range: List[int]
 
@@ -70,6 +73,7 @@ class SliceBuilderFilters:
         slice_id: Build the slice from items pertaining to this slice
         autotag: Build the slice from items pertaining to an autotag (see SliceBuilderFilterAutotag)
     """
+
     slice_id: Optional[str] = None
     autotag: Optional[SliceBuilderFilterAutotag] = None
 
@@ -579,7 +583,9 @@ def create_slice_builder_payload(
         A request friendly payload
     """
 
-    assert sample_method in SliceBuilderMethods, f"Method ${sample_method} not available. Must be one of: {SliceBuilderMethods.options()}"
+    assert (
+        sample_method in SliceBuilderMethods
+    ), f"Method ${sample_method} not available. Must be one of: {SliceBuilderMethods.options()}"
 
     # enum or string
     sampleMethod = (
