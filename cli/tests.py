@@ -11,11 +11,7 @@ from cli.helpers.nucleus_url import nucleus_url
 from cli.helpers.web_helper import launch_web_or_invoke
 
 if TYPE_CHECKING:
-    from nucleus.validate import (
-        AvailableEvalFunctions,
-        ScenarioTestMetric,
-        ThresholdComparison,
-    )
+    from nucleus.validate import AvailableEvalFunctions, ScenarioTestMetric
 
 
 @click.group("tests", invoke_without_command=True)
