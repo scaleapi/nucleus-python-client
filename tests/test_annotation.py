@@ -140,7 +140,9 @@ def test_box_gt_upload(dataset):
         response_annotation, TEST_BOX_ANNOTATIONS[0]
     )
 
-
+@pytest.mark.skip(
+    reason="Skip Temporarily - Need to find issue with customObjectIndexingJobId"
+)
 def test_box_gt_upload_embedding(CLIENT, dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS_EMBEDDINGS[0])
     response = dataset.annotate(annotations=[annotation])
@@ -872,7 +874,9 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
 
     assert_partial_equality(expected, result)
 
-
+@pytest.mark.skip(
+    reason="Skip Temporarily - Need to find issue with customObjectIndexingJobId"
+)
 @pytest.mark.integration
 def test_box_gt_upload_embedding_async(CLIENT, dataset):
     annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS_EMBEDDINGS[0])
