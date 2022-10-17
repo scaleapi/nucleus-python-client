@@ -20,6 +20,11 @@ from nucleus.utils import (
 
 
 class SliceBuilderMethods(str, Enum):
+    """
+    Which method to use for sampling the dataset items.
+      - Random: randomly select items
+      - Uniqueness: Prioritizes more unique images based on model embedding distance, so that the final sample has fewer similar images.
+    """
     RANDOM = "Random"
     UNIQUENESS = "Uniqueness"
 
@@ -36,6 +41,14 @@ class SliceBuilderMethods(str, Enum):
 
 @dataclass
 class SliceBuilderFilterAutotag:
+    """
+    Helper class for specifying an autotag filter for building a slice.
+
+    Args:
+        autotag_id: Filter items that belong to this autotag
+        score_range: Specify the range of the autotag items' score that should be considered, between [-1, 1].
+            For example, [-0.3, 0.7].
+    """
     autotag_id: str
     score_range: List[int]
 
@@ -49,6 +62,14 @@ class SliceBuilderFilterAutotag:
 
 @dataclass
 class SliceBuilderFilters:
+    """
+    Optionally apply filters to the collection of dataset items when building the slice.
+    Items can be filtered by an existing slice and/or an autotag.
+
+    Args:
+        slice_id: Build the slice from items pertaining to this slice
+        autotag: Build the slice from items pertaining to an autotag (see SliceBuilderFilterAutotag)
+    """
     slice_id: Optional[str] = None
     autotag: Optional[SliceBuilderFilterAutotag] = None
 
