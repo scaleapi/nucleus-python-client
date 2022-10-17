@@ -140,6 +140,7 @@ def test_box_gt_upload(dataset):
         response_annotation, TEST_BOX_ANNOTATIONS[0]
     )
 
+
 @pytest.mark.skip(
     reason="Skip Temporarily - Need to find issue with customObjectIndexingJobId"
 )
@@ -873,6 +874,7 @@ def test_non_existent_taxonomy_category_gt_upload_async(dataset):
     }
 
     assert_partial_equality(expected, result)
+
 
 @pytest.mark.skip(
     reason="Skip Temporarily - Need to find issue with customObjectIndexingJobId"
