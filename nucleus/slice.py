@@ -567,6 +567,17 @@ def create_slice_builder_payload(
     sample_method: Union[str, "SliceBuilderMethods"],
     filters: Optional["SliceBuilderFilters"],
 ):
+    """
+    Format the slice builder payload request from the dataclasses
+    Args:
+        name: Name for the slice being created
+        sample_size: Number of items to sample
+        sample_method: Method to use for sample the dataset items
+        filters: Optional set of filters to apply when collecting the dataset items
+
+    Returns:
+        A request friendly payload
+    """
 
     assert sample_method in SliceBuilderMethods, f"Method ${sample_method} not available. Must be one of: {SliceBuilderMethods.options()}"
 
