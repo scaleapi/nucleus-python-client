@@ -1,5 +1,7 @@
 import datetime
 import warnings
+from dataclasses import dataclass
+from enum import Enum
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import requests
@@ -15,6 +17,65 @@ from nucleus.utils import (
     format_scale_task_info_response,
     paginate_generator,
 )
+
+
+class SliceBuilderMethods(str, Enum):
+    """
+    Which method to use for sampling the dataset items.
+      - Random: randomly select items
+      - Uniqueness: Prioritizes more unique images based on model embedding distance, so that the final sample has fewer similar images.
+    """
+
+    RANDOM = "Random"
+    UNIQUENESS = "Uniqueness"
+
+    def __contains__(self, item):
+        try:
+            self(item)
+        except ValueError:
+            return False
+        return True
+
+    @staticmethod
+    def options():
+        return list(map(lambda c: c.value, SliceBuilderMethods))
+
+
+@dataclass
+class SliceBuilderFilterAutotag:
+    """
+    Helper class for specifying an autotag filter for building a slice.
+
+    Args:
+        autotag_id: Filter items that belong to this autotag
+        score_range: Specify the range of the autotag items' score that should be considered, between [-1, 1].
+            For example, [-0.3, 0.7].
+    """
+
+    autotag_id: str
+    score_range: List[int]
+
+    def __post_init__(self):
+        warn_msg = f"Autotag score range must be within [-1, 1]. But got {self.score_range}."
+        assert len(self.score_range) == 2, warn_msg
+        assert (
+            min(self.score_range) >= -1 and max(self.score_range) <= 1
+        ), warn_msg
+
+
+@dataclass
+class SliceBuilderFilters:
+    """
+    Optionally apply filters to the collection of dataset items when building the slice.
+    Items can be filtered by an existing slice and/or an autotag.
+
+    Args:
+        slice_id: Build the slice from items pertaining to this slice
+        autotag: Build the slice from items pertaining to an autotag (see SliceBuilderFilterAutotag)
+    """
+
+    slice_id: Optional[str] = None
+    autotag: Optional[SliceBuilderFilterAutotag] = None
 
 
 class Slice:
@@ -502,3 +563,50 @@ def check_annotations_are_in_slice(
         annotations_are_in_slice,
         reference_ids_not_found_in_slice,
     )
+
+
+def create_slice_builder_payload(
+    name: str,
+    sample_size: int,
+    sample_method: Union[str, "SliceBuilderMethods"],
+    filters: Optional["SliceBuilderFilters"],
+):
+    """
+    Format the slice builder payload request from the dataclasses
+    Args:
+        name: Name for the slice being created
+        sample_size: Number of items to sample
+        sample_method: Method to use for sample the dataset items
+        filters: Optional set of filters to apply when collecting the dataset items
+
+    Returns:
+        A request friendly payload
+    """
+
+    assert (
+        sample_method in SliceBuilderMethods
+    ), f"Method ${sample_method} not available. Must be one of: {SliceBuilderMethods.options()}"
+
+    # enum or string
+    sampleMethod = (
+        sample_method.value
+        if isinstance(sample_method, SliceBuilderMethods)
+        else sample_method
+    )
+
+    filter_payload: Dict[str, Union[str, dict]] = {}
+    if filters is not None:
+        if filters.slice_id is not None:
+            filter_payload["sliceId"] = filters.slice_id
+        if filters.autotag is not None:
+            filter_payload["autotag"] = {
+                "autotagId": filters.autotag.autotag_id,
+                "range": filters.autotag.score_range,
+            }
+
+    return {
+        "name": name,
+        "sampleSize": sample_size,
+        "sampleMethod": sampleMethod,
+        "filters": filter_payload,
+    }

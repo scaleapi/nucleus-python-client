@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import requests
 
@@ -65,7 +65,12 @@ from .payload_constructor import (
     construct_taxonomy_payload,
 )
 from .scene import LidarScene, Scene, VideoScene, check_all_scene_paths_remote
-from .slice import Slice
+from .slice import (
+    Slice,
+    SliceBuilderFilters,
+    SliceBuilderMethods,
+    create_slice_builder_payload,
+)
 from .upload_response import UploadResponse
 
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -830,6 +835,54 @@ class Dataset:
             payload, f"dataset/{self.id}/create_slice"
         )
         return Slice(response[SLICE_ID_KEY], self._client)
+
+    def build_slice(
+        self,
+        name: str,
+        sample_size: int,
+        sample_method: Union[str, SliceBuilderMethods],
+        filters: Optional[SliceBuilderFilters] = None,
+    ) -> Union[str, Tuple[AsyncJob, str]]:
+        """Build a slice using Nucleus' Smart Sample tool. Allowing slices to be built
+        based on certain criteria, and filters.
+
+        Args:
+            name: Name for the slice being created. Must be unique per dataset.
+            sample_size: Size of the slice to create. Capped by the size of the dataset and the applied filters.
+            sample_method: How to sample the dataset, currently supports 'Random' and 'Uniqueness'
+            filters: Apply filters to only sample from an existing slice or autotag
+
+        Examples:
+            from nucleus.slice import SliceBuilderFilters, SliceBuilderMethods, SliceBuilderFilterAutotag
+
+            # random slice
+            job = dataset.build_slice("RandomSlice", 20, SliceBuilderMethods.RANDOM)
+
+            # slice with filters
+            filters = SliceBuilderFilters(
+                slice_id="<some slice id>",
+                autotag=SliceBuilderFilterAutotag("tag_cd41jhjdqyti07h8m1n1", [-0.5, 0.5])
+            )
+            job = dataset.build_slice("NewSlice", 20, SliceBuilderMethods.RANDOM, filters)
+
+        Returns: An async job
+
+        """
+        payload = create_slice_builder_payload(
+            name, sample_size, sample_method, filters
+        )
+
+        response = self._client.make_request(
+            payload,
+            f"dataset/{self.id}/build_slice",
+        )
+
+        slice_id = ""
+        if "sliceId" in response:
+            slice_id = response["sliceId"]
+        if "job_id" in response:
+            return AsyncJob.from_json(response, self._client), slice_id
+        return response
 
     @sanitize_string_args
     def delete_item(self, reference_id: str) -> dict:

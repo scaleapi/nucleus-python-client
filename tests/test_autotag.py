@@ -12,6 +12,9 @@ from tests.helpers import (
 # TODO: Test delete_autotag once API support for autotag creation is added.
 
 
+@pytest.mark.skip(
+    reason="Skip Temporarily - Need to find issue with long running test (2hrs...)"
+)
 @pytest.mark.integration
 def test_update_autotag(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
