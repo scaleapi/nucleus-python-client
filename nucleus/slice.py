@@ -23,6 +23,16 @@ class SliceBuilderMethods(str, Enum):
     RANDOM = "Random"
     UNIQUENESS = "Uniqueness"
 
+    def __contains__(self, item):
+        try:
+            self(item)
+        except ValueError:
+            return False
+        return True
+
+    @staticmethod
+    def options():
+        return list(map(lambda c: c.value, SliceBuilderMethods))
 
 @dataclass
 class SliceBuilderFilterAutotag:
@@ -536,6 +546,9 @@ def create_slice_builder_payload(
     sample_method: Union[str, "SliceBuilderMethods"],
     filters: Optional["SliceBuilderFilters"],
 ):
+
+    assert sample_method in SliceBuilderMethods, f"Method ${sample_method} not available. Must be one of: {SliceBuilderMethods.options()}"
+
     # enum or string
     sampleMethod = (
         sample_method.value
