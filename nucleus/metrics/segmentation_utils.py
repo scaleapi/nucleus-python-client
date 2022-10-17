@@ -1,9 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import List, Sequence, Tuple, Union
-
-import numpy as np
-from scipy.optimize import linear_sum_assignment
+from typing import TYPE_CHECKING, List, Sequence, Tuple, Union
 
 from nucleus import Point, PolygonPrediction, Segment
 from nucleus.metrics.custom_types import BoxOrPolygonAnnotation
@@ -20,13 +17,15 @@ except (ModuleNotFoundError, OSError):
     geometry = PackageNotInstalled
 
 
-try:
-    from rasterio import features
-except (ModuleNotFoundError, OSError):
-    rasterio = PackageNotInstalled
+if TYPE_CHECKING:
+    import numpy as np
 
 
 def instance_mask_to_polys(instance_mask: np.ndarray, background_code=None):
+    try:
+        from rasterio import features
+    except (ModuleNotFoundError, OSError):
+        PackageNotInstalled()
     mask_values = []
     all_polygons = []
     not_background_mask = (
@@ -67,6 +66,9 @@ def max_iou_match_from_confusion(confusion):
     Returns:
         iou_matrix with same dims as confusion and 1-d best match rows, 1-d best match cols
     """
+    import numpy as np
+    from scipy.optimize import linear_sum_assignment
+
     iou = np.zeros(confusion.shape, dtype=np.float)
     with np.errstate(divide="ignore", invalid="ignore"):
         for i in range(confusion.shape[0]):
@@ -97,6 +99,8 @@ def fast_confusion_matrix(
                [0, 1, 0, 0],
                [0, 1, 0, 0]])
     """
+    import numpy as np
+
     mask = (label_true >= 0) & (label_true < n_class)
     hist = np.bincount(
         n_class * label_true[mask].astype(int) + label_pred[mask],
@@ -120,6 +124,8 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
         positives
 
     """
+    import numpy as np
+
     original_count = confusion.sum()
     iou, max_iou_row, max_iou_col = max_iou_match_from_confusion(confusion)
     # Prepare the new confusion with +1 added to the shape
@@ -168,6 +174,10 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
 def rasterize_polygons_to_segmentation_mask(
     annotations: Sequence[BoxOrPolygonAnnotation], shape: Tuple
 ) -> Tuple[np.ndarray, List[Segment]]:
+    try:
+        from rasterio import features
+    except (ModuleNotFoundError, OSError):
+        PackageNotInstalled()
     polys = [polygon_annotation_to_shape(a) for a in annotations]
     segments = [
         Segment(ann.label, index=idx + 1, metadata=ann.metadata)
@@ -188,6 +198,8 @@ def rasterize_polygons_to_segmentation_mask(
 
 
 def convert_to_instance_seg_confusion(confusion, annotation, prediction):
+    import numpy as np
+
     pred_index_to_label = {s.index: s.label for s in prediction.annotations}
 
     gt_label_to_old_indexes = defaultdict(set)
@@ -263,6 +275,8 @@ def convert_to_instance_seg_confusion(confusion, annotation, prediction):
 
 
 def setup_iou_thresholds(iou_thresholds: Union[Sequence[float], str] = "coco"):
+    import numpy as np
+
     supported_iou_setups = {"coco"}
     if isinstance(iou_thresholds, (list, np.ndarray)):
         return np.array(iou_thresholds, np.float_)

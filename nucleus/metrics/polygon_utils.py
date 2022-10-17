@@ -1,30 +1,34 @@
 import logging
 import sys
 from functools import wraps
-from typing import Dict, List, Tuple
-
-import numpy as np
-from scipy.optimize import linear_sum_assignment
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from nucleus.annotation import BoxAnnotation, PolygonAnnotation
 
-from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
-
-try:
-    from shapely.geometry import Polygon
-except (ModuleNotFoundError, OSError):
-    from ..package_not_installed import PackageNotInstalled
-
-    Polygon = PackageNotInstalled
-
-
 from .base import ScalarResult
+from .custom_types import BoxOrPolygonAnnotation, BoxOrPolygonPrediction
 from .errors import PolygonAnnotationTypeError
+
+if TYPE_CHECKING:
+    try:
+        from shapely.geometry import Polygon
+    except (ModuleNotFoundError, OSError):
+        from ..package_not_installed import PackageNotInstalled
+
+        Polygon = PackageNotInstalled
+
+    import numpy as np
 
 
 def polygon_annotation_to_shape(
     annotation: BoxOrPolygonAnnotation,
-) -> Polygon:
+) -> "Polygon":
+    try:
+        from shapely.geometry import Polygon
+    except (ModuleNotFoundError, OSError):
+        from ..package_not_installed import PackageNotInstalled
+
+        Polygon = PackageNotInstalled
     if isinstance(annotation, BoxAnnotation):
         xmin = annotation.x - annotation.width / 2
         xmax = annotation.x + annotation.width / 2
@@ -39,15 +43,17 @@ def polygon_annotation_to_shape(
         raise PolygonAnnotationTypeError()
 
 
-def _iou(annotation: Polygon, prediction: Polygon) -> float:
+def _iou(annotation: "Polygon", prediction: "Polygon") -> float:
     intersection = annotation.intersection(prediction).area
     union = annotation.area + prediction.area - intersection
     return intersection / max(union, sys.float_info.epsilon)
 
 
 def _iou_matrix(
-    annotations: List[Polygon], predictions: List[Polygon]
+    annotations: List["Polygon"], predictions: List["Polygon"]
 ) -> np.ndarray:
+    import numpy as np
+
     iou_matrix = np.empty((len(predictions), len(annotations)))
     for i, prediction in enumerate(predictions):
         for j, annotation in enumerate(annotations):
@@ -60,12 +66,15 @@ def _iou_assignments_for_same_reference_id(
     predictions: List[BoxOrPolygonPrediction],
     iou_threshold: float,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    # NOTE: Late imports to speed up CLI invocation
+    import numpy as np
+    from scipy.optimize import linear_sum_assignment
+
     # Matches annotations and precitions of the same reference ID.
     # Returns a tuple of the list of all IoU values of valid assignments, a
     # list of the indices of predictions matched to annotations (-1 if
     # unmatched), and a list of all indices of annotations matched to
     # predictions.
-
     # Check that all annotations and predictions have same reference ID.
     reference_ids = set(annotation.reference_id for annotation in annotations)
     reference_ids |= set(prediction.reference_id for prediction in predictions)
@@ -206,6 +215,8 @@ def iou_assignments(
     Returns:
         1D numpy array that contains the IoU values of the matched pairs.
     """
+    import numpy as np
+
     grouped_inputs = group_boxes_or_polygons_by_reference_id(
         annotations, predictions
     )
@@ -240,6 +251,8 @@ def get_true_false_positives_confidences(
             for each prediction.
         1D numpy array of confidence values.
     """
+    import numpy as np
+
     grouped_inputs = group_boxes_or_polygons_by_reference_id(
         annotations, predictions
     )

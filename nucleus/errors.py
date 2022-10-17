@@ -1,9 +1,3 @@
-import pkg_resources
-
-nucleus_client_version = pkg_resources.get_distribution(
-    "scale-nucleus"
-).version
-
 INFRA_FLAKE_MESSAGES = [
     "downstream duration timeout",
     "upstream connect error or disconnect/reset before headers. reset reason: local reset",
@@ -40,6 +34,12 @@ class NucleusAPIError(Exception):
     def __init__(
         self, endpoint, command, requests_response=None, aiohttp_response=None
     ):
+        import pkg_resources
+
+        nucleus_client_version = pkg_resources.get_distribution(
+            "scale-nucleus"
+        ).version
+
         self.message = f"Your client is on version {nucleus_client_version}. If you have not recently done so, please make sure you have updated to the latest version of the client by running pip install --upgrade scale-nucleus\n"
         if requests_response is not None:
             self.status_code = requests_response.status_code
