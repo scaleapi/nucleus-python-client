@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING, List, Sequence, Tuple, Union
@@ -11,21 +13,20 @@ from nucleus.package_not_installed import (  # pylint: disable=ungrouped-imports
 
 FALSE_POSITIVES = "__non_max_false_positive"
 
-try:
-    from shapely import geometry
-except (ModuleNotFoundError, OSError):
-    geometry = PackageNotInstalled
-
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-def instance_mask_to_polys(instance_mask: np.ndarray, background_code=None):
+def instance_mask_to_polys(instance_mask: "np.ndarray", background_code=None):
+    import numpy as np
+
     try:
         from rasterio import features
+        from shapely import geometry
     except (ModuleNotFoundError, OSError):
-        PackageNotInstalled()
+        geometry = PackageNotInstalled
+        features = PackageNotInstalled
     mask_values = []
     all_polygons = []
     not_background_mask = (
@@ -87,8 +88,8 @@ def max_iou_match_from_confusion(confusion):
 
 
 def fast_confusion_matrix(
-    label_true: np.ndarray, label_pred: np.ndarray, n_class: int
-) -> np.ndarray:
+    label_true: "np.ndarray", label_pred: "np.ndarray", n_class: int
+) -> "np.ndarray":
     """Calculates confusion matrix - fast!
 
     Outputs a confusion matrix where each row is GT confusion and column is prediction confusion
@@ -109,7 +110,7 @@ def fast_confusion_matrix(
     return hist
 
 
-def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
+def non_max_suppress_confusion(confusion: "np.ndarray", iou_threshold):
     """Uses linear sum assignment to find biggest pixel-wise IOU match. Secondary matches are moved to last column
     as false positives (since they are outside of instance boundaries).
 
@@ -173,7 +174,7 @@ def non_max_suppress_confusion(confusion: np.ndarray, iou_threshold):
 
 def rasterize_polygons_to_segmentation_mask(
     annotations: Sequence[BoxOrPolygonAnnotation], shape: Tuple
-) -> Tuple[np.ndarray, List[Segment]]:
+) -> Tuple["np.ndarray", List[Segment]]:
     try:
         from rasterio import features
     except (ModuleNotFoundError, OSError):

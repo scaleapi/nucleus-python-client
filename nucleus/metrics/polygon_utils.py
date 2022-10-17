@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sys
 from functools import wraps
@@ -24,9 +26,13 @@ def polygon_annotation_to_shape(
     annotation: BoxOrPolygonAnnotation,
 ) -> "Polygon":
     try:
-        from shapely.geometry import Polygon
+        from shapely.geometry import (  # pylint: disable=redefined-outer-name
+            Polygon,
+        )
     except (ModuleNotFoundError, OSError):
-        from ..package_not_installed import PackageNotInstalled
+        from ..package_not_installed import (  # pylint: disable=redefined-outer-name
+            PackageNotInstalled,
+        )
 
         Polygon = PackageNotInstalled
     if isinstance(annotation, BoxAnnotation):
