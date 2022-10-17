@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import sys
 from functools import wraps
@@ -57,7 +55,7 @@ def _iou(annotation: "Polygon", prediction: "Polygon") -> float:
 
 def _iou_matrix(
     annotations: List["Polygon"], predictions: List["Polygon"]
-) -> np.ndarray:
+) -> "np.ndarray":
     import numpy as np
 
     iou_matrix = np.empty((len(predictions), len(annotations)))
@@ -71,7 +69,7 @@ def _iou_assignments_for_same_reference_id(
     annotations: List[BoxOrPolygonAnnotation],
     predictions: List[BoxOrPolygonPrediction],
     iou_threshold: float,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple["np.ndarray", "np.ndarray", "np.ndarray"]:
     # NOTE: Late imports to speed up CLI invocation
     import numpy as np
     from scipy.optimize import linear_sum_assignment
@@ -205,7 +203,7 @@ def iou_assignments(
     annotations: List[BoxOrPolygonAnnotation],
     predictions: List[BoxOrPolygonPrediction],
     iou_threshold: float,
-) -> np.ndarray:
+) -> "np.ndarray":
     """Matches annotations and predictions based on linear sum cost and returns the
     intersection-over-union values of the matched annotation-prediction pairs, subject
     to the specified IoU threshold. Note that annotations and predictions from
@@ -239,7 +237,7 @@ def get_true_false_positives_confidences(
     annotations: List[BoxOrPolygonAnnotation],
     predictions: List[BoxOrPolygonPrediction],
     iou_threshold: float,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple["np.ndarray", "np.ndarray"]:
     """Matches annotations and predictions based on linear sum cost and returns the
     intersection-over-union values of the matched annotation-prediction pairs, subject
     to the specified IoU threshold. Note that annotations and predictions from
