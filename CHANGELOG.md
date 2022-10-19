@@ -5,6 +5,13 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.24](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.24) - 2022-10-19
+
+### Fixed
+- Late imports for seldomly used heavy libraries. Sped up CLI invocation and autocomplation.
+  If you had shell completions installed before we recommend removeing them from your .(bash|zsh)rc
+  file and reinstalling with nu install-completions
+
 ## [0.14.23](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.23) - 2022-10-17
 
 ### Added
