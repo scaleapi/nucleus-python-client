@@ -44,11 +44,9 @@ import os
 import warnings
 from typing import Any, Dict, List, Optional, Sequence, Union
 
-import pkg_resources
 import pydantic
 import requests
 import tqdm
-import tqdm.notebook as tqdm_notebook
 
 from nucleus.url_utils import sanitize_string_args
 
@@ -150,9 +148,6 @@ from .validate import Validate
 # pylint: disable=C0302
 
 
-__version__ = pkg_resources.get_distribution("scale-nucleus").version
-
-
 class NucleusClient:
     """Client to interact with the Nucleus API via Python SDK.
 
@@ -180,6 +175,8 @@ class NucleusClient:
             self.endpoint = endpoint
         self._use_notebook = use_notebook
         if use_notebook:
+            import tqdm.notebook as tqdm_notebook
+
             self.tqdm_bar = tqdm_notebook.tqdm
         self._connection = Connection(self.api_key, self.endpoint)
         self.validate = Validate(self.api_key, self.endpoint)

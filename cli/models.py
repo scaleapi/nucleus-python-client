@@ -1,5 +1,4 @@
 import click
-import questionary
 from rich.console import Console
 from rich.pretty import pretty_repr
 from rich.table import Column, Table
@@ -35,6 +34,8 @@ def json_string_to_string(s: str) -> str:
 
 @models.command("calculate-metrics")
 def metrics():
+    import questionary
+
     client = init_client()
     models = client.models
     prompt_to_id = {f"{m.id}: {m.name}": m.id for m in models}

@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import click
 from rich.console import Console
 from rich.live import Live
@@ -7,12 +9,9 @@ from rich.tree import Tree
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 from cli.helpers.web_helper import launch_web_or_invoke
-from nucleus import NucleusAPIError
-from nucleus.validate import (
-    AvailableEvalFunctions,
-    ScenarioTestMetric,
-    ThresholdComparison,
-)
+
+if TYPE_CHECKING:
+    from nucleus.validate import AvailableEvalFunctions, ScenarioTestMetric
 
 
 @click.group("tests", invoke_without_command=True)
@@ -47,8 +46,10 @@ def list_tests():
 
 
 def format_criterion(
-    criterion: ScenarioTestMetric, eval_functions: AvailableEvalFunctions
+    criterion: "ScenarioTestMetric", eval_functions: "AvailableEvalFunctions"
 ):
+    from nucleus.validate import ThresholdComparison
+
     op_map = {
         ThresholdComparison.GREATER_THAN: ">",
         ThresholdComparison.GREATER_THAN_EQUAL_TO: ">=",
@@ -95,6 +96,8 @@ def describe_test(scenario_test_id, all):
 
 
 def build_scenario_test_info_tree(client, scenario_test, tree):
+    from nucleus import NucleusAPIError
+
     try:
         slc = client.get_slice(scenario_test.slice_id)
         info_branch = tree.add(":mag: Details")

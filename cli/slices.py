@@ -1,14 +1,10 @@
 import click
 from rich.console import Console
-from rich.live import Live
-from rich.spinner import Spinner
 from rich.table import Column, Table
-from rich.tree import Tree
 
 from cli.client import init_client
 from cli.helpers.nucleus_url import nucleus_url
 from cli.helpers.web_helper import launch_web_or_invoke
-from nucleus import NucleusAPIError
 
 
 @click.group("slices", invoke_without_command=True)
