@@ -164,9 +164,9 @@ class SegmentationMaskToPolyMetric(Metric):
     def call_segmentation_metric(
         self,
         annotations: AnnotationList,
-        ann_img: np.ndarray,
+        ann_img: "np.ndarray",
         predictions: PredictionList,
-        pred_img: np.ndarray,
+        pred_img: "np.ndarray",
     ):
         metric = self.configure_metric()
         metric.loader = InMemoryLoader(

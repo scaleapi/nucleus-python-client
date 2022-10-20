@@ -99,15 +99,15 @@ def process_dataitem(dataitem):
 
 
 def compute_outer_iou(
-    xyz_0: np.ndarray,
-    wlh_0: np.ndarray,
-    yaw_0: np.ndarray,
-    xyz_1: np.ndarray,
-    wlh_1: np.ndarray,
-    yaw_1: np.ndarray,
+    xyz_0: "np.ndarray",
+    wlh_0: "np.ndarray",
+    yaw_0: "np.ndarray",
+    xyz_1: "np.ndarray",
+    wlh_1: "np.ndarray",
+    yaw_1: "np.ndarray",
     scale_convention: bool = True,
     distance_threshold=25,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple["np.ndarray", "np.ndarray"]:
     """
     Computes outer 3D and 2D IoU
     :param xyz_0: (n, 3)
@@ -173,13 +173,13 @@ def compute_outer_iou(
 
 
 def get_batch_cuboid_corners(
-    xyz: np.ndarray,
-    wlh: np.ndarray,
-    yaw: np.ndarray,
-    pitch: np.ndarray = None,
-    roll: np.ndarray = None,
+    xyz: "np.ndarray",
+    wlh: "np.ndarray",
+    yaw: "np.ndarray",
+    pitch: "np.ndarray" = None,
+    roll: "np.ndarray" = None,
     scale_convention: bool = True,
-) -> np.ndarray:
+) -> "np.ndarray":
     """
     Vectorized batch version of get_cuboid_corners
     :param xyz: (n, 3)
@@ -211,8 +211,8 @@ def get_batch_cuboid_corners(
 
 
 def get_batch_rotation_matrices(
-    yaw: np.ndarray, pitch: np.ndarray = None, roll: np.ndarray = None
-) -> np.ndarray:
+    yaw: "np.ndarray", pitch: "np.ndarray" = None, roll: "np.ndarray" = None
+) -> "np.ndarray":
     if pitch is None:
         pitch = np.zeros_like(yaw)
     if roll is None:
@@ -238,12 +238,12 @@ def get_batch_rotation_matrices(
 
 
 def associate_cuboids_on_iou(
-    xyz_0: np.ndarray,
-    wlh_0: np.ndarray,
-    yaw_0: np.ndarray,
-    xyz_1: np.ndarray,
-    wlh_1: np.ndarray,
-    yaw_1: np.ndarray,
+    xyz_0: "np.ndarray",
+    wlh_0: "np.ndarray",
+    yaw_0: "np.ndarray",
+    xyz_1: "np.ndarray",
+    wlh_1: "np.ndarray",
+    yaw_1: "np.ndarray",
     threshold_in_overlap_ratio: float = 0.1,
 ) -> List[Tuple[int, int]]:
     if xyz_0.shape[0] < 1 or xyz_1.shape[0] < 1:
@@ -322,7 +322,7 @@ def detection_iou(
     prediction: List[CuboidPrediction],
     groundtruth: List[CuboidAnnotation],
     threshold_in_overlap_ratio: float,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple["np.ndarray", "np.ndarray"]:
     """
     Calculates the 2D IOU and 3D IOU overlap between predictions and groundtruth.
     Uses linear sum assignment to associate cuboids.

@@ -114,8 +114,8 @@ class SegmentationMaskMetric(Metric):
     @abc.abstractmethod
     def _metric_impl(
         self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
+        annotation_img: "np.ndarray",
+        prediction_img: "np.ndarray",
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ):
@@ -128,7 +128,7 @@ class SegmentationMaskMetric(Metric):
         prediction,
         prediction_img,
         iou_threshold,
-    ) -> Tuple[np.ndarray, Set[int]]:
+    ) -> Tuple["np.ndarray", Set[int]]:
         """This calculates a confusion matrix with ground_truth_index X predicted_index summary
 
         Notes:
@@ -270,8 +270,8 @@ class SegmentationIOU(SegmentationMaskMetric):
 
     def _metric_impl(
         self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
+        annotation_img: "np.ndarray",
+        prediction_img: "np.ndarray",
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
@@ -341,8 +341,8 @@ class SegmentationPrecision(SegmentationMaskMetric):
 
     def _metric_impl(
         self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
+        annotation_img: "np.ndarray",
+        prediction_img: "np.ndarray",
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
@@ -416,8 +416,8 @@ class SegmentationRecall(SegmentationMaskMetric):
 
     def _metric_impl(
         self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
+        annotation_img: "np.ndarray",
+        prediction_img: "np.ndarray",
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
@@ -520,8 +520,8 @@ class SegmentationMAP(SegmentationMaskMetric):
 
     def _metric_impl(
         self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
+        annotation_img: "np.ndarray",
+        prediction_img: "np.ndarray",
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
@@ -627,8 +627,8 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
 
     def _metric_impl(
         self,
-        annotation_img: np.ndarray,
-        prediction_img: np.ndarray,
+        annotation_img: "np.ndarray",
+        prediction_img: "np.ndarray",
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:

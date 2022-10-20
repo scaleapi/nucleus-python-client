@@ -13,6 +13,8 @@
 import os
 import sys
 
+import pkg_resources
+
 sys.path.insert(0, os.path.abspath("../../"))
 
 
@@ -22,10 +24,9 @@ project = "Nucleus"
 copyright = "2021, Scale"
 author = "Scale"
 
-# The full version, including alpha/beta/rc tags
-from nucleus import __version__  # noqa: E402
 
-release = "v" + str(__version__)
+# The full version, including alpha/beta/rc tags
+release = "v" + str(pkg_resources.get_distribution("scale-nucleus").version)
 
 
 # -- General configuration ---------------------------------------------------
