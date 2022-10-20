@@ -156,7 +156,7 @@ def test_slice_append(dataset):
 
     # Insert duplicate first item
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
-    slice_items = slc.items()
+    slice_items = slc.dataset_items()
 
     assert len(slice_items) == 3
 
@@ -176,7 +176,7 @@ def test_slice_send_to_labeling(dataset):
         reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
     )
 
-    items = slc.items()
+    items = slc.dataset_items()
     assert len(items) == 2
 
     response = slc.send_to_labeling(TEST_PROJECT_ID)

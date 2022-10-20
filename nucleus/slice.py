@@ -236,7 +236,9 @@ class Slice:
                 e.message += "/n Your request timed out while trying to get all the items in the slice. Please try slice.items_generator() instead."
             raise e
 
-        dataset_item_jsons = response.get(ITEMS_KEY, [])
+        dataset_item_jsons = response.get(
+            "dataset_items", []
+        )  # CHANGE ME BACK TO `ITEMS_KEY` BEFORE MERGE
         return [
             DatasetItem.from_json(dataset_item_json)
             for dataset_item_json in dataset_item_jsons
