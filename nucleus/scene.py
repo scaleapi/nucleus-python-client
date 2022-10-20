@@ -124,6 +124,7 @@ class Scene(ABC):
     reference_id: str
     frames: List[Frame] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
+    skip_validate: Optional[bool] = False
 
     def __post_init__(self):
         self.sensors = set(
@@ -133,7 +134,8 @@ class Scene(ABC):
         if self.metadata is None:
             self.metadata = {}
 
-        self.validate()
+        if not self.skip_validate:
+            self.validate()
 
     def __eq__(self, other):
         return all(
@@ -310,7 +312,7 @@ class Scene(ABC):
         ), "frames must be 0-indexed and continuous (no missing frames)"
 
     @classmethod
-    def from_json(cls, payload: dict):
+    def from_json(cls, payload: dict, skip_validate: Optional[bool] = False):
         """Instantiates scene object from schematized JSON dict payload."""
         frames_payload = payload.get(FRAMES_KEY, [])
         frames = [Frame.from_json(frame) for frame in frames_payload]
@@ -318,6 +320,7 @@ class Scene(ABC):
             reference_id=payload[REFERENCE_ID_KEY],
             frames=frames,
             metadata=payload.get(METADATA_KEY, {}),
+            skip_validate=skip_validate,
         )
 
     def to_payload(self) -> dict:

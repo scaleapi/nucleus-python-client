@@ -31,6 +31,7 @@ from .constants import (
     BACKFILL_JOB_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
+    DATASET_ITEMS_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -212,7 +213,8 @@ class Dataset:
             if e.status_code == 503:
                 e.message += "\nThe server timed out while trying to load your items. Please try iterating over dataset.items_generator() instead."
             raise e
-        dataset_item_jsons = response.get("dataset_items", None)
+        dataset_item_jsons = response.get(DATASET_ITEMS_KEY, None)
+
         return [
             DatasetItem.from_json(item_json)
             for item_json in dataset_item_jsons
