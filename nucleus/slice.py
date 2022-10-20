@@ -8,7 +8,6 @@ import requests
 
 from nucleus.annotation import Annotation
 from nucleus.constants import (
-    DATASET_ITEMS_KEY,
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     ITEMS_KEY,
@@ -300,7 +299,7 @@ class Slice:
                 }
         """
         info = KeyErrorDict(
-            items="The 'items' key is now deprecated for Slice.info. Use Slice.items instead."
+            items="The 'items' key is now deprecated for Slice.info. Use Slice.items() instead."
         )
         res = self._client.make_request(
             {}, f"slice/{self.id}/info", requests_command=requests.get
@@ -612,7 +611,7 @@ def check_annotations_are_in_slice(
         for annotation in annotations
         if annotation.reference_id is not None
     }.difference(
-        {item_metadata["ref_id"] for item_metadata in slice_to_check.items}
+        {item_metadata["ref_id"] for item_metadata in slice_to_check.dataset_items()}
     )
     if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False

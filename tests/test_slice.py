@@ -210,7 +210,9 @@ def test_slice_dataset_item_iterator(dataset):
         name=TEST_SLICE_NAME + get_uuid(),
         reference_ids=[item.reference_id for item in all_items[:1]],
     )
-    expected_items = {item.reference_id: item for item in test_slice.dataset_items()}
+    expected_items = {
+        item.reference_id: item for item in test_slice.dataset_items()
+    }
     actual_items = {
         item.reference_id: item
         for item in test_slice.items_generator(page_size=1)
