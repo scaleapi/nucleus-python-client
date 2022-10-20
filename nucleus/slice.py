@@ -611,7 +611,10 @@ def check_annotations_are_in_slice(
         for annotation in annotations
         if annotation.reference_id is not None
     }.difference(
-        {item_metadata["ref_id"] for item_metadata in slice_to_check.dataset_items()}
+        {
+            item_metadata["ref_id"]
+            for item_metadata in slice_to_check.dataset_items()
+        }
     )
     if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False
