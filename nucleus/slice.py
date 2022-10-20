@@ -190,6 +190,13 @@ class Slice:
             self._dataset_id = self.info()["dataset_id"]
         return self._dataset_id
 
+    @property
+    def type(self):
+        """The type of the Slice."""
+        if self._type is None:
+            self._type = self.info()["type"]
+        return self._type
+
     def items_generator(self, page_size=100000):
         """Generator yielding all dataset items in the dataset.
 
