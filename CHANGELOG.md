@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.25](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.25) - 2022-10-20
 
 ### Updated
-- Items of a slice can now be retrieved by Slice object's method `.items()` instead of the property `.item`
-- The type of items returned from `.items()` is based on the slice `type`:
+- Items of a slice can be retrieved by Slice property `.item`
+- The type of items returned from `.items` is based on the slice `type`:
   - `slice.type == 'dataset_item'` => list of `DatasetItem` objects
   - `slice.type == 'object'` => list of `Annotation`/`Prediction` objects
   - `slice.type == 'scene'` => list of `Scene` objects

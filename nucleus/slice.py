@@ -244,6 +244,7 @@ class Slice:
             for dataset_item_json in dataset_item_jsons
         ]
 
+
     def items(self):
         """Fetch all items belonging to this slice, the type of items returned depends on the type of the slice.
         The type of the slice can be one of { dataset_item, object, scene }.
