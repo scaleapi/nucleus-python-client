@@ -298,7 +298,7 @@ class Slice:
                 }
         """
         info = KeyErrorDict(
-            items="The 'items' key is now deprecated for Slice.info. Use Slice.items() instead."
+            items="The 'items' key is now deprecated for Slice.info. Use Slice.items instead."
         )
         res = self._client.make_request(
             {}, f"slice/{self.id}/info", requests_command=requests.get
