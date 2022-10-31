@@ -5,6 +5,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.25](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.25) - 2022-10-20
+
+### Updated
+- Items of a slice can be retrieved by Slice property `.item`
+- The type of items returned from `.items` is based on the slice `type`:
+  - `slice.type == 'dataset_item'` => list of `DatasetItem` objects
+  - `slice.type == 'object'` => list of `Annotation`/`Prediction` objects
+  - `slice.type == 'scene'` => list of `Scene` objects
+
 ## [0.14.24](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.24) - 2022-10-19
 
 ### Fixed
