@@ -80,7 +80,7 @@ def make_dataset_items():
                 image_location=url,
                 reference_id=reference_id_from_url(url),
                 metadata={
-                    "made_with_pytest": True,
+                    "made_with_pytest": "True",
                     "example_int": i,
                     "example_str": "hello",
                     "example_float": 0.5,
