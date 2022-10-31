@@ -1,14 +1,24 @@
-from typing import List
+from typing import Optional
 
-from pydantic import validator
+from pydantic import root_validator, validator
 
 from nucleus.pydantic_base import ImmutableModel
 
 
 class EvaluationResult(ImmutableModel):
-    item_ref_id: str
+    item_ref_id: Optional[str] = None
+    scene_ref_id: Optional[str] = None
     score: float
     weight: float = 1
+
+    @root_validator()
+    def is_item_or_scene_provided(cls, values):
+        if (
+            values.get("item_ref_id") is None
+            and values.get("scene_ref_id") is None
+        ):
+            raise ValueError("Must provide either item_ref_id or scene_ref_id")
+        return values
 
     @validator("score", "weight")
     def is_normalized(cls, v):  # pylint: disable=no-self-argument

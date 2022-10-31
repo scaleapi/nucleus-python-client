@@ -10,6 +10,7 @@ from typing import List, Optional
 from ..connection import Connection
 from ..constants import NAME_KEY, SLICE_ID_KEY
 from ..dataset_item import DatasetItem
+from ..scene import Scene
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
     SCENARIO_TEST_ID_KEY,
@@ -28,6 +29,7 @@ from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
 
 DATASET_ITEMS_KEY = "dataset_items"
+SCENES_KEY = "scenes"
 
 
 @dataclass
@@ -172,6 +174,12 @@ class ScenarioTest:
             DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
         ]
 
+    def get_scenes(self) -> List[Scene]:
+        response = self.connection.get(
+            f"validate/scenario_test/{self.id}/scenes",
+        )
+        return [Scene.from_json(scene) for scene in response[SCENES_KEY]]
+
     def set_baseline_model(self, model_id: str):
         """Set's a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
         this scenario test must have been evaluated using that model.  The baseline model's performance
@@ -207,14 +215,26 @@ class ScenarioTest:
             len(results) > 0
         ), "Submitting evaluation requires at least one result."
 
+        is_item_eval = True
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0.0
         aggregate_weight = 0.0
+
         # aggregation based on https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
         for r in results:
-            metric_per_ref_id[r.item_ref_id] = r.score
-            weight_per_ref_id[r.item_ref_id] = r.weight
+            # Ensure results are uploaded ONLY for items or ONLY for scenes
+            if r.scene_ref_id is not None:
+                is_item_eval = False
+            if r.item_ref_id is not None and not is_item_eval:
+                raise ValueError(
+                    "All evaluation results must either pertain to a scene_ref_id or an item_ref_id, not both."
+                )
+            ref_id = r.item_ref_id if is_item_eval else r.scene_ref_id
+
+            # Aggregate scores and weights
+            metric_per_ref_id[ref_id] = r.score
+            weight_per_ref_id[ref_id] = r.weight
             aggregate_weighted_sum += r.score * r.weight
             aggregate_weight += r.weight
 
@@ -226,6 +246,7 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
+            "level": "item" if is_item_eval else "scene",
         }
         response = self.connection.post(
             payload,
