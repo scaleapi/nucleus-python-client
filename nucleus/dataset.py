@@ -1390,7 +1390,7 @@ class Dataset:
             return
         response = self._client.make_request(
             payload=None,
-            route=f"dataset/{self.id}/scene_from_dataset_item/{item_reference_id}",
+            route=f"dataset/{self.id}/scene/{item_reference_id}?from_item=1",
             requests_command=requests.get,
         )
         if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
