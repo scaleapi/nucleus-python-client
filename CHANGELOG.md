@@ -5,6 +5,19 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.26](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.26) - 2022-11-01
+
+### Added
+- Support for fetching scene from a `DatasetItem.reference_id`
+Example:
+```python
+dataset = client.get_dataset("<dataset_id>")
+assert dataset.is_scene  # only works on scene datasets
+some_item = dataset.iloc(0)
+dataset.get_scene_from_item_ref_id(some_item['item'].reference_id) 
+```
+
+
 ## [0.14.25](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.25) - 2022-10-20
 
 ### Updated
