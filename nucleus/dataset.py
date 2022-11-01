@@ -116,6 +116,7 @@ class Dataset:
         self._client = client
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
         self._name = name
+        self._is_scene = None
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):
@@ -141,10 +142,13 @@ class Dataset:
     @property
     def is_scene(self) -> bool:
         """Whether or not the dataset contains scenes exclusively."""
+        if self._is_scene is not None:
+            return self._is_scene
         response = self._client.make_request(
             {}, f"dataset/{self.id}/is_scene", requests.get
         )[DATASET_IS_SCENE_KEY]
-        return response
+        self._is_scene = response
+        return self._is_scene
 
     @property
     def model_runs(self) -> List[str]:
@@ -1369,6 +1373,25 @@ class Dataset:
         response = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/scene/{reference_id}",
+            requests_command=requests.get,
+        )
+        if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
+            return VideoScene.from_json(response)
+        return LidarScene.from_json(response)
+
+    def get_scene_from_item_ref_id(
+        self, item_reference_id: str
+    ) -> Optional[Scene]:
+        """Given a dataset item reference ID, find the Scene it belongs to."""
+        if not self.is_scene:
+            print(
+                f"Dataset {self.id} is not a scene. Cannot call this endpoint."
+            )
+            return None
+
+        response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/scene/{item_reference_id}?from_item=1",
             requests_command=requests.get,
         )
         if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
