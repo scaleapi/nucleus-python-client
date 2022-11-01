@@ -236,7 +236,6 @@ class Slice:
                 e.message += "/n Your request timed out while trying to get all the items in the slice. Please try slice.items_generator() instead."
             raise e
 
-        print(response)
         dataset_item_jsons = response.get(ITEMS_KEY, [])
         return [
             DatasetItem.from_json(dataset_item_json)
