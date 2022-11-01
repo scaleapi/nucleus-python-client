@@ -475,7 +475,6 @@ class Slice:
                     "item" | "scene": Union[DatasetItem, Scene],
                     "scale_task_info": {
                         "task_id": str,
-                        "subtask_id": str,
                         "task_status": str,
                         "task_audit_status": str,
                         "task_audit_review_comment": Optional[str],
