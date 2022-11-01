@@ -1387,7 +1387,8 @@ class Dataset:
             print(
                 f"Dataset {self.id} is not a scene. Cannot call this endpoint."
             )
-            return
+            return None
+
         response = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/scene/{item_reference_id}?from_item=1",
