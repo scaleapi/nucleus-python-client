@@ -12,7 +12,9 @@ class EvaluationResult(ImmutableModel):
     weight: float = 1
 
     @root_validator()
-    def is_item_or_scene_provided(cls, values):
+    def is_item_or_scene_provided(
+        cls, values
+    ):  # pylint: disable=no-self-argument
         if (
             values.get("item_ref_id") is None
             and values.get("scene_ref_id") is None

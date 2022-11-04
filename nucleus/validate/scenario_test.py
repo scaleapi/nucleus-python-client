@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from ..connection import Connection
-from ..constants import DATASET_ITEMS_KEY, NAME_KEY, SLICE_ID_KEY
+from ..constants import DATASET_ITEMS_KEY, NAME_KEY, SCENES_KEY, SLICE_ID_KEY
 from ..dataset_item import DatasetItem
 from ..scene import Scene
 from .constants import (
@@ -27,8 +27,6 @@ from .eval_functions.available_eval_functions import (
 )
 from .scenario_test_evaluation import ScenarioTestEvaluation
 from .scenario_test_metric import ScenarioTestMetric
-
-SCENES_KEY = "scenes"
 
 
 @dataclass
