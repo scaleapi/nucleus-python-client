@@ -8,7 +8,7 @@ from nucleus.pydantic_base import ImmutableModel
 class EvaluationResult(ImmutableModel):
     item_ref_id: Optional[str] = None
     scene_ref_id: Optional[str] = None
-    score: float
+    score: float = 0
     weight: float = 1
 
     @root_validator()

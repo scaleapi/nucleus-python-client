@@ -3,7 +3,7 @@ from typing import List
 from nucleus.connection import Connection
 from nucleus.job import AsyncJob
 
-from .constants import EVAL_FUNCTION_KEY, SCENARIO_TEST_ID_KEY
+from .constants import EVAL_FUNCTION_KEY, SCENARIO_TEST_ID_KEY, EntityLevel
 from .data_transfer_objects.eval_function import (
     CreateEvalFunction,
     EvalFunctionEntry,
@@ -205,6 +205,7 @@ class Validate:
     def create_external_eval_function(
         self,
         name: str,
+        level: EntityLevel = EntityLevel.ITEM,
     ) -> EvalFunctionEntry:
         """Creates a new external evaluation function. This external function can be used to upload evaluation
         results with functions defined and computed by the customer, without having to share the source code of the
@@ -212,6 +213,7 @@ class Validate:
 
         Args:
             name: unique name of evaluation function
+            level: level at which the eval function is run, defaults to "item"
 
         Raises:
             - NucleusAPIError if the creation of the function fails on the server side
@@ -228,6 +230,7 @@ class Validate:
                 is_external_function=True,
                 serialized_fn=None,
                 raw_source=None,
+                level=level,
             ).dict(),
             "validate/eval_fn",
         )
