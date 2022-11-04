@@ -53,7 +53,7 @@ def test_slice_create_and_delete_and_list(dataset: Dataset):
     assert slc.name == TEST_SLICE_NAME
     assert slc.dataset_id == dataset.id
 
-    assert {item.reference_id for item in slc.items} == {
+    assert {item.reference_id for item in slc.dataset_items()} == {
         item.reference_id for item in ds_items[:2]
     }
 
@@ -122,7 +122,7 @@ def test_slice_create_and_prediction_export(dataset, slc, model):
 
     assert response
 
-    slice_reference_ids = [item.reference_id for item in slc.items]
+    slice_reference_ids = [item.reference_id for item in slc.dataset_items()]
 
     def get_expected_box_prediction(reference_id):
         for prediction in predictions:
@@ -156,7 +156,7 @@ def test_slice_append(dataset):
 
     # Insert duplicate first item
     slc.append(reference_ids=[item.reference_id for item in ds_items[:3]])
-    slice_items = slc.items
+    slice_items = slc.dataset_items()
 
     assert len(slice_items) == 3
 
@@ -176,7 +176,7 @@ def test_slice_send_to_labeling(dataset):
         reference_ids=[ds_items[0].reference_id, ds_items[1].reference_id],
     )
 
-    items = slc.items
+    items = slc.dataset_items()
     assert len(items) == 2
 
     response = slc.send_to_labeling(TEST_PROJECT_ID)
@@ -210,7 +210,9 @@ def test_slice_dataset_item_iterator(dataset):
         name=TEST_SLICE_NAME + get_uuid(),
         reference_ids=[item.reference_id for item in all_items[:1]],
     )
-    expected_items = {item.reference_id: item for item in test_slice.items}
+    expected_items = {
+        item.reference_id: item for item in test_slice.dataset_items()
+    }
     actual_items = {
         item.reference_id: item
         for item in test_slice.items_generator(page_size=1)

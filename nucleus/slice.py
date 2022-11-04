@@ -11,6 +11,8 @@ from nucleus.constants import EXPORT_FOR_TRAINING_KEY, EXPORTED_ROWS, ITEMS_KEY
 from nucleus.dataset_item import DatasetItem
 from nucleus.errors import NucleusAPIError
 from nucleus.job import AsyncJob
+from nucleus.prediction import from_json as prediction_from_json
+from nucleus.scene import Scene
 from nucleus.utils import (
     KeyErrorDict,
     convert_export_payload,
@@ -113,6 +115,7 @@ class Slice:
         self._dataset_id = None
         self._created_at = None
         self._pending_job_count = None
+        self._type = None
 
     def __repr__(self):
         return f"Slice(slice_id='{self.id}', name={self._name}, dataset_id={self._dataset_id})"
@@ -182,6 +185,13 @@ class Slice:
             self._dataset_id = self.info()["dataset_id"]
         return self._dataset_id
 
+    @property
+    def type(self):
+        """The type of the Slice."""
+        if self._type is None:
+            self._type = self.info()["type"]
+        return self._type
+
     def items_generator(self, page_size=100000):
         """Generator yielding all dataset items in the dataset.
 
@@ -209,27 +219,68 @@ class Slice:
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
 
-    @property
-    def items(self):
-        """All DatasetItems contained in the Slice.
+    def dataset_items(self):
+        """Fetch all DatasetItems contained in the Slice.
 
         We recommend using :meth:`Slice.items_generator` if the Slice has more than 200k items.
 
+        Returns: list of DatasetItem objects
+
         """
         try:
-            dataset_item_jsons = self._client.make_request(
+            response = self._client.make_request(
                 {}, f"slice/{self.id}", requests_command=requests.get
-            )[
-                "dataset_items"
-            ]  # Unfortunately, we didn't use a standard value here, so not using a constant for the key
-            return [
-                DatasetItem.from_json(dataset_item_json)
-                for dataset_item_json in dataset_item_jsons
-            ]
+            )
         except NucleusAPIError as e:
             if e.status_code == 503:
                 e.message += "/n Your request timed out while trying to get all the items in the slice. Please try slice.items_generator() instead."
             raise e
+
+        dataset_item_jsons = response.get(ITEMS_KEY, [])
+        return [
+            DatasetItem.from_json(dataset_item_json)
+            for dataset_item_json in dataset_item_jsons
+        ]
+
+    @property
+    def items(self):
+        """Fetch all items belonging to this slice, the type of items returned depends on the type of the slice.
+        The type of the slice can be one of { dataset_item, object, scene }.
+
+
+        Returns: List of DatasetItems for a `dataset_item` slice,
+            list of Annotations/Predictions for an `object` slice,
+            or a list of Scenes for a `scene` slice.
+        """
+        try:
+            response = self._client.make_request(
+                {}, f"slice/{self.id}", requests_command=requests.get
+            )
+        except NucleusAPIError as e:
+            if e.status_code == 503:
+                e.message += "/n Your request timed out while trying to get all the items in the slice. Please try slice.items_generator() instead."
+            raise e
+
+        items = response.get(ITEMS_KEY, [])
+
+        formatted_items = []
+        for item in items:
+            item_id_prefix = item["id"].split("_")[0]
+            if item_id_prefix == "di":
+                formatted_items.append(DatasetItem.from_json(item))
+            elif item_id_prefix == "ann":
+                formatted_items.append(Annotation.from_json(item))
+            elif item_id_prefix == "pred":
+                formatted_items.append(prediction_from_json(item))
+            elif item_id_prefix == "scn":
+                # here we skip validate since no frames for the scene is fetched
+                formatted_items.append(
+                    Scene.from_json(item, skip_validate=True)
+                )
+            else:
+                raise ValueError("Unknown prefix", item_id_prefix)
+
+        return formatted_items
 
     def info(self) -> dict:
         """Retrieves the name, slice_id, and dataset_id of the Slice.
@@ -251,6 +302,11 @@ class Slice:
             {}, f"slice/{self.id}/info", requests_command=requests.get
         )
         info.update(res)
+        self._name = info["name"]
+        self._dataset_id = info["dataset_id"]
+        self._created_at = info["created_at"]
+        self._pending_job_count = info["pending_job_count"]
+        self._type = info["type"]
         return info
 
     def append(
@@ -419,7 +475,6 @@ class Slice:
                     "item" | "scene": Union[DatasetItem, Scene],
                     "scale_task_info": {
                         "task_id": str,
-                        "subtask_id": str,
                         "task_status": str,
                         "task_audit_status": str,
                         "task_audit_review_comment": Optional[str],
@@ -552,7 +607,10 @@ def check_annotations_are_in_slice(
         for annotation in annotations
         if annotation.reference_id is not None
     }.difference(
-        {item_metadata["ref_id"] for item_metadata in slice_to_check.items}
+        {
+            item_metadata["ref_id"]
+            for item_metadata in slice_to_check.dataset_items()
+        }
     )
     if reference_ids_not_found_in_slice:
         annotations_are_in_slice = False

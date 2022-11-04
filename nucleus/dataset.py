@@ -31,6 +31,7 @@ from .constants import (
     BACKFILL_JOB_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
+    DATASET_ITEMS_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -115,6 +116,7 @@ class Dataset:
         self._client = client
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
         self._name = name
+        self._is_scene = None
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):
@@ -140,10 +142,13 @@ class Dataset:
     @property
     def is_scene(self) -> bool:
         """Whether or not the dataset contains scenes exclusively."""
+        if self._is_scene is not None:
+            return self._is_scene
         response = self._client.make_request(
             {}, f"dataset/{self.id}/is_scene", requests.get
         )[DATASET_IS_SCENE_KEY]
-        return response
+        self._is_scene = response
+        return self._is_scene
 
     @property
     def model_runs(self) -> List[str]:
@@ -212,7 +217,8 @@ class Dataset:
             if e.status_code == 503:
                 e.message += "\nThe server timed out while trying to load your items. Please try iterating over dataset.items_generator() instead."
             raise e
-        dataset_item_jsons = response.get("dataset_items", None)
+        dataset_item_jsons = response.get(DATASET_ITEMS_KEY, None)
+
         return [
             DatasetItem.from_json(item_json)
             for item_json in dataset_item_jsons
@@ -1373,6 +1379,25 @@ class Dataset:
             return VideoScene.from_json(response)
         return LidarScene.from_json(response)
 
+    def get_scene_from_item_ref_id(
+        self, item_reference_id: str
+    ) -> Optional[Scene]:
+        """Given a dataset item reference ID, find the Scene it belongs to."""
+        if not self.is_scene:
+            print(
+                f"Dataset {self.id} is not a scene. Cannot call this endpoint."
+            )
+            return None
+
+        response = self._client.make_request(
+            payload=None,
+            route=f"dataset/{self.id}/scene/{item_reference_id}?from_item=1",
+            requests_command=requests.get,
+        )
+        if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
+            return VideoScene.from_json(response)
+        return LidarScene.from_json(response)
+
     def export_predictions(self, model):
         """Fetches all predictions of a model that were uploaded to the dataset.
 
@@ -1408,7 +1433,6 @@ class Dataset:
                     "item" | "scene": Union[:class:`DatasetItem`, :class:`Scene`],
                     "scale_task_info": {
                         "task_id": str,
-                        "subtask_id": str,
                         "task_status": str,
                         "task_audit_status": str,
                         "task_audit_review_comment": Optional[str],
