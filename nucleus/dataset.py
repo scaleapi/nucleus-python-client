@@ -5,15 +5,8 @@ import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.job import AsyncJob
-from nucleus.prediction import (
-    BoxPrediction,
-    CategoryPrediction,
-    CuboidPrediction,
-    PolygonPrediction,
-    SceneCategoryPrediction,
-    SegmentationPrediction,
-    from_json,
-)
+from nucleus.prediction import Prediction, from_json
+from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
@@ -41,10 +34,14 @@ from .constants import (
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
+    METADATA_KEY,
     NAME_KEY,
+    REFERENCE_ID_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    SCENE_REFERENCE_ID_KEY,
     SLICE_ID_KEY,
+    TRACKS_KEY,
     UPDATE_KEY,
     VIDEO_URL_KEY,
 )
@@ -1537,16 +1534,7 @@ class Dataset:
     def upload_predictions(
         self,
         model,
-        predictions: List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
-                CategoryPrediction,
-                SceneCategoryPrediction,
-            ]
-        ],
+        predictions: List[Prediction],
         update: bool = False,
         asynchronous: bool = False,
         batch_size: int = 5000,
@@ -1862,3 +1850,71 @@ class Dataset:
         )
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
+
+    def create_track(
+        self,
+        reference_id: str,
+        scene_reference_id: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> Track:
+        """
+        Creates a track with a reference_id and metadata, optionally attaching it to a scene.
+
+        Parameters:
+            reference_id (str): The user-defined reference to the track.
+                Must be unique per dataset.
+            scene_reference_id (Optional[str]): The user-defined reference to the scene this track
+                pertains to.
+            metadata (Optional[dict]): An arbitrary dictionary of additional data about this track that can be stored
+                and retrieved.
+
+        Returns:
+            The created `Track` object.
+        """
+
+        return Track.from_json(
+            payload=self._client.make_request(
+                payload={
+                    REFERENCE_ID_KEY: reference_id,
+                    SCENE_REFERENCE_ID_KEY: scene_reference_id,
+                    METADATA_KEY: metadata,
+                },
+                route=f"dataset/{self.id}/track",
+                requests_command=requests.post,
+            ),
+            client=self._client,
+        )
+
+    def delete_tracks(self, tracks: List[Track]) -> None:
+        """
+        Deletes a list of tracks from the dataset, thereby unlinking their annotation and prediction instances.
+
+        Parameters:
+            tracks (List[Track]): A list of tracks to delete.
+        """
+
+        self._client.make_request(
+            payload={TRACKS_KEY: [track.reference_id for track in tracks]},
+            route=f"dataset/{self.id}/track",
+            requests_command=requests.delete,
+        )
+
+    @property
+    def tracks(self) -> List[Track]:
+        """Tracks unique to this dataset.
+
+        Returns:
+            List of `Track` objects.
+        """
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/track", requests.get
+        )
+
+        tracks_list = [
+            Track.from_json(
+                payload=track,
+                client=self._client,
+            )
+            for track in response[TRACKS_KEY]
+        ]
+        return tracks_list
