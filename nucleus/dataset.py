@@ -41,6 +41,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SCENE_REFERENCE_ID_KEY,
     SLICE_ID_KEY,
+    TRACK_REFERENCE_IDS_KEY,
     TRACKS_KEY,
     UPDATE_KEY,
     VIDEO_URL_KEY,
@@ -1894,7 +1895,11 @@ class Dataset:
         """
 
         self._client.make_request(
-            payload={TRACKS_KEY: [track.reference_id for track in tracks]},
+            payload={
+                TRACK_REFERENCE_IDS_KEY: [
+                    track.reference_id for track in tracks
+                ]
+            },
             route=f"dataset/{self.id}/track",
             requests_command=requests.delete,
         )

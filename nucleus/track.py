@@ -87,6 +87,7 @@ class Track:  # pylint: disable=R0902
 
         self._client.make_request(
             payload={
+                REFERENCE_ID_KEY: self.reference_id,
                 SCENE_REFERENCE_ID_KEY: scene_reference_id,
                 METADATA_KEY: metadata,
                 OVERWRITE_KEY: overwrite_metadata,
@@ -125,6 +126,7 @@ class Track:  # pylint: disable=R0902
 
         self._client.make_request(
             payload={
+                REFERENCE_ID_KEY: self.reference_id,
                 ANNOTATIONS_KEY: [ann.reference_id for ann in annotations]
                 if annotations
                 else [],
@@ -151,6 +153,7 @@ class Track:  # pylint: disable=R0902
 
         self._client.make_request(
             payload={
+                REFERENCE_ID_KEY: self.reference_id,
                 ANNOTATIONS_KEY: [ann.reference_id for ann in annotations]
                 if annotations
                 else [],
