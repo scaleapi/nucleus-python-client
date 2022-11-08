@@ -5,7 +5,7 @@ edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from ..connection import Connection
 from ..constants import DATASET_ITEMS_KEY, NAME_KEY, SCENES_KEY, SLICE_ID_KEY
@@ -17,6 +17,7 @@ from .constants import (
     SCENARIO_TEST_METRICS_KEY,
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
+    EntityLevel,
     ThresholdComparison,
 )
 from .data_transfer_objects.scenario_test_evaluations import EvaluationResult
@@ -163,19 +164,17 @@ class ScenarioTest:
         ]
         return evaluations
 
-    def get_items(self) -> List[DatasetItem]:
+    def get_items(
+        self, level: EntityLevel = EntityLevel.ITEM
+    ) -> List[Union[DatasetItem, Scene]]:
         response = self.connection.get(
             f"validate/scenario_test/{self.id}/items",
         )
+        if level == EntityLevel.SCENE:
+            return [Scene.from_json(scene) for scene in response[SCENES_KEY]]
         return [
             DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
         ]
-
-    def get_scenes(self) -> List[Scene]:
-        response = self.connection.get(
-            f"validate/scenario_test/{self.id}/scenes",
-        )
-        return [Scene.from_json(scene) for scene in response[SCENES_KEY]]
 
     def set_baseline_model(self, model_id: str):
         """Set's a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
@@ -235,6 +234,8 @@ class ScenarioTest:
             aggregate_weighted_sum += r.score * r.weight
             aggregate_weight += r.weight
 
+        level = EntityLevel.ITEM if is_item_eval else EntityLevel.SCENE
+
         payload = {
             "unit_test_id": self.id,
             "eval_function_id": eval_fn.id,
@@ -243,7 +244,7 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
-            "level": "item" if is_item_eval else "scene",
+            "level": str(level),
         }
         response = self.connection.post(
             payload,

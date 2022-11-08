@@ -18,6 +18,11 @@ class EvaluationResult(ImmutableModel):
         if (
             values.get("item_ref_id") is None
             and values.get("scene_ref_id") is None
+        ) or (
+            (
+                values.get("item_ref_id") is not None
+                and values.get("scene_ref_id") is not None
+            )
         ):
             raise ValueError("Must provide either item_ref_id or scene_ref_id")
         return values
