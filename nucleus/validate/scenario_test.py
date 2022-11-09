@@ -211,7 +211,7 @@ class ScenarioTest:
             len(results) > 0
         ), "Submitting evaluation requires at least one result."
 
-        is_item_eval = True
+        level = EntityLevel.ITEM
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0.0
@@ -221,20 +221,20 @@ class ScenarioTest:
         for r in results:
             # Ensure results are uploaded ONLY for items or ONLY for scenes
             if r.scene_ref_id is not None:
-                is_item_eval = False
-            if r.item_ref_id is not None and not is_item_eval:
+                level = EntityLevel.SCENE
+            if r.item_ref_id is not None and level == EntityLevel.SCENE:
                 raise ValueError(
                     "All evaluation results must either pertain to a scene_ref_id or an item_ref_id, not both."
                 )
-            ref_id = r.item_ref_id if is_item_eval else r.scene_ref_id
+            ref_id = (
+                r.item_ref_id if level == EntityLevel.ITEM else r.scene_ref_id
+            )
 
             # Aggregate scores and weights
             metric_per_ref_id[ref_id] = r.score
             weight_per_ref_id[ref_id] = r.weight
             aggregate_weighted_sum += r.score * r.weight
             aggregate_weight += r.weight
-
-        level = EntityLevel.ITEM if is_item_eval else EntityLevel.SCENE
 
         payload = {
             "unit_test_id": self.id,
@@ -244,7 +244,7 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
-            "level": str(level),
+            "level": level.value,
         }
         response = self.connection.post(
             payload,
