@@ -166,7 +166,15 @@ class ScenarioTest:
 
     def get_items(
         self, level: EntityLevel = EntityLevel.ITEM
-    ) -> List[Union[DatasetItem, Scene]]:
+    ) -> Union[List[DatasetItem], List[Scene]]:
+        """Gets items within a scenario test at a given level, returning a list of DatasetItem or Scene objects.
+
+        Args:
+            level: :class:`EntityLevel`
+
+        Returns:
+            A list of :class:`ScenarioTestEvaluation` objects.
+        """
         response = self.connection.get(
             f"validate/scenario_test/{self.id}/items",
         )
@@ -177,7 +185,7 @@ class ScenarioTest:
         ]
 
     def set_baseline_model(self, model_id: str):
-        """Set's a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
+        """Sets a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
         this scenario test must have been evaluated using that model.  The baseline model's performance
         is used as the threshold for all metrics against which other models are compared.
 
