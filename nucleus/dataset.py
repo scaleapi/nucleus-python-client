@@ -34,12 +34,9 @@ from .constants import (
     ITEMS_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
-    METADATA_KEY,
     NAME_KEY,
-    REFERENCE_ID_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
-    SCENE_REFERENCE_ID_KEY,
     SLICE_ID_KEY,
     TRACK_REFERENCE_IDS_KEY,
     TRACKS_KEY,
@@ -1852,58 +1849,6 @@ class Dataset:
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
 
-    def create_track(
-        self,
-        reference_id: str,
-        scene_reference_id: Optional[str] = None,
-        metadata: Optional[dict] = None,
-    ) -> Track:
-        """
-        Creates a track with a reference_id and metadata, optionally attaching it to a scene.
-
-        Parameters:
-            reference_id (str): The user-defined reference to the track.
-                Must be unique per dataset.
-            scene_reference_id (Optional[str]): The user-defined reference to the scene this track
-                pertains to.
-            metadata (Optional[dict]): An arbitrary dictionary of additional data about this track that can be stored
-                and retrieved.
-
-        Returns:
-            The created `Track` object.
-        """
-
-        return Track.from_json(
-            payload=self._client.make_request(
-                payload={
-                    REFERENCE_ID_KEY: reference_id,
-                    SCENE_REFERENCE_ID_KEY: scene_reference_id,
-                    METADATA_KEY: metadata,
-                },
-                route=f"dataset/{self.id}/track",
-                requests_command=requests.post,
-            ),
-            client=self._client,
-        )
-
-    def delete_tracks(self, tracks: List[Track]) -> None:
-        """
-        Deletes a list of tracks from the dataset, thereby unlinking their annotation and prediction instances.
-
-        Parameters:
-            tracks (List[Track]): A list of tracks to delete.
-        """
-
-        self._client.make_request(
-            payload={
-                TRACK_REFERENCE_IDS_KEY: [
-                    track.reference_id for track in tracks
-                ]
-            },
-            route=f"dataset/{self.id}/track",
-            requests_command=requests.delete,
-        )
-
     @property
     def tracks(self) -> List[Track]:
         """Tracks unique to this dataset.
@@ -1923,3 +1868,19 @@ class Dataset:
             for track in response[TRACKS_KEY]
         ]
         return tracks_list
+
+    def delete_tracks(self, reference_ids: List[str]) -> None:
+        """
+        Deletes a list of tracks from the dataset, thereby unlinking their annotation and prediction instances.
+
+        Parameters:
+            reference_ids (List[str]): A list of reference IDs for tracks to delete.
+        """
+
+        self._client.make_request(
+            payload={
+                TRACK_REFERENCE_IDS_KEY: reference_ids,
+            },
+            route=f"dataset/{self.id}/track",
+            requests_command=requests.delete,
+        )

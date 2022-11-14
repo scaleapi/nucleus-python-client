@@ -1,18 +1,13 @@
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import requests
 
-from nucleus.annotation import Annotation
-from nucleus.prediction import Prediction
-
 from .constants import (
-    ANNOTATIONS_KEY,
     DATASET_ID_KEY,
     METADATA_KEY,
     OVERWRITE_KEY,
-    PREDICTIONS_KEY,
     REFERENCE_ID_KEY,
     SCENE_REFERENCE_ID_KEY,
 )
@@ -108,59 +103,4 @@ class Track:  # pylint: disable=R0902
                 if self.metadata is not None and metadata is not None
                 else metadata
             )
-        )
-
-    def link(
-        self,
-        annotations: Optional[List[Annotation]] = None,
-        predictions: Optional[List[Prediction]] = None,
-    ) -> None:
-        """
-        Links annotations and predictions to the track. This allows the linked annotations and predictions
-        to be identified as instances of the track.
-
-        Parameters:
-            annotations (Optional[List[Annotation]]): The annotations to link.
-            predictions (Optional[List[Prediction]]): The predictions to link.
-        """
-
-        self._client.make_request(
-            payload={
-                REFERENCE_ID_KEY: self.reference_id,
-                ANNOTATIONS_KEY: [ann.reference_id for ann in annotations]
-                if annotations
-                else [],
-                PREDICTIONS_KEY: [pred.reference_id for pred in predictions]
-                if predictions
-                else [],
-            },
-            route=f"dataset/{self.dataset_id}/track/link",
-            requests_command=requests.post,
-        )
-
-    def unlink(
-        self,
-        annotations: Optional[List[Annotation]] = None,
-        predictions: Optional[List[Prediction]] = None,
-    ) -> None:
-        """
-        Unlinks annotations and predictions from the track.
-
-        Parameters:
-            annotations (Optional[List[Annotation]]): The annotations to unlink.
-            predictions (Optional[List[Prediction]]): The predictions to unlink.
-        """
-
-        self._client.make_request(
-            payload={
-                REFERENCE_ID_KEY: self.reference_id,
-                ANNOTATIONS_KEY: [ann.reference_id for ann in annotations]
-                if annotations
-                else [],
-                PREDICTIONS_KEY: [pred.reference_id for pred in predictions]
-                if predictions
-                else [],
-            },
-            route=f"dataset/{self.dataset_id}/track/unlink",
-            requests_command=requests.post,
         )
