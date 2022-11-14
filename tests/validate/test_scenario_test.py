@@ -50,6 +50,25 @@ def test_list_scenario_test(CLIENT, test_slice, annotations):
 
 
 def test_scenario_test_get_dataset_items(
+    CLIENT, test_slice, slice_items, annotations
+):
+    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+
+    scenario_test = CLIENT.validate.create_scenario_test(
+        name=test_name,
+        slice_id=test_slice.id,
+        evaluation_functions=[CLIENT.validate.eval_functions.bbox_iou()],
+    )
+
+    expected_items_locations = [item.image_location for item in slice_items]
+    actual_items_locations = [
+        item.image_location for item in scenario_test.get_items()
+    ]
+    assert expected_items_locations == actual_items_locations
+    CLIENT.validate.delete_scenario_test(scenario_test.id)
+
+
+def test_scenario_test_get_scenes(
     CLIENT, test_scene_slice, slice_scenes, annotations
 ):
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
@@ -68,25 +87,6 @@ def test_scenario_test_get_dataset_items(
         for scene in scenario_test.get_items(level=EntityLevel.SCENE)
     ]
     assert expected_scene_reference_ids == actual_scene_reference_ids
-    CLIENT.validate.delete_scenario_test(scenario_test.id)
-
-
-def test_scenario_test_get_scenes(
-    CLIENT, test_slice, slice_items, annotations
-):
-    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
-
-    scenario_test = CLIENT.validate.create_scenario_test(
-        name=test_name,
-        slice_id=test_slice.id,
-        evaluation_functions=[CLIENT.validate.eval_functions.bbox_iou()],
-    )
-
-    expected_items_locations = [item.image_location for item in slice_items]
-    actual_items_locations = [
-        item.image_location for item in scenario_test.get_items()
-    ]
-    assert expected_items_locations == actual_items_locations
     CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 
