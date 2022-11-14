@@ -1869,7 +1869,7 @@ class Dataset:
         ]
         return tracks_list
 
-    def delete_tracks(self, reference_ids: List[str]) -> None:
+    def delete_tracks(self, track_reference_ids: List[str]) -> None:
         """
         Deletes a list of tracks from the dataset, thereby unlinking their annotation and prediction instances.
 
@@ -1879,7 +1879,7 @@ class Dataset:
 
         self._client.make_request(
             payload={
-                TRACK_REFERENCE_IDS_KEY: reference_ids,
+                TRACK_REFERENCE_IDS_KEY: track_reference_ids,
             },
             route=f"dataset/{self.id}/track",
             requests_command=requests.delete,
