@@ -75,7 +75,7 @@ class Track:  # pylint: disable=R0902
                 METADATA_KEY: metadata,
                 OVERWRITE_KEY: overwrite_metadata,
             },
-            route=f"dataset/{self.dataset_id}/track/update",
+            route=f"dataset/{self.dataset_id}/tracks",
             requests_command=requests.post,
         )
         self.metadata = (
