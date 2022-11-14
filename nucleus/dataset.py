@@ -1371,8 +1371,8 @@ class Dataset:
             requests_command=requests.get,
         )
         if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
-            return VideoScene.from_json(response)
-        return LidarScene.from_json(response)
+            return VideoScene.from_json(response, self._client)
+        return LidarScene.from_json(response, self._client)
 
     def get_scene_from_item_ref_id(
         self, item_reference_id: str
@@ -1390,8 +1390,8 @@ class Dataset:
             requests_command=requests.get,
         )
         if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
-            return VideoScene.from_json(response)
-        return LidarScene.from_json(response)
+            return VideoScene.from_json(response, self._client)
+        return LidarScene.from_json(response, self._client)
 
     def export_predictions(self, model):
         """Fetches all predictions of a model that were uploaded to the dataset.
@@ -1857,7 +1857,7 @@ class Dataset:
             List of `Track` objects.
         """
         response = self._client.make_request(
-            {}, f"dataset/{self.id}/track", requests.get
+            {}, f"dataset/{self.id}/tracks", requests.get
         )
 
         tracks_list = [
@@ -1881,6 +1881,6 @@ class Dataset:
             payload={
                 TRACK_REFERENCE_IDS_KEY: track_reference_ids,
             },
-            route=f"dataset/{self.id}/track",
+            route=f"dataset/{self.id}/tracks",
             requests_command=requests.delete,
         )

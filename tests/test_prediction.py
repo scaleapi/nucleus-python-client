@@ -119,7 +119,7 @@ def scene_category_model_run(CLIENT):
     ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME, is_scene=True)
     scenes = []
     for scene in TEST_VIDEO_SCENES_FOR_ANNOTATION["scenes"]:
-        scenes.append(VideoScene.from_json(scene))
+        scenes.append(VideoScene.from_json(scene, CLIENT))
 
     job = ds.append(
         scenes,
