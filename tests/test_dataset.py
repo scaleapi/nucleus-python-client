@@ -28,6 +28,7 @@ from nucleus.constants import (
 )
 from nucleus.errors import NucleusAPIError
 from nucleus.job import AsyncJob, JobError
+from nucleus.scene import LidarScene, VideoScene
 
 from .helpers import (
     DATASET_WITH_EMBEDDINGS,
@@ -36,9 +37,11 @@ from .helpers import (
     TEST_CATEGORY_ANNOTATIONS,
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
+    TEST_LIDAR_SCENES,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
+    TEST_VIDEO_SCENES,
     assert_partial_equality,
     reference_id_from_url,
 )
@@ -92,6 +95,10 @@ def make_dataset_items():
             )
         )
     return ds_items_with_metadata
+
+
+def make_scenes():
+    return [VideoScene.from_json(s) for s in TEST_VIDEO_SCENES["scenes"]]
 
 
 def test_dataset_create_and_delete_no_scene(CLIENT):

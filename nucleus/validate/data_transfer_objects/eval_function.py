@@ -91,6 +91,7 @@ class CreateEvalFunction(ImmutableModel):
     is_external_function: bool
     serialized_fn: Optional[str] = None
     raw_source: Optional[str] = None
+    level: Optional[str] = None
 
     @validator("name")
     def name_is_valid(cls, v):  # pylint: disable=no-self-argument

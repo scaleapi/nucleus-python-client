@@ -20,3 +20,10 @@ class ThresholdComparison(str, Enum):
     GREATER_THAN_EQUAL_TO = "greater_than_equal_to"
     LESS_THAN = "less_than"
     LESS_THAN_EQUAL_TO = "less_than_equal_to"
+
+
+class EntityLevel(str, Enum):
+    """Level for evaluation functions and unit tests."""
+
+    ITEM = "item"
+    SCENE = "scene"

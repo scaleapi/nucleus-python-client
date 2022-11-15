@@ -25,6 +25,17 @@ def module_scope_datasets(CLIENT):
     yield test_datasets
 
 
+@pytest.fixture(scope="module")
+def module_scope_scene_datasets(CLIENT):
+    test_scene_datasets = []
+    for i in range(3):
+        dataset_name = f"[PyTest] CLI {i} {get_uuid()} (Scene)"
+        test_scene_datasets.append(
+            CLIENT.create_dataset(dataset_name, is_scene=True)
+        )
+    yield test_scene_datasets
+
+
 @pytest.fixture(scope="function")
 def function_scope_dataset(CLIENT):
     dataset = CLIENT.create_dataset(f"[PyTest] Dataset {get_uuid()}")
@@ -50,6 +61,11 @@ def populated_dataset(module_scope_datasets):
 
 
 @pytest.fixture(scope="module")
+def populated_scene_dataset(module_scope_scene_datasets):
+    yield module_scope_scene_datasets[0]
+
+
+@pytest.fixture(scope="module")
 def model(module_scope_models):
     yield module_scope_models[0]
 
@@ -72,6 +88,28 @@ def test_slice(populated_dataset, slice_items):
     slc = populated_dataset.create_slice(
         name=slice_name,
         reference_ids=[item.reference_id for item in slice_items],
+    )
+    yield slc
+
+
+@pytest.fixture(scope="module")
+def scenes(populated_dataset):
+    items = make_dataset_items()
+    populated_dataset.append(items)
+    yield items
+
+
+@pytest.fixture(scope="module")
+def slice_scenes(scenes):
+    yield scenes[:2]
+
+
+@pytest.fixture(scope="module")
+def test_scene_slice(populated_scene_dataset, slice_scenes):
+    slice_name = "[PyTest] CLI Scene Slice"
+    slc = populated_scene_dataset.create_slice(
+        name=slice_name,
+        reference_ids=[scene.reference_id for scene in slice_scenes],
     )
     yield slc
 
