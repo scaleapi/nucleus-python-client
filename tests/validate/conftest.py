@@ -9,7 +9,7 @@ from tests.helpers import (
     create_predictions,
     get_uuid,
 )
-from tests.test_dataset import make_dataset_items
+from tests.test_dataset import make_dataset_items, make_scenes
 
 
 @pytest.fixture(scope="module")
@@ -63,33 +63,29 @@ def module_scope_scene_datasets(CLIENT):
 
 
 @pytest.fixture(scope="module")
-def populated_dataset(module_scope_datasets):
-    yield module_scope_datasets[0]
-
-
-@pytest.fixture(scope="module")
 def populated_scene_dataset(module_scope_scene_datasets):
     yield module_scope_scene_datasets[0]
 
 
 @pytest.fixture(scope="module")
-def scenes(populated_dataset):
-    items = make_dataset_items()
-    populated_dataset.append(items)
-    yield items
+def slice_scenes():
+    scenes = make_scenes()[:1]
+    yield scenes
 
 
 @pytest.fixture(scope="module")
-def slice_scenes(scenes):
-    yield scenes[:2]
+def scenes(populated_scene_dataset, slice_scenes):
+    job = populated_scene_dataset.append(slice_scenes, asynchronous=True)
+    job.sleep_until_complete()
+    yield slice_scenes
 
 
 @pytest.fixture(scope="module")
-def test_scene_slice(populated_scene_dataset, slice_scenes):
+def test_scene_slice(populated_scene_dataset, scenes):
     slice_name = "[PyTest] CLI Scene Slice"
     slc = populated_scene_dataset.create_slice(
         name=slice_name,
-        reference_ids=[scene.reference_id for scene in slice_scenes],
+        reference_ids=[scene.reference_id for scene in scenes],
     )
     yield slc
 

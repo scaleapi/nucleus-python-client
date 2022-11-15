@@ -158,6 +158,7 @@ class DatasetItem:  # pylint: disable=R0902
 
         if BACKEND_REFERENCE_ID_KEY in payload:
             payload[REFERENCE_ID_KEY] = payload[BACKEND_REFERENCE_ID_KEY]
+
         return cls(
             image_location=image_url,
             pointcloud_location=pointcloud_url,

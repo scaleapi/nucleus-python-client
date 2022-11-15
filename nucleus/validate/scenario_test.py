@@ -179,7 +179,10 @@ class ScenarioTest:
             f"validate/scenario_test/{self.id}/items",
         )
         if level == EntityLevel.SCENE:
-            return [Scene.from_json(scene) for scene in response[SCENES_KEY]]
+            return [
+                Scene.from_json(scene, skip_validate=True)
+                for scene in response[SCENES_KEY]
+            ]
         return [
             DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
         ]

@@ -50,7 +50,9 @@ def test_list_scenario_test(CLIENT, test_slice, annotations):
 
 
 def test_scenario_test_get_dataset_items(
-    CLIENT, test_slice, slice_items, annotations
+    CLIENT,
+    test_slice,
+    slice_items,
 ):
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
 
