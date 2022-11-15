@@ -66,7 +66,7 @@ def test_scenario_test_get_dataset_items(
     actual_items_locations = [
         item.image_location for item in scenario_test.get_items()
     ]
-    assert expected_items_locations == actual_items_locations
+    assert set(actual_items_locations).issubset(expected_items_locations)
     CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 
@@ -88,7 +88,9 @@ def test_scenario_test_get_scenes(
         scene.reference_id
         for scene in scenario_test.get_items(level=EntityLevel.SCENE)
     ]
-    assert expected_scene_reference_ids == actual_scene_reference_ids
+    assert set(actual_scene_reference_ids).issubset(
+        expected_scene_reference_ids
+    )
     CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 
