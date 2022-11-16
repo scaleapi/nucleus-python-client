@@ -639,6 +639,35 @@ TEST_NONEXISTENT_TAXONOMY_SCENE_CATEGORY_PREDICTIONS = (
 
 TEST_INDEX_EMBEDDINGS_FILE = "https://raw.githubusercontent.com/scaleapi/nucleus-python-client/master/tests/testdata/pytest_embeddings_payload.json"
 
+TEST_TRACK_REFERENCE_ID = "test_track"
+
+TEST_TRACK = {
+    "reference_id": TEST_TRACK_REFERENCE_ID,
+    "metadata": {
+        "is_cool": True,
+    },
+}
+
+TEST_SCENE_BOX_ANNS_WITH_TRACK = [
+    {
+        "label": f"[Pytest] Box Annotation w/ Track ${i}",
+        "x": 50 + i * 10,
+        "y": 60 + i * 10,
+        "width": 70 + i * 10,
+        "height": 80 + i * 10,
+        "reference_id": TEST_VIDEO_SCENES["scenes"]["frames"][i][
+            "reference_id"
+        ],
+        "annotation_id": f"[Pytest] Box Annotation w/ Track ${i}",
+        "track_reference_id": TEST_TRACK_REFERENCE_ID,
+    }
+    for i in range(len(TEST_VIDEO_SCENES["scenes"]["frames"]))
+]
+
+TEST_SCENE_BOX_PREDS_WITH_TRACK = [
+    {**ann, "confidence": 1} for ann in TEST_SCENE_BOX_ANNS_WITH_TRACK
+]
+
 
 # Asserts that a box annotation instance matches a dict representing its properties.
 # Useful to check annotation uploads/updates match.
