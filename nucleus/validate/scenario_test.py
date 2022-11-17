@@ -5,17 +5,19 @@ edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from ..connection import Connection
-from ..constants import DATASET_ITEMS_KEY, NAME_KEY, SLICE_ID_KEY
+from ..constants import DATASET_ITEMS_KEY, NAME_KEY, SCENES_KEY, SLICE_ID_KEY
 from ..dataset_item import DatasetItem
+from ..scene import Scene
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
     SCENARIO_TEST_ID_KEY,
     SCENARIO_TEST_METRICS_KEY,
     THRESHOLD_COMPARISON_KEY,
     THRESHOLD_KEY,
+    EntityLevel,
     ThresholdComparison,
 )
 from .data_transfer_objects.scenario_test_evaluations import EvaluationResult
@@ -162,16 +164,31 @@ class ScenarioTest:
         ]
         return evaluations
 
-    def get_items(self) -> List[DatasetItem]:
+    def get_items(
+        self, level: EntityLevel = EntityLevel.ITEM
+    ) -> Union[List[DatasetItem], List[Scene]]:
+        """Gets items within a scenario test at a given level, returning a list of DatasetItem or Scene objects.
+
+        Args:
+            level: :class:`EntityLevel`
+
+        Returns:
+            A list of :class:`ScenarioTestEvaluation` objects.
+        """
         response = self.connection.get(
             f"validate/scenario_test/{self.id}/items",
         )
+        if level == EntityLevel.SCENE:
+            return [
+                Scene.from_json(scene, skip_validate=True)
+                for scene in response[SCENES_KEY]
+            ]
         return [
             DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
         ]
 
     def set_baseline_model(self, model_id: str):
-        """Set's a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
+        """Sets a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
         this scenario test must have been evaluated using that model.  The baseline model's performance
         is used as the threshold for all metrics against which other models are compared.
 
@@ -205,14 +222,28 @@ class ScenarioTest:
             len(results) > 0
         ), "Submitting evaluation requires at least one result."
 
+        level = EntityLevel.ITEM
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0.0
         aggregate_weight = 0.0
+
         # aggregation based on https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
         for r in results:
-            metric_per_ref_id[r.item_ref_id] = r.score
-            weight_per_ref_id[r.item_ref_id] = r.weight
+            # Ensure results are uploaded ONLY for items or ONLY for scenes
+            if r.scene_ref_id is not None:
+                level = EntityLevel.SCENE
+            if r.item_ref_id is not None and level == EntityLevel.SCENE:
+                raise ValueError(
+                    "All evaluation results must either pertain to a scene_ref_id or an item_ref_id, not both."
+                )
+            ref_id = (
+                r.item_ref_id if level == EntityLevel.ITEM else r.scene_ref_id
+            )
+
+            # Aggregate scores and weights
+            metric_per_ref_id[ref_id] = r.score
+            weight_per_ref_id[ref_id] = r.weight
             aggregate_weighted_sum += r.score * r.weight
             aggregate_weight += r.weight
 
@@ -224,6 +255,7 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
+            "level": level.value,
         }
         response = self.connection.post(
             payload,
