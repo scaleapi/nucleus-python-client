@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.14.27](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.27) - 2022-11-17
+## [0.14.28](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.28) - 2022-11-17
 
 ### Added
 - Support for appending to slice with Scene reference IDs
