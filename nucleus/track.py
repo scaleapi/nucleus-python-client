@@ -30,6 +30,16 @@ class Track:  # pylint: disable=R0902
     reference_id: str
     metadata: Optional[dict] = None
 
+    def __repr__(self):
+        return f"Track(dataset_id='{self.dataset_id}', reference_id='{self.reference_id}', metadata={self.metadata})"
+
+    def __eq__(self, other):
+        return (
+            (self.dataset_id == other.dataset_id)
+            and (self.reference_id == other.reference_id)
+            and (self.metadata == other.metadata)
+        )
+
     @classmethod
     def from_json(cls, payload: dict, client: "NucleusClient"):
         """Instantiates track object from schematized JSON dict payload."""
