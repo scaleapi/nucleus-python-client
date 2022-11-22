@@ -869,22 +869,25 @@ class NucleusClient:
         self,
         slice_id: str,
         reference_ids: List[str],
+        dataset_id: str,
     ) -> dict:
         # TODO: migrate to Slice method and deprecate
-        """Appends dataset items to an existing slice.
+        """Appends dataset items or scenes to an existing slice.
 
         Parameters:
             slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
               be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
-            reference_ids: List of user-defined reference IDs of the dataset items
+            reference_ids: List of user-defined reference IDs of dataset items or scenes
               to append to the slice.
+            dataset_id: ID of dataset this slice belongs to.
 
         Returns:
             Empty payload response.
         """
 
         response = self.make_request(
-            {REFERENCE_IDS_KEY: reference_ids}, f"slice/{slice_id}/append"
+            {REFERENCE_IDS_KEY: reference_ids, DATASET_ID_KEY: dataset_id},
+            f"slice/{slice_id}/append",
         )
         return response
 

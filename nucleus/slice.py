@@ -321,11 +321,11 @@ class Slice:
         at upload time.
 
         Parameters:
-            reference_ids: A list of user-specified IDs for DatasetItems you wish
-              to append.
+            reference_ids: List of user-defined reference IDs of dataset items or scenes
+              to append to the slice.
 
         Returns:
-            Dict of the slice_id and the newly appended DatasetItem IDs. ::
+            Dict of the slice_id and the newly appended IDs. ::
 
                 {
                     "slice_id": str,
@@ -335,6 +335,7 @@ class Slice:
         response = self._client.append_to_slice(
             slice_id=self.id,
             reference_ids=reference_ids,
+            dataset_id=self.dataset_id,
         )
         return response
 
