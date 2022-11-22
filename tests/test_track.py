@@ -1,14 +1,40 @@
+from copy import deepcopy
+
 import pytest
 
 from nucleus.annotation import BoxAnnotation
+from nucleus.scene import VideoScene
 from tests.helpers import (
     TEST_MODEL_NAME,
     TEST_SCENE_BOX_ANNS_WITH_TRACK,
     TEST_SCENE_BOX_PREDS_WITH_TRACK,
+    TEST_VIDEO_DATASET_NAME,
+    TEST_VIDEO_SCENES,
 )
 
 
-def test_create_gt_with_tracks(populated_scene_dataset):
+@pytest.fixture(scope="session")
+def dataset_scene(CLIENT):
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME, is_scene=True)
+
+    # Upload scenes only
+    scenes = []
+    for scene in TEST_VIDEO_SCENES["scenes"]:
+        scenes.append(VideoScene.from_json(scene, CLIENT))
+    job = ds.append(
+        scenes,
+        asynchronous=True,
+        update=TEST_VIDEO_SCENES["update"],
+    )
+    job.sleep_until_complete()
+
+    yield ds
+
+    # Delete dataset after all tests finish
+    CLIENT.delete_dataset(ds.id)
+
+
+def test_create_gt_with_tracks(dataset_scene):
     # Arrange
     expected_track_reference_ids = [
         ann["track_reference_id"] for ann in TEST_SCENE_BOX_ANNS_WITH_TRACK
@@ -16,34 +42,38 @@ def test_create_gt_with_tracks(populated_scene_dataset):
     annotations = [
         BoxAnnotation.from_json(ann) for ann in TEST_SCENE_BOX_ANNS_WITH_TRACK
     ]
+
     # Act
-    populated_scene_dataset.annotate(
-        annotations=[annotations],
+    dataset_scene.annotate(
+        annotations=annotations,
         update=False,
         asynchronous=False,
     )
+
     # Assert
     assert set(
-        [track.reference_id for track in populated_scene_dataset.tracks]
+        [track.reference_id for track in dataset_scene.tracks]
     ).issubset(expected_track_reference_ids)
+
     # Cleanup
-    job = populated_scene_dataset.delete_annotations(
+    job = dataset_scene.delete_annotations(
         reference_ids=[ann.reference_id for ann in annotations]
     )
     job.sleep_until_complete()
     assert job.status()["status"] == "Completed"
-    populated_scene_dataset.delete_tracks(expected_track_reference_ids)
+    dataset_scene.delete_tracks(expected_track_reference_ids)
 
 
-def test_create_mp_with_tracks(CLIENT, populated_scene_dataset):
+def test_create_mp_with_tracks(CLIENT, dataset_scene):
     # Arrange
     expected_track_reference_ids = [
         ann["track_reference_id"] for ann in TEST_SCENE_BOX_PREDS_WITH_TRACK
     ]
     model_reference = "model_test_create_mp_with_tracks"
     model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
+
     # Act
-    populated_scene_dataset.upload_predictions(
+    dataset_scene.upload_predictions(
         model=model,
         predictions=[
             BoxAnnotation.from_json(ann)
@@ -52,16 +82,18 @@ def test_create_mp_with_tracks(CLIENT, populated_scene_dataset):
         update=False,
         asynchronous=False,
     )
+
     # Assert
     assert set(
-        [track.reference_id for track in populated_scene_dataset.tracks]
+        [track.reference_id for track in dataset_scene.tracks]
     ).issubset(expected_track_reference_ids)
+
     # Cleanup
     assert CLIENT.delete_model(model.id) == {}
-    populated_scene_dataset.delete_tracks(expected_track_reference_ids)
+    dataset_scene.delete_tracks(expected_track_reference_ids)
 
 
-def test_update_tracks_metadata(populated_scene_dataset):
+def test_update_tracks_metadata(dataset_scene):
     # Arrange
     annotations = [
         BoxAnnotation.from_json(ann) for ann in TEST_SCENE_BOX_ANNS_WITH_TRACK
@@ -69,9 +101,8 @@ def test_update_tracks_metadata(populated_scene_dataset):
     expected_track_reference_ids = [
         ann.track_reference_id for ann in annotations
     ]
-    # Act
-    populated_scene_dataset.annotate(
-        annotations=[annotations],
+    dataset_scene.annotate(
+        annotations=annotations,
         update=False,
         asynchronous=False,
     )
@@ -81,20 +112,29 @@ def test_update_tracks_metadata(populated_scene_dataset):
     new_metadata_2 = {
         "is_new_key": "value",
     }
-    [track_1, track_2] = populated_scene_dataset.tracks
-    # Assert
+    [original_track] = dataset_scene.tracks
+
+    # Act
     try:
-        track_1.update(new_metadata_1, overwrite_metadata=True)
-        track_2.update(new_metadata_2, overwrite_metadata=False)
+        original_track.update(new_metadata_1, overwrite_metadata=True)
+        [track_update_1] = dataset_scene.tracks
+        # Have to copy because track_update_1 gets mutated in place
+        deepcopy(track_update_1).update(
+            new_metadata_2, overwrite_metadata=False
+        )
+        [track_update_2] = dataset_scene.tracks
     except Exception as e:
         assert False, f"Updating tracks raised an exception: {e}"
-    [new_track_1, new_track_2] = populated_scene_dataset.tracks
-    assert new_track_1.metadata == new_metadata_1
-    assert new_track_2.metadata["is_new_key"] == "value"
+
+    # Assert
+    assert original_track.metadata == new_metadata_1
+    assert track_update_1.metadata == new_metadata_1
+    assert track_update_2.metadata["is_new_key"] == "value"
+
     # Cleanup
-    job = populated_scene_dataset.delete_annotations(
+    job = dataset_scene.delete_annotations(
         reference_ids=[ann.reference_id for ann in annotations]
     )
     job.sleep_until_complete()
     assert job.status()["status"] == "Completed"
-    populated_scene_dataset.delete_tracks(expected_track_reference_ids)
+    dataset_scene.delete_tracks(expected_track_reference_ids)

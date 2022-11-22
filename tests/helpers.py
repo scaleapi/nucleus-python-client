@@ -655,13 +655,13 @@ TEST_SCENE_BOX_ANNS_WITH_TRACK = [
         "y": 60 + i * 10,
         "width": 70 + i * 10,
         "height": 80 + i * 10,
-        "reference_id": TEST_VIDEO_SCENES["scenes"]["frames"][i][
+        "reference_id": TEST_VIDEO_SCENES["scenes"][0]["frames"][i][
             "reference_id"
         ],
         "annotation_id": f"[Pytest] Box Annotation w/ Track ${i}",
         "track_reference_id": TEST_TRACK_REFERENCE_ID,
     }
-    for i in range(len(TEST_VIDEO_SCENES["scenes"]["frames"]))
+    for i in range(len(TEST_VIDEO_SCENES["scenes"][0]["frames"]))
 ]
 
 TEST_SCENE_BOX_PREDS_WITH_TRACK = [
