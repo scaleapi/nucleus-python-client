@@ -44,6 +44,7 @@ from .constants import (
     POSITION_KEY,
     REFERENCE_ID_KEY,
     TAXONOMY_NAME_KEY,
+    TRACK_REFERENCE_ID_KEY,
     TYPE_KEY,
     VERTICES_KEY,
     WIDTH_KEY,
@@ -169,6 +170,9 @@ class BoxPrediction(BoxAnnotation):
         embedding_vector (Optional[List]): Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        track_reference_id: A unique string to identify the prediction as part of a group.
+            For instance, multiple "car" predictions across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     def __init__(
@@ -184,6 +188,7 @@ class BoxPrediction(BoxAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
+        track_reference_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -195,6 +200,7 @@ class BoxPrediction(BoxAnnotation):
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
+            track_reference_id=track_reference_id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -223,6 +229,7 @@ class BoxPrediction(BoxAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 
@@ -247,6 +254,9 @@ class LinePrediction(LineAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        track_reference_id: A unique string to identify the prediction as part of a group.
+            For instance, multiple "car" predictions across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     def __init__(
@@ -258,6 +268,7 @@ class LinePrediction(LineAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        track_reference_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -265,6 +276,7 @@ class LinePrediction(LineAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            track_reference_id=track_reference_id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -291,6 +303,7 @@ class LinePrediction(LineAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 
@@ -318,6 +331,9 @@ class PolygonPrediction(PolygonAnnotation):
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        track_reference_id: A unique string to identify the prediction as part of a group.
+            For instance, multiple "car" predictions across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     def __init__(
@@ -330,6 +346,7 @@ class PolygonPrediction(PolygonAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
+        track_reference_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -338,6 +355,7 @@ class PolygonPrediction(PolygonAnnotation):
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
+            track_reference_id=track_reference_id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -365,6 +383,7 @@ class PolygonPrediction(PolygonAnnotation):
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 
@@ -392,6 +411,9 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        track_reference_id: A unique string to identify the prediction as part of a group.
+            For instance, multiple "car" predictions across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     def __init__(
@@ -405,6 +427,7 @@ class KeypointsPrediction(KeypointsAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        track_reference_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -414,6 +437,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            track_reference_id=track_reference_id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -442,6 +466,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 
@@ -467,6 +492,9 @@ class CuboidPrediction(CuboidAnnotation):
             annotation. Each value should be between 0 and 1 (inclusive), and sum up to
             1 as a complete distribution. This can be useful for computing entropy to
             surface places where the model is most uncertain.
+        track_reference_id: A unique string to identify the prediction as part of a group.
+            For instance, multiple "car" predictions across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     def __init__(
@@ -480,6 +508,7 @@ class CuboidPrediction(CuboidAnnotation):
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        track_reference_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -489,6 +518,7 @@ class CuboidPrediction(CuboidAnnotation):
             reference_id=reference_id,
             annotation_id=annotation_id,
             metadata=metadata,
+            track_reference_id=track_reference_id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -515,6 +545,7 @@ class CuboidPrediction(CuboidAnnotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 
@@ -535,6 +566,9 @@ class CategoryPrediction(CategoryAnnotation):
             Strings, floats and ints are supported best by querying and insights
             features within Nucleus. For more details see our `metadata guide
             <https://nucleus.scale.com/docs/upload-metadata>`_.
+        track_reference_id: A unique string to identify the prediction as part of a group.
+            For instance, multiple "car" predictions across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     def __init__(
@@ -545,12 +579,14 @@ class CategoryPrediction(CategoryAnnotation):
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
+        track_reference_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
             reference_id=reference_id,
             metadata=metadata,
+            track_reference_id=track_reference_id,
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
@@ -573,6 +609,7 @@ class CategoryPrediction(CategoryAnnotation):
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 

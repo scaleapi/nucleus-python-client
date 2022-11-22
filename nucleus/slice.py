@@ -275,7 +275,9 @@ class Slice:
             elif item_id_prefix == "scn":
                 # here we skip validate since no frames for the scene is fetched
                 formatted_items.append(
-                    Scene.from_json(item, skip_validate=True)
+                    Scene.from_json(
+                        item, client=self._client, skip_validate=True
+                    )
                 )
             else:
                 raise ValueError("Unknown prefix", item_id_prefix)

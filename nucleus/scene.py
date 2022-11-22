@@ -2,7 +2,7 @@ import json
 import warnings
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from nucleus.constants import (
     FRAME_RATE_KEY,
@@ -13,10 +13,12 @@ from nucleus.constants import (
     NUM_SENSORS_KEY,
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
+    TRACKS_KEY,
     UPLOAD_TO_SCALE_KEY,
     VIDEO_LOCATION_KEY,
     VIDEO_URL_KEY,
 )
+from nucleus.track import Track
 
 from .annotation import is_local_path
 from .dataset_item import (
@@ -24,6 +26,9 @@ from .dataset_item import (
     DatasetItemType,
     check_for_duplicate_reference_ids,
 )
+
+if TYPE_CHECKING:
+    from . import NucleusClient
 
 
 class Frame:
@@ -124,6 +129,7 @@ class Scene(ABC):
     reference_id: str
     frames: List[Frame] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
+    tracks: List[Track] = field(default_factory=list)
     skip_validate: Optional[bool] = False
 
     def __post_init__(self):
@@ -143,6 +149,7 @@ class Scene(ABC):
                 self.reference_id == other.reference_id,
                 self.frames == other.frames,
                 self.metadata == other.metadata,
+                self.tracks == other.tracks,
             ]
         )
 
@@ -312,15 +319,27 @@ class Scene(ABC):
         ), "frames must be 0-indexed and continuous (no missing frames)"
 
     @classmethod
-    def from_json(cls, payload: dict, skip_validate: Optional[bool] = False):
+    def from_json(
+        cls,
+        payload: dict,
+        client: Optional["NucleusClient"] = None,
+        skip_validate: Optional[bool] = False,
+    ):
         """Instantiates scene object from schematized JSON dict payload."""
         frames_payload = payload.get(FRAMES_KEY, [])
         frames = [Frame.from_json(frame) for frame in frames_payload]
+        tracks_payload = payload.get(TRACKS_KEY, [])
+        tracks = (
+            [Track.from_json(track, client) for track in tracks_payload]
+            if client
+            else []
+        )
         return cls(
             reference_id=payload[REFERENCE_ID_KEY],
             frames=frames,
             metadata=payload.get(METADATA_KEY, {}),
             skip_validate=skip_validate,
+            tracks=tracks,
         )
 
     def to_payload(self) -> dict:
@@ -332,6 +351,8 @@ class Scene(ABC):
             REFERENCE_ID_KEY: self.reference_id,
             FRAMES_KEY: frames_payload,
         }
+        if self.tracks:
+            payload[TRACKS_KEY] = [track.to_payload() for track in self.tracks]
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
         return payload
@@ -491,6 +512,7 @@ class VideoScene(ABC):
     metadata: Optional[dict] = field(default_factory=dict)
     upload_to_scale: Optional[bool] = True
     attachment_type: Optional[str] = None
+    tracks: List[Track] = field(default_factory=list)
 
     def __post_init__(self):
         if self.attachment_type:
@@ -508,6 +530,7 @@ class VideoScene(ABC):
                 self.items == other.items,
                 self.video_location == other.video_location,
                 self.metadata == other.metadata,
+                self.tracks == other.tracks,
             ]
         )
 
@@ -649,10 +672,18 @@ class VideoScene(ABC):
         return payload
 
     @classmethod
-    def from_json(cls, payload: dict):
+    def from_json(
+        cls, payload: dict, client: Optional["NucleusClient"] = None
+    ):
         """Instantiates scene object from schematized JSON dict payload."""
         items_payload = payload.get(FRAMES_KEY, [])
         items = [DatasetItem.from_json(item) for item in items_payload]
+        tracks_payload = payload.get(TRACKS_KEY, [])
+        tracks = (
+            [Track.from_json(track, client) for track in tracks_payload]
+            if client
+            else []
+        )
         return cls(
             reference_id=payload[REFERENCE_ID_KEY],
             frame_rate=payload.get(FRAME_RATE_KEY, None),
@@ -660,6 +691,7 @@ class VideoScene(ABC):
             metadata=payload.get(METADATA_KEY, {}),
             video_location=payload.get(VIDEO_URL_KEY, None),
             upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
+            tracks=tracks,
         )
 
     def to_payload(self) -> dict:
@@ -681,6 +713,8 @@ class VideoScene(ABC):
             payload[FRAMES_KEY] = items_payload
         if self.upload_to_scale is not None:
             payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
+        if self.tracks:
+            payload[TRACKS_KEY] = [track.to_payload() for track in self.tracks]
         return payload
 
     def to_json(self) -> str:

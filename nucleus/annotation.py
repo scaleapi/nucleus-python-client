@@ -31,6 +31,7 @@ from .constants import (
     POSITION_KEY,
     REFERENCE_ID_KEY,
     TAXONOMY_NAME_KEY,
+    TRACK_REFERENCE_ID_KEY,
     TYPE_KEY,
     VERTICES_KEY,
     VISIBLE_KEY,
@@ -109,6 +110,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             annotation_id="image_1_car_box_1",
             metadata={"vehicle_color": "red"},
             embedding_vector=[0.1423, 1.432, ..., 3.829],
+            track_reference_id="car_a",
         )
 
     Parameters:
@@ -135,10 +137,12 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
 
             Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
             These values can be specified as `{ "lat": 52.5, "lon": 13.3, ... }`.
-
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        track_reference_id: A unique string to identify the annotation as part of a group.
+            For instance, multiple "car" annotations across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     label: str
@@ -150,6 +154,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -169,6 +174,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -185,6 +191,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
             EMBEDDING_VECTOR_KEY: self.embedding_vector,
+            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
 
     def __eq__(self, other):
@@ -198,6 +205,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             and self.annotation_id == other.annotation_id
             and sorted(self.metadata.items()) == sorted(other.metadata.items())
             and self.embedding_vector == other.embedding_vector
+            and self.track_reference_id == other.track_reference_id
         )
 
 
@@ -237,6 +245,7 @@ class LineAnnotation(Annotation):
             reference_id="person_image_1",
             annotation_id="person_image_1_line_1",
             metadata={"camera_mode": "portrait"},
+            track_reference_id="face_human",
         )
 
     Parameters:
@@ -252,6 +261,9 @@ class LineAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        track_reference_id: A unique string to identify the annotation as part of a group.
+            For instance, multiple "car" annotations across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     label: str
@@ -259,6 +271,7 @@ class LineAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -287,6 +300,7 @@ class LineAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -299,6 +313,7 @@ class LineAnnotation(Annotation):
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
+            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
         return payload
 
@@ -318,6 +333,7 @@ class PolygonAnnotation(Annotation):
             annotation_id="image_2_bus_polygon_1",
             metadata={"vehicle_color": "yellow"},
             embedding_vector=[0.1423, 1.432, ..., 3.829],
+            track_reference_id="school_bus",
         )
 
     Parameters:
@@ -336,6 +352,9 @@ class PolygonAnnotation(Annotation):
         embedding_vector: Custom embedding vector for this object annotation.
             If any custom object embeddings have been uploaded previously to this dataset,
             this vector must match the dimensions of the previously ingested vectors.
+        track_reference_id: A unique string to identify the annotation as part of a group.
+            For instance, multiple "car" annotations across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     label: str
@@ -344,6 +363,7 @@ class PolygonAnnotation(Annotation):
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -373,6 +393,7 @@ class PolygonAnnotation(Annotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -386,6 +407,7 @@ class PolygonAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
             EMBEDDING_VECTOR_KEY: self.embedding_vector,
+            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
         return payload
 
@@ -450,6 +472,7 @@ class KeypointsAnnotation(Annotation):
             reference_id="image_2",
             annotation_id="image_2_face_keypoints_1",
             metadata={"face_direction": "forward"},
+            track_reference_id="face_1",
         )
 
     Parameters:
@@ -468,6 +491,9 @@ class KeypointsAnnotation(Annotation):
             attach to this annotation.  Strings, floats and ints are supported best
             by querying and insights features within Nucleus. For more details see
             our `metadata guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        track_reference_id: A unique string to identify the annotation as part of a group.
+            For instance, multiple "car" annotations across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     label: str
@@ -477,6 +503,7 @@ class KeypointsAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata or {}
@@ -518,6 +545,7 @@ class KeypointsAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -532,6 +560,7 @@ class KeypointsAnnotation(Annotation):
             REFERENCE_ID_KEY: self.reference_id,
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
+            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
         return payload
 
@@ -573,7 +602,8 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             yaw=0,
             reference_id="pointcloud_1",
             annotation_id="pointcloud_1_car_cuboid_1",
-            metadata={"vehicle_color": "green"}
+            metadata={"vehicle_color": "green"},
+            track_reference_id="red_car",
         )
 
     Parameters:
@@ -590,6 +620,9 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
           annotation.  Strings, floats and ints are supported best by querying
           and insights features within Nucleus. For more details see our `metadata
           guide <https://nucleus.scale.com/docs/upload-metadata>`_.
+        track_reference_id: A unique string to identify the annotation as part of a group.
+            For instance, multiple "car" annotations across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     label: str
@@ -599,6 +632,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     reference_id: str
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -614,6 +648,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -631,6 +666,8 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             payload[ANNOTATION_ID_KEY] = self.annotation_id
         if self.metadata:
             payload[METADATA_KEY] = self.metadata
+        if self.track_reference_id:
+            payload[TRACK_REFERENCE_ID_KEY] = self.track_reference_id
 
         return payload
 
@@ -772,10 +809,9 @@ class SegmentationAnnotation(Annotation):
             MASK_URL_KEY: self.mask_url,
             ANNOTATIONS_KEY: [ann.to_payload() for ann in self.annotations],
             ANNOTATION_ID_KEY: self.annotation_id,
+            REFERENCE_ID_KEY: self.reference_id,
             # METADATA_KEY: self.metadata,  # TODO(sc: 422637)
         }
-
-        payload[REFERENCE_ID_KEY] = self.reference_id
 
         return payload
 
@@ -822,7 +858,8 @@ class CategoryAnnotation(Annotation):
             label="dress",
             reference_id="image_1",
             taxonomy_name="clothing_type",
-            metadata={"dress_color": "navy"}
+            metadata={"dress_color": "navy"},
+            track_reference_id="blue_and_black_dress",
         )
 
     Parameters:
@@ -834,12 +871,16 @@ class CategoryAnnotation(Annotation):
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
           <https://nucleus.scale.com/docs/upload-metadata>`_.
+        track_reference_id: A unique string to identify the annotation as part of a group.
+            For instance, multiple "car" annotations across several dataset items may have
+            the same `track_reference_id` such as "red_car".
     """
 
     label: str
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -851,6 +892,7 @@ class CategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -860,6 +902,7 @@ class CategoryAnnotation(Annotation):
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
+            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
@@ -874,6 +917,7 @@ class MultiCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
+    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -885,6 +929,7 @@ class MultiCategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -894,6 +939,7 @@ class MultiCategoryAnnotation(Annotation):
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
+            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name

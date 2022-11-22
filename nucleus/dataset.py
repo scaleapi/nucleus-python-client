@@ -5,15 +5,8 @@ import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.job import AsyncJob
-from nucleus.prediction import (
-    BoxPrediction,
-    CategoryPrediction,
-    CuboidPrediction,
-    PolygonPrediction,
-    SceneCategoryPrediction,
-    SegmentationPrediction,
-    from_json,
-)
+from nucleus.prediction import Prediction, from_json
+from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
@@ -45,6 +38,8 @@ from .constants import (
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SLICE_ID_KEY,
+    TRACK_REFERENCE_IDS_KEY,
+    TRACKS_KEY,
     UPDATE_KEY,
     VIDEO_URL_KEY,
 )
@@ -1376,8 +1371,8 @@ class Dataset:
             requests_command=requests.get,
         )
         if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
-            return VideoScene.from_json(response)
-        return LidarScene.from_json(response)
+            return VideoScene.from_json(response, self._client)
+        return LidarScene.from_json(response, self._client)
 
     def get_scene_from_item_ref_id(
         self, item_reference_id: str
@@ -1395,8 +1390,8 @@ class Dataset:
             requests_command=requests.get,
         )
         if FRAME_RATE_KEY in response or VIDEO_URL_KEY in response:
-            return VideoScene.from_json(response)
-        return LidarScene.from_json(response)
+            return VideoScene.from_json(response, self._client)
+        return LidarScene.from_json(response, self._client)
 
     def export_predictions(self, model):
         """Fetches all predictions of a model that were uploaded to the dataset.
@@ -1537,16 +1532,7 @@ class Dataset:
     def upload_predictions(
         self,
         model,
-        predictions: List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
-                CategoryPrediction,
-                SceneCategoryPrediction,
-            ]
-        ],
+        predictions: List[Prediction],
         update: bool = False,
         asynchronous: bool = False,
         batch_size: int = 5000,
@@ -1862,3 +1848,39 @@ class Dataset:
         )
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
+
+    @property
+    def tracks(self) -> List[Track]:
+        """Tracks unique to this dataset.
+
+        Returns:
+            List of `Track` objects.
+        """
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/tracks", requests.get
+        )
+
+        tracks_list = [
+            Track.from_json(
+                payload=track,
+                client=self._client,
+            )
+            for track in response[TRACKS_KEY]
+        ]
+        return tracks_list
+
+    def delete_tracks(self, track_reference_ids: List[str]) -> None:
+        """
+        Deletes a list of tracks from the dataset, thereby unlinking their annotation and prediction instances.
+
+        Parameters:
+            reference_ids (List[str]): A list of reference IDs for tracks to delete.
+        """
+
+        self._client.make_request(
+            payload={
+                TRACK_REFERENCE_IDS_KEY: track_reference_ids,
+            },
+            route=f"dataset/{self.id}/tracks",
+            requests_command=requests.delete,
+        )

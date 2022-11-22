@@ -5,11 +5,17 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.29](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.29) - 2022-11-22
+
+### Added
+- Support for `Track`s, enabling ground truth annotations and model predictions to be grouped across dataset items and scenes
+- Helpers to update track metadata, as well as to create and delete tracks at the dataset level
+
 
 ## [0.14.28](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.28) - 2022-11-17
 
 ### Added
-- Support for appending to slice with Scene reference IDs
+- Support for appending to slice with scene reference IDs
 - Better error handling when appending to a slice with non-existent reference IDs
 
 
