@@ -86,7 +86,6 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id="image_2",
             annotation_id="image_2_pred_mask_1",
-            track_reference_id="mask_1",
         )
 
     Parameters:
@@ -119,9 +118,6 @@ class SegmentationPrediction(SegmentationAnnotation):
           is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
-        track_reference_id: A unique string to identify the prediction as part of a group.
-            For instance, multiple "car" predictions across several dataset items may have
-            the same `track_reference_id` such as "red_car".
     """
 
     @classmethod
@@ -135,7 +131,6 @@ class SegmentationPrediction(SegmentationAnnotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
-            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
 

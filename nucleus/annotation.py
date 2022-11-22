@@ -744,7 +744,6 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id="image_2",
             annotation_id="image_2_mask_1",
-            track_reference_id="mask_1",
         )
 
     Parameters:
@@ -777,9 +776,6 @@ class SegmentationAnnotation(Annotation):
           is passed to :meth:`Dataset.annotate`, in which case it will be overwritten.
           Storing a custom ID here may be useful in order to tie this annotation
           to an external database, and its value will be returned for any export.
-        track_reference_id: A unique string to identify the annotation as part of a group.
-            For instance, multiple "car" annotations across several dataset items may have
-            the same `track_reference_id` such as "red_car".
     """
 
     mask_url: str
@@ -787,7 +783,6 @@ class SegmentationAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     # metadata: Optional[dict] = None # TODO(sc: 422637)
-    track_reference_id: Optional[str] = None
 
     def __post_init__(self):
         if not self.mask_url:
@@ -806,7 +801,6 @@ class SegmentationAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
-            track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -817,7 +811,6 @@ class SegmentationAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             REFERENCE_ID_KEY: self.reference_id,
             # METADATA_KEY: self.metadata,  # TODO(sc: 422637)
-            TRACK_REFERENCE_ID_KEY: self.track_reference_id,
         }
 
         return payload
@@ -840,7 +833,6 @@ class SegmentationAnnotation(Annotation):
             and (self.annotations == other.annotations)
             and (self.mask_url == other.mask_url)
             and (self.reference_id == other.reference_id)
-            and (self.track_reference_id == other.track_reference_id)
         )
 
 
