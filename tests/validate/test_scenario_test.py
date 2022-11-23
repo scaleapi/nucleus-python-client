@@ -1,11 +1,12 @@
 import pytest
 
+from nucleus.annotation import BoxAnnotation
 from nucleus.validate import CreateScenarioTestError
 from nucleus.validate.constants import EntityLevel
 from nucleus.validate.scenario_test import ScenarioTest
 from tests.helpers import (
     EVAL_FUNCTION_COMPARISON,
-    EVAL_FUNCTION_THRESHOLD,
+    TEST_SCENE_BOX_ANNS_WITH_TRACK,
     get_uuid,
 )
 
@@ -54,43 +55,92 @@ def test_scenario_test_get_dataset_items(
     test_slice,
     slice_items,
 ):
+    # Arrange
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+    expected_items_locations = [item.image_location for item in slice_items]
 
+    # Act
     scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_slice.id,
         evaluation_functions=[CLIENT.validate.eval_functions.bbox_iou()],
     )
-
-    expected_items_locations = [item.image_location for item in slice_items]
     actual_items_locations = [
         item.image_location for item in scenario_test.get_items()
     ]
+
+    # Assert
     assert set(actual_items_locations).issubset(expected_items_locations)
+
+    # Clean
     CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 
 def test_scenario_test_get_scenes(
-    CLIENT, test_scene_slice, slice_scenes, annotations
+    CLIENT,
+    test_scene_slice,
+    slice_scenes,
 ):
+    # Arrange
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+    expected_scene_reference_ids = [
+        scene.reference_id for scene in slice_scenes
+    ]
 
+    # Act
     scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,
         slice_id=test_scene_slice.id,
         evaluation_functions=[CLIENT.validate.eval_functions.bbox_iou()],
     )
-
-    expected_scene_reference_ids = [
-        scene.reference_id for scene in slice_scenes
-    ]
     actual_scene_reference_ids = [
         scene.reference_id
         for scene in scenario_test.get_items(level=EntityLevel.SCENE)
     ]
+
+    # Assert
     assert set(actual_scene_reference_ids).issubset(
         expected_scene_reference_ids
     )
+
+    # Clean
+    CLIENT.validate.delete_scenario_test(scenario_test.id)
+
+
+def test_scenario_test_get_tracks(
+    CLIENT, populated_scene_dataset, test_scene_slice, annotations
+):
+    # Arrange
+    test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
+    expected_track_reference_ids = [
+        ann["track_reference_id"] for ann in TEST_SCENE_BOX_ANNS_WITH_TRACK
+    ]
+    annotations = [
+        BoxAnnotation.from_json(ann) for ann in TEST_SCENE_BOX_ANNS_WITH_TRACK
+    ]
+    populated_scene_dataset.annotate(
+        annotations=annotations,
+        update=False,
+        asynchronous=False,
+    )
+
+    # Act
+    scenario_test = CLIENT.validate.create_scenario_test(
+        name=test_name,
+        slice_id=test_scene_slice.id,
+        evaluation_functions=[CLIENT.validate.eval_functions.bbox_iou()],
+    )
+    actual_track_reference_ids = [
+        track.reference_id
+        for track in scenario_test.get_items(level=EntityLevel.TRACK)
+    ]
+
+    # Assert
+    assert set(actual_track_reference_ids).issubset(
+        expected_track_reference_ids
+    )
+
+    # Clean
     CLIENT.validate.delete_scenario_test(scenario_test.id)
 
 

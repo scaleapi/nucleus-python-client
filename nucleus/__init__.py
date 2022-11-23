@@ -178,7 +178,7 @@ class NucleusClient:
             import tqdm.notebook as tqdm_notebook
 
             self.tqdm_bar = tqdm_notebook.tqdm
-        self._connection = Connection(self.api_key, self.endpoint)
+        self.connection = Connection(self.api_key, self.endpoint)
         self.validate = Validate(self.api_key, self.endpoint)
 
     def __repr__(self):
@@ -1014,16 +1014,16 @@ class NucleusClient:
         )
 
     def delete(self, route: str):
-        return self._connection.delete(route)
+        return self.connection.delete(route)
 
     def get(self, route: str):
-        return self._connection.get(route)
+        return self.connection.get(route)
 
     def post(self, payload: dict, route: str):
-        return self._connection.post(payload, route)
+        return self.connection.post(payload, route)
 
     def put(self, payload: dict, route: str):
-        return self._connection.put(payload, route)
+        return self.connection.put(payload, route)
 
     # TODO: Fix return type, can be a list as well. Brings on a lot of mypy errors ...
     def make_request(
@@ -1054,7 +1054,7 @@ class NucleusClient:
                     "Received defined payload with GET request! Will ignore payload"
                 )
             payload = None
-        return self._connection.make_request(payload, route, requests_command, return_raw_response)  # type: ignore
+        return self.connection.make_request(payload, route, requests_command, return_raw_response)  # type: ignore
 
     def _set_api_key(self, api_key):
         """Fetch API key from environment variable NUCLEUS_API_KEY if not set"""

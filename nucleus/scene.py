@@ -330,7 +330,10 @@ class Scene(ABC):
         frames = [Frame.from_json(frame) for frame in frames_payload]
         tracks_payload = payload.get(TRACKS_KEY, [])
         tracks = (
-            [Track.from_json(track, client) for track in tracks_payload]
+            [
+                Track.from_json(track, connection=client.connection)
+                for track in tracks_payload
+            ]
             if client
             else []
         )
@@ -680,7 +683,10 @@ class VideoScene(ABC):
         items = [DatasetItem.from_json(item) for item in items_payload]
         tracks_payload = payload.get(TRACKS_KEY, [])
         tracks = (
-            [Track.from_json(track, client) for track in tracks_payload]
+            [
+                Track.from_json(track, connection=client.connection)
+                for track in tracks_payload
+            ]
             if client
             else []
         )

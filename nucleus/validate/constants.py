@@ -25,5 +25,6 @@ class ThresholdComparison(str, Enum):
 class EntityLevel(str, Enum):
     """Level for evaluation functions and unit tests."""
 
+    TRACK = "track"
     ITEM = "item"
     SCENE = "scene"
