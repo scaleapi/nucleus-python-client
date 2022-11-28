@@ -23,7 +23,7 @@ class EvaluationResult(ImmutableModel):
         ]
         if len([ref_id for ref_id in ref_ids if ref_id is not None]) != 1:
             raise ValueError(
-                "Must provide only one of track_ref_id, item_ref_id, or scene_ref_id"
+                "Must provide exactly one of track_ref_id, item_ref_id, or scene_ref_id"
             )
         return values
 

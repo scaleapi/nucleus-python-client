@@ -240,25 +240,26 @@ class ScenarioTest:
         aggregate_weighted_sum = 0.0
         aggregate_weight = 0.0
 
-        def maybe_raise_value_error(
+        # Ensures reults at only one EntityLevel are provided, otherwise throwing a ValueError
+        def ensure_level_consistency_or_raise(
             cur_level: Optional[EntityLevel], new_level: EntityLevel
         ):
             if level is not None and level != new_level:
                 raise ValueError(
-                    f"All evaluation results must only pertain to one level. Received {cur_level} then {new_level}."
+                    f"All evaluation results must only pertain to one level. Received {cur_level} then {new_level}"
                 )
 
         # aggregation based on https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
         for r in results:
             # Ensure results are uploaded ONLY for ONE OF tracks, items, and scenes
             if r.track_ref_id is not None:
-                maybe_raise_value_error(level, EntityLevel.TRACK)
+                ensure_level_consistency_or_raise(level, EntityLevel.TRACK)
                 level = EntityLevel.TRACK
             if r.item_ref_id is not None:
-                maybe_raise_value_error(level, EntityLevel.ITEM)
+                ensure_level_consistency_or_raise(level, EntityLevel.ITEM)
                 level = EntityLevel.ITEM
             if r.scene_ref_id is not None:
-                maybe_raise_value_error(level, EntityLevel.SCENE)
+                ensure_level_consistency_or_raise(level, EntityLevel.SCENE)
                 level = EntityLevel.SCENE
             ref_id = (
                 r.track_ref_id
@@ -276,9 +277,6 @@ class ScenarioTest:
             aggregate_weighted_sum += r.score * r.weight
             aggregate_weight += r.weight
 
-        if level is None:
-            raise ValueError("No evaluation results to upload.")
-
         payload = {
             "unit_test_id": self.id,
             "eval_function_id": eval_fn.id,
@@ -287,7 +285,7 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
-            "level": level.value,
+            "level": level.value if level else None,
         }
         response = self.connection.post(
             payload,
