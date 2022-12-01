@@ -23,7 +23,13 @@ class ThresholdComparison(str, Enum):
 
 
 class EntityLevel(str, Enum):
-    """Level for evaluation functions and unit tests."""
+    """
+    Data level at which evaluation functions produce outputs.
+    For instance, when comparing results across dataset items, use
+    `EntityLevel.ITEM`. For scenes, use `EntityLevel.SCENE`. Finally,
+    when comparing results between tracks within a single scene or a
+    holistic item datset, use `EntityLevel.TRACK`.
+    """
 
     TRACK = "track"
     ITEM = "item"

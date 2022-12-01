@@ -188,16 +188,19 @@ class ScenarioTest:
         if level == EntityLevel.TRACK:
             return [
                 Track.from_json(track, connection=self.connection)
-                for track in response[TRACKS_KEY]
+                for track in response.get(TRACKS_KEY, [])
             ]
         if level == EntityLevel.SCENE:
             return [
                 Scene.from_json(scene, skip_validate=True)
-                for scene in response[SCENES_KEY]
+                for scene in response.get(SCENES_KEY, [])
             ]
-        return [
-            DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
-        ]
+        if level == EntityLevel.ITEM:
+            return [
+                DatasetItem.from_json(item)
+                for item in response.get(DATASET_ITEMS_KEY, [])
+            ]
+        raise ValueError(f"Invalid entity level: {level}")
 
     def set_baseline_model(self, model_id: str):
         """Sets a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
