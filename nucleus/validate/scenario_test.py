@@ -8,9 +8,16 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Union
 
 from ..connection import Connection
-from ..constants import DATASET_ITEMS_KEY, NAME_KEY, SCENES_KEY, SLICE_ID_KEY
+from ..constants import (
+    DATASET_ITEMS_KEY,
+    NAME_KEY,
+    SCENES_KEY,
+    SLICE_ID_KEY,
+    TRACKS_KEY,
+)
 from ..dataset_item import DatasetItem
 from ..scene import Scene
+from ..track import Track
 from .constants import (
     EVAL_FUNCTION_ID_KEY,
     SCENARIO_TEST_ID_KEY,
@@ -166,8 +173,8 @@ class ScenarioTest:
 
     def get_items(
         self, level: EntityLevel = EntityLevel.ITEM
-    ) -> Union[List[DatasetItem], List[Scene]]:
-        """Gets items within a scenario test at a given level, returning a list of DatasetItem or Scene objects.
+    ) -> Union[List[Track], List[DatasetItem], List[Scene]]:
+        """Gets items within a scenario test at a given level, returning a list of Track, DatasetItem, or Scene objects.
 
         Args:
             level: :class:`EntityLevel`
@@ -178,14 +185,22 @@ class ScenarioTest:
         response = self.connection.get(
             f"validate/scenario_test/{self.id}/items",
         )
+        if level == EntityLevel.TRACK:
+            return [
+                Track.from_json(track, connection=self.connection)
+                for track in response.get(TRACKS_KEY, [])
+            ]
         if level == EntityLevel.SCENE:
             return [
                 Scene.from_json(scene, skip_validate=True)
-                for scene in response[SCENES_KEY]
+                for scene in response.get(SCENES_KEY, [])
             ]
-        return [
-            DatasetItem.from_json(item) for item in response[DATASET_ITEMS_KEY]
-        ]
+        if level == EntityLevel.ITEM:
+            return [
+                DatasetItem.from_json(item)
+                for item in response.get(DATASET_ITEMS_KEY, [])
+            ]
+        raise ValueError(f"Invalid entity level: {level}")
 
     def set_baseline_model(self, model_id: str):
         """Sets a new baseline model for the ScenarioTest.  In order to be eligible to be a baseline,
@@ -222,23 +237,41 @@ class ScenarioTest:
             len(results) > 0
         ), "Submitting evaluation requires at least one result."
 
-        level = EntityLevel.ITEM
+        level: Optional[EntityLevel] = None
         metric_per_ref_id = {}
         weight_per_ref_id = {}
         aggregate_weighted_sum = 0.0
         aggregate_weight = 0.0
 
+        # Ensures reults at only one EntityLevel are provided, otherwise throwing a ValueError
+        def ensure_level_consistency_or_raise(
+            cur_level: Optional[EntityLevel], new_level: EntityLevel
+        ):
+            if level is not None and level != new_level:
+                raise ValueError(
+                    f"All evaluation results must only pertain to one level. Received {cur_level} then {new_level}"
+                )
+
         # aggregation based on https://en.wikipedia.org/wiki/Weighted_arithmetic_mean
         for r in results:
-            # Ensure results are uploaded ONLY for items or ONLY for scenes
+            # Ensure results are uploaded ONLY for ONE OF tracks, items, and scenes
+            if r.track_ref_id is not None:
+                ensure_level_consistency_or_raise(level, EntityLevel.TRACK)
+                level = EntityLevel.TRACK
+            if r.item_ref_id is not None:
+                ensure_level_consistency_or_raise(level, EntityLevel.ITEM)
+                level = EntityLevel.ITEM
             if r.scene_ref_id is not None:
+                ensure_level_consistency_or_raise(level, EntityLevel.SCENE)
                 level = EntityLevel.SCENE
-            if r.item_ref_id is not None and level == EntityLevel.SCENE:
-                raise ValueError(
-                    "All evaluation results must either pertain to a scene_ref_id or an item_ref_id, not both."
-                )
             ref_id = (
-                r.item_ref_id if level == EntityLevel.ITEM else r.scene_ref_id
+                r.track_ref_id
+                if level == EntityLevel.TRACK
+                else (
+                    r.item_ref_id
+                    if level == EntityLevel.ITEM
+                    else r.scene_ref_id
+                )
             )
 
             # Aggregate scores and weights
@@ -255,7 +288,7 @@ class ScenarioTest:
             "overall_metric": aggregate_weighted_sum / aggregate_weight,
             "model_id": model_id,
             "slice_id": self.slice_id,
-            "level": level.value,
+            "level": level.value if level else None,
         }
         response = self.connection.post(
             payload,

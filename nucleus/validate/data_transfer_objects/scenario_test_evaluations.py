@@ -6,6 +6,7 @@ from nucleus.pydantic_base import ImmutableModel
 
 
 class EvaluationResult(ImmutableModel):
+    track_ref_id: Optional[str] = None
     item_ref_id: Optional[str] = None
     scene_ref_id: Optional[str] = None
     score: float = 0
@@ -15,16 +16,15 @@ class EvaluationResult(ImmutableModel):
     def is_item_or_scene_provided(
         cls, values
     ):  # pylint: disable=no-self-argument
-        if (
-            values.get("item_ref_id") is None
-            and values.get("scene_ref_id") is None
-        ) or (
-            (
-                values.get("item_ref_id") is not None
-                and values.get("scene_ref_id") is not None
+        ref_ids = [
+            values.get("track_ref_id", None),
+            values.get("item_ref_id", None),
+            values.get("scene_ref_id", None),
+        ]
+        if len([ref_id for ref_id in ref_ids if ref_id is not None]) != 1:
+            raise ValueError(
+                "Must provide exactly one of track_ref_id, item_ref_id, or scene_ref_id"
             )
-        ):
-            raise ValueError("Must provide either item_ref_id or scene_ref_id")
         return values
 
     @validator("score", "weight")

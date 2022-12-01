@@ -12,7 +12,7 @@ from .constants import (
 )
 
 if TYPE_CHECKING:
-    from . import NucleusClient
+    from . import Connection
 
 
 @dataclass  # pylint: disable=R0902
@@ -25,7 +25,7 @@ class Track:  # pylint: disable=R0902
         metadata: Arbitrary key/value dictionary of info to attach to this track.
     """
 
-    _client: "NucleusClient"
+    _connection: "Connection"
     dataset_id: str
     reference_id: str
     metadata: Optional[dict] = None
@@ -41,10 +41,10 @@ class Track:  # pylint: disable=R0902
         )
 
     @classmethod
-    def from_json(cls, payload: dict, client: "NucleusClient"):
+    def from_json(cls, payload: dict, connection: "Connection"):
         """Instantiates track object from schematized JSON dict payload."""
         return cls(
-            _client=client,
+            _connection=connection,
             reference_id=str(payload[REFERENCE_ID_KEY]),
             dataset_id=str(payload[DATASET_ID_KEY]),
             metadata=payload.get(METADATA_KEY, None),
@@ -79,7 +79,7 @@ class Track:  # pylint: disable=R0902
                 entire metadata object will be overwritten. Otherwise, only the keys in metadata will be overwritten.
         """
 
-        self._client.make_request(
+        self._connection.make_request(
             payload={
                 REFERENCE_ID_KEY: self.reference_id,
                 METADATA_KEY: metadata,

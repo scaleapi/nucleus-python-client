@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 from .client import Validate
-from .constants import ThresholdComparison
+from .constants import EntityLevel, ThresholdComparison
 from .data_transfer_objects.eval_function import (
     EvalFunctionEntry,
     EvaluationCriterion,

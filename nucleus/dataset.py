@@ -1863,7 +1863,7 @@ class Dataset:
         tracks_list = [
             Track.from_json(
                 payload=track,
-                client=self._client,
+                connection=self._client.connection,
             )
             for track in response[TRACKS_KEY]
         ]

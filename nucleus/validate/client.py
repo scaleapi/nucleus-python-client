@@ -213,7 +213,7 @@ class Validate:
 
         Args:
             name: unique name of evaluation function
-            level: level at which the eval function is run, defaults to "item"
+            level: level at which the eval function is run, defaults to EntityLevel.ITEM.
 
         Raises:
             - NucleusAPIError if the creation of the function fails on the server side

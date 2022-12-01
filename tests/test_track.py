@@ -1,3 +1,4 @@
+import time
 from copy import deepcopy
 
 import pytest
@@ -69,7 +70,7 @@ def test_create_mp_with_tracks(CLIENT, dataset_scene):
     expected_track_reference_ids = [
         ann["track_reference_id"] for ann in TEST_SCENE_BOX_PREDS_WITH_TRACK
     ]
-    model_reference = "model_test_create_mp_with_tracks"
+    model_reference = "model_" + str(time.time())
     model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
 
     # Act
