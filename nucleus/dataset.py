@@ -184,27 +184,31 @@ class Dataset:
         # slice names are unique per dataset, so we can guarantee len is 1 here
         return Slice.from_request(response[0], self._client)
 
-    def get_slices_by_type(self, type: Union[str, SliceType]) -> List[Slice]:
+    def get_slices_by_type(
+        self, slice_type: Union[str, SliceType]
+    ) -> List[Slice]:
         """Returns slices belonging to particular type.
 
         Parameters:
-            type: Type of slice to look up.
+            slice_type: Type of slice to look up.
 
         Returns:
             :class:`Slice`: A list of Nucleus slices, each as an object.
         """
-        if isinstance(type, str):
-            type = SliceType(type)
+        if isinstance(slice_type, str):
+            slice_type = SliceType(slice_type)
 
         assert (
-            type in SliceType
-        ), f"Slice type ${type} is not valid.. Must be one of: {SliceType.options()}"
+            slice_type in SliceType
+        ), f"Slice type ${slice_type} is not valid.. Must be one of: {SliceType.options()}"
 
         response = self._client.make_request(
-            {}, f"dataset/{self.id}/slices?type={type}", requests.get
+            {}, f"dataset/{self.id}/slices?type={slice_type}", requests.get
         )
         if len(response) == 0:
-            raise NotFoundError(f"No slices with type {type} were not found.")
+            raise NotFoundError(
+                f"No slices with type {slice_type} were not found."
+            )
 
         return [Slice.from_request(info, self._client) for info in response]
 
