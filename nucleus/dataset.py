@@ -53,7 +53,7 @@ from .dataset_item import (
 )
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
-from .errors import NucleusAPIError
+from .errors import NotFoundError, NucleusAPIError
 from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
@@ -65,6 +65,7 @@ from .slice import (
     Slice,
     SliceBuilderFilters,
     SliceBuilderMethods,
+    SliceType,
     create_slice_builder_payload,
 )
 from .upload_response import UploadResponse
@@ -155,12 +156,57 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> List[str]:
+    def slices(self) -> List[Slice]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
         )
-        return response
+        return [Slice.from_request(info, self._client) for info in response]
+
+    def get_slice_by_name(self, name: str) -> Slice:
+        """Returns a slice object with the given name.
+
+        Parameters:
+            name: Name of the desired slice to look up.
+
+        Raises:
+            NotFound if the name does not exist
+
+        Returns:
+            :class:`Slice`: The Nucleus slice as an object.
+        """
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/slices?name={name}", requests.get
+        )
+        if len(response) == 0:
+            raise NotFoundError(f"Slice with name {name} was not found.")
+
+        # slice names are unique per dataset, so we can guarantee len is 1 here
+        return Slice.from_request(response[0], self._client)
+
+    def get_slices_by_type(self, type: Union[str, SliceType]) -> List[Slice]:
+        """Returns slices belonging to particular type.
+
+        Parameters:
+            type: Type of slice to look up.
+
+        Returns:
+            :class:`Slice`: A list of Nucleus slices, each as an object.
+        """
+        if isinstance(type, str):
+            type = SliceType(type)
+
+        assert (
+            type in SliceType
+        ), f"Slice type ${type} is not valid.. Must be one of: {SliceType.options()}"
+
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/slices?type={type}", requests.get
+        )
+        if len(response) == 0:
+            raise NotFoundError(f"No slices with type {type} were not found.")
+
+        return [Slice.from_request(info, self._client) for info in response]
 
     @property
     def size(self) -> int:
