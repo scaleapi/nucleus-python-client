@@ -18,11 +18,6 @@ from nucleus.slice import SliceType
 dataset.get_slices(name="My Slice")
 dataset.get_slices(slice_type=SliceType.DATASET_ITEM)
 ```
- 
-
-
-### Added
-- Support for uploading track-level metrics to external evaluation functions using track_ref_ids
 
 ## [0.14.30](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.30) - 2022-11-29
 
