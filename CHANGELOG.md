@@ -11,10 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dataset.slices` now returns a list of `Slice` objects instead of a list of IDs
 
 ### Added
-- `dataset.get_slice_by_name(name): Slice`
-  - Retrieve a slice from a dataset by its name
-- `dataset.get_slices_by_type(type): List[Slice]`
-  - Retrieve all slices of a particular type from a dataset. Where type is one of `["dataset_item", "object", "scene"]`
+Retrieve a slice from a dataset by its name, or all slices of a particular type from a dataset. Where type is one of `["dataset_item", "object", "scene"]`.
+- `dataset.get_slices(name, slice_type): List[Slice]`
+```python
+from nucleus.slice import SliceType
+dataset.get_slices(name="My Slice")
+dataset.get_slices(slice_type=SliceType.DATASET_ITEM)
+```
+ 
 
 
 ### Added
