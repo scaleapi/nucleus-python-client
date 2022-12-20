@@ -163,51 +163,43 @@ class Dataset:
         )
         return [Slice.from_request(info, self._client) for info in response]
 
-    def get_slice_by_name(self, name: str) -> Slice:
-        """Returns a slice object with the given name.
+    def get_slices(
+        self,
+        name: Optional[str] = None,
+        slice_type: Optional[Union[str, SliceType]] = None,
+    ) -> List[Slice]:
+        """Get a list of slices from its name or underlying slice type.
 
         Parameters:
             name: Name of the desired slice to look up.
+            slice_type: Type of slice to look up. This can be one of ('dataset_item', 'object', 'scene')
 
         Raises:
-            NotFound if the name does not exist
+            NotFound if no slice(s) were found with the given criteria
 
         Returns:
             :class:`Slice`: The Nucleus slice as an object.
         """
-        response = self._client.make_request(
-            {}, f"dataset/{self.id}/slices?name={name}", requests.get
-        )
+        endpoint = f"dataset/{self.id}/slices?"
+
+        if name is not None:
+            endpoint = f"{endpoint}name={name}&"
+
+        if slice_type is not None:
+            if isinstance(slice_type, str):
+                slice_type = SliceType(slice_type)
+
+            assert (
+                slice_type in SliceType
+            ), f"Slice type ${slice_type} is not valid. Must be one of: {SliceType.options()}"
+            endpoint = f"{endpoint}type={slice_type}"
+
+        response = self._client.make_request({}, endpoint, requests.get)
         if len(response) == 0:
-            raise NotFoundError(f"Slice with name {name} was not found.")
-
-        # slice names are unique per dataset, so we can guarantee len is 1 here
-        return Slice.from_request(response[0], self._client)
-
-    def get_slices_by_type(
-        self, slice_type: Union[str, SliceType]
-    ) -> List[Slice]:
-        """Returns slices belonging to particular type.
-
-        Parameters:
-            slice_type: Type of slice to look up.
-
-        Returns:
-            :class:`Slice`: A list of Nucleus slices, each as an object.
-        """
-        if isinstance(slice_type, str):
-            slice_type = SliceType(slice_type)
-
-        assert (
-            slice_type in SliceType
-        ), f"Slice type ${slice_type} is not valid.. Must be one of: {SliceType.options()}"
-
-        response = self._client.make_request(
-            {}, f"dataset/{self.id}/slices?type={slice_type}", requests.get
-        )
-        if len(response) == 0:
+            errName = f" name={name}" if name is not None else ""
+            errType = f"type={slice_type}" if slice_type is not None else ""
             raise NotFoundError(
-                f"No slices with type {slice_type} were not found."
+                f"Slice(s) not found for the parameters:{errName} {errType}"
             )
 
         return [Slice.from_request(info, self._client) for info in response]
