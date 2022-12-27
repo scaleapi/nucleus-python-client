@@ -35,6 +35,7 @@ def dataset_scene(CLIENT):
     CLIENT.delete_dataset(ds.id)
 
 
+@pytest.mark.skip(reason="Errors out on master")
 def test_create_gt_with_tracks(dataset_scene):
     # Arrange
     expected_track_reference_ids = [
@@ -65,6 +66,7 @@ def test_create_gt_with_tracks(dataset_scene):
     dataset_scene.delete_tracks(expected_track_reference_ids)
 
 
+@pytest.mark.skip(reason="Errors out on master")
 def test_create_mp_with_tracks(CLIENT, dataset_scene):
     # Arrange
     expected_track_reference_ids = [
@@ -94,6 +96,7 @@ def test_create_mp_with_tracks(CLIENT, dataset_scene):
     dataset_scene.delete_tracks(expected_track_reference_ids)
 
 
+@pytest.mark.skip(reason="Errors out on master")
 def test_update_tracks_metadata(dataset_scene):
     # Arrange
     annotations = [

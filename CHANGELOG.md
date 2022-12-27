@@ -5,6 +5,20 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.0) - 2022-12-19
+
+### Changed
+- `dataset.slices` now returns a list of `Slice` objects instead of a list of IDs
+
+### Added
+Retrieve a slice from a dataset by its name, or all slices of a particular type from a dataset. Where type is one of `["dataset_item", "object", "scene"]`.
+- `dataset.get_slices(name, slice_type): List[Slice]`
+```python
+from nucleus.slice import SliceType
+dataset.get_slices(name="My Slice")
+dataset.get_slices(slice_type=SliceType.DATASET_ITEM)
+```
+
 ## [0.14.30](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.30) - 2022-11-29
 
 ### Added

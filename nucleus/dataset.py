@@ -53,7 +53,7 @@ from .dataset_item import (
 )
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
-from .errors import NucleusAPIError
+from .errors import NotFoundError, NucleusAPIError
 from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
@@ -65,6 +65,7 @@ from .slice import (
     Slice,
     SliceBuilderFilters,
     SliceBuilderMethods,
+    SliceType,
     create_slice_builder_payload,
 )
 from .upload_response import UploadResponse
@@ -155,12 +156,53 @@ class Dataset:
         return response
 
     @property
-    def slices(self) -> List[str]:
+    def slices(self) -> List[Slice]:
         """List of all Slice IDs created from the Dataset."""
         response = self._client.make_request(
             {}, f"dataset/{self.id}/slices", requests.get
         )
-        return response
+        return [Slice.from_request(info, self._client) for info in response]
+
+    def get_slices(
+        self,
+        name: Optional[str] = None,
+        slice_type: Optional[Union[str, SliceType]] = None,
+    ) -> List[Slice]:
+        """Get a list of slices from its name or underlying slice type.
+
+        Parameters:
+            name: Name of the desired slice to look up.
+            slice_type: Type of slice to look up. This can be one of ('dataset_item', 'object', 'scene')
+
+        Raises:
+            NotFound if no slice(s) were found with the given criteria
+
+        Returns:
+            :class:`Slice`: The Nucleus slice as an object.
+        """
+        endpoint = f"dataset/{self.id}/slices?"
+
+        if name is not None:
+            endpoint = f"{endpoint}name={name}&"
+
+        if slice_type is not None:
+            if isinstance(slice_type, str):
+                slice_type = SliceType(slice_type)
+
+            assert (
+                slice_type in SliceType
+            ), f"Slice type ${slice_type} is not valid. Must be one of: {SliceType.options()}"
+            endpoint = f"{endpoint}type={slice_type}"
+
+        response = self._client.make_request({}, endpoint, requests.get)
+        if len(response) == 0:
+            errName = f" name={name}" if name is not None else ""
+            errType = f"type={slice_type}" if slice_type is not None else ""
+            raise NotFoundError(
+                f"Slice(s) not found for the parameters:{errName} {errType}"
+            )
+
+        return [Slice.from_request(info, self._client) for info in response]
 
     @property
     def size(self) -> int:

@@ -80,6 +80,27 @@ class SliceBuilderFilters:
     autotag: Optional[SliceBuilderFilterAutotag] = None
 
 
+class SliceType(str, Enum):
+    """
+    Types of slices supported by Nucleus.
+    """
+
+    DATASET_ITEM = "dataset_item"
+    OBJECT = "object"
+    SCENE = "scene"
+
+    def __contains__(self, item):
+        try:
+            self(item)
+        except ValueError:
+            return False
+        return True
+
+    @staticmethod
+    def options():
+        return list(map(lambda c: c.value, SliceType))
+
+
 class Slice:
     """A Slice represents a subset of DatasetItems in your Dataset.
 
@@ -150,6 +171,7 @@ class Slice:
         instance = cls(request["id"], client)
         instance._name = request.get("name", None)
         instance._dataset_id = request.get("dataset_id", None)
+        instance._type = request.get("type", None)
         created_at_str = request.get("created_at").rstrip("Z")
         if hasattr(datetime.datetime, "fromisoformat"):
             instance._created_at = datetime.datetime.fromisoformat(
