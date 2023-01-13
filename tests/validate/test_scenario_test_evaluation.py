@@ -1,6 +1,6 @@
 import pytest
 
-from nucleus.job import AsyncJob
+from nucleus.async_job import AsyncJob
 from nucleus.validate.scenario_test_evaluation import (
     ScenarioTestEvaluation,
     ScenarioTestItemEvaluation,

@@ -11,6 +11,7 @@ from nucleus import (
     LidarScene,
     VideoScene,
 )
+from nucleus.async_job import JobError
 from nucleus.constants import (
     ANNOTATIONS_KEY,
     FRAME_RATE_KEY,
@@ -30,7 +31,6 @@ from nucleus.constants import (
     URL_KEY,
     VIDEO_URL_KEY,
 )
-from nucleus.job import JobError
 from nucleus.scene import flatten
 
 from .helpers import (

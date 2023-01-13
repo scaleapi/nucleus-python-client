@@ -19,7 +19,7 @@ import requests
 
 from nucleus.annotation import check_all_mask_paths_remote
 from nucleus.annotation_uploader import PredictionUploader
-from nucleus.job import AsyncJob
+from nucleus.async_job import AsyncJob
 from nucleus.utils import (
     format_prediction_response,
     serialize_and_write_to_presigned_url,

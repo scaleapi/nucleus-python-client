@@ -4,7 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
-from nucleus.job import AsyncJob
+from nucleus.async_job import AsyncJob
 from nucleus.prediction import Prediction, from_json
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
