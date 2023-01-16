@@ -15,9 +15,9 @@ from nucleus import (
     Segment,
     SegmentationPrediction,
 )
+from nucleus.async_job import AsyncJob, JobError
 from nucleus.constants import ERROR_PAYLOAD
 from nucleus.errors import DuplicateIDError
-from nucleus.job import AsyncJob, JobError
 from nucleus.scene import VideoScene
 
 from .helpers import (

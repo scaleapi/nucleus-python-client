@@ -1,7 +1,7 @@
 from typing import List
 
+from nucleus.async_job import AsyncJob
 from nucleus.connection import Connection
-from nucleus.job import AsyncJob
 
 from .constants import EVAL_FUNCTION_KEY, SCENARIO_TEST_ID_KEY, EntityLevel
 from .data_transfer_objects.eval_function import (

@@ -8,12 +8,12 @@ import datetime
 
 import requests
 
+from nucleus.async_job import AsyncJob
 from nucleus.constants import (
     JOB_CREATION_TIME_KEY,
     JOB_LAST_KNOWN_STATUS_KEY,
     JOB_TYPE_KEY,
 )
-from nucleus.job import AsyncJob
 
 
 def entropy(name, model_run, client):

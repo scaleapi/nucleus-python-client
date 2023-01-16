@@ -65,6 +65,7 @@ from .annotation import (
     Segment,
     SegmentationAnnotation,
 )
+from .async_job import AsyncJob
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
@@ -115,7 +116,6 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
-from .job import AsyncJob
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun

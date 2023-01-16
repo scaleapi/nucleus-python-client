@@ -1,9 +1,9 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, Optional
 
+from .async_job import AsyncJob
 from .camera_params import CameraParams
 from .constants import CAMERA_PARAMS_KEY
-from .job import AsyncJob
 
 if TYPE_CHECKING:
     from . import NucleusClient

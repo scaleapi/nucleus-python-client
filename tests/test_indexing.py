@@ -1,6 +1,7 @@
 import pytest
 
 from nucleus import DatasetItem
+from nucleus.async_job import AsyncJob
 from nucleus.constants import (
     BACKFILL_JOB_KEY,
     ERROR_PAYLOAD,
@@ -8,7 +9,6 @@ from nucleus.constants import (
     MESSAGE_KEY,
     STATUS_KEY,
 )
-from nucleus.job import AsyncJob
 
 from .helpers import (
     TEST_DATASET_NAME,

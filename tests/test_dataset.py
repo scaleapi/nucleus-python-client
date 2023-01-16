@@ -11,6 +11,7 @@ from nucleus.annotation import (
     PolygonAnnotation,
     SegmentationAnnotation,
 )
+from nucleus.async_job import AsyncJob, JobError
 from nucleus.constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
@@ -27,7 +28,6 @@ from nucleus.constants import (
     UPDATED_ITEMS,
 )
 from nucleus.errors import NucleusAPIError
-from nucleus.job import AsyncJob, JobError
 from nucleus.scene import LidarScene, VideoScene
 
 from .helpers import (

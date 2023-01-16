@@ -7,10 +7,10 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 import requests
 
 from nucleus.annotation import Annotation
+from nucleus.async_job import AsyncJob
 from nucleus.constants import EXPORT_FOR_TRAINING_KEY, EXPORTED_ROWS, ITEMS_KEY
 from nucleus.dataset_item import DatasetItem
 from nucleus.errors import NucleusAPIError
-from nucleus.job import AsyncJob
 from nucleus.prediction import from_json as prediction_from_json
 from nucleus.scene import Scene
 from nucleus.utils import (

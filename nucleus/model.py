@@ -2,9 +2,9 @@ from typing import Dict, List, Optional, Union
 
 import requests
 
+from .async_job import AsyncJob
 from .constants import METADATA_KEY, MODEL_TAGS_KEY, NAME_KEY, REFERENCE_ID_KEY
 from .dataset import Dataset
-from .job import AsyncJob
 from .model_run import ModelRun
 from .prediction import (
     BoxPrediction,

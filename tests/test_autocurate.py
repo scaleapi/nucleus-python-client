@@ -3,8 +3,8 @@ import time
 import pytest
 
 from nucleus import DatasetItem, autocurate
+from nucleus.async_job import AsyncJob
 from nucleus.constants import ERROR_PAYLOAD
-from nucleus.job import AsyncJob
 from nucleus.prediction import BoxPrediction
 from tests.helpers import (
     TEST_BOX_PREDICTIONS,

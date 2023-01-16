@@ -4,13 +4,13 @@ import pytest
 import requests
 
 from nucleus import BoxAnnotation, BoxPrediction, Dataset, NucleusClient, Slice
+from nucleus.async_job import AsyncJob
 from nucleus.constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     ITEM_KEY,
     PREDICTIONS_KEY,
 )
-from nucleus.job import AsyncJob
 
 from .helpers import (
     TEST_BOX_ANNOTATIONS,

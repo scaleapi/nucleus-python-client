@@ -6,8 +6,8 @@ from absl import app, flags
 
 import nucleus
 from nucleus import annotation
+from nucleus.async_job import JobError
 from nucleus.dataset import Dataset
-from nucleus.job import JobError
 
 FLAGS = flags.FLAGS
 
