@@ -4,8 +4,8 @@ max-line-length = 79
 max-complexity = 18
 select = B,C,E,F,W,T4,B9
 classmethod-decorators =
-     classmethod
-     validator
+    classmethod
+    validator
 exclude =
     # All of these excludes should mirror something in .gitignore
     .git,

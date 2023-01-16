@@ -26,10 +26,10 @@ class JobInfoRequestPayload(ImmutableModel):
             return str(date)
         try:
             parse(date)
-        except ParserError:
+        except ParserError as err:
             raise ValueError(
                 f"Date {date} not a valid date. Try using YYYY-MM-DD format."
-            )
+            ) from err
         return date
 
     @validator("limit")
