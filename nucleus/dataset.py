@@ -43,6 +43,7 @@ from .constants import (
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
     ITEMS_KEY,
+    JOB_REQ_LIMIT,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
@@ -1947,7 +1948,7 @@ class Dataset:
         job_types: Optional[List[CustomerJobTypes]] = None,
         from_date: Optional[Union[str, datetime.datetime]] = None,
         to_date: Optional[Union[str, datetime.datetime]] = None,
-        limit: int = 1000,
+        limit: int = JOB_REQ_LIMIT,
         show_completed: bool = False,
         stats_only: bool = False,
     ):

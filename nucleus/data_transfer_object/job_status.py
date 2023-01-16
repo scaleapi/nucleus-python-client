@@ -6,10 +6,9 @@ from typing import List, Optional, Union
 from dateutil.parser import ParserError, parse
 from pydantic import validator
 
+from nucleus.constants import JOB_REQ_LIMIT
 from nucleus.job import CustomerJobTypes
 from nucleus.pydantic_base import ImmutableModel
-
-JOB_REQ_LIMIT = 50_000
 
 
 class JobInfoRequestPayload(ImmutableModel):
