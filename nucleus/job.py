@@ -1,9 +1,8 @@
+from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import Any, Dict, List
 
-if TYPE_CHECKING:
-    from . import NucleusClient
-
+from .async_job import AsyncJob
 
 class CustomerJobTypes(str, Enum):
     UPLOAD_DATASET_ITEMS = "uploadDatasetItems"
@@ -38,3 +37,18 @@ class CustomerJobTypes(str, Enum):
     @staticmethod
     def options():
         return list(map(lambda c: c.value, CustomerJobTypes))
+
+
+def jobs_status_overview(jobs: List[AsyncJob]) -> Dict[str, Any]:
+    jobs_by_type = defaultdict(list)
+    for job in jobs:
+        jobs_by_type[job.job_type].append(job)
+
+    jobs_status = dict()
+    for job_type, job_collection in jobs_by_type.items():
+        overview = defaultdict(int)
+        for job in job_collection:
+            overview[job.job_last_known_status] += 1
+        jobs_status[job_type] = dict(overview)
+
+    return jobs_status
