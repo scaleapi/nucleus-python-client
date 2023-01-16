@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, Union
 
-from dateutil.parser import parse
+from dateutil.parser import ParserError, parse
 from pydantic import validator
 
 from nucleus.job import CustomerJobTypes
@@ -26,7 +26,7 @@ class JobInfoRequestPayload(DictCompatibleModel):
             return str(date)
         try:
             parse(date)
-        except:
+        except ParserError:
             raise ValueError(
                 f"Date {date} not a valid date. Try using YYYY-MM-DD format."
             )
@@ -46,7 +46,7 @@ class JobInfoRequestPayload(DictCompatibleModel):
             return []
         try:
             assert all([t in CustomerJobTypes for t in job_types])
-        except:
+        except AssertionError:
             raise ValueError(
                 f"Job types must be one of: {CustomerJobTypes.options()}"
             )

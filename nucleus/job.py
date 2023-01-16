@@ -1,5 +1,8 @@
 from enum import Enum
-from typing import List
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from . import NucleusClient
 
 
 class CustomerJobTypes(str, Enum):
@@ -35,30 +38,3 @@ class CustomerJobTypes(str, Enum):
     @staticmethod
     def options():
         return list(map(lambda c: c.value, CustomerJobTypes))
-
-
-class NucleusJob:
-    def __init__(self):
-        pass
-
-
-class NucleusJobs:
-    def __init__(self, client: "NucleusClient", dataset_id: str):
-        self._client = client
-        self.dataset_id = dataset_id
-
-    def dataset_jobs_status(
-        self, job_types, from_date, to_date
-    ) -> List[NucleusJob]:
-
-        payload = {
-            job_types: job_types,
-            from_date: from_date,
-            to_date: to_date,
-        }
-        resp = self._client.make_request(
-            payload=payload,
-            route=f"dataset/{self.dataset_id}/jobs/statusasync={is_async}",
-        )
-
-        return []

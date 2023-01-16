@@ -1,6 +1,16 @@
 import datetime
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import requests
 
@@ -70,6 +80,9 @@ from .slice import (
     create_slice_builder_payload,
 )
 from .upload_response import UploadResponse
+
+if TYPE_CHECKING:
+    from . import NucleusClient
 
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
