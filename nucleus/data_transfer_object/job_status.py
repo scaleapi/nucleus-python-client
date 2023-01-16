@@ -5,12 +5,12 @@ from dateutil.parser import ParserError, parse
 from pydantic import validator
 
 from nucleus.job import CustomerJobTypes
-from nucleus.pydantic_base import DictCompatibleModel
+from nucleus.pydantic_base import ImmutableModel
 
 JOB_REQ_LIMIT = 50_000
 
 
-class JobInfoRequestPayload(DictCompatibleModel):
+class JobInfoRequestPayload(ImmutableModel):
     dataset_id: Optional[str]
     job_types: Optional[List[CustomerJobTypes]]
     from_date: Optional[Union[str, datetime]]
