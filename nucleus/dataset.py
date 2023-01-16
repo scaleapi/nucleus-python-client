@@ -1952,11 +1952,12 @@ class Dataset:
         stats_only: bool = False,
     ):
         """
-         Fetch jobs pertaining to this particular dataset.
+        Fetch jobs pertaining to this particular dataset.
 
         Parameters:
-            job_types: Filter on set of job types, if None, fetch all types
-            from_date: beginning of date range
+            job_types: Filter on set of job types, if None, fetch all types, ie: ['uploadDatasetItems']
+            from_date: beginning of date range, as a string 'YYYY-MM-DD' or datetime object.
+                For example: '2021-11-05', parser.parse('Nov 5 2021'), or datetime(2021,11,5)
             to_date: end of date range
             limit: number of results to fetch, max 50_000
             show_completed: dont fetch jobs with Completed status
