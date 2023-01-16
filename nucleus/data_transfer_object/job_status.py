@@ -1,9 +1,7 @@
 from datetime import datetime
-from dateutil.parser import parse
-
 from typing import List, Optional, Union
 
-
+from dateutil.parser import parse
 from pydantic import validator
 
 from nucleus.job import CustomerJobTypes
@@ -47,9 +45,7 @@ class JobInfoRequestPayload(DictCompatibleModel):
         if job_types is None:
             return []
         try:
-            assert all(
-                [t in CustomerJobTypes for t in job_types]
-            )
+            assert all([t in CustomerJobTypes for t in job_types])
         except:
             raise ValueError(
                 f"Job types must be one of: {CustomerJobTypes.options()}"

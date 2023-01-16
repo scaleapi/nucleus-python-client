@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import List
 
 
 class CustomerJobTypes(str, Enum):
