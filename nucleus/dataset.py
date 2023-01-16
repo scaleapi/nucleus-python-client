@@ -1926,3 +1926,6 @@ class Dataset:
             route=f"dataset/{self.id}/tracks",
             requests_command=requests.delete,
         )
+
+    def jobs_status(self, job_types: List[str], from_date: str, to_date: str):
+        job
