@@ -45,10 +45,10 @@ class JobInfoRequestPayload(ImmutableModel):
         if job_types is None:
             return []
         try:
-            assert all([t in CustomerJobTypes for t in job_types])
-        except AssertionError:
+            assert all(t in CustomerJobTypes for t in job_types)
+        except AssertionError as badType:
             raise ValueError(
                 f"Job types must be one of: {CustomerJobTypes.options()}"
-            )
+            ) from badType
 
         return [t.value for t in job_types]
