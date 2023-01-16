@@ -1,3 +1,5 @@
+# pylint: disable=R0201
+
 from datetime import datetime
 from typing import List, Optional, Union
 
@@ -21,7 +23,7 @@ class JobInfoRequestPayload(ImmutableModel):
     @validator("from_date", "to_date")
     def ensure_date_format(cls, date):
         if date is None:
-            return
+            return None
         if isinstance(date, datetime):
             return str(date)
         try:
