@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 from .async_job import AsyncJob
 
+
 class CustomerJobTypes(str, Enum):
     UPLOAD_DATASET_ITEMS = "uploadDatasetItems"
     UPLOAD_PREDICTIONS = "uploadPredictions"

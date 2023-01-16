@@ -1949,19 +1949,19 @@ class Dataset:
         to_date: Optional[Union[str, datetime.datetime]] = None,
         limit: int = 1000,
         show_completed: bool = False,
-        stats_only: bool = False
+        stats_only: bool = False,
     ):
         """
-        Fetch jobs pertaining to this particular dataset.
+         Fetch jobs pertaining to this particular dataset.
 
-       Parameters:
-           job_types: Filter on set of job types, if None, fetch all types
-           from_date: beginning of date range
-           to_date: end of date range
-           limit: number of results to fetch, max 50_000
-           show_completed: dont fetch jobs with Completed status
-           stats_only: return overview of jobs, instead of a list of job objects
-       """
+        Parameters:
+            job_types: Filter on set of job types, if None, fetch all types
+            from_date: beginning of date range
+            to_date: end of date range
+            limit: number of results to fetch, max 50_000
+            show_completed: dont fetch jobs with Completed status
+            stats_only: return overview of jobs, instead of a list of job objects
+        """
         job_objects = self._client.list_jobs(
             dataset_id=self.id,
             show_completed=show_completed,

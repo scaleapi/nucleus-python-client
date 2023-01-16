@@ -264,18 +264,18 @@ class NucleusClient:
     ) -> List[AsyncJob]:
         """Fetches all of your running jobs in Nucleus.
 
-       Parameters:
-           job_types: Filter on set of job types, if None, fetch all types
-           from_date: beginning of date range filter
-           to_date: end of date range filter
-           limit: number of results to fetch, max 50_000
-           show_completed: dont fetch jobs with Completed status
-           stats_only: return overview of jobs, instead of a list of job objects
-           dataset_id: filter on a particular dataset
+        Parameters:
+            job_types: Filter on set of job types, if None, fetch all types
+            from_date: beginning of date range filter
+            to_date: end of date range filter
+            limit: number of results to fetch, max 50_000
+            show_completed: dont fetch jobs with Completed status
+            stats_only: return overview of jobs, instead of a list of job objects
+            dataset_id: filter on a particular dataset
 
-        Returns:
-            List[:class:`AsyncJob`]: List of running asynchronous jobs
-            associated with the client API key.
+         Returns:
+             List[:class:`AsyncJob`]: List of running asynchronous jobs
+             associated with the client API key.
         """
 
         payload = JobInfoRequestPayload(

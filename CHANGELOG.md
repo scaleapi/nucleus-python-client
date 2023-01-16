@@ -5,6 +5,41 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.1) - 2023-01-16
+
+### Chnaged
+- Better filter tuning of `client.list_jobs(args)` method
+
+### Added
+- Dataset method to filter jobs, and statistics on running jobs
+Example:
+```python
+>>> client = nucleus.NucleusClient(API_KEY)
+>>> ds = client.get_dataset(ds_id)
+>>> ds.jobs(show_completed=True, stats_only=True)
+{'autotagInference': {'Cancelled': 1, 'Completed': 11},
+ 'modelRunCommit': {'Completed': 7, 'Errored_Server': 1, 'Running': 1},
+ 'sliceQuery': {'Completed': 40, 'Running': 2}}
+```
+
+Detailed Example
+```python
+>>> from nucleus.job import CustomerJobTypes
+>>> client = nucleus.NucleusClient(API_KEY)
+>>> ds = client.get_dataset(ds_id)
+>>> from_date = "2022-12-20"; to_date = "2023-01-15"
+>>> job_types = [CustomerJobTypes.MODEL_INFERENCE_RUN, CustomerJobTypes.UPLOAD_DATASET_ITEMS]
+>>> ds.jobs(
+  from_date=from_date,
+  to_date=to_date,
+  show_completed=True,
+  job_types=job_types,
+  limit=150
+)
+# ... returns list of AsyncJob objects
+```
+
+
 ## [0.15.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.0) - 2022-12-19
 
 ### Changed
