@@ -107,7 +107,7 @@ class Dataset:
         existing_dataset = client.get_dataset("YOUR_DATASET_ID")
     """
 
-    def __init__(self, dataset_id, client, name=None):
+    def __init__(self, dataset_id, client: "NucleusClient", name=None):
         self.id = dataset_id
         self._client = client
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
@@ -1927,5 +1927,21 @@ class Dataset:
             requests_command=requests.delete,
         )
 
-    def jobs_status(self, job_types: List[str], from_date: str, to_date: str):
-        job
+    def jobs(
+        self,
+        job_types: Optional[List[str]] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+        limit: int = 1000,
+        show_completed: bool = False,
+    ):
+
+        job_objects = self._client.list_jobs(
+            dataset_id=self.id,
+            show_completed=show_completed,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            job_types=job_types,
+        )
+        print(job_objects)

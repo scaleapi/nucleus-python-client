@@ -40,6 +40,7 @@ __all__ = [
     "VideoScene",
 ]
 
+import datetime
 import os
 import warnings
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -105,6 +106,7 @@ from .constants import (
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
+from .data_transfer_object.job_status import JobInfoRequestPayload
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .deprecation_warning import deprecated
@@ -116,6 +118,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .job import CustomerJobTypes
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
@@ -251,8 +254,15 @@ class NucleusClient:
         return self.make_request({}, "dataset/", requests.get)
 
     def list_jobs(
-        self, show_completed=None, date_limit=None
+        self,
+        show_completed: bool = False,
+        from_date: datetime.datetime = None,
+        to_date: datetime.datetime = None,
+        job_types: List[str] = None,
+        limit: int = None,
+        dataset_id: str = None,
     ) -> List[AsyncJob]:
+
         """Fetches all of your running jobs in Nucleus.
 
         Parameters:
@@ -265,9 +275,19 @@ class NucleusClient:
             List[:class:`AsyncJob`]: List of running asynchronous jobs
             associated with the client API key.
         """
-        # TODO: What type is date_limit? Use pydantic ...
-        payload = {show_completed: show_completed, date_limit: date_limit}
-        job_objects = self.make_request(payload, "jobs/", requests.get)
+
+        payload = JobInfoRequestPayload(
+            dataset_id=dataset_id,
+            show_completed=show_completed,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            job_types=job_types,
+        ).dict()
+
+        print(payload)
+
+        job_objects = self.make_request(payload, "jobs/", requests.post)
         return [
             AsyncJob(
                 job_id=job[JOB_ID_KEY],
