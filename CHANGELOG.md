@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.15.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.1) - 2023-01-16
 
-### Chnaged
+### Changed
 - Better filter tuning of `client.list_jobs(args)` method
 
 ### Added
