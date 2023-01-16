@@ -1,3 +1,4 @@
+import datetime
 import os
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
@@ -1930,8 +1931,8 @@ class Dataset:
     def jobs(
         self,
         job_types: Optional[List[str]] = None,
-        from_date: Optional[str] = None,
-        to_date: Optional[str] = None,
+        from_date: Optional[Union[str, datetime.datetime]] = None,
+        to_date: Optional[Union[str, datetime.datetime]] = None,
         limit: int = 1000,
         show_completed: bool = False,
     ):

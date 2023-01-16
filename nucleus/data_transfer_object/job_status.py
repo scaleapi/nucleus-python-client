@@ -1,6 +1,9 @@
-from typing import List, Optional
-
+from datetime import datetime
 from dateutil.parser import parse
+
+from typing import List, Optional, Union
+
+
 from pydantic import validator
 
 from nucleus.job import CustomerJobTypes
@@ -12,8 +15,8 @@ JOB_REQ_LIMIT = 50_000
 class JobInfoRequestPayload(DictCompatibleModel):
     dataset_id: Optional[str]
     job_types: Optional[List[CustomerJobTypes]]
-    from_date: Optional[str]
-    to_date: Optional[str]
+    from_date: Optional[Union[str, datetime]]
+    to_date: Optional[Union[str, datetime]]
     limit: Optional[int]
     show_completed: bool
 
@@ -21,11 +24,13 @@ class JobInfoRequestPayload(DictCompatibleModel):
     def ensure_date_format(cls, date):
         if date is None:
             return
+        if isinstance(date, datetime):
+            return str(date)
         try:
             parse(date)
         except:
             raise ValueError(
-                f"Field: {date} not a valid date. Try using YYYY-MM-DD format."
+                f"Date {date} not a valid date. Try using YYYY-MM-DD format."
             )
         return date
 
@@ -43,11 +48,11 @@ class JobInfoRequestPayload(DictCompatibleModel):
             return []
         try:
             assert all(
-                [job_type in CustomerJobTypes for job_type in job_types]
+                [t in CustomerJobTypes for t in job_types]
             )
         except:
             raise ValueError(
                 f"Job types must be one of: {CustomerJobTypes.options()}"
             )
 
-        return job_types
+        return [t.value for t in job_types]

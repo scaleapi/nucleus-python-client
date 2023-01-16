@@ -256,11 +256,11 @@ class NucleusClient:
     def list_jobs(
         self,
         show_completed: bool = False,
-        from_date: datetime.datetime = None,
-        to_date: datetime.datetime = None,
+        from_date: Optional[Union[str, datetime.datetime]] = None,
+        to_date: Optional[Union[str, datetime.datetime]] = None,
         job_types: List[str] = None,
-        limit: int = None,
-        dataset_id: str = None,
+        limit: Optional[int] = None,
+        dataset_id: Optional[str] = None,
     ) -> List[AsyncJob]:
 
         """Fetches all of your running jobs in Nucleus.
