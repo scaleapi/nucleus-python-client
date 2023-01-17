@@ -77,6 +77,7 @@ K3_KEY = "k3"
 K4_KEY = "k4"
 KEEP_HISTORY_KEY = "keep_history"
 LENGTH_KEY = "length"
+JOB_REQ_LIMIT = 50_000
 JOB_STATUS_KEY = "job_status"
 JOB_LAST_KNOWN_STATUS_KEY = "job_last_known_status"
 JOB_TYPE_KEY = "job_type"

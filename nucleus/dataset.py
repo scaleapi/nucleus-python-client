@@ -1,5 +1,16 @@
+import datetime
 import os
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import requests
 
@@ -32,6 +43,7 @@ from .constants import (
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
     ITEMS_KEY,
+    JOB_REQ_LIMIT,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
@@ -54,6 +66,7 @@ from .dataset_item import (
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
 from .errors import NotFoundError, NucleusAPIError
+from .job import CustomerJobTypes, jobs_status_overview
 from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
     construct_append_scenes_payload,
@@ -69,6 +82,9 @@ from .slice import (
     create_slice_builder_payload,
 )
 from .upload_response import UploadResponse
+
+if TYPE_CHECKING:
+    from . import NucleusClient
 
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
@@ -107,7 +123,7 @@ class Dataset:
         existing_dataset = client.get_dataset("YOUR_DATASET_ID")
     """
 
-    def __init__(self, dataset_id, client, name=None):
+    def __init__(self, dataset_id, client: "NucleusClient", name=None):
         self.id = dataset_id
         self._client = client
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
@@ -144,7 +160,7 @@ class Dataset:
             {}, f"dataset/{self.id}/is_scene", requests.get
         )[DATASET_IS_SCENE_KEY]
         self._is_scene = response
-        return self._is_scene
+        return self._is_scene  # type: ignore
 
     @property
     def model_runs(self) -> List[str]:
@@ -153,7 +169,7 @@ class Dataset:
         response = self._client.make_request(
             {}, f"dataset/{self.id}/model_runs", requests.get
         )
-        return response
+        return response  # type: ignore
 
     @property
     def slices(self) -> List[Slice]:
@@ -885,7 +901,7 @@ class Dataset:
         sample_size: int,
         sample_method: Union[str, SliceBuilderMethods],
         filters: Optional[SliceBuilderFilters] = None,
-    ) -> Union[str, Tuple[AsyncJob, str]]:
+    ) -> Union[str, Tuple[AsyncJob, str], dict]:
         """Build a slice using Nucleus' Smart Sample tool. Allowing slices to be built
         based on certain criteria, and filters.
 
@@ -1926,3 +1942,36 @@ class Dataset:
             route=f"dataset/{self.id}/tracks",
             requests_command=requests.delete,
         )
+
+    def jobs(
+        self,
+        job_types: Optional[List[CustomerJobTypes]] = None,
+        from_date: Optional[Union[str, datetime.datetime]] = None,
+        to_date: Optional[Union[str, datetime.datetime]] = None,
+        limit: int = JOB_REQ_LIMIT,
+        show_completed: bool = False,
+        stats_only: bool = False,
+    ):
+        """
+        Fetch jobs pertaining to this particular dataset.
+
+        Parameters:
+            job_types: Filter on set of job types, if None, fetch all types, ie: ['uploadDatasetItems']
+            from_date: beginning of date range, as a string 'YYYY-MM-DD' or datetime object.
+                For example: '2021-11-05', parser.parse('Nov 5 2021'), or datetime(2021,11,5)
+            to_date: end of date range
+            limit: number of results to fetch, max 50_000
+            show_completed: dont fetch jobs with Completed status
+            stats_only: return overview of jobs, instead of a list of job objects
+        """
+        job_objects = self._client.list_jobs(
+            dataset_id=self.id,
+            show_completed=show_completed,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            job_types=job_types,
+        )
+        if stats_only:
+            return jobs_status_overview(job_objects)
+        return job_objects

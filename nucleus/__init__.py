@@ -40,6 +40,7 @@ __all__ = [
     "VideoScene",
 ]
 
+import datetime
 import os
 import warnings
 from typing import Any, Dict, List, Optional, Sequence, Union
@@ -105,6 +106,7 @@ from .constants import (
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
+from .data_transfer_object.job_status import JobInfoRequestPayload
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .deprecation_warning import deprecated
@@ -116,6 +118,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .job import CustomerJobTypes
 from .logger import logger
 from .model import Model
 from .model_run import ModelRun
@@ -251,23 +254,47 @@ class NucleusClient:
         return self.make_request({}, "dataset/", requests.get)
 
     def list_jobs(
-        self, show_completed=None, date_limit=None
+        self,
+        show_completed: bool = False,
+        from_date: Optional[Union[str, datetime.datetime]] = None,
+        to_date: Optional[Union[str, datetime.datetime]] = None,
+        job_types: Optional[List[CustomerJobTypes]] = None,
+        limit: Optional[int] = None,
+        dataset_id: Optional[str] = None,
+        date_limit: Optional[str] = None,
     ) -> List[AsyncJob]:
         """Fetches all of your running jobs in Nucleus.
 
         Parameters:
-            show_completed: Whether to fetch completed and errored jobs or just
-              running jobs. Default behavior is False.
-            date_limit: Only fetch jobs that were started after this date. Default
-              behavior is 2 weeks prior to the current date.
+            job_types: Filter on set of job types, if None, fetch all types
+            from_date: beginning of date range filter
+            to_date: end of date range filter
+            limit: number of results to fetch, max 50_000
+            show_completed: dont fetch jobs with Completed status
+            stats_only: return overview of jobs, instead of a list of job objects
+            dataset_id: filter on a particular dataset
+            date_limit: Deprecated, do not use
 
-        Returns:
-            List[:class:`AsyncJob`]: List of running asynchronous jobs
-            associated with the client API key.
+         Returns:
+             List[:class:`AsyncJob`]: List of running asynchronous jobs
+             associated with the client API key.
         """
-        # TODO: What type is date_limit? Use pydantic ...
-        payload = {show_completed: show_completed, date_limit: date_limit}
-        job_objects = self.make_request(payload, "jobs/", requests.get)
+
+        if date_limit is not None:
+            warnings.warn(
+                "Argument `date_limit` is no longer supported. Consider using the `from_date` and `to_date` args."
+            )
+
+        payload = JobInfoRequestPayload(
+            dataset_id=dataset_id,
+            show_completed=show_completed,
+            from_date=from_date,
+            to_date=to_date,
+            limit=limit,
+            job_types=job_types,
+        ).dict()
+
+        job_objects = self.make_request(payload, "jobs/", requests.post)
         return [
             AsyncJob(
                 job_id=job[JOB_ID_KEY],
@@ -1032,7 +1059,7 @@ class NucleusClient:
         route: str,
         requests_command=requests.post,
         return_raw_response: bool = False,
-    ) -> dict:
+    ) -> Union[dict, Any]:
         """Makes a request to a Nucleus API endpoint.
 
         Logs a warning if not successful.
