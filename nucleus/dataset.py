@@ -901,7 +901,7 @@ class Dataset:
         sample_size: int,
         sample_method: Union[str, SliceBuilderMethods],
         filters: Optional[SliceBuilderFilters] = None,
-    ) -> Union[str, Tuple[AsyncJob, str]]:
+    ) -> Union[str, Tuple[AsyncJob, str], dict]:
         """Build a slice using Nucleus' Smart Sample tool. Allowing slices to be built
         based on certain criteria, and filters.
 

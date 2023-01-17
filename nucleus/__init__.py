@@ -258,9 +258,10 @@ class NucleusClient:
         show_completed: bool = False,
         from_date: Optional[Union[str, datetime.datetime]] = None,
         to_date: Optional[Union[str, datetime.datetime]] = None,
-        job_types: List[str] = None,
+        job_types: Optional[List[CustomerJobTypes]] = None,
         limit: Optional[int] = None,
         dataset_id: Optional[str] = None,
+        date_limit: Optional[str] = None,
     ) -> List[AsyncJob]:
         """Fetches all of your running jobs in Nucleus.
 
@@ -272,11 +273,17 @@ class NucleusClient:
             show_completed: dont fetch jobs with Completed status
             stats_only: return overview of jobs, instead of a list of job objects
             dataset_id: filter on a particular dataset
+            date_limit: Deprecated, do not use
 
          Returns:
              List[:class:`AsyncJob`]: List of running asynchronous jobs
              associated with the client API key.
         """
+
+        if date_limit is not None:
+            warnings.warn(
+                "Argument `date_limit` is no longer supported. Consider using the `from_date` and `to_date` args."
+            )
 
         payload = JobInfoRequestPayload(
             dataset_id=dataset_id,
@@ -1052,7 +1059,7 @@ class NucleusClient:
         route: str,
         requests_command=requests.post,
         return_raw_response: bool = False,
-    ) -> dict:
+    ) -> Union[dict, Any]:
         """Makes a request to a Nucleus API endpoint.
 
         Logs a warning if not successful.

@@ -47,7 +47,7 @@ def jobs_status_overview(jobs: List[AsyncJob]) -> Dict[str, Any]:
 
     jobs_status = {}
     for job_type, job_collection in jobs_by_type.items():
-        overview = defaultdict(int)
+        overview = defaultdict(int)  # type: Dict[str, int]
         for job in job_collection:
             overview[job.job_last_known_status] += 1
         jobs_status[job_type] = dict(overview)
