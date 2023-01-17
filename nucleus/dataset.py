@@ -160,7 +160,7 @@ class Dataset:
             {}, f"dataset/{self.id}/is_scene", requests.get
         )[DATASET_IS_SCENE_KEY]
         self._is_scene = response
-        return self._is_scene
+        return self._is_scene  # type: ignore
 
     @property
     def model_runs(self) -> List[str]:
@@ -169,7 +169,7 @@ class Dataset:
         response = self._client.make_request(
             {}, f"dataset/{self.id}/model_runs", requests.get
         )
-        return response
+        return response  # type: ignore
 
     @property
     def slices(self) -> List[Slice]:
