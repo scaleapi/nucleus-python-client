@@ -740,7 +740,7 @@ class NucleusClient:
             **bundle_from_dir_args,
         }
 
-        bundle = launch_client.create_model_bundle_from_dir(**kwargs)
+        bundle = launch_client.create_model_bundle_from_dirs(**kwargs)
 
         return self.create_model(
             name,
