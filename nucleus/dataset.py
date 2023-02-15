@@ -614,6 +614,10 @@ class Dataset:
         assert (
             batch_size is None or batch_size < 30
         ), "Please specify a batch size smaller than 30 to avoid timeouts."
+
+        if asynchronous:
+            assert len(items) <= 1000, "Please limit the number of items to 1000 per asynchronous job."
+
         dataset_items = [
             item for item in items if isinstance(item, DatasetItem)
         ]
