@@ -27,10 +27,10 @@ class EvaluationResult(ImmutableModel):
             )
         return values
 
-    @validator("score", "weight")
+    @validator("weight")
     def is_normalized(cls, v):  # pylint: disable=no-self-argument
         if 0 <= v <= 1:
             return v
         raise ValueError(
-            f"Expected evaluation score and weights to be normalized between 0 and 1, but got: {v}"
+            f"Expected evaluation weights to be normalized between 0 and 1, but got: {v}"
         )
