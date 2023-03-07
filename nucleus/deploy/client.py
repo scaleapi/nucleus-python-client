@@ -437,7 +437,7 @@ class DeployClient:
         """
         resp = self.connection.get("model_bundle")
         model_bundles = [
-            ModelBundle(name=item["bundle_name"]) for item in resp["bundles"]
+            ModelBundle(name=item["name"]) for item in resp["bundles"]
         ]
         return model_bundles
 
