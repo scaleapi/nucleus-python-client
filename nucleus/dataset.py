@@ -35,6 +35,7 @@ from .constants import (
     BACKFILL_JOB_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
+    DATASET_ITEM_IDS_KEY,
     DATASET_ITEMS_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
@@ -47,8 +48,10 @@ from .constants import (
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
+    OBJECT_IDS_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
+    SCENE_IDS_KEY,
     SLICE_ID_KEY,
     TRACK_REFERENCE_IDS_KEY,
     TRACKS_KEY,
@@ -890,6 +893,51 @@ class Dataset:
             :class:`Slice`: The newly constructed slice item.
         """
         payload = {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
+        response = self._client.make_request(
+            payload, f"dataset/{self.id}/create_slice"
+        )
+        return Slice(response[SLICE_ID_KEY], self._client)
+
+    def create_slice_by_ids(
+        self,
+        name: str,
+        dataset_item_ids: Optional[List[str]] = None,
+        scene_ids: Optional[List[str]] = None,
+        annotation_ids: Optional[List[str]] = None,
+        prediction_ids: Optional[List[str]] = None,
+    ) -> Slice:
+        """Creates a :class:`Slice` of dataset items, scenes, annotations, or predictions within a dataset by their IDs.
+
+        .. note::
+            Dataset item, scene, and object (annotation or prediction) IDs may not be mixed.
+            However, when creating an object slice, both annotation and prediction IDs may be supplied.
+
+        Parameters:
+            name: A human-readable name for the slice.
+            dataset_item_ids: List of internal IDs of dataset items to add to the slice::
+            scene_ids: List of internal IDs of scenes to add to the slice::
+            annotation_ids: List of internal IDs of Annotations to add to the slice::
+            prediction_ids: List of internal IDs of Predictions to add to the slice::
+
+        Returns:
+            :class:`Slice`: The newly constructed slice item.
+        """
+        if (
+            not dataset_item_ids
+            and not scene_ids
+            and not annotation_ids
+            and not prediction_ids
+        ):
+            raise Exception("Must provide at least one list of internal IDs")
+        payload = {
+            NAME_KEY: name,
+            DATASET_ITEM_IDS_KEY: dataset_item_ids
+            if dataset_item_ids
+            else None,
+            SCENE_IDS_KEY: scene_ids if scene_ids else None,
+            OBJECT_IDS_KEY: [*(annotation_ids or []), *(prediction_ids or [])]
+            or None,
+        }
         response = self._client.make_request(
             payload, f"dataset/{self.id}/create_slice"
         )
