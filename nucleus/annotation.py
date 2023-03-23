@@ -15,6 +15,7 @@ from .constants import (
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    ID_KEY,
     INDEX_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
@@ -39,7 +40,7 @@ from .constants import (
     X_KEY,
     Y_KEY,
     YAW_KEY,
-    Z_KEY, ID_KEY,
+    Z_KEY,
 )
 
 # TODO: refactor to reduce this file to under 1000 lines.

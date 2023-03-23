@@ -32,6 +32,7 @@ from .constants import (
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    ID_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
     KEYPOINTS_SKELETON_KEY,
@@ -50,7 +51,7 @@ from .constants import (
     WIDTH_KEY,
     X_KEY,
     Y_KEY,
-    YAW_KEY, ID_KEY,
+    YAW_KEY,
 )
 
 
