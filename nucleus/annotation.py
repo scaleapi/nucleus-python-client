@@ -39,7 +39,7 @@ from .constants import (
     X_KEY,
     Y_KEY,
     YAW_KEY,
-    Z_KEY,
+    Z_KEY, ID_KEY,
 )
 
 # TODO: refactor to reduce this file to under 1000 lines.
@@ -53,6 +53,7 @@ class Annotation:
         Inherit common constructor parameters from here
     """
 
+    id: str
     reference_id: str
 
     @classmethod
@@ -145,6 +146,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             the same `track_reference_id` such as "red_car".
     """
 
+    id: str
     label: str
     x: Union[float, int]
     y: Union[float, int]
@@ -165,6 +167,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
+            id=payload.get(ID_KEY, 0),
             label=payload.get(LABEL_KEY, 0),
             x=geometry.get(X_KEY, 0),
             y=geometry.get(Y_KEY, 0),
@@ -179,6 +182,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
 
     def to_payload(self) -> dict:
         return {
+            ID_KEY: self.id,
             LABEL_KEY: self.label,
             TYPE_KEY: BOX_TYPE,
             GEOMETRY_KEY: {
@@ -196,7 +200,8 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
 
     def __eq__(self, other):
         return (
-            self.label == other.label
+            self.id == other.id
+            and self.label == other.label
             and self.x == other.x
             and self.y == other.y
             and self.width == other.width
@@ -266,6 +271,7 @@ class LineAnnotation(Annotation):
             the same `track_reference_id` such as "red_car".
     """
 
+    id: str
     label: str
     vertices: List[Point]
     reference_id: str
@@ -293,6 +299,7 @@ class LineAnnotation(Annotation):
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
+            id=payload.get(ID_KEY, 0),
             label=payload.get(LABEL_KEY, 0),
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
@@ -305,6 +312,7 @@ class LineAnnotation(Annotation):
 
     def to_payload(self) -> dict:
         payload = {
+            ID_KEY: self.id,
             LABEL_KEY: self.label,
             TYPE_KEY: LINE_TYPE,
             GEOMETRY_KEY: {
@@ -357,6 +365,7 @@ class PolygonAnnotation(Annotation):
             the same `track_reference_id` such as "red_car".
     """
 
+    id: str
     label: str
     vertices: List[Point]
     reference_id: str
@@ -385,6 +394,7 @@ class PolygonAnnotation(Annotation):
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
+            id=payload.get(ID_KEY, 0),
             label=payload.get(LABEL_KEY, 0),
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
@@ -398,6 +408,7 @@ class PolygonAnnotation(Annotation):
 
     def to_payload(self) -> dict:
         payload = {
+            ID_KEY: self.id,
             LABEL_KEY: self.label,
             TYPE_KEY: POLYGON_TYPE,
             GEOMETRY_KEY: {

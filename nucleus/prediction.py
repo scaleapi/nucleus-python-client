@@ -50,7 +50,7 @@ from .constants import (
     WIDTH_KEY,
     X_KEY,
     Y_KEY,
-    YAW_KEY,
+    YAW_KEY, ID_KEY,
 )
 
 
@@ -177,6 +177,7 @@ class BoxPrediction(BoxAnnotation):
 
     def __init__(
         self,
+        id: str,
         label: str,
         x: Union[float, int],
         y: Union[float, int],
@@ -191,6 +192,7 @@ class BoxPrediction(BoxAnnotation):
         track_reference_id: Optional[str] = None,
     ):
         super().__init__(
+            id=id,
             label=label,
             x=x,
             y=y,
@@ -218,6 +220,7 @@ class BoxPrediction(BoxAnnotation):
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
         return cls(
+            id=payload.get(ID_KEY, 0),
             label=payload.get(LABEL_KEY, 0),
             x=geometry.get(X_KEY, 0),
             y=geometry.get(Y_KEY, 0),
