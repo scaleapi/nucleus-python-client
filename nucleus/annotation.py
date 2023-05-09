@@ -531,6 +531,8 @@ class KeypointsAnnotation(Annotation):
                     raise ValueError(
                         f"The skeleton index {index} is not a valid keypoint index"
                     )
+        if self.annotation_id is None:
+            self.annotation_id = f"{self.label}-{self.reference_id}-keypoints"
 
     @classmethod
     def from_json(cls, payload: dict):
