@@ -340,7 +340,7 @@ class Slice:
         """Appends existing DatasetItems from a Dataset to a Slice.
 
         The endpoint expects a list of DatasetItem reference IDs which are set
-        at upload time.
+        at upload time. The length of reference_ids cannot exceed 10,000 items per request.
 
         Parameters:
             reference_ids: List of user-defined reference IDs of dataset items or scenes
@@ -353,6 +353,9 @@ class Slice:
                     "slice_id": str,
                     "new_items": List[str]
                 }
+
+        Raises:
+            BadRequest: If length of reference_ids is too large (> 10,000 items)
         """
         response = self._client.append_to_slice(
             slice_id=self.id,
