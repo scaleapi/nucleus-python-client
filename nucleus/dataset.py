@@ -887,10 +887,13 @@ class Dataset:
 
         Parameters:
             name: A human-readable name for the slice.
-            reference_ids: List of reference IDs of dataset items to add to the slice::
+            reference_ids: List of reference IDs of dataset items to add to the slice, cannot exceed 10,000 items.
 
         Returns:
             :class:`Slice`: The newly constructed slice item.
+
+        Raises:
+            BadRequest: If length of reference_ids is too large (> 10,000 items)
         """
         payload = {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
         response = self._client.make_request(
