@@ -20,7 +20,7 @@ from nucleus.constants import (
 )
 from nucleus.track import Track
 
-from .annotation import is_local_path, Point3D
+from .annotation import Point3D, is_local_path
 from .dataset_item import (
     DatasetItem,
     DatasetItemType,

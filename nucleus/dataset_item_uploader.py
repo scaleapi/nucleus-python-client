@@ -163,7 +163,6 @@ class DatasetItemUploader:
         """
 
         def fn():
-
             # For some reason, our backend only accepts this reformatting of items when
             # doing local upload.
             # TODO: make it just accept the same exact format as a normal append request

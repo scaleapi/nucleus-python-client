@@ -979,7 +979,9 @@ class NucleusClient:
         )
         return response
 
-    def download_task_scene(self, task_id: str, frame_num: int) -> List[Point3D]:
+    def download_task_scene(
+        self, task_id: str, frame_num: int
+    ) -> List[Point3D]:
         """
         fix me
         """
@@ -987,7 +989,7 @@ class NucleusClient:
         response = self.make_request(
             payload={},
             route=f"scene_frame/{task_id}/frame/{frame_num}",
-            requests_command=requests.get
+            requests_command=requests.get,
         )
         points = response.get(POINTS_KEY, None)
         if points is None or len(points) == 0:

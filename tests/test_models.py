@@ -144,7 +144,6 @@ def test_tag_model(CLIENT, dataset: Dataset):
 
 
 def test_remove_invalid_tag_from_model(CLIENT, dataset: Dataset):
-
     model_reference = "model_" + str(time.time())
     model = CLIENT.create_model(TEST_MODEL_NAME, model_reference)
 
