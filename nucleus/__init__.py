@@ -996,7 +996,7 @@ class NucleusClient:
 
         response = self.make_request(
             payload={},
-            route=f"scene_frame/{task_id}/frame/{frame_num}",
+            route=f"task/{task_id}/frame/{frame_num}",
             requests_command=requests.get,
         )
         points = response.get(POINTS_KEY, None)
