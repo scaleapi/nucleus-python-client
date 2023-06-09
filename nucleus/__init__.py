@@ -983,9 +983,17 @@ class NucleusClient:
         self, task_id: str, frame_num: int
     ) -> List[Point3D]:
         """
-        fix me
+        Download the lidar point cloud data for a give task and frame number.
+
+        Parameters:
+            task_id: download point cloud for this particular task
+            frame_num: download point cloud for this particular frame
+
+        Returns:
+            List of Point3D objects
+
         """
-        # nucleus/scene_frame/:taskId/frame/:frameNum
+
         response = self.make_request(
             payload={},
             route=f"scene_frame/{task_id}/frame/{frame_num}",
