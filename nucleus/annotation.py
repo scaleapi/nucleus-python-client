@@ -588,6 +588,9 @@ class Point3D:
     def to_payload(self) -> dict:
         return {X_KEY: self.x, Y_KEY: self.y, Z_KEY: self.z}
 
+    def to_list(self):
+        return [self.x, self.y, self.z]
+
 
 @dataclass  # pylint: disable=R0902
 class CuboidAnnotation(Annotation):  # pylint: disable=R0902

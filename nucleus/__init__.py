@@ -97,6 +97,7 @@ from .constants import (
     MODEL_TAGS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
+    POINTS_KEY,
     PREDICTIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
     REFERENCE_IDS_KEY,
@@ -977,6 +978,23 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def download_task_scene(self, task_id: str, frame_num: int) -> List[Point3D]:
+        """
+        fix me
+        """
+        # nucleus/scene_frame/:taskId/frame/:frameNum
+        response = self.make_request(
+            payload={},
+            route=f"scene_frame/{task_id}/frame/{frame_num}",
+            requests_command=requests.get
+        )
+        points = response.get(POINTS_KEY, None)
+        if points is None or len(points) == 0:
+            raise Exception("Response has invalid payload")
+
+        formatted_points = [Point3D.from_json(pt) for pt in points]
+        return formatted_points
 
     @deprecated("Prefer calling Dataset.create_custom_index instead.")
     def create_custom_index(
