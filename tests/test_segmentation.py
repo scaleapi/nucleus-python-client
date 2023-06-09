@@ -83,6 +83,7 @@ def test_single_local_semseg_gt_upload(dataset: Dataset):
 
 
 def test_batch_local_semseg_gt_upload(dataset: Dataset):
+
     # This reference id is not in the dataset.
     bad_reference_id = TEST_SEGMENTATION_ANNOTATIONS[-1]["reference_id"]
 

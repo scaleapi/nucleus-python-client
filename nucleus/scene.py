@@ -20,7 +20,7 @@ from nucleus.constants import (
 )
 from nucleus.track import Track
 
-from .annotation import Point3D, is_local_path
+from .annotation import is_local_path
 from .dataset_item import (
     DatasetItem,
     DatasetItemType,
@@ -753,12 +753,3 @@ def check_all_scene_paths_remote(
                         f"All paths for DatasetItems in a Scene must be remote, but {item.image_location} is either "
                         "local, or a remote URL type that is not supported."
                     )
-
-
-def conver(task_id: str, frame_num: int) -> List[Point3D]:
-    json_response = self._client.make_request(
-        payload=None,
-        route=f"dataset/{self.id}/model/{model.id}/export",
-        requests_command=requests.get,
-    )
-    return 1

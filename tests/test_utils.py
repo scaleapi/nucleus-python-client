@@ -11,6 +11,7 @@ class TestNonSerializableObject:
 
 
 def test_serialize():
+
     test_items = [
         DatasetItem("fake_url1", "fake_id1"),
         DatasetItem(
