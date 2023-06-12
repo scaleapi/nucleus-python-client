@@ -596,7 +596,7 @@ class Point3D:
 
 
 @dataclass
-class PointLidar(Point3D):
+class LidarPoint(Point3D):
     """A Lidar point in 3D space and intensity.
 
     Parameters:

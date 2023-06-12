@@ -58,10 +58,10 @@ from .annotation import (
     CuboidAnnotation,
     Keypoint,
     KeypointsAnnotation,
+    LidarPoint,
     LineAnnotation,
     MultiCategoryAnnotation,
     Point,
-    PointLidar,
     Point3D,
     PolygonAnnotation,
     SceneCategoryAnnotation,
@@ -984,7 +984,7 @@ class NucleusClient:
 
     def download_pointcloud_task(
         self, task_id: str, frame_num: int
-    ) -> List[Union[Point3D, PointLidar]]:
+    ) -> List[Union[Point3D, LidarPoint]]:
         """
         Download the lidar point cloud data for a give task and frame number.
 
@@ -1008,7 +1008,7 @@ class NucleusClient:
 
         sample_point = points[0]
         if I_KEY in sample_point.keys():
-            return [PointLidar.from_json(pt) for pt in points[:10]]
+            return [LidarPoint.from_json(pt) for pt in points[:10]]
 
         return [Point3D.from_json(pt) for pt in points]
 
