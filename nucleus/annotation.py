@@ -605,11 +605,14 @@ class LidarPoint(Point3D):
         z (float): The z coordinate of the point.
         i (float): The intensity value returned by the lidar scan point.
     """
+
     i: float
 
     @classmethod
     def from_json(cls, payload: Dict[str, float]):
-        return cls(payload[X_KEY], payload[Y_KEY], payload[Z_KEY], payload[I_KEY])
+        return cls(
+            payload[X_KEY], payload[Y_KEY], payload[Z_KEY], payload[I_KEY]
+        )
 
     def to_payload(self) -> dict:
         return {X_KEY: self.x, Y_KEY: self.y, Z_KEY: self.z, I_KEY: self.i}

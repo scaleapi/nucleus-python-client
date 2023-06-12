@@ -27,7 +27,7 @@ __all__ = [
     "NucleusAPIError",
     "NucleusClient",
     "Point",
-    "PointLidar"
+    "PointLidar",
     "Point3D",
     "PolygonAnnotation",
     "PolygonPrediction",
