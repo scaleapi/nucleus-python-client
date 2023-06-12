@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 import nucleus
 import numpy as np
 client = nucleus.NucleusClient(API_KEY)
-pts = client.download_task_scene(task_id, frame_num=1)
+pts = client.download_pointcloud_task(task_id, frame_num=1)
 np_pts = np.array([pt.to_list() for pt in pts])
 ```
 

@@ -979,7 +979,7 @@ class NucleusClient:
         )
         return response
 
-    def download_task_scene(
+    def download_pointcloud_task(
         self, task_id: str, frame_num: int
     ) -> List[Point3D]:
         """
