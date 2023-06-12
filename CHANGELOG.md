@@ -5,6 +5,19 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.7) - 2023-06-09
+
+### Added
+- Allow for downloading pointcloud data for a give task and frame number, example:
+
+```python
+import nucleus
+import numpy as np
+client = nucleus.NucleusClient(API_KEY)
+pts = client.download_pointcloud_task(task_id, frame_num=1)
+np_pts = np.array([pt.to_list() for pt in pts])
+```
+
 ## [0.15.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.6) - 2023-06-03
 
 ### Changed

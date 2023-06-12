@@ -17,6 +17,7 @@ __all__ = [
     "Keypoint",
     "KeypointsAnnotation",
     "KeypointsPrediction",
+    "LidarPoint",
     "LidarScene",
     "LineAnnotation",
     "LinePrediction",
@@ -57,6 +58,7 @@ from .annotation import (
     CuboidAnnotation,
     Keypoint,
     KeypointsAnnotation,
+    LidarPoint,
     LineAnnotation,
     MultiCategoryAnnotation,
     Point,
@@ -82,6 +84,7 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    I_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
@@ -97,6 +100,7 @@ from .constants import (
     MODEL_TAGS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
+    POINTS_KEY,
     PREDICTIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
     REFERENCE_IDS_KEY,
@@ -977,6 +981,36 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def download_pointcloud_task(
+        self, task_id: str, frame_num: int
+    ) -> List[Union[Point3D, LidarPoint]]:
+        """
+        Download the lidar point cloud data for a give task and frame number.
+
+        Parameters:
+            task_id: download point cloud for this particular task
+            frame_num: download point cloud for this particular frame
+
+        Returns:
+            List of Point3D objects
+
+        """
+
+        response = self.make_request(
+            payload={},
+            route=f"task/{task_id}/frame/{frame_num}",
+            requests_command=requests.get,
+        )
+        points = response.get(POINTS_KEY, None)
+        if points is None or len(points) == 0:
+            raise Exception("Response has invalid payload")
+
+        sample_point = points[0]
+        if I_KEY in sample_point.keys():
+            return [LidarPoint.from_json(pt) for pt in points[:10]]
+
+        return [Point3D.from_json(pt) for pt in points]
 
     @deprecated("Prefer calling Dataset.create_custom_index instead.")
     def create_custom_index(
