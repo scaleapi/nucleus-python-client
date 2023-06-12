@@ -5,6 +5,8 @@ from enum import Enum
 from typing import Dict, List, Optional, Sequence, Type, Union
 from urllib.parse import urlparse
 
+import numpy as np
+
 from .constants import (
     ANNOTATION_ID_KEY,
     ANNOTATIONS_KEY,
@@ -15,6 +17,7 @@ from .constants import (
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    I_KEY,
     INDEX_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
@@ -590,6 +593,32 @@ class Point3D:
 
     def to_list(self):
         return [self.x, self.y, self.z]
+
+
+@dataclass
+class PointLidar(Point3D):
+    """A Lidar point in 3D space and intensity.
+
+    Parameters:
+        x (float): The x coordinate of the point.
+        y (float): The y coordinate of the point.
+        z (float): The z coordinate of the point.
+        i (float): The intensity value returned by the lidar scan point.
+    """
+    i: float
+
+    @classmethod
+    def from_json(cls, payload: Dict[str, float]):
+        return cls(payload[X_KEY], payload[Y_KEY], payload[Z_KEY], payload[I_KEY])
+
+    def to_payload(self) -> dict:
+        return {X_KEY: self.x, Y_KEY: self.y, Z_KEY: self.z, I_KEY: self.i}
+
+    def to_list(self):
+        return [self.x, self.y, self.z, self.i]
+
+    def to_numpy(self):
+        return np.array(self.to_list())
 
 
 @dataclass  # pylint: disable=R0902

@@ -27,6 +27,7 @@ __all__ = [
     "NucleusAPIError",
     "NucleusClient",
     "Point",
+    "PointLidar"
     "Point3D",
     "PolygonAnnotation",
     "PolygonPrediction",
@@ -60,6 +61,7 @@ from .annotation import (
     LineAnnotation,
     MultiCategoryAnnotation,
     Point,
+    PointLidar,
     Point3D,
     PolygonAnnotation,
     SceneCategoryAnnotation,
@@ -82,6 +84,7 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    I_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
@@ -981,7 +984,7 @@ class NucleusClient:
 
     def download_pointcloud_task(
         self, task_id: str, frame_num: int
-    ) -> List[Point3D]:
+    ) -> List[Union[Point3D, PointLidar]]:
         """
         Download the lidar point cloud data for a give task and frame number.
 
@@ -1003,8 +1006,11 @@ class NucleusClient:
         if points is None or len(points) == 0:
             raise Exception("Response has invalid payload")
 
-        formatted_points = [Point3D.from_json(pt) for pt in points]
-        return formatted_points
+        sample_point = points[0]
+        if I_KEY in sample_point.keys():
+            return [PointLidar.from_json(pt) for pt in points[:10]]
+
+        return [Point3D.from_json(pt) for pt in points]
 
     @deprecated("Prefer calling Dataset.create_custom_index instead.")
     def create_custom_index(
