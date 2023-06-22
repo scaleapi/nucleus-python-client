@@ -595,7 +595,6 @@ class NucleusClient:
         Note: the exact parameters used will depend on the version of the Launch client used.
         i.e. if you are on Launch client version 0.x, you will use `env_params`, otherwise
         you will use `pytorch_image_tag` and `tensorflow_version`.
-        TODO check if 1.0.0 or 1.1.0
 
         Parameters:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
@@ -645,13 +644,22 @@ class NucleusClient:
             "model_bundle_name": name + "-nucleus-autogen",
             **bundle_args,
         }
-
-        bundle = launch_client.create_model_bundle(**kwargs)
+        if hasattr(launch_client, "create_model_bundle_from_callable_v2"):
+            # Launch client is >= 1.0.0
+            bundle = launch_client.create_model_bundle_from_callable_v2(
+                **kwargs
+            )
+            bundle_name = (
+                bundle.name
+            )  # both v0 and v1 have a .name field but are different types
+        else:
+            bundle = launch_client.create_model_bundle(**kwargs)
+            bundle_name = bundle.name
         return self.create_model(
             name,
             reference_id,
             metadata,
-            bundle.name,
+            bundle_name,
         )
 
     def create_launch_model_from_dir(
@@ -716,7 +724,6 @@ class NucleusClient:
         Note: the exact keys for `bundle_from_dir_args` used will depend on the version of the Launch client used.
         i.e. if you are on Launch client version 0.x, you will use `env_params`, otherwise
         you will use `pytorch_image_tag` and `tensorflow_version`.
-        TODO check if it's 1.0.0 or 1.1.0
 
         Keys for `bundle_from_dir_args`:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
@@ -760,13 +767,21 @@ class NucleusClient:
             **bundle_from_dir_args,
         }
 
-        bundle = launch_client.create_model_bundle_from_dirs(**kwargs)
+        if hasattr(launch_client, "create_model_bundle_from_dirs_v2"):
+            # Launch client is >= 1.0.0, use new fn
+            bundle = launch_client.create_model_bundle_from_dirs_v2(**kwargs)
+            # Different code paths give different types for bundle, although both have a .name field
+            bundle_name = bundle.name
+        else:
+            # Launch client is < 1.0.0
+            bundle = launch_client.create_model_bundle_from_dirs(**kwargs)
+            bundle_name = bundle.name
 
         return self.create_model(
             name,
             reference_id,
             metadata,
-            bundle.name,
+            bundle_name,
         )
 
     @deprecated(
