@@ -195,7 +195,8 @@ class SegmentationMaskMetric(Metric):
 
     def _is_instance_segmentation(self, annotation, prediction):
         """Guesses that we're dealing with instance segmentation if we have multiple segments with same label.
-        Degenerate case is same as semseg so fine to misclassify in that case."""
+        Degenerate case is same as semseg so fine to misclassify in that case.
+        """
         # This is a trick to get ordered sets
         ann_labels = list(
             dict.fromkeys(s.label for s in annotation.annotations)
@@ -525,7 +526,6 @@ class SegmentationMAP(SegmentationMaskMetric):
         annotation: SegmentationAnnotation,
         prediction: SegmentationPrediction,
     ) -> ScalarResult:
-
         ap_per_threshold = []
         weight = 0
         for iou_threshold in self.iou_thresholds:

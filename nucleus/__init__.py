@@ -592,6 +592,10 @@ class NucleusClient:
 
         A model bundle consists of exactly {predict_fn_or_cls}, {load_predict_fn + model}, or {load_predict_fn + load_model_fn}.
         Pre/post-processing code can be included inside load_predict_fn/model or in predict_fn_or_cls call.
+        Note: the exact parameters used will depend on the version of the Launch client used.
+        i.e. if you are on Launch client version 0.x, you will use `env_params`, otherwise
+        you will use `pytorch_image_tag` and `tensorflow_version`.
+        TODO check if 1.0.0 or 1.1.0
 
         Parameters:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
@@ -608,7 +612,8 @@ class NucleusClient:
                 ["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]. If no list has been passed, will default to the currently
                 imported list of packages.
             app_config: Either a Dictionary that represents a YAML file contents or a local path to a YAML file.
-            env_params: A dictionary that dictates environment information e.g.
+            env_params: Only for launch v0.
+                A dictionary that dictates environment information e.g.
                 the use of pytorch or tensorflow, which cuda/cudnn versions to use.
                 Specifically, the dictionary should contain the following keys:
                 "framework_type": either "tensorflow" or "pytorch".
@@ -617,6 +622,9 @@ class NucleusClient:
                 "cudnn_version" Version of cudnn used, e.g. "cudnn8-devel".
                 "tensorflow_version": Version of tensorflow, e.g. "2.3.0". Only applicable if framework_type is tensorflow
             globals_copy: Dictionary of the global symbol table. Normally provided by `globals()` built-in function.
+            pytorch_image_tag: Only for launch v1, and if you want to use pytorch framework type.
+                The tag of the pytorch docker image you want to use, e.g. 1.11.0-cuda11.3-cudnn8-runtime
+            tensorflow_version: Only for launch v1, and if you want to use tensorflow. Version of tensorflow, e.g. "2.3.0".
         """
         from launch import LaunchClient
 
@@ -705,12 +713,17 @@ class NucleusClient:
         as the desired inference loading function, then the `load_predict_fn_module_path` argument should be
         `my_module1.my_inference_file.f`.
 
+        Note: the exact keys for `bundle_from_dir_args` used will depend on the version of the Launch client used.
+        i.e. if you are on Launch client version 0.x, you will use `env_params`, otherwise
+        you will use `pytorch_image_tag` and `tensorflow_version`.
+        TODO check if it's 1.0.0 or 1.1.0
 
         Keys for `bundle_from_dir_args`:
             model_bundle_name: Name of model bundle you want to create. This acts as a unique identifier.
             base_paths: The paths on the local filesystem where the bundle code lives.
             requirements_path: A path on the local filesystem where a requirements.txt file lives.
-            env_params: A dictionary that dictates environment information e.g.
+            env_params: Only for launch v0.
+                A dictionary that dictates environment information e.g.
                 the use of pytorch or tensorflow, which cuda/cudnn versions to use.
                 Specifically, the dictionary should contain the following keys:
                 "framework_type": either "tensorflow" or "pytorch".
@@ -723,6 +736,9 @@ class NucleusClient:
             load_model_fn_module_path: A python module path for a function that returns a model. The output feeds into
                 the function located at load_predict_fn_module_path.
             app_config: Either a Dictionary that represents a YAML file contents or a local path to a YAML file.
+            pytorch_image_tag: Only for launch v1, and if you want to use pytorch framework type.
+                The tag of the pytorch docker image you want to use, e.g. 1.11.0-cuda11.3-cudnn8-runtime
+            tensorflow_version: Only for launch v1, and if you want to use tensorflow. Version of tensorflow, e.g. "2.3.0".
         """
         from launch import LaunchClient
 
