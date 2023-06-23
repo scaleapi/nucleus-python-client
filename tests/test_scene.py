@@ -268,7 +268,6 @@ def test_scene_add_frame():
 
 def test_video_scene_property_methods():
     for scene_json in TEST_VIDEO_SCENES["scenes"]:
-
         scene = VideoScene.from_json(scene_json)
 
         expected_frame_rate = scene_json.get("frame_rate", None)
