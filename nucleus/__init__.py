@@ -1039,7 +1039,7 @@ class NucleusClient:
 
         sample_point = points[0]
         if I_KEY in sample_point.keys():
-            return [LidarPoint.from_json(pt) for pt in points[:10]]
+            return [LidarPoint.from_json(pt) for pt in points]
 
         return [Point3D.from_json(pt) for pt in points]
 
