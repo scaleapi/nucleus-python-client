@@ -220,6 +220,7 @@ def format_scale_task_info_response(response: dict) -> Union[Dict, List[Dict]]:
             ret.append(row)
     return ret
 
+
 # pylint: disable=too-many-branches
 def convert_export_payload(api_payload, has_predictions: bool = False):
     """Helper function to convert raw JSON to API objects
