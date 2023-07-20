@@ -240,13 +240,13 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
             segmentation = row[SEGMENTATION_TYPE]
             segmentation[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             if not has_predictions:
-                annotations[SEGMENTATION_TYPE] = SegmentationAnnotation.from_json(
-                    segmentation
-                )
+                annotations[
+                    SEGMENTATION_TYPE
+                ] = SegmentationAnnotation.from_json(segmentation)
             else:
-                annotations[SEGMENTATION_TYPE] = SegmentationPrediction.from_json(
-                    segmentation
-                )
+                annotations[
+                    SEGMENTATION_TYPE
+                ] = SegmentationPrediction.from_json(segmentation)
         for polygon in row[POLYGON_TYPE]:
             polygon[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             if not has_predictions:
@@ -282,9 +282,13 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
         for cuboid in row[CUBOID_TYPE]:
             cuboid[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             if not has_predictions:
-                annotations[CUBOID_TYPE].append(CuboidAnnotation.from_json(cuboid))
+                annotations[CUBOID_TYPE].append(
+                    CuboidAnnotation.from_json(cuboid)
+                )
             else:
-                annotations[CUBOID_TYPE].append(CuboidPrediction.from_json(cuboid))
+                annotations[CUBOID_TYPE].append(
+                    CuboidPrediction.from_json(cuboid)
+                )
         for category in row[CATEGORY_TYPE]:
             category[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             if not has_predictions:
