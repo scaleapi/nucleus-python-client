@@ -239,33 +239,62 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
         if row.get(SEGMENTATION_TYPE) is not None:
             segmentation = row[SEGMENTATION_TYPE]
             segmentation[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[SEGMENTATION_TYPE] = SegmentationAnnotation.from_json(
-                segmentation
-            )
+            if not has_predictions:
+                annotations[SEGMENTATION_TYPE] = SegmentationAnnotation.from_json(
+                    segmentation
+                )
+            else:
+                annotations[SEGMENTATION_TYPE] = SegmentationPrediction.from_json(
+                    segmentation
+                )
         for polygon in row[POLYGON_TYPE]:
             polygon[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[POLYGON_TYPE].append(
-                PolygonAnnotation.from_json(polygon)
-            )
+            if not has_predictions:
+                annotations[POLYGON_TYPE].append(
+                    PolygonAnnotation.from_json(polygon)
+                )
+            else:
+                annotations[POLYGON_TYPE].append(
+                    PolygonPrediction.from_json(polygon)
+                )
         for line in row[LINE_TYPE]:
             line[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[LINE_TYPE].append(LineAnnotation.from_json(line))
+            if not has_predictions:
+                annotations[LINE_TYPE].append(LineAnnotation.from_json(line))
+            else:
+                annotations[LINE_TYPE].append(LinePrediction.from_json(line))
         for keypoints in row[KEYPOINTS_TYPE]:
             keypoints[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[KEYPOINTS_TYPE].append(
-                KeypointsAnnotation.from_json(keypoints)
-            )
+            if not has_predictions:
+                annotations[KEYPOINTS_TYPE].append(
+                    KeypointsAnnotation.from_json(keypoints)
+                )
+            else:
+                annotations[KEYPOINTS_TYPE].append(
+                    KeypointsPrediction.from_json(keypoints)
+                )
         for box in row[BOX_TYPE]:
             box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
+            if not has_predictions:
+                annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
+            else:
+                annotations[BOX_TYPE].append(BoxPrediction.from_json(box))
         for cuboid in row[CUBOID_TYPE]:
             cuboid[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[CUBOID_TYPE].append(CuboidAnnotation.from_json(cuboid))
+            if not has_predictions:
+                annotations[CUBOID_TYPE].append(CuboidAnnotation.from_json(cuboid))
+            else:
+                annotations[CUBOID_TYPE].append(CuboidPrediction.from_json(cuboid))
         for category in row[CATEGORY_TYPE]:
             category[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
-            annotations[CATEGORY_TYPE].append(
-                CategoryAnnotation.from_json(category)
-            )
+            if not has_predictions:
+                annotations[CATEGORY_TYPE].append(
+                    CategoryAnnotation.from_json(category)
+                )
+            else:
+                annotations[CATEGORY_TYPE].append(
+                    CategoryPrediction.from_json(category)
+                )
         for multicategory in row[MULTICATEGORY_TYPE]:
             multicategory[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             annotations[MULTICATEGORY_TYPE].append(
