@@ -111,7 +111,8 @@ def model_run(CLIENT):
     yield run
 
     response = CLIENT.delete_model(model.id)
-    assert response == {}
+    assert "msg" in response
+    assert response["msg"] == "Model deletion running in an async job"
 
 
 @pytest.fixture()
@@ -139,7 +140,8 @@ def scene_category_model_run(CLIENT):
     yield run
 
     response = CLIENT.delete_model(model.id)
-    assert response == {}
+    assert "msg" in response
+    assert response["msg"] == "Model deletion running in an async job"
 
 
 def test_box_pred_upload(model_run):

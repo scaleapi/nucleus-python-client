@@ -78,6 +78,9 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     # Delete the model
     CLIENT.delete_model(model.id)
+    time.sleep(
+        30
+    )  # model deletion runs async TODO: do a correct job await here instead of sleep
     ms = CLIENT.models
 
     assert model not in ms

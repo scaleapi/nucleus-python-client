@@ -92,7 +92,9 @@ def test_create_mp_with_tracks(CLIENT, dataset_scene):
     ).issubset(expected_track_reference_ids)
 
     # Cleanup
-    assert CLIENT.delete_model(model.id) == {}
+    response = CLIENT.delete_model(model.id) == {}
+    assert "msg" in response
+    assert response["msg"] == "Model deletion running in an async job"
     dataset_scene.delete_tracks(expected_track_reference_ids)
 
 

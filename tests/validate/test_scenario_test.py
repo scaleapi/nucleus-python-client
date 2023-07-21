@@ -189,7 +189,9 @@ def test_scenario_test_get_tracks(
 
     # Clean
     CLIENT.validate.delete_scenario_test(scenario_test.id)
-    assert CLIENT.delete_model(model.id) == {}
+    response = CLIENT.delete_model(model.id)
+    assert "msg" in response
+    assert response["msg"] == "Model deletion running in an async job"
 
 
 def test_no_criteria_raises_error(CLIENT, test_slice, annotations):
