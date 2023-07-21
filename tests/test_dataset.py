@@ -591,7 +591,6 @@ def test_dataset_get_image_indexing_status(CLIENT):
     assert "object_count" not in resp
 
 
-
 @pytest.mark.integration
 def test_dataset_get_object_indexing_status(CLIENT):
     dataset = Dataset(DATASET_WITH_EMBEDDINGS, CLIENT)
@@ -599,7 +598,6 @@ def test_dataset_get_object_indexing_status(CLIENT):
     assert resp["embedding_count"] == 422
     assert resp["object_count"] == 423
     assert "image_count" not in resp
-
 
 
 @pytest.mark.integration
