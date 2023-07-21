@@ -43,7 +43,8 @@ def model_run(CLIENT):
     yield run
 
     response = CLIENT.delete_model(model.id)
-    assert response == {}
+    assert "msg" in response
+    assert response["msg"] == "Model deletion running in an async job"
 
 
 # @pytest.mark.integration
