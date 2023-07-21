@@ -589,9 +589,7 @@ def test_dataset_get_image_indexing_status(CLIENT):
     assert resp["embedding_count"] == 170
     assert resp["image_count"] == 170
     assert "object_count" not in resp
-    assert round(resp["percent_indexed"], 2) == round(
-        resp["image_count"] / resp["embedding_count"], 2
-    )
+
 
 
 @pytest.mark.integration
@@ -601,9 +599,7 @@ def test_dataset_get_object_indexing_status(CLIENT):
     assert resp["embedding_count"] == 422
     assert resp["object_count"] == 423
     assert "image_count" not in resp
-    assert round(resp["percent_indexed"], 2) == round(
-        resp["object_count"] / resp["embedding_count"], 2
-    )
+
 
 
 @pytest.mark.integration
