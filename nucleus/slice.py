@@ -11,6 +11,7 @@ from nucleus.async_job import AsyncJob
 from nucleus.constants import EXPORT_FOR_TRAINING_KEY, EXPORTED_ROWS, ITEMS_KEY
 from nucleus.dataset_item import DatasetItem
 from nucleus.errors import NucleusAPIError
+from nucleus.prediction import Prediction
 from nucleus.prediction import from_json as prediction_from_json
 from nucleus.scene import Scene
 from nucleus.utils import (
@@ -457,6 +458,34 @@ class Slice:
             requests_command=requests.get,
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS], True)
+
+    def export_raw_json(
+        self
+    ) -> List[Union[DatasetItem, Annotation, Prediction, Scene]]:
+        """TODO
+
+        Returns:
+            List where each element is a dict containing the DatasetItem
+            and all of its associated Predictions, grouped by type (e.g. box).
+            ::
+
+                List[{
+                    "item": DatasetItem,
+                    "predictions": {
+                        "box": List[BoxAnnotation],
+                        "polygon": List[PolygonAnnotation],
+                        "cuboid": List[CuboidAnnotation],
+                        "segmentation": List[SegmentationAnnotation],
+                        "category": List[CategoryAnnotation],
+                    }
+                }]
+        """
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.id}/export_raw_json",
+            requests_command=requests.get,
+        )
+        return api_payload
 
     def export_predictions_generator(
         self, model
