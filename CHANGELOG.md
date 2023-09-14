@@ -5,6 +5,12 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.11) - 2023-09-15
+
+### Added
+- Added `slice.export_raw_json()` functionality to support raw export of object slices (annotations, predictions, item and scene level data). Currently does not support image slices. 
+
+
 ## [0.15.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.10) - 2023-07-20
 
 ### Added
