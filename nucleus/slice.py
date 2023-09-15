@@ -462,21 +462,22 @@ class Slice:
     def export_raw_json(
         self
     ) -> List[Union[DatasetItem, Annotation, Prediction, Scene]]:
-        """TODO
+        """Exports object slices in a raw JSON format. Note that it currently does not support item-level slices.
+
+        For each object or match in an object slice, this method exports the following information:
+        - The item that contains the object.
+        - The prediction and/or annotation (both, if the slice is based on IOU matches).
+        - If the object is part of a scene, it includes scene-level attributes in the export.
 
         Returns:
-            List where each element is a dict containing the DatasetItem
-            and all of its associated Predictions, grouped by type (e.g. box).
+            An iterable where each element is a dictionary containing JSON-formatted data.
             ::
 
                 List[{
-                    "item": DatasetItem,
-                    "predictions": {
-                        "box": List[BoxAnnotation],
-                        "polygon": List[PolygonAnnotation],
-                        "cuboid": List[CuboidAnnotation],
-                        "segmentation": List[SegmentationAnnotation],
-                        "category": List[CategoryAnnotation],
+                    "item": DatasetItem (as JSON),
+                    "annotation": BoxAnnotation/CuboidAnnotation (as JSON)
+                    "prediction": BoxPrediction/CuboidPrediction (as JSON)
+                    "scene": Scene (as JSON)
                     }
                 }]
         """
