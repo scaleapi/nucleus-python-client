@@ -460,7 +460,7 @@ class Slice:
         return convert_export_payload(api_payload[EXPORTED_ROWS], True)
 
     def export_raw_json(
-        self
+        self,
     ) -> List[Union[DatasetItem, Annotation, Prediction, Scene]]:
         """Exports object slices in a raw JSON format. Note that it currently does not support item-level slices.
 
