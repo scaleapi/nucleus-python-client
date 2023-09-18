@@ -115,7 +115,7 @@ class SegmentationMaskToPolyMetric(Metric):
         if prediction:
             if self.mode == SegToPolyMode.GENERATE_GT_FROM_POLY:
                 pred_img = self.loader.fetch(prediction.mask_url)
-                ann_img, segments = rasterize_polygons_to_segmentation_mask(
+                ann_img, segments = rasterize_polygons_to_segmentation_mask(  # type: ignore
                     annotations.polygon_annotations
                     + annotations.box_annotations,  # type:ignore
                     pred_img.shape,
