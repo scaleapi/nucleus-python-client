@@ -41,7 +41,7 @@ jobs:
       - run:
           name: Flake8 Lint Check # Uses setup.cfg for configuration
           command: |
-            poetry run flake8 . --count --statistics
+            poetry run flake8 .
       - run:
           name: Pylint Lint Check # Uses .pylintrc for configuration
           command: |
