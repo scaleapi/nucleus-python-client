@@ -25,6 +25,7 @@ class InMemoryLoader(SegmentationMaskLoader):
 
     def __init__(self, url_to_array: Dict[str, "np.ndarray"]):
         self.url_to_array = url_to_array
+        super().__init__()
 
     def fetch(self, url: str):
         array = self.url_to_array[url]

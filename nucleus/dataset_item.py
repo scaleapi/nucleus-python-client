@@ -1,5 +1,5 @@
 import json
-import os.path
+import os
 from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
