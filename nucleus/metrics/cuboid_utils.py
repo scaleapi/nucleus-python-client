@@ -211,7 +211,9 @@ def get_batch_cuboid_corners(
 
 
 def get_batch_rotation_matrices(
-    yaw: "np.ndarray", pitch: Optional["np.ndarray"] = None, roll: Optional["np.ndarray"] = None
+    yaw: "np.ndarray",
+    pitch: Optional["np.ndarray"] = None,
+    roll: Optional["np.ndarray"] = None,
 ) -> "np.ndarray":
     if pitch is None:
         pitch = np.zeros_like(yaw)
