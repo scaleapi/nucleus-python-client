@@ -19,6 +19,10 @@ exclude = '''
 )
 '''
 
+[tool.ruff]
+line-length = 79
+ignore = ["E501", "E741", "E731", "F401"]  # Easy ignore for getting it running - can be reevaluated later
+
 [tool.poetry]
 name = "scale-nucleus"
 version = "0.16.0"
@@ -57,7 +61,6 @@ pytest = [
 ]
 pylint = ">=2.7.4"
 black = "^23.3.0"
-flake8 = ">=3.9.1"
 mypy = ">=0.812"
 coverage = "^5.5"
 pre-commit = ">=2.12.1"
@@ -69,7 +72,6 @@ sphinx-autobuild = "^2021.3.14"
 furo = ">=2021.10.9"
 sphinx-autoapi = "^1.8.4"
 python-dateutil = "^2.8.2"
-importlib-metadata = "<=5" # This hint is vital for installation in tests ¯\_(ツ)_/¯
 
 [tool.poetry.scripts]
 nu = "cli.nu:nu"
@@ -78,6 +80,9 @@ nu = "cli.nu:nu"
 metrics = ["Shapely", "rasterio", "scipy", "scikit-learn"]
 launch = ["scale-launch"]
 
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.290"
 
 [tool.pytest.ini_options]
 markers = [

@@ -39,9 +39,9 @@ jobs:
           command: |
             poetry run black --check .
       - run:
-          name: Flake8 Lint Check # Uses setup.cfg for configuration
+          name: Ruff Lint Check # See pyproject.tooml [tool.ruff]
           command: |
-            poetry run flake8 .
+            poetry run ruff .
       - run:
           name: Pylint Lint Check # Uses .pylintrc for configuration
           command: |
