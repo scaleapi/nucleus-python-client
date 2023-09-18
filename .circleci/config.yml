@@ -10,7 +10,7 @@ jobs:
     docker:
       # Important: Don't change this otherwise we will stop testing the earliest
       # python version we have to support.
-      - image: python:3.6-buster
+      - image: python:3.7-buster
     resource_class: medium
     parallelism: 6
     steps:
@@ -37,11 +37,11 @@ jobs:
       - run:
           name: Black Formatting Check # Only validation, without re-formatting
           command: |
-            poetry run black --check -t py36 .
+            poetry run black --check .
       - run:
-          name: Flake8 Lint Check # Uses setup.cfg for configuration
+          name: Ruff Lint Check # See pyproject.tooml [tool.ruff]
           command: |
-            poetry run flake8 . --count --statistics
+            poetry run ruff .
       - run:
           name: Pylint Lint Check # Uses .pylintrc for configuration
           command: |
@@ -155,7 +155,7 @@ workflows:
       - test_client_installation:
           matrix:
             parameters:
-              python_version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+              python_version: ['3.7', '3.8', '3.9', '3.10', '3.11']
           context: Nucleus
   build_test_publish:
     jobs:

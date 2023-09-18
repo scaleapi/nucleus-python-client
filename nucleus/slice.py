@@ -336,7 +336,7 @@ class Slice:
 
     def append(
         self,
-        reference_ids: List[str] = None,
+        reference_ids: Optional[List[str]] = None,
     ) -> dict:
         """Appends existing DatasetItems from a Dataset to a Slice.
 

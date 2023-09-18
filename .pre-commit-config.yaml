@@ -12,7 +12,7 @@ repos:
     hooks:
     - id: system
       name: flake8
-      entry: poetry run flake8 nucleus tests
+      entry: poetry run ruff nucleus 
       pass_filenames: false
       language: system
 

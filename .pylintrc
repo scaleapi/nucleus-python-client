@@ -2,6 +2,7 @@
 disable=
     bad-continuation,
     no-else-return,
+    no-name-in-module,
     too-few-public-methods,
     line-too-long,
     duplicate-code,
