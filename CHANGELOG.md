@@ -5,6 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [0.16.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.0) - 2023-09-18
 
 ### Removed
@@ -13,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Development environment for Python 3.11
 - 
+
 ## [0.15.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.11) - 2023-09-15
 
 ### Added
