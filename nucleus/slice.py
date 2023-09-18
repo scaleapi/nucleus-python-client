@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 import requests
 
 from nucleus.annotation import Annotation
-from nucleus.async_job import AsyncJob
+from nucleus.async_job import AsyncJob, EmbeddingsExportJob
 from nucleus.constants import EXPORT_FOR_TRAINING_KEY, EXPORTED_ROWS, ITEMS_KEY
 from nucleus.dataset_item import DatasetItem
 from nucleus.errors import NucleusAPIError
@@ -600,17 +600,33 @@ class Slice:
 
     def export_embeddings(
         self,
-    ) -> List[Dict[str, Union[str, List[float]]]]:
+        asynchronous: bool = True,
+    ) -> Union[List[Dict[str, Union[str, List[float]]]], EmbeddingsExportJob]:
         """Fetches a pd.DataFrame-ready list of slice embeddings.
 
+        Parameters:
+            asynchronous: Whether or not to process the export asynchronously (and
+                return an :class:`EmbeddingsExportJob` object). Default is True.
+
         Returns:
-            A list where each element is a columnar mapping::
+            If synchronous, a list where each element is a columnar mapping::
 
                 List[{
                     "reference_id": str,
                     "embedding_vector": List[float]
                 }]
+
+            Otherwise, returns an :class:`EmbeddingsExportJob` object.
         """
+        if asynchronous:
+            api_payload = self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/async_export_embeddings",
+                requests_command=requests.post,
+            )
+
+            return EmbeddingsExportJob.from_json(api_payload, self._client)
+
         api_payload = self._client.make_request(
             payload=None,
             route=f"slice/{self.id}/embeddings",

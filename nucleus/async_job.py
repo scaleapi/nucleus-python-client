@@ -131,6 +131,27 @@ class AsyncJob:
         )
 
 
+class EmbeddingsExportJob(AsyncJob):
+    def result_urls(self) -> List[str]:
+        """Gets a list of signed Scale URLs for each embedding batch.
+
+        Returns:
+            A list of signed Scale URLs which contain batches of embeddings.
+
+            The files contain a JSON array of embedding records with the following schema:
+                [{
+                    "reference_id": str,
+                    "embedding_vector": List[float]
+                }]
+        """
+        status = self.status()
+
+        if status["status"] != "Completed":
+            raise JobError(status, self)
+
+        return status["message"]["result"]  # type: ignore
+
+
 class JobError(Exception):
     def __init__(self, job_status: Dict[str, str], job: AsyncJob):
         final_status_message = job_status["message"]

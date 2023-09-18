@@ -2,6 +2,7 @@
 
 __all__ = [
     "AsyncJob",
+    "EmbeddingsExportJob",
     "BoxAnnotation",
     "BoxPrediction",
     "CameraParams",
@@ -68,7 +69,7 @@ from .annotation import (
     Segment,
     SegmentationAnnotation,
 )
-from .async_job import AsyncJob
+from .async_job import AsyncJob, EmbeddingsExportJob
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (

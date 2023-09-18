@@ -15,7 +15,7 @@ from typing import (
 import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
-from nucleus.async_job import AsyncJob
+from nucleus.async_job import AsyncJob, EmbeddingsExportJob
 from nucleus.prediction import Prediction, from_json
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
@@ -1421,18 +1421,34 @@ class Dataset:
 
     def export_embeddings(
         self,
-    ) -> List[Dict[str, Union[str, List[float]]]]:
+        asynchronous: bool = True,
+    ) -> Union[List[Dict[str, Union[str, List[float]]]], EmbeddingsExportJob]:
         """Fetches a pd.DataFrame-ready list of dataset embeddings.
 
+        Parameters:
+            asynchronous: Whether or not to process the export asynchronously (and
+                return an :class:`EmbeddingsExportJob` object). Default is True.
+
         Returns:
-            A list, where each item is a dict with two keys representing a row
+            If synchronous, a list where each item is a dict with two keys representing a row
             in the dataset::
 
                 List[{
                     "reference_id": str,
                     "embedding_vector": List[float]
                 }]
+
+            Otherwise, returns an :class:`EmbeddingsExportJob` object.
         """
+        if asynchronous:
+            api_payload = self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/async_export_embeddings",
+                requests_command=requests.post,
+            )
+
+            return EmbeddingsExportJob.from_json(api_payload, self._client)
+
         api_payload = self._client.make_request(
             payload=None,
             route=f"dataset/{self.id}/embeddings",

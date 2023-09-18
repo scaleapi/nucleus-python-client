@@ -39,7 +39,7 @@ jobs:
           command: |
             poetry run black --check .
       - run:
-          name: Ruff Lint Check # See pyproject.tooml [tool.ruff]
+          name: Ruff Lint Check # See pyproject.toml [tool.ruff]
           command: |
             poetry run ruff .
       - run:
