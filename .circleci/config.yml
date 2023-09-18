@@ -60,7 +60,7 @@ jobs:
             mkdir test_results
             set -e
             TEST_FILES=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings)
-            poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml $TEST_FILES
+            echo "$TEST_FILES" | circleci tests run --command "xargs poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml" --verbose --split-by=timings
             poetry run coverage report
             poetry run coverage html
       - store_test_results:
