@@ -170,7 +170,7 @@ class NucleusClient:
         self,
         api_key: Optional[str] = None,
         use_notebook: bool = False,
-        endpoint: str = None,
+        endpoint: Optional[str] = None,
     ):
         self.api_key = self._set_api_key(api_key)
         self.tqdm_bar = tqdm.tqdm
@@ -343,7 +343,7 @@ class NucleusClient:
         return AsyncJob.from_json(payload=payload, client=self)
 
     def get_model(
-        self, model_id: str = None, model_run_id: str = None
+        self, model_id: Optional[str] = None, model_run_id: Optional[str] = None
     ) -> Model:
         """Fetches a model by its ID.
 
@@ -388,7 +388,7 @@ class NucleusClient:
         )
 
     def create_dataset_from_project(
-        self, project_id: str, last_n_tasks: int = None, name: str = None
+        self, project_id: str, last_n_tasks: Optional[int] = None, name: Optional[str] = None
     ) -> Dataset:
         """Create a new dataset from an existing Scale or Rapid project.
 
@@ -922,7 +922,7 @@ class NucleusClient:
 
     @deprecated("Prefer calling Dataset.delete_annotations instead.")
     def delete_annotations(
-        self, dataset_id: str, reference_ids: list = None, keep_history=True
+        self, dataset_id: str, reference_ids: Optional[list] = None, keep_history=True
     ) -> AsyncJob:
         dataset = self.get_dataset(dataset_id)
         return dataset.delete_annotations(reference_ids, keep_history)

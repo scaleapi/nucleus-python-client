@@ -596,7 +596,7 @@ class VideoScene(ABC):
             ), "No list of items is accepted when uploading a video_location unless you are using privacy mode"
 
     def add_item(
-        self, item: DatasetItem, index: int = None, update: bool = False
+        self, item: DatasetItem, index: Optional[int] = None, update: bool = False
     ) -> None:
         """Adds DatasetItem to the specified index for videos uploaded as an array of images.
 

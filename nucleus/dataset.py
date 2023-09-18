@@ -1230,7 +1230,7 @@ class Dataset:
         return AsyncJob.from_json(response, self._client)
 
     def create_object_index(
-        self, model_run_id: str = None, gt_only: bool = None
+        self, model_run_id: Optional[str] = None, gt_only: Optional[bool] = None
     ):
         """Creates or updates object index by generating embeddings for objects that do not already have embeddings.
 
@@ -1439,7 +1439,7 @@ class Dataset:
         return api_payload  # type: ignore
 
     def delete_annotations(
-        self, reference_ids: list = None, keep_history: bool = True
+        self, reference_ids: Optional[list] = None, keep_history: bool = True
     ) -> AsyncJob:
         """Deletes all annotations associated with the specified item reference IDs.
 
@@ -1555,7 +1555,7 @@ class Dataset:
         )
         return format_scale_task_info_response(response)
 
-    def calculate_evaluation_metrics(self, model, options: dict = None):
+    def calculate_evaluation_metrics(self, model, options: Optional[dict] = None):
         """Starts computation of evaluation metrics for a model on the dataset.
 
         To update matches and metrics calculated for a model on a given dataset you

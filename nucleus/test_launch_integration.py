@@ -144,8 +144,8 @@ _OUTLINE_COLOR = (0, 255, 0, 255)
 def visualize_box_launch_bundle(
     img_file: str,
     load_predict_fn: Callable,
-    load_model_fn: Callable = None,
-    model: Any = None,
+    load_model_fn: Optional[Callable] = None,
+    model: Optional[Any] = None,
     show_image: bool = False,
     max_annotations: int = 5,
 ) -> Image:
@@ -194,8 +194,8 @@ def visualize_box_launch_bundle(
 def run_category_launch_bundle(
     img_file: str,
     load_predict_fn: Callable,
-    load_model_fn: Callable = None,
-    model: Any = None,
+    load_model_fn: Optional[Callable] = None,
+    model: Optional[Any] = None,
 ):
     """
     Run this function locally to test if your image categorization model returns a format consumable by Launch + Nucleus
@@ -218,8 +218,8 @@ def run_category_launch_bundle(
 def visualize_line_launch_bundle(
     img_file: str,
     load_predict_fn: Callable,
-    load_model_fn: Callable = None,
-    model: Any = None,
+    load_model_fn: Optional[Callable] = None,
+    model: Optional[Any] = None,
     show_image: bool = False,
     max_annotations: int = 5,
 ) -> Image:
@@ -266,8 +266,8 @@ def visualize_line_launch_bundle(
 def visualize_polygon_launch_bundle(
     img_file: str,
     load_predict_fn: Callable,
-    load_model_fn: Callable = None,
-    model: Any = None,
+    load_model_fn: Optional[Callable] = None,
+    model: Optional[Any] = None,
     show_image: bool = False,
     max_annotations: int = 5,
 ) -> Image:

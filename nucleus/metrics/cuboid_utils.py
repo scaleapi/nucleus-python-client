@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple
 
 import numpy as np
 
@@ -176,8 +176,8 @@ def get_batch_cuboid_corners(
     xyz: "np.ndarray",
     wlh: "np.ndarray",
     yaw: "np.ndarray",
-    pitch: "np.ndarray" = None,
-    roll: "np.ndarray" = None,
+    pitch: Optional["np.ndarray"] = None,
+    roll: Optional["np.ndarray"] = None,
     scale_convention: bool = True,
 ) -> "np.ndarray":
     """
@@ -211,7 +211,7 @@ def get_batch_cuboid_corners(
 
 
 def get_batch_rotation_matrices(
-    yaw: "np.ndarray", pitch: "np.ndarray" = None, roll: "np.ndarray" = None
+    yaw: "np.ndarray", pitch: Optional["np.ndarray"] = None, roll: Optional["np.ndarray"] = None
 ) -> "np.ndarray":
     if pitch is None:
         pitch = np.zeros_like(yaw)

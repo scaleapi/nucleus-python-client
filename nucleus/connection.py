@@ -6,12 +6,13 @@ from .constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from .errors import NucleusAPIError
 from .logger import logger
 from .retry_strategy import RetryStrategy
+from typing import Optional
 
 
 class Connection:
     """Wrapper of HTTP requests to the Nucleus endpoint."""
 
-    def __init__(self, api_key: str, endpoint: str = None):
+    def __init__(self, api_key: str, endpoint: Optional[str] = None):
         self.api_key = api_key
         self.endpoint = endpoint
 
