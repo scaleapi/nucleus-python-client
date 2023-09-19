@@ -121,6 +121,15 @@ class AsyncJob:
 
     @classmethod
     def from_id(cls, job_id: str, client: "NucleusClient"):  # type: ignore # noqa: F821
+        """Creates a job instance from a specific job Id.
+
+        Parameters:
+            job_id: Defines the job Id
+            client: The client to use for the request.
+
+        Returns:
+            The specific AsyncMethod (or inherited) instance.
+        """
         job = client.get_job(job_id)
         return cls.from_json(job.__dict__, client)
 
