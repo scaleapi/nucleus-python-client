@@ -132,8 +132,12 @@ class AsyncJob:
 
 
 class EmbeddingsExportJob(AsyncJob):
-    def result_urls(self) -> List[str]:
+    def result_urls(self, wait_for_completion=True) -> List[str]:
         """Gets a list of signed Scale URLs for each embedding batch.
+
+        Parameters:
+            wait_for_completion: Defines whether the call shall wait for
+            the job to complete. Defaults to True
 
         Returns:
             A list of signed Scale URLs which contain batches of embeddings.
@@ -144,6 +148,9 @@ class EmbeddingsExportJob(AsyncJob):
                     "embedding_vector": List[float]
                 }]
         """
+        if wait_for_completion:
+            self.sleep_until_complete()
+
         status = self.status()
 
         if status["status"] != "Completed":
