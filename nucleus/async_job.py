@@ -120,6 +120,11 @@ class AsyncJob:
             raise JobError(final_status, self)
 
     @classmethod
+    def from_id(cls, job_id: str, client: "NucleusClient"):  # type: ignore # noqa: F821
+        job = client.get_job(job_id)
+        return cls.from_json(job.__dict__, client)
+
+    @classmethod
     def from_json(cls, payload: dict, client):
         # TODO: make private
         return cls(
@@ -149,7 +154,7 @@ class EmbeddingsExportJob(AsyncJob):
                 }]
         """
         if wait_for_completion:
-            self.sleep_until_complete()
+            self.sleep_until_complete(verbose_std_out=False)
 
         status = self.status()
 

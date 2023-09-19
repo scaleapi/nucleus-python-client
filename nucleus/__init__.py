@@ -237,7 +237,7 @@ class NucleusClient:
     def jobs(
         self,
     ) -> List[AsyncJob]:
-        """Lists all jobs, see NucleusClinet.list_jobs(...) for advanced options
+        """Lists all jobs, see NucleusClient.list_jobs(...) for advanced options
 
         Returns:
             List of all AsyncJobs
