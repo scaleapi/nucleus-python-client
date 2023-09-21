@@ -27,6 +27,7 @@ class CustomerJobTypes(str, Enum):
     CLONE_DATASET = "cloneDataset"
     METADATA_UPDATE = "metadataUpdate"
     TRIGGER_EVALUATE = "triggerEvaluate"
+    EXPORT_EMBEDDINGS = "exportEmbeddings"
 
     def __contains__(self, item):
         try:

@@ -60,7 +60,7 @@ def test_export_embeddings(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
         embeddings = Dataset(
             DATASET_WITH_EMBEDDINGS, CLIENT
-        ).export_embeddings()
+        ).export_embeddings(asynchronous=False)
         assert "embedding_vector" in embeddings[0]
         assert "reference_id" in embeddings[0]
 
@@ -100,7 +100,7 @@ def test_dataset_export_autotag_tagged_items(CLIENT):
 def test_export_slice_embeddings(CLIENT):
     if running_as_nucleus_pytest_user(CLIENT):
         test_slice = CLIENT.get_slice("slc_c8jwtmj372xg07g9v3k0")
-        embeddings = test_slice.export_embeddings()
+        embeddings = test_slice.export_embeddings(asynchronous=False)
         assert "embedding_vector" in embeddings[0]
         assert "reference_id" in embeddings[0]
 

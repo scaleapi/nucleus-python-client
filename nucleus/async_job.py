@@ -120,6 +120,20 @@ class AsyncJob:
             raise JobError(final_status, self)
 
     @classmethod
+    def from_id(cls, job_id: str, client: "NucleusClient"):  # type: ignore # noqa: F821
+        """Creates a job instance from a specific job Id.
+
+        Parameters:
+            job_id: Defines the job Id
+            client: The client to use for the request.
+
+        Returns:
+            The specific AsyncMethod (or inherited) instance.
+        """
+        job = client.get_job(job_id)
+        return cls.from_json(job.__dict__, client)
+
+    @classmethod
     def from_json(cls, payload: dict, client):
         # TODO: make private
         return cls(
@@ -129,6 +143,34 @@ class AsyncJob:
             job_creation_time=payload[JOB_CREATION_TIME_KEY],
             client=client,
         )
+
+
+class EmbeddingsExportJob(AsyncJob):
+    def result_urls(self, wait_for_completion=True) -> List[str]:
+        """Gets a list of signed Scale URLs for each embedding batch.
+
+        Parameters:
+            wait_for_completion: Defines whether the call shall wait for
+            the job to complete. Defaults to True
+
+        Returns:
+            A list of signed Scale URLs which contain batches of embeddings.
+
+            The files contain a JSON array of embedding records with the following schema:
+                [{
+                    "reference_id": str,
+                    "embedding_vector": List[float]
+                }]
+        """
+        if wait_for_completion:
+            self.sleep_until_complete(verbose_std_out=False)
+
+        status = self.status()
+
+        if status["status"] != "Completed":
+            raise JobError(status, self)
+
+        return status["message"]["result"]  # type: ignore
 
 
 class JobError(Exception):

@@ -11,7 +11,7 @@ repos:
 -   repo: local
     hooks:
     - id: system
-      name: flake8
+      name: ruff
       entry: poetry run ruff nucleus 
       pass_filenames: false
       language: system
