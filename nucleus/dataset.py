@@ -21,18 +21,23 @@ from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
+    fetch_cached_chips,
+    fetch_image,
     format_dataset_item_response,
     format_prediction_response,
     format_scale_task_info_response,
+    generate_offsets,
     paginate_generator,
+    chip_annotations,
     serialize_and_write_to_presigned_url,
 )
 
-from .annotation import Annotation, check_all_mask_paths_remote
+from .annotation import Annotation, BoxAnnotation, check_all_mask_paths_remote
 from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     BACKFILL_JOB_KEY,
+    BOX_TYPE,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_ITEM_IDS_KEY,
@@ -43,12 +48,15 @@ from .constants import (
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
+    IMAGE_KEY,
+    ITEM_KEY,
     ITEMS_KEY,
     JOB_REQ_LIMIT,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
     NAME_KEY,
     OBJECT_IDS_KEY,
+    PROCESSED_URL_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SCENE_IDS_KEY,
@@ -1388,8 +1396,12 @@ class Dataset:
 
     def items_and_annotation_generator(
         self,
+        query: Optional[str] = None,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
@@ -1414,10 +1426,69 @@ class Dataset:
             endpoint=f"dataset/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=10000,  # max ES page size
+            query=query
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
                 yield ia
+    
+    def items_and_annotation_chip_generator(
+        self,
+        chip_size: int,
+        stride_size: int,
+        query: Optional[str] = None,
+    ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
+        """Provides a generator of chips for all DatasetItems and Annotations in the dataset.
+
+        Args:
+            chip_size: The size of the image chip
+            stride_size: The distance to move when creating the next image chip. 
+              When stride is equal to chip size, there will be no overlap. 
+              When stride is equal to half the chip size, there will be 50 percent overlap.
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+            
+
+        Returns:
+            Generator where each element is a dict containing the image chip
+            and all of its associated Annotations, grouped by type.
+            ::
+
+                Iterable[{
+                    "image_location": str,
+                    "annotations": {
+                        "box": List[BoxAnnotation],
+                        "polygon": List[PolygonAnnotation],
+                        "cuboid": List[CuboidAnnotation],
+                        "line": Optional[List[LineAnnotation]],
+                        "segmentation": List[SegmentationAnnotation],
+                        "category": List[CategoryAnnotation],
+                        "keypoints": List[KeypointsAnnotation],
+                    }
+                }]
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/exportForTrainingPage",
+            result_key=EXPORT_FOR_TRAINING_KEY,
+            page_size=10000,  # max ES page size
+            query=query
+        )
+        for data in json_generator:
+            url = data[ITEM_KEY][PROCESSED_URL_KEY]
+            image = fetch_image(url)
+            w, h = image.size
+            annotations = data[BOX_TYPE]
+            chipped_images, chipped_annotations = [], []
+            for x0, y0 in generate_offsets(w, h, chip_size, stride_size):
+                x1 = x0 + chip_size
+                y1 = y0 + chip_size
+                chipped_image = image.crop((x0, y0, x1, y1))
+                chipped_annotation = chip_annotations(annotations, x0, y0, x1, y1)
+                chipped_images.append(chipped_image)
+                chipped_annotations.append(chipped_annotations)
+                yield {IMAGE_KEY: chipped_image, ANNOTATIONS_KEY: chipped_annotation}
+            
+        
 
     def export_embeddings(
         self,

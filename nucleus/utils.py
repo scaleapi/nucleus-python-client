@@ -5,6 +5,11 @@ import json
 import uuid
 from collections import defaultdict
 from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+from PIL import Image
+import boto3
+import numpy as np
+import pandas as pd
+from itertools import product
 
 import requests
 from requests.models import HTTPError
@@ -422,3 +427,48 @@ def paginate_generator(
             yield json_value
         if not next_token:
             break
+
+def fetch_image(s3_url: str) -> Image.Image:
+    s3_bucket = s3_url.split("//")[-1].split("/")[0]
+    s3_output = s3_url.split("//")[-1].split(s3_bucket)[-1][1:]
+    image = Image.open(
+        boto3.resource("s3").Bucket(s3_bucket).Object(s3_output).get()["Body"]
+    )
+    return image
+
+def fetch_cached_chips(s3_url: str) -> tuple[str, Image.Image]:
+    s3_bucket = s3_url.split("//")[-1].split("/")[0]
+    s3_output = s3_url.split("//")[-1].split(s3_bucket)[-1][1:]
+
+def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
+    xs = np.arange(0, w - stride_size, chip_size - stride_size)
+    ys = np.arange(0, h - stride_size, chip_size - stride_size)
+    if len(xs) > 1:
+        xs = np.round(xs * (w - chip_size) / xs[-1]).astype(int)
+    if len(ys) > 1:
+        ys = np.round(ys * (h - chip_size) / ys[-1]).astype(int)
+    yield from product(ys, xs)
+
+def chip_annotations(
+    data: Dict[str,str], x0: int, y0: int, x1: int, y1: int
+) -> pd.DataFrame:
+    annotations = list(map(lambda x: {**x["geometry"], "label": x["label"]}, data))
+    if len(annotations):
+        annotations = pd.DataFrame(annotations)[["label", "x", "y", "width", "height"]]
+        annotations["x1"] = annotations["x"] + annotations["width"]
+        annotations["y1"] = annotations["y"] + annotations["height"]
+        annotations["x"] = np.clip(annotations["x"], x0, x1) - x0
+        annotations["x1"] = np.clip(annotations["x1"], x0, x1) - x0
+        annotations["y"] = np.clip(annotations["y"], y0, y1) - y0
+        annotations["y1"] = np.clip(annotations["y1"], y0, y1) - y0
+        annotations["width"] = annotations["x1"] - annotations["x"]
+        annotations["height"] = annotations["y1"] - annotations["y"]
+        annotations["area"] = annotations["width"] * annotations["height"]
+        annotations = annotations.loc[annotations["area"] > 0]
+        annotations = (
+            annotations.groupby(["label", "x", "y", "width", "height"]).last().reset_index()
+        )
+    else:
+        annotations = pd.DataFrame([])
+    return list(annotations.iterrows())
+
