@@ -4,7 +4,7 @@ import io
 import json
 import uuid
 from collections import defaultdict
-from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+from typing import IO, TYPE_CHECKING, Dict, List, Self, Sequence, Type, Union
 from PIL import Image
 import boto3
 import numpy as np
@@ -34,8 +34,11 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     EXPORTED_SCALE_TASK_INFO_ROWS,
+    GEOMETRY_KEY,
+    HEIGHT_KEY,
     ITEM_KEY,
     KEYPOINTS_TYPE,
+    LABEL_KEY,
     LINE_TYPE,
     MAX_PAYLOAD_SIZE,
     MULTICATEGORY_TYPE,
@@ -48,6 +51,10 @@ from .constants import (
     SCALE_TASK_INFO_KEY,
     SCENE_KEY,
     SEGMENTATION_TYPE,
+    TYPE_KEY,
+    WIDTH_KEY,
+    X_KEY,
+    Y_KEY,
 )
 from .dataset_item import DatasetItem
 from .prediction import (
@@ -436,9 +443,38 @@ def fetch_image(s3_url: str) -> Image.Image:
     )
     return image
 
-def fetch_cached_chips(s3_url: str) -> tuple[str, Image.Image]:
-    s3_bucket = s3_url.split("//")[-1].split("/")[0]
-    s3_output = s3_url.split("//")[-1].split(s3_bucket)[-1][1:]
+def fetch_chip(s3_prefix: str) -> tuple[str, str]:
+    s3_bucket = s3_prefix.split("//")[-1].split("/")[0]
+    s3_output = s3_prefix.split("//")[-1].split(s3_bucket)[-1][1:]
+    try:
+        boto3.resource("s3").Bucket(s3_bucket).Object(s3_output + '.jpeg').load()
+    except:
+        return None, None
+    try:
+        boto3.resource("s3").Bucket(s3_bucket).Object(s3_output + '.json').load()
+    except:
+        return s3_prefix + '.jpeg', None
+    return s3_prefix + '.jpeg', s3_prefix + '.json'
+
+def upload_chip(s3_prefix: str, chipped_image: Image.Image, chipped_annotations: [dict]) -> tuple[str, str]:
+    s3_bucket = s3_prefix.split("//")[-1].split("/")[0]
+    s3_output = s3_prefix.split("//")[-1].split(s3_bucket)[-1][1:]
+    byteio = io.BytesIO()
+    chipped_image.save(byteio, format="jpeg")
+    byteio.seek(0)
+    try:
+        boto3.resource("s3").Bucket(s3_bucket).Object(s3_output + '.jpeg').upload_fileobj(byteio)
+    except Exception as err:
+        print("hi", err)
+        return None, None
+    if len(chipped_annotations) == 0:
+        return s3_prefix + '.jpeg', None
+    try:
+        boto3.resource("s3").Bucket(s3_bucket).Object(s3_output + '.json').put(Body=json.dumps(chipped_annotations))
+    except Exception as err:
+        print("sup", err)
+        return None, None
+    return s3_prefix + '.jpeg', s3_prefix + '.json'
 
 def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
     xs = np.arange(0, w - stride_size, chip_size - stride_size)
@@ -449,9 +485,7 @@ def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
         ys = np.round(ys * (h - chip_size) / ys[-1]).astype(int)
     yield from product(ys, xs)
 
-def chip_annotations(
-    data: Dict[str,str], x0: int, y0: int, x1: int, y1: int
-) -> pd.DataFrame:
+def chip_annotations(data: Dict[str,str], x0: int, y0: int, x1: int, y1: int):
     annotations = list(map(lambda x: {**x["geometry"], "label": x["label"]}, data))
     if len(annotations):
         annotations = pd.DataFrame(annotations)[["label", "x", "y", "width", "height"]]
@@ -470,5 +504,17 @@ def chip_annotations(
         )
     else:
         annotations = pd.DataFrame([])
-    return list(annotations.iterrows())
+    annotation_units = []
+    for _, annotation in annotations.iterrows():
+        annotation_units.append({
+            LABEL_KEY: annotation[LABEL_KEY],
+            TYPE_KEY: BOX_TYPE,
+            GEOMETRY_KEY: {
+                X_KEY: annotation[X_KEY],
+                Y_KEY: annotation[Y_KEY],
+                WIDTH_KEY: annotation[WIDTH_KEY],
+                HEIGHT_KEY: annotation[HEIGHT_KEY],
+            },
+        })
+    return annotation_units
 

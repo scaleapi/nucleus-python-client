@@ -11,6 +11,7 @@ from typing import (
     Tuple,
     Union,
 )
+import re
 
 import requests
 
@@ -21,7 +22,7 @@ from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
-    fetch_cached_chips,
+    fetch_chip,
     fetch_image,
     format_dataset_item_response,
     format_prediction_response,
@@ -30,10 +31,12 @@ from nucleus.utils import (
     paginate_generator,
     chip_annotations,
     serialize_and_write_to_presigned_url,
+    upload_chip,
 )
 
 from .annotation import Annotation, BoxAnnotation, check_all_mask_paths_remote
 from .constants import (
+    ANNOTATION_LOCATION_KEY,
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     BACKFILL_JOB_KEY,
@@ -48,7 +51,7 @@ from .constants import (
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
-    IMAGE_KEY,
+    IMAGE_URL_KEY,
     ITEM_KEY,
     ITEMS_KEY,
     JOB_REQ_LIMIT,
@@ -1436,34 +1439,27 @@ class Dataset:
         self,
         chip_size: int,
         stride_size: int,
+        s3_directory: str,
         query: Optional[str] = None,
-    ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
-        """Provides a generator of chips for all DatasetItems and Annotations in the dataset.
+    ) -> Iterable[Dict[str, str]]:
+        """Provides a generator of chips for all DatasetItems and BoxAnnotations in the dataset.
 
         Args:
             chip_size: The size of the image chip
             stride_size: The distance to move when creating the next image chip. 
               When stride is equal to chip size, there will be no overlap. 
               When stride is equal to half the chip size, there will be 50 percent overlap.
+            cache_directory: The s3 or local directory to store the image and annotations of a chip.
+              s3 directories must be in the format s3://s3-bucket/s3-key/
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
             
-
         Returns:
-            Generator where each element is a dict containing the image chip
-            and all of its associated Annotations, grouped by type.
+            Generator where each element is a dict containing the location of the image chip (jpeg) and its annotations (json).
             ::
 
                 Iterable[{
                     "image_location": str,
-                    "annotations": {
-                        "box": List[BoxAnnotation],
-                        "polygon": List[PolygonAnnotation],
-                        "cuboid": List[CuboidAnnotation],
-                        "line": Optional[List[LineAnnotation]],
-                        "segmentation": List[SegmentationAnnotation],
-                        "category": List[CategoryAnnotation],
-                        "keypoints": List[KeypointsAnnotation],
-                    }
+                    "annotation_location": str
                 }]
         """
         json_generator = paginate_generator(
@@ -1477,18 +1473,19 @@ class Dataset:
             url = data[ITEM_KEY][PROCESSED_URL_KEY]
             image = fetch_image(url)
             w, h = image.size
+            url = re.sub('[/.:]', '', url)
             annotations = data[BOX_TYPE]
-            chipped_images, chipped_annotations = [], []
             for x0, y0 in generate_offsets(w, h, chip_size, stride_size):
+                reference_id = f"{s3_directory}{chip_size}/{stride_size}/{url}_{x0}_{y0}"
+                chipped_image_url, chipped_annotation_url = fetch_chip(reference_id)
+                if chipped_image_url: 
+                    yield {IMAGE_URL_KEY: chipped_image_url, ANNOTATION_LOCATION_KEY: chipped_annotation_url}
                 x1 = x0 + chip_size
                 y1 = y0 + chip_size
                 chipped_image = image.crop((x0, y0, x1, y1))
-                chipped_annotation = chip_annotations(annotations, x0, y0, x1, y1)
-                chipped_images.append(chipped_image)
-                chipped_annotations.append(chipped_annotations)
-                yield {IMAGE_KEY: chipped_image, ANNOTATIONS_KEY: chipped_annotation}
-            
-        
+                chipped_annotations = chip_annotations(annotations, x0, y0, x1, y1)
+                chipped_image_url, chipped_annotation_url = upload_chip(reference_id, chipped_image, chipped_annotations)
+                yield {IMAGE_URL_KEY: chipped_image_url, ANNOTATION_LOCATION_KEY: chipped_annotation_url}
 
     def export_embeddings(
         self,
