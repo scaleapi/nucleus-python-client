@@ -8,7 +8,6 @@ from typing import IO, TYPE_CHECKING, Dict, List, Self, Sequence, Type, Union
 from PIL import Image
 import boto3
 import numpy as np
-import pandas as pd
 from itertools import product
 
 import requests
@@ -52,9 +51,11 @@ from .constants import (
     SCENE_KEY,
     SEGMENTATION_TYPE,
     TYPE_KEY,
+    W_KEY,
     WIDTH_KEY,
     X_KEY,
     Y_KEY,
+    Z_KEY,
 )
 from .dataset_item import DatasetItem
 from .prediction import (
@@ -486,35 +487,29 @@ def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
     yield from product(ys, xs)
 
 def chip_annotations(data: Dict[str,str], x0: int, y0: int, x1: int, y1: int):
-    annotations = list(map(lambda x: {**x["geometry"], "label": x["label"]}, data))
-    if len(annotations):
-        annotations = pd.DataFrame(annotations)[["label", "x", "y", "width", "height"]]
-        annotations["x1"] = annotations["x"] + annotations["width"]
-        annotations["y1"] = annotations["y"] + annotations["height"]
-        annotations["x"] = np.clip(annotations["x"], x0, x1) - x0
-        annotations["x1"] = np.clip(annotations["x1"], x0, x1) - x0
-        annotations["y"] = np.clip(annotations["y"], y0, y1) - y0
-        annotations["y1"] = np.clip(annotations["y1"], y0, y1) - y0
-        annotations["width"] = annotations["x1"] - annotations["x"]
-        annotations["height"] = annotations["y1"] - annotations["y"]
-        annotations["area"] = annotations["width"] * annotations["height"]
-        annotations = annotations.loc[annotations["area"] > 0]
-        annotations = (
-            annotations.groupby(["label", "x", "y", "width", "height"]).last().reset_index()
-        )
-    else:
-        annotations = pd.DataFrame([])
+    annotations = list(map(lambda x: {**x[GEOMETRY_KEY], LABEL_KEY: x[LABEL_KEY]}, data))
     annotation_units = []
-    for _, annotation in annotations.iterrows():
-        annotation_units.append({
-            LABEL_KEY: annotation[LABEL_KEY],
-            TYPE_KEY: BOX_TYPE,
-            GEOMETRY_KEY: {
-                X_KEY: annotation[X_KEY],
-                Y_KEY: annotation[Y_KEY],
-                WIDTH_KEY: annotation[WIDTH_KEY],
-                HEIGHT_KEY: annotation[HEIGHT_KEY],
-            },
-        })
-    return annotation_units
+    for annotation in annotations:
+        annotation[W_KEY] = annotation[X_KEY] + annotation[WIDTH_KEY]
+        annotation[Z_KEY] = annotation[Y_KEY] + annotation[HEIGHT_KEY]
+        annotation[X_KEY] = max(min(annotation[X_KEY], x1), x0) - x0
+        annotation[W_KEY] = max(min(annotation[W_KEY], x1), x0) - x0
+        annotation[Y_KEY] = max(min(annotation[Y_KEY], y1), y0) - y0
+        annotation[Z_KEY] = max(min(annotation[Z_KEY], y1), y0) - y0
+        annotation[WIDTH_KEY] = annotation[W_KEY] - annotation[X_KEY]
+        annotation[HEIGHT_KEY] = annotation[Z_KEY] - annotation[Y_KEY]
+        annotation["area"] = annotation[WIDTH_KEY] * annotation[HEIGHT_KEY]
 
+        if "area" in annotation and annotation["area"] > 0:
+            annotation_units.append({
+                LABEL_KEY: annotation[LABEL_KEY],
+                TYPE_KEY: BOX_TYPE,
+                GEOMETRY_KEY: {
+                    X_KEY: annotation[X_KEY],
+                    Y_KEY: annotation[Y_KEY],
+                    WIDTH_KEY: annotation[WIDTH_KEY],
+                    HEIGHT_KEY: annotation[HEIGHT_KEY],
+                },
+            })
+
+    return annotation_units
