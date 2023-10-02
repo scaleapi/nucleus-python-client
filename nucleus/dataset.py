@@ -11,7 +11,6 @@ from typing import (
     Tuple,
     Union,
 )
-import re
 
 import requests
 
