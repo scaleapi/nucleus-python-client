@@ -34,7 +34,7 @@ from nucleus.utils import (
     write_chip,
 )
 
-from .annotation import Annotation, BoxAnnotation, check_all_mask_paths_remote
+from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
     ANNOTATION_LOCATION_KEY,
     ANNOTATIONS_KEY,

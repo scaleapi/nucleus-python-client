@@ -5,7 +5,7 @@ import os
 import json
 import uuid
 from collections import defaultdict
-from typing import IO, TYPE_CHECKING, Dict, List, Self, Sequence, Type, Union
+from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
 from PIL import Image
 import boto3
 import numpy as np
