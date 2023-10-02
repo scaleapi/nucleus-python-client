@@ -52,7 +52,6 @@ from .constants import (
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
     IMAGE_LOCATION_KEY,
-    IMAGE_URL_KEY,
     ITEM_KEY,
     ITEMS_KEY,
     JOB_REQ_LIMIT,
@@ -61,6 +60,7 @@ from .constants import (
     NAME_KEY,
     OBJECT_IDS_KEY,
     PROCESSED_URL_KEY,
+    REFERENCE_ID_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SCENE_IDS_KEY,
@@ -1471,18 +1471,15 @@ class Dataset:
             query=query,
             chip=True,
         )
-        for data in json_generator:
-            url = data[ITEM_KEY][PROCESSED_URL_KEY]
-            image = fetch_image(url)
+        for item in json_generator:
+            image = fetch_image(item[ITEM_KEY][PROCESSED_URL_KEY])
             w, h = image.size
-            url = re.sub("[/.:]", "", url)
-            annotations = data[BOX_TYPE]
+            annotations = item[BOX_TYPE]
+            item_ref_id = item[ITEM_KEY][REFERENCE_ID_KEY]
             for x0, y0 in generate_offsets(w, h, chip_size, stride_size):
                 x0, y0 = int(x0), int(y0)
-                reference_id = f"{cache_directory}/{chip_size}/{stride_size}/{url}_{x0}_{y0}"
-                chipped_image_loc, chipped_annotation_loc = fetch_chip(
-                    reference_id
-                )
+                ref_id = f"{cache_directory}/{chip_size}/{stride_size}/{item_ref_id}_{x0}_{y0}"
+                chipped_image_loc, chipped_annotation_loc = fetch_chip(ref_id)
                 if chipped_image_loc:
                     yield {
                         IMAGE_LOCATION_KEY: chipped_image_loc,
@@ -1496,7 +1493,7 @@ class Dataset:
                     annotations, x0, y0, x1, y1
                 )
                 chipped_image_loc, chipped_annotation_loc = write_chip(
-                    reference_id, chipped_image, chipped_annotations
+                    ref_id, chipped_image, chipped_annotations
                 )
                 yield {
                     IMAGE_LOCATION_KEY: chipped_image_loc,
