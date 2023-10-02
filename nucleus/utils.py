@@ -437,16 +437,16 @@ def paginate_generator(
         if not next_token:
             break
 
-def split_s3_bucket_key(s3_path: str) -> tuple[str, str]:
+def split_s3_bucket_key(s3_path: str):
     s3_bucket, s3_key = s3_path.split("//", 1)[-1].split("/", 1)
     return s3_bucket, s3_key
 
-def fetch_image(s3_url: str) -> Image.Image:
+def fetch_image(s3_url: str):
     s3_bucket, s3_key = split_s3_bucket_key(s3_url)
     image = Image.open(boto3.resource("s3").Bucket(s3_bucket).Object(s3_key).get()["Body"])
     return image
 
-def fetch_chip(ref_id: str) -> tuple[str, str]:
+def fetch_chip(ref_id: str):
     image_loc = None
     annotation_loc = None
     if ref_id.startswith('s3'):
@@ -469,7 +469,7 @@ def fetch_chip(ref_id: str) -> tuple[str, str]:
     return image_loc, annotation_loc
 
 
-def write_chip(ref_id: str, image: Image.Image, annotations: List[Dict[str,str]]) -> tuple[str, str]:
+def write_chip(ref_id: str, image: Image.Image, annotations: List[Dict[str,str]]):
     if ref_id.startswith('s3'):
         s3_bucket, s3_key = split_s3_bucket_key(ref_id)
         byteio = io.BytesIO()
