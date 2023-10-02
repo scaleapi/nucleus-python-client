@@ -1430,12 +1430,12 @@ class Dataset:
             endpoint=f"dataset/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=10000,  # max ES page size
-            query=query
+            query=query,
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
                 yield ia
-    
+
     def items_and_annotation_chip_generator(
         self,
         chip_size: int,
@@ -1447,13 +1447,13 @@ class Dataset:
 
         Args:
             chip_size: The size of the image chip
-            stride_size: The distance to move when creating the next image chip. 
-              When stride is equal to chip size, there will be no overlap. 
+            stride_size: The distance to move when creating the next image chip.
+              When stride is equal to chip size, there will be no overlap.
               When stride is equal to half the chip size, there will be 50 percent overlap.
             cache_directory: The s3 or local directory to store the image and annotations of a chip.
               s3 directories must be in the format s3://s3-bucket/s3-key
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
-            
+
         Returns:
             Generator where each element is a dict containing the location of the image chip (jpeg) and its annotations (json).
             ::
@@ -1469,27 +1469,39 @@ class Dataset:
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=10000,  # max ES page size
             query=query,
-            chip=True
+            chip=True,
         )
         for data in json_generator:
             url = data[ITEM_KEY][PROCESSED_URL_KEY]
             image = fetch_image(url)
             w, h = image.size
-            url = re.sub('[/.:]', '', url)
+            url = re.sub("[/.:]", "", url)
             annotations = data[BOX_TYPE]
             for x0, y0 in generate_offsets(w, h, chip_size, stride_size):
                 x0, y0 = int(x0), int(y0)
                 reference_id = f"{cache_directory}/{chip_size}/{stride_size}/{url}_{x0}_{y0}"
-                chipped_image_loc, chipped_annotation_loc = fetch_chip(reference_id)
-                if chipped_image_loc: 
-                    yield {IMAGE_LOCATION_KEY: chipped_image_loc, ANNOTATION_LOCATION_KEY: chipped_annotation_loc}
+                chipped_image_loc, chipped_annotation_loc = fetch_chip(
+                    reference_id
+                )
+                if chipped_image_loc:
+                    yield {
+                        IMAGE_LOCATION_KEY: chipped_image_loc,
+                        ANNOTATION_LOCATION_KEY: chipped_annotation_loc,
+                    }
                     continue
                 x1 = x0 + chip_size
                 y1 = y0 + chip_size
                 chipped_image = image.crop((x0, y0, x1, y1))
-                chipped_annotations = chip_annotations(annotations, x0, y0, x1, y1)
-                chipped_image_loc, chipped_annotation_loc = write_chip(reference_id, chipped_image, chipped_annotations)
-                yield {IMAGE_LOCATION_KEY: chipped_image_loc, ANNOTATION_LOCATION_KEY: chipped_annotation_loc}
+                chipped_annotations = chip_annotations(
+                    annotations, x0, y0, x1, y1
+                )
+                chipped_image_loc, chipped_annotation_loc = write_chip(
+                    reference_id, chipped_image, chipped_annotations
+                )
+                yield {
+                    IMAGE_LOCATION_KEY: chipped_image_loc,
+                    ANNOTATION_LOCATION_KEY: chipped_annotation_loc,
+                }
 
     def export_embeddings(
         self,
