@@ -60,7 +60,7 @@ jobs:
             mkdir test_results
             set -e
             TEST_FILES=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings)
-            echo "$TEST_FILES" | circleci tests run --command "xargs poetry run coverage run --include=nucleus/* -m pytest -s -v --junitxml=test_results/junit.xml" --verbose 
+            echo "$TEST_FILES" | circleci tests run --command "xargs poetry run coverage run --include=nucleus/* -m pytest -s -v -o junit_family=legacy --junitxml=test_results/junit.xml" --verbose 
             poetry run coverage report
             poetry run coverage html
       - store_test_results:
@@ -76,7 +76,7 @@ jobs:
 
   pypi_publish:
     docker:
-      - image: cimg/python:3.6
+      - image: cimg/python:3.7-buster
     steps:
       - checkout # checkout source code to working directory
       - run:
