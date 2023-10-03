@@ -525,9 +525,7 @@ def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
     yield from product(ys, xs)
 
 
-def chip_annotations(
-    data: List[Dict[str, str]], x0: int, y0: int, x1: int, y1: int
-):
+def chip_annotations(data, x0: int, y0: int, x1: int, y1: int):
     annotations = []
     for annotation in data:
         geometry = annotation[GEOMETRY_KEY].copy()
