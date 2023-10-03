@@ -20,6 +20,7 @@ from nucleus.prediction import Prediction, from_json
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
+    chip_annotations,
     convert_export_payload,
     fetch_chip,
     fetch_image,
@@ -28,7 +29,6 @@ from nucleus.utils import (
     format_scale_task_info_response,
     generate_offsets,
     paginate_generator,
-    chip_annotations,
     serialize_and_write_to_presigned_url,
     write_chip,
 )

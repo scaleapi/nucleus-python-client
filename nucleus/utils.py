@@ -1,18 +1,18 @@
 """Shared stateless utility function library"""
 
 import io
-import os
 import json
+import os
 import uuid
 from collections import defaultdict
-from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
 from itertools import product
-from PIL import Image
-from botocore.exceptions import ClientError
+from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+
 import boto3
 import numpy as np
-
 import requests
+from botocore.exceptions import ClientError
+from PIL import Image
 from requests.models import HTTPError
 
 from nucleus.annotation import (
