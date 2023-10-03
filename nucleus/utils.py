@@ -6,10 +6,11 @@ import json
 import uuid
 from collections import defaultdict
 from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+from itertools import product
 from PIL import Image
+from botocore.exceptions import ClientError
 import boto3
 import numpy as np
-from itertools import product
 
 import requests
 from requests.models import HTTPError
@@ -461,14 +462,14 @@ def fetch_chip(ref_id: str):
                 s3_key + ".jpeg"
             ).load()
             image_loc = ref_id + ".jpeg"
-        except Exception:
+        except ClientError:
             return None, None
         try:
             boto3.resource("s3").Bucket(s3_bucket).Object(
                 s3_key + ".json"
             ).load()
             annotation_loc = ref_id + ".json"
-        except Exception:
+        except ClientError:
             return image_loc, None
     else:
         if os.path.exists(ref_id + ".jpeg"):
