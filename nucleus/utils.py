@@ -510,7 +510,7 @@ def write_chip(
         image.save(image_loc)
         if len(annotations) > 0:
             annotation_loc = ref_id + ".json"
-            with open(annotation_loc, "w", encoding='utf-8') as f:
+            with open(annotation_loc, "w", encoding="utf-8") as f:
                 json.dump(annotations, f, ensure_ascii=False)
         return image_loc, annotation_loc
 
