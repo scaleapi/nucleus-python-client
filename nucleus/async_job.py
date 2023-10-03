@@ -1,6 +1,7 @@
 import time
 from dataclasses import dataclass
-from typing import Dict, List
+from enum import Enum
+from typing import Dict, List, Set
 
 import requests
 
@@ -14,6 +15,29 @@ from nucleus.constants import (
 from nucleus.utils import replace_double_slashes
 
 JOB_POLLING_INTERVAL = 5
+
+
+class JobStatus(str, Enum):
+    QUEUED = "Queued"
+    RUNNING = "Running"
+    COMPLETED = "Completed"
+    ERRORED_DEPRECATED = "Errored"
+    ERRORED_SERVER = "Errored_Server"  # Server Error
+    ERRORED_USER = "Errored_User"  # User Error
+    ERRORED_PARTIAL = "Errored_Partial"  # Partially Completed
+    ERRORED_HANGING = "Errored_Hanging"  # Hanging
+    CANCELLED = "Cancelled"
+    RETRIED = "Retried"
+
+
+JOB_ERROR_PREFIX = JobStatus.ERRORED_DEPRECATED
+JOB_ERROR_STATES: Set[JobStatus] = {
+    JobStatus.ERRORED_DEPRECATED,
+    JobStatus.ERRORED_SERVER,
+    JobStatus.ERRORED_USER,
+    JobStatus.ERRORED_PARTIAL,
+    JobStatus.ERRORED_HANGING,
+}
 
 
 @dataclass
@@ -116,7 +140,9 @@ class AsyncJob:
                 f"Finished at {time.perf_counter() - start_time} s: {status}"
             )
         final_status = status
-        if final_status["status"] == "Errored":
+        if final_status["status"] in JOB_ERROR_STATES or final_status[
+            "status"
+        ].startswith(JOB_ERROR_PREFIX):
             raise JobError(final_status, self)
 
     @classmethod
