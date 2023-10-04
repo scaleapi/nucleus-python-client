@@ -17,12 +17,19 @@ from nucleus.constants import (
     VIDEO_URL_KEY,
 )
 from tests.helpers import (
+    TEST_VIDEO_DATASET_NAME,
     TEST_VIDEO_ITEMS,
     TEST_VIDEO_SCENES,
     TEST_VIDEO_SCENES_INVALID_URLS,
     TEST_VIDEO_SCENES_REPEAT_REF_IDS,
     assert_partial_equality,
 )
+
+
+@pytest.fixture()
+def dataset_video_scene(CLIENT):
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME, is_scene=True)
+    yield ds
 
 
 def test_video_scene_property_methods():
@@ -83,14 +90,14 @@ def test_video_scene_add_item():
 
 
 @pytest.mark.integration
-def test_video_scene_upload_async(dataset_scene):
+def test_video_scene_upload_async(dataset_video_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
 
     update = payload[UPDATE_KEY]
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
 
@@ -101,7 +108,7 @@ def test_video_scene_upload_async(dataset_scene):
         "message": {
             "scene_upload_progress": {
                 "errors": [],
-                "dataset_id": dataset_scene.id,
+                "dataset_id": dataset_video_scene.id,
                 "new_scenes": len(scenes),
                 "ignored_scenes": 0,
                 "scenes_errored": 0,
@@ -115,7 +122,7 @@ def test_video_scene_upload_async(dataset_scene):
         "job_type": "uploadVideoScene",
     }
 
-    uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes = dataset_video_scene.scenes
     uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
@@ -129,38 +136,38 @@ def test_video_scene_upload_async(dataset_scene):
 
 
 @pytest.mark.integration
-def test_repeat_refid_video_scene_upload_async(dataset_scene):
+def test_repeat_refid_video_scene_upload_async(dataset_video_scene):
     payload = TEST_VIDEO_SCENES_REPEAT_REF_IDS
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
 
     with pytest.raises(JobError):
         job.sleep_until_complete()
 
 
 @pytest.mark.integration
-def test_invalid_url_video_scene_upload_async(dataset_scene):
+def test_invalid_url_video_scene_upload_async(dataset_video_scene):
     payload = TEST_VIDEO_SCENES_INVALID_URLS
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
     with pytest.raises(JobError):
         job.sleep_until_complete()
 
 
 @pytest.mark.integration
-def test_video_scene_upload_and_update(dataset_scene):
+def test_video_scene_upload_and_update(dataset_video_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
 
@@ -171,7 +178,7 @@ def test_video_scene_upload_and_update(dataset_scene):
     }
     assert_partial_equality(expected, status)
 
-    uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes = dataset_video_scene.scenes
     uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
@@ -183,7 +190,7 @@ def test_video_scene_upload_and_update(dataset_scene):
         for u, o in zip(uploaded_scenes, scenes)
     )
 
-    job2 = dataset_scene.append(scenes, update=True, asynchronous=True)
+    job2 = dataset_video_scene.append(scenes, update=True, asynchronous=True)
     job2.sleep_until_complete()
     status2 = job2.status()
 
@@ -196,17 +203,17 @@ def test_video_scene_upload_and_update(dataset_scene):
 
 
 @pytest.mark.integration
-def test_video_scene_deletion(dataset_scene):
+def test_video_scene_deletion(dataset_video_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
 
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
 
-    uploaded_scenes = dataset_scene.scenes
+    uploaded_scenes = dataset_video_scene.scenes
     uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
@@ -215,43 +222,45 @@ def test_video_scene_deletion(dataset_scene):
     )
 
     for scene in uploaded_scenes:
-        dataset_scene.delete_scene(scene.reference_id)
+        dataset_video_scene.delete_scene(scene.reference_id)
     time.sleep(1)
-    scenes = dataset_scene.scenes
+    scenes = dataset_video_scene.scenes
     assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
 
 
 @pytest.mark.integration
-def test_video_scene_metadata_update(dataset_scene):
+def test_video_scene_metadata_update(dataset_video_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
 
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
 
     scene_ref_id = scenes[0].reference_id
     additional_metadata = {"some_new_key": 123}
-    dataset_scene.update_scene_metadata({scene_ref_id: additional_metadata})
+    dataset_video_scene.update_scene_metadata(
+        {scene_ref_id: additional_metadata}
+    )
     expected_new_metadata = {**scenes[0].metadata, **additional_metadata}
 
-    updated_scene = dataset_scene.get_scene(scene_ref_id)
+    updated_scene = dataset_video_scene.get_scene(scene_ref_id)
     actual_metadata = updated_scene.metadata
     assert expected_new_metadata == actual_metadata
 
 
 @pytest.mark.integration
-def test_video_scene_upload_and_export(dataset_scene):
+def test_video_scene_upload_and_export(dataset_video_scene):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
 
     for scene in scenes:
-        get_scene_result = dataset_scene.get_scene(scene.reference_id)
+        get_scene_result = dataset_video_scene.get_scene(scene.reference_id)
         assert scene.to_payload() == get_scene_result.to_payload()
