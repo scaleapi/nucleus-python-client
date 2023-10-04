@@ -34,11 +34,11 @@ TEST_IMG_URLS = [
 ]
 
 TEST_POINTCLOUD_URLS = [
-    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-0.json",
-    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-1.json",
-    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-2.json",
-    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-3.json",
-    "https://scaleapi-cust-lidar.s3.us-west-1.amazonaws.com/test-scale/frame-4.json",
+    "https://scale-dev.s3.us-west-2.amazonaws.com/nucleus/sdk/test_assets/frame-0.json",
+    "https://scale-dev.s3.us-west-2.amazonaws.com/nucleus/sdk/test_assets/frame-1.json",
+    "https://scale-dev.s3.us-west-2.amazonaws.com/nucleus/sdk/test_assets/frame-2.json",
+    "https://scale-dev.s3.us-west-2.amazonaws.com/nucleus/sdk/test_assets/frame-3.json",
+    "https://scale-dev.s3.us-west-2.amazonaws.com/nucleus/sdk/test_assets/frame-4.json",
 ]
 
 TEST_VIDEO_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/video.mp4"
