@@ -33,14 +33,22 @@ def dataset_video_scene(CLIENT):
 
 
 @pytest.fixture(scope="module")
+def dataset_video_module(CLIENT):
+    ds = CLIENT.create_dataset(
+        TEST_VIDEO_DATASET_NAME + " module scope", is_scene=True
+    )
+    yield ds
+
+
+@pytest.fixture(scope="module")
 @pytest.mark.integration
-def video_scenes(dataset_video_scene):
+def video_scenes(dataset_video_module):
     payload = TEST_VIDEO_SCENES
     scenes = [
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_module.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     yield scenes
 
@@ -173,8 +181,8 @@ def test_invalid_url_video_scene_upload_async(dataset_video_scene):
 
 
 @pytest.mark.integration
-def test_video_scene_upload_and_update(dataset_video_scene, video_scenes):
-    job2 = dataset_video_scene.append(
+def test_video_scene_upload_and_update(dataset_video_module, video_scenes):
+    job2 = dataset_video_module.append(
         video_scenes, update=True, asynchronous=True
     )
     job2.sleep_until_complete()
@@ -188,24 +196,24 @@ def test_video_scene_upload_and_update(dataset_video_scene, video_scenes):
 
 
 @pytest.mark.integration
-def test_video_scene_metadata_update(dataset_video_scene, video_scenes):
+def test_video_scene_metadata_update(dataset_video_module, video_scenes):
     scenes = video_scenes
     scene_ref_id = scenes[0].reference_id
     additional_metadata = {"some_new_key": 123}
-    dataset_video_scene.update_scene_metadata(
+    dataset_video_module.update_scene_metadata(
         {scene_ref_id: additional_metadata}
     )
     expected_new_metadata = {**scenes[0].metadata, **additional_metadata}
 
-    updated_scene = dataset_video_scene.get_scene(scene_ref_id)
+    updated_scene = dataset_video_module.get_scene(scene_ref_id)
     actual_metadata = updated_scene.metadata
     assert expected_new_metadata == actual_metadata
 
 
 @pytest.mark.integration
-def test_video_scene_upload_and_export(dataset_video_scene, video_scenes):
+def test_video_scene_upload_and_export(dataset_video_module, video_scenes):
     scenes = video_scenes
 
     for scene in scenes:
-        get_scene_result = dataset_video_scene.get_scene(scene.reference_id)
+        get_scene_result = dataset_video_module.get_scene(scene.reference_id)
         assert scene.to_payload() == get_scene_result.to_payload()
