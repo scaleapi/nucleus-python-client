@@ -12,7 +12,7 @@ jobs:
       # python version we have to support.
       - image: python:3.7-buster
     resource_class: medium
-    parallelism: 4
+    parallelism: 6
     steps:
       - checkout # checkout source code to working directory
       - run:
@@ -59,8 +59,8 @@ jobs:
           command: | # Run test suite, uses NUCLEUS_TEST_API_KEY env variable
             mkdir test_results
             set -e
-            TEST_FILES=$(circleci tests glob "tests/**/test_*.py" | circleci tests split --split-by=timings)
-            echo "$TEST_FILES" | circleci tests run --command "xargs poetry run coverage run --include=nucleus/* -m pytest -s -v -o junit_family=legacy --junitxml=test_results/junit.xml" --verbose 
+            TEST_FILES=$(circleci tests glob "tests/**/test_*.py")
+            echo "$TEST_FILES" | circleci tests run --command "xargs poetry run coverage run --include=nucleus/* -m pytest -s -v -o junit_family=legacy --junitxml=test_results/junit.xml" --verbose --split-by=timings
             poetry run coverage report
             poetry run coverage html
       - store_test_results:
