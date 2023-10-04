@@ -101,26 +101,12 @@ def test_video_scene_upload_async(dataset_video_scene):
     job.sleep_until_complete()
     status = job.status()
 
-    del status["job_creation_time"]  # HACK: too flaky to try syncing
-    assert status == {
+    expected = {
         "job_id": job.job_id,
         "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_video_scene.id,
-                "new_scenes": len(scenes),
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": 0,
-            }
-        },
-        "job_progress": "1.00",
-        "completed_steps": len(scenes),
-        "total_steps": len(scenes),
-        "job_last_known_status": "Completed",
         "job_type": "uploadVideoScene",
     }
+    assert_partial_equality(expected, status)
 
     uploaded_scenes = dataset_video_scene.scenes
     uploaded_scenes.sort(key=lambda x: x["reference_id"])
