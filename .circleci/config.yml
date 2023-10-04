@@ -12,7 +12,7 @@ jobs:
       # python version we have to support.
       - image: python:3.7-buster
     resource_class: medium
-    parallelism: 6
+    parallelism: 4
     steps:
       - checkout # checkout source code to working directory
       - run:
