@@ -40,8 +40,10 @@ def dataset_scene(CLIENT):
 
 
 @pytest.fixture()
-def dataset_item(CLIENT):
-    ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=False)
+def dataset_non_scne(CLIENT):
+    ds = CLIENT.create_dataset(
+        TEST_DATASET_3D_NAME + " is_scene=False", is_scene=False
+    )
     yield ds
 
 
@@ -458,7 +460,7 @@ def test_scene_deletion(dataset_scene):
 
 
 @pytest.mark.integration
-def test_scene_upload_async_item_dataset(dataset_item):
+def test_scene_upload_async_item_dataset(dataset_non_scne):
     payload = TEST_LIDAR_SCENES
     scenes = [
         LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
@@ -466,7 +468,7 @@ def test_scene_upload_async_item_dataset(dataset_item):
     update = payload[UPDATE_KEY]
 
     with pytest.raises(Exception):
-        dataset_item.append(scenes, update=update, asynchronous=True)
+        dataset_non_scne.append(scenes, update=update, asynchronous=True)
 
 
 @pytest.mark.integration
