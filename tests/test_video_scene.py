@@ -62,7 +62,7 @@ def video_scenes(dataset_video_module):
 
     for scene in uploaded_scenes:
         dataset_video_module.delete_scene(scene.reference_id)
-    time.sleep(2)
+    time.sleep(4)
     assert (
         len(dataset_video_module.scenes) == 0
     ), f"Expected to delete all scenes, got: {dataset_video_module.scenes}"

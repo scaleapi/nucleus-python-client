@@ -39,12 +39,56 @@ def dataset_scene(CLIENT):
     yield ds
 
 
+@pytest.fixture(scope="module")
+def dataset_scene_module(CLIENT):
+    ds = CLIENT.create_dataset(TEST_DATASET_3D_NAME, is_scene=True)
+    yield ds
+
+
 @pytest.fixture()
-def dataset_non_scne(CLIENT):
+def dataset_non_scene(CLIENT):
     ds = CLIENT.create_dataset(
         TEST_DATASET_3D_NAME + " is_scene=False", is_scene=False
     )
     yield ds
+
+
+@pytest.fixture(scope="module")
+@pytest.mark.integration
+def scenes_fixture(dataset_scene_module):
+    payload = TEST_LIDAR_SCENES
+    scenes = [
+        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
+    ]
+    update = payload[UPDATE_KEY]
+
+    job = dataset_scene_module.append(scenes, update=update, asynchronous=True)
+    job.sleep_until_complete()
+    status = job.status()
+
+    expected = {
+        "job_id": job.job_id,
+        "status": "Completed",
+    }
+    assert_partial_equality(expected, status)
+
+    uploaded_scenes = dataset_scene_module.scenes
+    assert len(uploaded_scenes) == len(scenes)
+    assert all(
+        u["reference_id"] == o.reference_id
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+    assert all(
+        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
+        for u, o in zip(uploaded_scenes, scenes)
+    )
+    yield scenes
+
+    for scene in uploaded_scenes:
+        dataset_scene_module.delete_scene(scene.reference_id)
+    time.sleep(5)
+    scenes = dataset_scene_module.scenes
+    assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
 
 
 def test_frame_add_item():
@@ -254,213 +298,27 @@ def test_scene_add_frame():
     }
 
 
-@pytest.mark.skip("Deactivated sync upload for scenes")
-def test_scene_upload_sync(dataset_scene):
-    payload = TEST_LIDAR_SCENES
-    scenes = [
-        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
-    ]
-    update = payload[UPDATE_KEY]
-
-    response = dataset_scene.append(scenes, update=update)
-
-    first_scene = dataset_scene.get_scene(scenes[0].reference_id)
-
-    assert first_scene == scenes[0]
-    first_scene_modified = copy.deepcopy(first_scene)
-    first_scene_modified.reference_id = "WRONG!"
-    assert first_scene_modified != scenes[0]
-
-    assert response["dataset_id"] == dataset_scene.id
-    assert response["new_scenes"] == len(scenes)
-
-    uploaded_scenes = dataset_scene.scenes
-    assert len(uploaded_scenes) == len(scenes)
-    assert all(
-        u["reference_id"] == o.reference_id
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-    assert all(
-        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-
-
-@pytest.mark.skip("Deactivated sync upload for scenes")
 @pytest.mark.integration
-def test_scene_and_cuboid_upload_sync(dataset_scene):
-    payload = TEST_LIDAR_SCENES
-    scenes = [
-        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
-    ]
-    update = payload[UPDATE_KEY]
-
-    response = dataset_scene.append(scenes, update=update)
-
-    assert response["dataset_id"] == dataset_scene.id
-    assert response["new_scenes"] == len(scenes)
-
-    uploaded_scenes = dataset_scene.scenes
-    assert len(uploaded_scenes) == len(scenes)
-    assert all(
-        u["reference_id"] == o.reference_id
-        for u, o in zip(uploaded_scenes, scenes)
+def test_scene_upload_and_update(dataset_scene_module, scenes_fixture):
+    update_scenes = scenes_fixture
+    for scene in update_scenes:
+        scene.metadata.update({"new_key": "new_value"})
+    job = dataset_scene_module.append(
+        update_scenes, update=True, asynchronous=True
     )
-    assert all(
-        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-
-    lidar_item_ref = payload[SCENES_KEY][0][FRAMES_KEY][0]["lidar"][
-        REFERENCE_ID_KEY
-    ]
-    TEST_CUBOID_ANNOTATIONS[0][REFERENCE_ID_KEY] = lidar_item_ref
-
-    annotations = [CuboidAnnotation.from_json(TEST_CUBOID_ANNOTATIONS[0])]
-    response = dataset_scene.annotate(annotations)
-
-    assert response["dataset_id"] == dataset_scene.id
-    assert response["annotations_processed"] == len(annotations)
-    assert response["annotations_ignored"] == 0
-
-    response_annotations = dataset_scene.refloc(lidar_item_ref)[
-        ANNOTATIONS_KEY
-    ]["cuboid"]
-    assert len(response_annotations) == 1
-    assert_cuboid_annotation_matches_dict(
-        response_annotations[0], TEST_CUBOID_ANNOTATIONS[0]
-    )
-
-
-@pytest.mark.integration
-def test_scene_upload_async(dataset_scene):
-    payload = TEST_LIDAR_SCENES
-    scenes = [
-        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
-    ]
-    update = payload[UPDATE_KEY]
-
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
 
-    del status["job_creation_time"]  # HACK: too flaky to try syncing
     expected = {
         "job_id": job.job_id,
         "status": "Completed",
+        "job_type": "uploadLidarScene",
     }
     assert_partial_equality(expected, status)
 
-    uploaded_scenes = dataset_scene.scenes
-    assert len(uploaded_scenes) == len(scenes)
-    assert all(
-        u["reference_id"] == o.reference_id
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-    assert all(
-        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-
 
 @pytest.mark.integration
-def test_scene_upload_and_update(dataset_scene):
-    payload = TEST_LIDAR_SCENES
-    scenes = [
-        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
-    ]
-    update = payload[UPDATE_KEY]
-
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
-    job.sleep_until_complete()
-    status = job.status()
-
-    del status["job_creation_time"]  # HACK: too flaky to try syncing
-    assert status == {
-        "job_id": job.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": len(scenes),
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": 0,
-            }
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-        "job_last_known_status": "Completed",
-        "job_type": "uploadLidarScene",
-    }
-
-    uploaded_scenes = dataset_scene.scenes
-    assert len(uploaded_scenes) == len(scenes)
-    assert all(
-        u["reference_id"] == o.reference_id
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-    assert all(
-        u["metadata"] == o.metadata or (not u["metadata"] and not o.metadata)
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-
-    job2 = dataset_scene.append(scenes, update=True, asynchronous=True)
-    job2.sleep_until_complete()
-    status2 = job2.status()
-
-    del status2["job_creation_time"]  # HACK: too flaky to try syncing
-    assert status2 == {
-        "job_id": job2.job_id,
-        "status": "Completed",
-        "message": {
-            "scene_upload_progress": {
-                "errors": [],
-                "dataset_id": dataset_scene.id,
-                "new_scenes": 0,
-                "ignored_scenes": 0,
-                "scenes_errored": 0,
-                "updated_scenes": len(scenes),
-            }
-        },
-        "job_progress": "1.00",
-        "completed_steps": 1,
-        "total_steps": 1,
-        "job_last_known_status": "Completed",
-        "job_type": "uploadLidarScene",
-    }
-
-
-@pytest.mark.integration
-@pytest.mark.xfail(reason="This test is flaky")
-def test_scene_deletion(dataset_scene):
-    payload = TEST_LIDAR_SCENES
-    scenes = [
-        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
-    ]
-    update = payload[UPDATE_KEY]
-
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
-    job.sleep_until_complete()
-
-    uploaded_scenes = dataset_scene.scenes
-    assert len(uploaded_scenes) == len(scenes)
-    assert all(
-        u["reference_id"] == o.reference_id
-        for u, o in zip(uploaded_scenes, scenes)
-    )
-
-    for scene in uploaded_scenes:
-        dataset_scene.delete_scene(scene.reference_id)
-    time.sleep(1)
-    scenes = dataset_scene.scenes
-    assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
-
-
-@pytest.mark.integration
-def test_scene_upload_async_item_dataset(dataset_non_scne):
+def test_scene_upload_async_item_dataset(dataset_non_scene):
     payload = TEST_LIDAR_SCENES
     scenes = [
         LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
@@ -468,26 +326,22 @@ def test_scene_upload_async_item_dataset(dataset_non_scne):
     update = payload[UPDATE_KEY]
 
     with pytest.raises(Exception):
-        dataset_non_scne.append(scenes, update=update, asynchronous=True)
+        dataset_non_scene.append(scenes, update=update, asynchronous=True)
 
 
 @pytest.mark.integration
-def test_scene_metadata_update(dataset_scene):
-    payload = TEST_LIDAR_SCENES
-    scenes = [
-        LidarScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
-    ]
-    update = payload[UPDATE_KEY]
-
-    job = dataset_scene.append(scenes, update=update, asynchronous=True)
-    job.sleep_until_complete()
-
-    scene_ref_id = scenes[0].reference_id
+def test_scene_metadata_update(dataset_scene_module, scenes_fixture):
+    scene_ref_id = scenes_fixture[0].reference_id
     additional_metadata = {"some_new_key": 123}
-    dataset_scene.update_scene_metadata({scene_ref_id: additional_metadata})
+    dataset_scene_module.update_scene_metadata(
+        {scene_ref_id: additional_metadata}
+    )
 
-    expected_new_metadata = {**scenes[0].metadata, **additional_metadata}
+    expected_new_metadata = {
+        **scenes_fixture[0].metadata,
+        **additional_metadata,
+    }
 
-    updated_scene = dataset_scene.get_scene(scene_ref_id)
+    updated_scene = dataset_scene_module.get_scene(scene_ref_id)
     actual_metadata = updated_scene.metadata
     assert expected_new_metadata == actual_metadata
