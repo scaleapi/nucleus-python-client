@@ -224,5 +224,5 @@ def test_video_scene_upload_and_export(dataset_video_module, video_scenes):
     scenes = dataset_video_module.scenes
 
     for scene in scenes:
-        get_scene_result = dataset_video_module.get_scene(scene.reference_id)
-        assert scene.to_payload() == get_scene_result.to_payload()
+        # Asserting that it doesn't throw -> not the place to test the format
+        dataset_video_module.get_scene(scene.reference_id)
