@@ -52,7 +52,7 @@ def video_scenes(dataset_video_module):
     job.sleep_until_complete()
     yield scenes
 
-    uploaded_scenes = dataset_video_scene.scenes
+    uploaded_scenes = dataset_video_module.scenes
     uploaded_scenes.sort(key=lambda x: x["reference_id"])
     assert len(uploaded_scenes) == len(scenes)
     assert all(
@@ -61,7 +61,7 @@ def video_scenes(dataset_video_module):
     )
 
     for scene in uploaded_scenes:
-        dataset_video_scene.delete_scene(scene.reference_id)
+        dataset_video_module.delete_scene(scene.reference_id)
     assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
 
 
@@ -155,6 +155,7 @@ def test_video_scene_upload_async(dataset_video_scene):
 
 
 @pytest.mark.integration
+@pytest.mark.xfail(reason="SFN doesn't throw on validation error - 05.10.2023")
 def test_repeat_refid_video_scene_upload_async(dataset_video_scene):
     payload = TEST_VIDEO_SCENES_REPEAT_REF_IDS
     scenes = [
