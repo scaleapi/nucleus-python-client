@@ -62,7 +62,10 @@ def video_scenes(dataset_video_module):
 
     for scene in uploaded_scenes:
         dataset_video_module.delete_scene(scene.reference_id)
-    assert len(scenes) == 0, f"Expected to delete all scenes, got: {scenes}"
+    time.sleep(2)
+    assert (
+        len(dataset_video_module.scenes) == 0
+    ), f"Expected to delete all scenes, got: {dataset_video_module.scenes}"
 
 
 def test_video_scene_property_methods():
@@ -213,7 +216,10 @@ def test_video_scene_metadata_update(dataset_video_module, video_scenes):
 
 @pytest.mark.integration
 def test_video_scene_upload_and_export(dataset_video_module, video_scenes):
-    scenes = video_scenes
+    # We re-use the original fixture to avoid long running ingests - this sleep is added
+    # to ensure that the scene update has propogated to the readers
+    time.sleep(2)
+    scenes = dataset_video_module.scenes
 
     for scene in scenes:
         get_scene_result = dataset_video_module.get_scene(scene.reference_id)
