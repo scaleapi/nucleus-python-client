@@ -172,7 +172,9 @@ def test_repeat_refid_video_scene_upload_async(dataset_video_scene):
 
 
 @pytest.mark.integration
-@pytest.mark.xfail(reason="SFN doesn't throw on validation error - 04.10.2023")
+@pytest.mark.skip(
+    reason="This shouldn't be tested in prod - this is a unit test"
+)
 def test_invalid_url_video_scene_upload_async(dataset_video_scene):
     payload = TEST_VIDEO_SCENES_INVALID_URLS
     scenes = [
