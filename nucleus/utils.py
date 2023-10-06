@@ -53,7 +53,6 @@ from .constants import (
     SCENE_KEY,
     SEGMENTATION_TYPE,
     TYPE_KEY,
-    W_KEY,
     WIDTH_KEY,
     X_KEY,
     Y_KEY,
@@ -527,16 +526,18 @@ def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
 
 def chip_annotations(data, x0: int, y0: int, x1: int, y1: int):
     annotations = []
+    X_1_KEY = "x1"
+    Y_1_KEY = "y1"
     for annotation in data:
         geometry = annotation[GEOMETRY_KEY].copy()
-        geometry[W_KEY] = geometry[X_KEY] + geometry[WIDTH_KEY]
-        geometry[Z_KEY] = geometry[Y_KEY] + geometry[HEIGHT_KEY]
+        geometry[X_1_KEY] = geometry[X_KEY] + geometry[WIDTH_KEY]
+        geometry[Y_1_KEY] = geometry[Y_KEY] + geometry[HEIGHT_KEY]
         geometry[X_KEY] = max(min(geometry[X_KEY], x1), x0) - x0
-        geometry[W_KEY] = max(min(geometry[W_KEY], x1), x0) - x0
+        geometry[X_1_KEY] = max(min(geometry[X_1_KEY], x1), x0) - x0
         geometry[Y_KEY] = max(min(geometry[Y_KEY], y1), y0) - y0
-        geometry[Z_KEY] = max(min(geometry[Z_KEY], y1), y0) - y0
-        geometry[WIDTH_KEY] = geometry[W_KEY] - geometry[X_KEY]
-        geometry[HEIGHT_KEY] = geometry[Z_KEY] - geometry[Y_KEY]
+        geometry[Y_1_KEY] = max(min(geometry[Y_1_KEY], y1), y0) - y0
+        geometry[WIDTH_KEY] = geometry[X_1_KEY] - geometry[X_KEY]
+        geometry[HEIGHT_KEY] = geometry[Y_1_KEY] - geometry[Y_KEY]
         geometry["area"] = geometry[WIDTH_KEY] * geometry[HEIGHT_KEY]
         if geometry["area"] > 0:
             annotations.append(
