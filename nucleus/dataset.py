@@ -1979,7 +1979,6 @@ class Dataset:
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
 
-
     def query_scenes(self, query: str) -> Iterable[Scene]:
         """
         Fetches all Scenes that pertain to a given structured query.
