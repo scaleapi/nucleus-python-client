@@ -1978,6 +1978,27 @@ class Dataset:
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
 
+
+    def query_scenes(self, query: str) -> Iterable[Scene]:
+        """
+        Fetches all Scenes that pertain to a given structured query.
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+
+        Returns:
+            A list of Scene query results.
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/queryScenesPage",
+            result_key=ITEMS_KEY,
+            page_size=10000,  # max ES page size
+            query=query,
+        )
+        for item_json in json_generator:
+            yield Scene.from_json(item_json, None, True)
+
     @property
     def tracks(self) -> List[Track]:
         """Tracks unique to this dataset.
