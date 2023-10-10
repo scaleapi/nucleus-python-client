@@ -89,6 +89,7 @@ KEYPOINTS_SKELETON_KEY = "skeleton"
 LABEL_KEY = "label"
 LABELS_KEY = "labels"
 MASK_URL_KEY = "mask_url"
+MAX_ES_PAGE_SIZE= 10000  # Max number of document fetches allowed per ES page
 MAX_PAYLOAD_SIZE = 0x1FFFFFE8  # Set to max string size since we currently convert payloads to strings for processing on the server-side
 MESSAGE_KEY = "message"
 METADATA_KEY = "metadata"

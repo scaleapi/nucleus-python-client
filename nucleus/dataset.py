@@ -46,6 +46,7 @@ from .constants import (
     ITEMS_KEY,
     JOB_REQ_LIMIT,
     KEEP_HISTORY_KEY,
+    MAX_ES_PAGE_SIZE,
     MESSAGE_KEY,
     NAME_KEY,
     OBJECT_IDS_KEY,
@@ -1972,7 +1973,7 @@ class Dataset:
             client=self._client,
             endpoint=f"dataset/{self.id}/queryItemsPage",
             result_key=ITEMS_KEY,
-            page_size=10000,  # max ES page size
+            page_size=MAX_ES_PAGE_SIZE,
             query=query,
         )
         for item_json in json_generator:
@@ -1993,7 +1994,7 @@ class Dataset:
             client=self._client,
             endpoint=f"dataset/{self.id}/queryScenesPage",
             result_key=ITEMS_KEY,
-            page_size=10000,  # max ES page size
+            page_size=MAX_ES_PAGE_SIZE,
             query=query,
         )
         for item_json in json_generator:
