@@ -330,7 +330,7 @@ class Slice:
                     "type": str
                     "pending_job_count": int
                     "created_at": datetime
-                    "description": str
+                    "description": Union[str, None]
                 }
         """
         info = KeyErrorDict(
