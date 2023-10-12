@@ -141,7 +141,7 @@ class Slice:
         self._type = None
 
     def __repr__(self):
-        return f"Slice(slice_id='{self.id}', name='{self.name}', dataset_id='{self.dataset_id}')"
+        return f"Slice(slice_id='{self.id}', name='{self.name}', dataset_id='{self.dataset_id}', description='{self.description}')"
 
     def __eq__(self, other):
         if self.id == other.id:
