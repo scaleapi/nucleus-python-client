@@ -135,12 +135,13 @@ class Slice:
         self._client = client
         self._name = None
         self._dataset_id = None
+        self._description = None
         self._created_at = None
         self._pending_job_count = None
         self._type = None
 
     def __repr__(self):
-        return f"Slice(slice_id='{self.id}', name={self._name}, dataset_id={self._dataset_id})"
+        return f"Slice(slice_id='{self.id}', name='{self.name}', dataset_id='{self.dataset_id}')"
 
     def __eq__(self, other):
         if self.id == other.id:
@@ -200,6 +201,14 @@ class Slice:
         if self._name is None:
             self._name = self.info()["name"]
         return self._name
+
+    @property
+    def description(self):
+        """Slice description, plain text."""
+        if self._description is None:
+            self._description = self.info()["description"]
+        return self._description
+
 
     @property
     def dataset_id(self):
@@ -318,6 +327,10 @@ class Slice:
                     "name": Union[str, int],
                     "slice_id": str,
                     "dataset_id": str,
+                    "type": str
+                    "pending_job_count": int
+                    "created_at": datetime
+                    "description": str
                 }
         """
         info = KeyErrorDict(
@@ -332,6 +345,7 @@ class Slice:
         self._created_at = info["created_at"]
         self._pending_job_count = info["pending_job_count"]
         self._type = info["type"]
+        self._description = info["description"]
         return info
 
     def append(
