@@ -209,7 +209,6 @@ class Slice:
             self._description = self.info()["description"]
         return self._description
 
-
     @property
     def dataset_id(self):
         """The ID of the Dataset to which the Slice belongs."""
