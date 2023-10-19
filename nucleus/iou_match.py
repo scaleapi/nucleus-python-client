@@ -41,13 +41,13 @@ def infer_confusion_category(
 @dataclass
 class IOUMatch:
     model_run_id: str
-    model_prediction_id: str | None
-    ground_truth_annotation_id: str | None
+    model_prediction_id: str  # field is nullable
+    ground_truth_annotation_id: str  # field is nullable
     iou: int
     dataset_item_id: str
     confusion_category: ConfusionCategory
-    model_prediction_label: str | None
-    ground_truth_annotation_label: str | None
+    model_prediction_label: str  # field is nullable
+    ground_truth_annotation_label: str  # field is nullable
 
     @classmethod
     def from_json(cls, payload: dict):
