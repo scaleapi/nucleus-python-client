@@ -20,8 +20,8 @@ class ConfusionCategory(Enum):
 
 
 def infer_confusion_category(
-    ground_truth_annotation_label: str | None,
-    model_prediction_label: str | None,
+    ground_truth_annotation_label: str,
+    model_prediction_label: str,
 ):
     confusion_category = ConfusionCategory.FALSE_NEGATIVE
 
