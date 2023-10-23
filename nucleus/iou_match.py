@@ -9,6 +9,7 @@ from .constants import (
     MODEL_PREDICTION_ID_KEY,
     MODEL_PREDICTION_LABEL_KEY,
     MODEL_RUN_ID_KEY,
+    TRUE_POSITIVE_KEY,
 )
 
 
@@ -19,12 +20,16 @@ class ConfusionCategory(Enum):
 
 
 def infer_confusion_category(
+    true_positive: bool,
     ground_truth_annotation_label: str,
     model_prediction_label: str,
 ):
     confusion_category = ConfusionCategory.FALSE_NEGATIVE
 
-    if model_prediction_label == ground_truth_annotation_label:
+    if (
+        true_positive
+        or model_prediction_label == ground_truth_annotation_label
+    ):
         confusion_category = ConfusionCategory.TRUE_POSITIVE
     elif model_prediction_label is not None:
         confusion_category = ConfusionCategory.FALSE_POSITIVE
@@ -46,11 +51,14 @@ class IOUMatch:
 
     @classmethod
     def from_json(cls, payload: dict):
+        is_true_positive = payload.get(TRUE_POSITIVE_KEY, False)
         model_prediction_label = payload.get(MODEL_PREDICTION_LABEL_KEY, None)
         ground_truth_annotation_label = payload.get(
             GROUND_TRUTH_ANNOTATION_LABEL_KEY, None
         )
+
         confusion_category = infer_confusion_category(
+            true_positive=is_true_positive,
             ground_truth_annotation_label=ground_truth_annotation_label,
             model_prediction_label=model_prediction_label,
         )
