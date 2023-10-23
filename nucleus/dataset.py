@@ -2015,14 +2015,14 @@ class Dataset:
     ) -> Iterable[Union[Annotation, Prediction, EvaluationMatch]]:
         """
         Fetches all objects in the dataset that pertain to a given structured query.
-        The results are either Predictions, Annotations, or Intersection over Union Matches, based on the objectType input parameter
+        The results are either Predictions, Annotations, or Evaluation Matches, based on the objectType input parameter
 
         Args:
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
             objectType: Defines the type of the object to query
 
         Returns:
-            An iterable of either Predictions, Annotations, or Intersection over Union Matches
+            An iterable of either Predictions, Annotations, or Evaluation Matches
         """
         json_generator = paginate_generator(
             client=self._client,
