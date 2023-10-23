@@ -25,12 +25,7 @@ def infer_confusion_category(
 ):
     confusion_category = ConfusionCategory.FALSE_NEGATIVE
 
-    if (
-        model_prediction_label is None
-        and ground_truth_annotation_label is None
-    ):
-        confusion_category = ConfusionCategory.TRUE_NEGATIVE
-    elif model_prediction_label == ground_truth_annotation_label:
+    if model_prediction_label == ground_truth_annotation_label:
         confusion_category = ConfusionCategory.TRUE_POSITIVE
     elif model_prediction_label is not None:
         confusion_category = ConfusionCategory.FALSE_POSITIVE
