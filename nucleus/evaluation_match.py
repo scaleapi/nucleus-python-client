@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 from .constants import (
     DATASET_ITEM_ID_KEY,
@@ -39,14 +40,39 @@ def infer_confusion_category(
 
 @dataclass
 class EvaluationMatch:
+    """
+    EvaluationMatch is a result from a model run evaluation. It can represent a true positive, false positive,
+    or false negative.
+
+    The matching only matches the strongest prediction for each annotation, so if there are multiple predictions
+    that overlap a single annotation only the one with the highest overlap metric will be matched.
+
+    The model prediction label and the ground truth annotation label can differ for true positives if there is configured
+    an allowed_label_mapping for the model run.
+
+    NOTE: There is no iou thresholding applied to these matches, so it is possible to have a true positive with a low
+    iou score. If manually rejecting matches remember that a rejected match produces both a false positive and a false
+    negative otherwise you'll skew your aggregates.
+
+    Attributes:
+        model_run_id (str): The ID of the model run that produced this match.
+        model_prediction_id (str): The ID of the model prediction that was matched. None if the match was a false negative.
+        ground_truth_annotation_id (str): The ID of the ground truth annotation that was matched. None if the match was a false positive.
+        iou (int): The intersection over union score of the match.
+        dataset_item_id (str): The ID of the dataset item that was matched.
+        confusion_category (ConfusionCategory): The confusion category of the match.
+        model_prediction_label (str): The label of the model prediction that was matched. None if the match was a false negative.
+        ground_truth_annotation_label (str): The label of the ground truth annotation that was matched. None if the match was a false positive.
+    """
+
     model_run_id: str
-    model_prediction_id: str  # field is nullable
-    ground_truth_annotation_id: str  # field is nullable
-    iou: int
+    model_prediction_id: Optional[str]  # field is nullable
+    ground_truth_annotation_id: Optional[str]  # field is nullable
+    iou: float
     dataset_item_id: str
     confusion_category: ConfusionCategory
-    model_prediction_label: str  # field is nullable
-    ground_truth_annotation_label: str  # field is nullable
+    model_prediction_label: Optional[str]  # field is nullable
+    ground_truth_annotation_label: Optional[str]  # field is nullable
 
     @classmethod
     def from_json(cls, payload: dict):
