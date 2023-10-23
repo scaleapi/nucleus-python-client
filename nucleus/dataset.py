@@ -2011,7 +2011,10 @@ class Dataset:
             yield Scene.from_json(item_json, None, True)
 
     def query_objects(
-        self, query: str, queryType: ObjectQueryType
+        self,
+        query: str,
+        query_type: ObjectQueryType,
+        model_run_id: Optional[str] = None,
     ) -> Iterable[Union[Annotation, Prediction, EvaluationMatch]]:
         """
         Fetches all objects in the dataset that pertain to a given structured query.
@@ -2030,22 +2033,23 @@ class Dataset:
             result_key=ITEMS_KEY,
             page_size=MAX_ES_PAGE_SIZE,
             query=query,
-            patchMode=queryType,
+            patch_mode=query_type,
+            model_run_id=model_run_id,
         )
 
         for item_json in json_generator:
-            if queryType == ObjectQueryType.GROUND_TRUTH_ONLY:
+            if query_type == ObjectQueryType.GROUND_TRUTH_ONLY:
                 yield Annotation.from_json(item_json)
-            elif queryType == ObjectQueryType.PREDICTIONS_ONLY:
+            elif query_type == ObjectQueryType.PREDICTIONS_ONLY:
                 yield prediction_from_json(item_json)
-            elif queryType in [
+            elif query_type in [
                 ObjectQueryType.IOU,
                 ObjectQueryType.FALSE_POSITIVE,
                 ObjectQueryType.FALSE_NEGATIVE,
             ]:
                 yield EvaluationMatch.from_json(item_json)
             else:
-                raise ValueError("Unknown object type", queryType)
+                raise ValueError("Unknown object type", query_type)
 
     @property
     def tracks(self) -> List[Track]:
