@@ -17,7 +17,7 @@ import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
-from nucleus.iou_match import IOUMatch
+from nucleus.evaluation_match import EvaluationMatch
 from nucleus.prediction import from_json as prediction_from_json
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
@@ -2012,7 +2012,7 @@ class Dataset:
 
     def query_objects(
         self, query: str, queryType: ObjectQueryType
-    ) -> Iterable[Union[Annotation, Prediction, IOUMatch]]:
+    ) -> Iterable[Union[Annotation, Prediction, EvaluationMatch]]:
         """
         Fetches all objects in the dataset that pertain to a given structured query.
         The results are either Predictions, Annotations, or Intersection over Union Matches, based on the objectType input parameter
@@ -2043,7 +2043,7 @@ class Dataset:
                 ObjectQueryType.FALSE_POSITIVE,
                 ObjectQueryType.FALSE_NEGATIVE,
             ]:
-                yield IOUMatch.from_json(item_json)
+                yield EvaluationMatch.from_json(item_json)
             else:
                 raise ValueError("Unknown object type", queryType)
 

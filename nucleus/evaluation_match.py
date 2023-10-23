@@ -37,9 +37,8 @@ def infer_confusion_category(
     return confusion_category
 
 
-# TODO: Is there a better name for this class?
 @dataclass
-class IOUMatch:
+class EvaluationMatch:
     model_run_id: str
     model_prediction_id: str  # field is nullable
     ground_truth_annotation_id: str  # field is nullable
