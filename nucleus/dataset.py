@@ -101,13 +101,12 @@ WARN_FOR_LARGE_UPLOAD = 10000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
-# TODO: This might not be called objectType, but rather queryType?
-class ObjectType(str, Enum):
-    IOU = ("iou",)
-    FALSE_POSITIVE = ("false_positive",)
-    FALSE_NEGATIVE = ("false_negative",)
-    PREDICTIONS_ONLY = ("predictions_only",)
-    GROUND_TRUTH_ONLY = ("ground_truth_only",)
+class ObjectQueryType(str, Enum):
+    IOU = "iou"
+    FALSE_POSITIVE = "false_positive"
+    FALSE_NEGATIVE = "false_negative"
+    PREDICTIONS_ONLY = "predictions_only"
+    GROUND_TRUTH_ONLY = "ground_truth_only"
 
 
 class Dataset:
@@ -2012,7 +2011,7 @@ class Dataset:
             yield Scene.from_json(item_json, None, True)
 
     def query_objects(
-        self, query: str, objectType: ObjectType
+        self, query: str, queryType: ObjectQueryType
     ) -> Iterable[Union[Annotation, Prediction, IOUMatch]]:
         """
         Fetches all objects in the dataset that pertain to a given structured query.
@@ -2031,22 +2030,22 @@ class Dataset:
             result_key=ITEMS_KEY,
             page_size=MAX_ES_PAGE_SIZE,
             query=query,
-            patchMode=objectType,
+            patchMode=queryType,
         )
 
         for item_json in json_generator:
-            if objectType == ObjectType.GROUND_TRUTH_ONLY:
+            if queryType == ObjectQueryType.GROUND_TRUTH_ONLY:
                 yield Annotation.from_json(item_json)
-            elif objectType == ObjectType.PREDICTIONS_ONLY:
+            elif queryType == ObjectQueryType.PREDICTIONS_ONLY:
                 yield prediction_from_json(item_json)
-            elif objectType in [
-                ObjectType.IOU,
-                ObjectType.FALSE_POSITIVE,
-                ObjectType.FALSE_NEGATIVE,
+            elif queryType in [
+                ObjectQueryType.IOU,
+                ObjectQueryType.FALSE_POSITIVE,
+                ObjectQueryType.FALSE_NEGATIVE,
             ]:
                 yield IOUMatch.from_json(item_json)
             else:
-                raise ValueError("Unknown object type", objectType)
+                raise ValueError("Unknown object type", queryType)
 
     @property
     def tracks(self) -> List[Track]:
