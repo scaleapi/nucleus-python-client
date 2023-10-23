@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.16.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.4) - 2023-10-23
+
+### Added
+- Added a `query_objects` method on the Dataset class.
+- Example
+```shell
+>>> ds = client.get_dataset('ds_id')
+>>> objects = ds.query_objects('annotations.metadata.distance_to_device > 150', ObjectQueryType.GROUND_TRUTH_ONLY)
+[CuboidAnnotation(label="", dimensions={}, ...), ...]
+```
+- Added `EvaluationMatch` class to represent IOU Matches, False Positives and False Negatives retrieved through the `query_objects` method 
+
+
 ## [0.16.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.3) - 2023-10-10
 
 ### Added

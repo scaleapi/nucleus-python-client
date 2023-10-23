@@ -177,7 +177,7 @@ class EmbeddingsExportJob(AsyncJob):
 
         Parameters:
             wait_for_completion: Defines whether the call shall wait for
-            the job to complete. Defaults to True
+                the job to complete. Defaults to True
 
         Returns:
             A list of signed Scale URLs which contain batches of embeddings.
