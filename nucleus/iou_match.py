@@ -14,7 +14,6 @@ from .constants import (
 
 class ConfusionCategory(Enum):
     TRUE_POSITIVE = "true_positive"
-    TRUE_NEGATIVE = "true_negative"
     FALSE_POSITIVE = "false_positive"
     FALSE_NEGATIVE = "false_negative"
 
