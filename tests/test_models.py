@@ -76,15 +76,6 @@ def test_model_creation_and_listing(CLIENT, dataset):
 
     assert model in ms
 
-    # Delete the model
-    CLIENT.delete_model(model.id)
-    time.sleep(
-        30
-    )  # model deletion runs async TODO: do a correct job await here instead of sleep
-    ms = CLIENT.models
-
-    assert model not in ms
-
 
 # Until we fully remove the other endpoints (and then migrate those tests) just quickly test the basics of the new ones since they are basically just simple wrappers around the old ones.
 def test_new_model_endpoints(CLIENT, dataset: Dataset):

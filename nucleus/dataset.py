@@ -1,5 +1,6 @@
 import datetime
 import os
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,7 +17,8 @@ import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
-from nucleus.prediction import Prediction, from_json
+from nucleus.evaluation_match import EvaluationMatch
+from nucleus.prediction import from_json as prediction_from_json
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
@@ -55,6 +57,7 @@ from .constants import (
     ITEMS_KEY,
     JOB_REQ_LIMIT,
     KEEP_HISTORY_KEY,
+    MAX_ES_PAGE_SIZE,
     MESSAGE_KEY,
     NAME_KEY,
     OBJECT_IDS_KEY,
@@ -87,6 +90,7 @@ from .payload_constructor import (
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
+from .prediction import Prediction
 from .scene import LidarScene, Scene, VideoScene, check_all_scene_paths_remote
 from .slice import (
     Slice,
@@ -106,6 +110,14 @@ if TYPE_CHECKING:
 
 WARN_FOR_LARGE_UPLOAD = 10000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
+
+
+class ObjectQueryType(str, Enum):
+    IOU = "iou"
+    FALSE_POSITIVE = "false_positive"
+    FALSE_NEGATIVE = "false_negative"
+    PREDICTIONS_ONLY = "predictions_only"
+    GROUND_TRUTH_ONLY = "ground_truth_only"
 
 
 class Dataset:
@@ -1760,7 +1772,7 @@ class Dataset:
         :class:`Category<CategoryPrediction>`, and :class:`Category<SceneCategoryPrediction>` predictions. Cuboid predictions
         can only be uploaded to a :class:`pointcloud DatasetItem<LidarScene>`.
 
-        When uploading an prediction, you need to specify which item you are
+        When uploading a prediction, you need to specify which item you are
         annotating via the reference_id you provided when uploading the image
         or pointcloud.
 
@@ -1933,7 +1945,7 @@ class Dataset:
                 :class:`KeypointsPrediction` \
             ]: Model prediction object with the specified annotation ID.
         """
-        return from_json(
+        return prediction_from_json(
             self._client.make_request(
                 payload=None,
                 route=f"dataset/{self.id}/model/{model.id}/loc/{reference_id}/{annotation_id}",
@@ -2052,11 +2064,72 @@ class Dataset:
             client=self._client,
             endpoint=f"dataset/{self.id}/queryItemsPage",
             result_key=ITEMS_KEY,
-            page_size=10000,  # max ES page size
+            page_size=MAX_ES_PAGE_SIZE,
             query=query,
         )
         for item_json in json_generator:
             yield DatasetItem.from_json(item_json)
+
+    def query_scenes(self, query: str) -> Iterable[Scene]:
+        """
+        Fetches all Scenes that pertain to a given structured query.
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+
+        Returns:
+            A list of Scene query results.
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/queryScenesPage",
+            result_key=ITEMS_KEY,
+            page_size=MAX_ES_PAGE_SIZE,
+            query=query,
+        )
+        for item_json in json_generator:
+            yield Scene.from_json(item_json, None, True)
+
+    def query_objects(
+        self,
+        query: str,
+        query_type: ObjectQueryType,
+        model_run_id: Optional[str] = None,
+    ) -> Iterable[Union[Annotation, Prediction, EvaluationMatch]]:
+        """
+        Fetches all objects in the dataset that pertain to a given structured query.
+        The results are either Predictions, Annotations, or Evaluation Matches, based on the objectType input parameter
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+            objectType: Defines the type of the object to query
+
+        Returns:
+            An iterable of either Predictions, Annotations, or Evaluation Matches
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/queryObjectsPage",
+            result_key=ITEMS_KEY,
+            page_size=MAX_ES_PAGE_SIZE,
+            query=query,
+            patch_mode=query_type,
+            model_run_id=model_run_id,
+        )
+
+        for item_json in json_generator:
+            if query_type == ObjectQueryType.GROUND_TRUTH_ONLY:
+                yield Annotation.from_json(item_json)
+            elif query_type == ObjectQueryType.PREDICTIONS_ONLY:
+                yield prediction_from_json(item_json)
+            elif query_type in [
+                ObjectQueryType.IOU,
+                ObjectQueryType.FALSE_POSITIVE,
+                ObjectQueryType.FALSE_NEGATIVE,
+            ]:
+                yield EvaluationMatch.from_json(item_json)
+            else:
+                raise ValueError("Unknown object type", query_type)
 
     @property
     def tracks(self) -> List[Track]:
