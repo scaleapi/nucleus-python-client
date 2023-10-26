@@ -1489,6 +1489,8 @@ class Dataset:
             item_ref_id = item[ITEM_KEY][REFERENCE_ID_KEY]
             for x0, y0 in generate_offsets(w, h, chip_size, stride_size):
                 x0, y0 = int(x0), int(y0)
+                x1 = x0 + chip_size
+                y1 = y0 + chip_size
                 ref_id = f"{cache_directory}/{item_ref_id}_{x0}_{y0}_{x1}_{y1}"
                 chipped_image_loc, chipped_annotation_loc = fetch_chip(ref_id)
                 if chipped_image_loc:
@@ -1497,8 +1499,6 @@ class Dataset:
                         ANNOTATION_LOCATION_KEY: chipped_annotation_loc,
                     }
                     continue
-                x1 = x0 + chip_size
-                y1 = y0 + chip_size
                 chipped_image = image.crop((x0, y0, x1, y1))
                 chipped_annotations = chip_annotations(
                     annotations, x0, y0, x1, y1
