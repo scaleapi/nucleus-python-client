@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.16.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.5) - 2023-10-27
+
+### Added
+- Allow datasets to be created in "private mode". For example, `client.create_dataset('name', is_private=True)`.
+- When set to True, images of the dataset will not be mirrored into Scale's infrastructure. As a result of this, customers will
+have to modify their bucket access policy with Scale.
+
+
 ## [0.16.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.4) - 2023-10-12
 
 ### Added
