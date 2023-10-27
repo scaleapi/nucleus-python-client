@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.16.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.4) - 2023-10-12
+
+### Added
+- Added a `description` to the slice info. 
+
 ## [0.16.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.4) - 2023-10-23
 
 ### Added
