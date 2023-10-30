@@ -482,7 +482,7 @@ class KeypointsAnnotation(Annotation):
         label (str): The label for this annotation.
         keypoints (List[:class:`Keypoint`]): The list of keypoints objects.
         names (List[str]): A list that corresponds to the names of each keypoint.
-        skeleton (List[List[int]]): A list of 2-length lists indicating a beginning and ending
+        skeleton (Optional[List[List[int]]]): A list of 2-length lists indicating a beginning and ending
             index for each line segment in the skeleton of this keypoint label.
         reference_id (str): User-defined ID of the image to which to apply this
             annotation.
@@ -502,8 +502,8 @@ class KeypointsAnnotation(Annotation):
     label: str
     keypoints: List[Keypoint]
     names: List[str]
-    skeleton: List[List[int]]
     reference_id: str
+    skeleton: Optional[List[List[int]]] = None
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
@@ -524,29 +524,37 @@ class KeypointsAnnotation(Annotation):
                 seen.add(name)
 
         max_segment_index = len(self.keypoints) - 1
-        for segment in self.skeleton:
-            if len(segment) != 2:
-                raise ValueError(
-                    "The keypoints skeleton must contain a list of line segments with exactly 2 indices"
-                )
-            for index in segment:
-                if index > max_segment_index:
+
+        if self.skeleton is not None:
+            for segment in self.skeleton:
+                if len(segment) != 2:
                     raise ValueError(
-                        f"The skeleton index {index} is not a valid keypoint index"
+                        "The keypoints skeleton must contain a list of line segments with exactly 2 indices"
                     )
+                for index in segment:
+                    if index > max_segment_index:
+                        raise ValueError(
+                            f"The skeleton index {index} is not a valid keypoint index"
+                        )
         if self.annotation_id is None:
             self.annotation_id = f"{self.label}-{self.reference_id}-keypoints"
 
     @classmethod
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
+        skeleton = (
+            geometry[KEYPOINTS_SKELETON_KEY]
+            if KEYPOINTS_SKELETON_KEY in geometry
+            else None
+        )
+
         return cls(
             label=payload.get(LABEL_KEY, 0),
             keypoints=[
                 Keypoint.from_json(_) for _ in geometry.get(KEYPOINTS_KEY, [])
             ],
             names=geometry[KEYPOINTS_NAMES_KEY],
-            skeleton=geometry[KEYPOINTS_SKELETON_KEY],
+            skeleton=skeleton,
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
