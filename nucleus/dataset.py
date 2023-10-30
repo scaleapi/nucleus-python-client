@@ -37,7 +37,6 @@ from .constants import (
     BACKFILL_JOB_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
-    DATASET_IS_PRIVATE_KEY,
     DATASET_ITEM_IDS_KEY,
     DATASET_ITEMS_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
@@ -145,7 +144,6 @@ class Dataset:
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
         self._name = name
         self._is_scene = None
-        self._is_private = None
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):
@@ -178,17 +176,6 @@ class Dataset:
         )[DATASET_IS_SCENE_KEY]
         self._is_scene = response
         return self._is_scene  # type: ignore
-
-    @property
-    def is_private(self) -> bool:
-        """By default all images of a dataset are mirrored onto Scale's database. This step can be omitted if a dataset is private."""
-        if self._is_private is not None:
-            return self._is_private
-        response = self._client.make_request(
-            {}, f"dataset/{self.id}/is_private", requests.get
-        )[DATASET_IS_PRIVATE_KEY]
-        self._is_private = response
-        return self._is_private  # type: ignore
 
     @property
     def model_runs(self) -> List[str]:

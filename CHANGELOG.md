@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.5) - 2023-10-27
 
 ### Added
-- Allow datasets to be created in "private mode". For example, `client.create_dataset('name', is_private=True)`.
-- When set to True, images of the dataset will not be mirrored into Scale's infrastructure. As a result of this, customers will
-have to modify their bucket access policy with Scale.
+- Allow datasets to be created in "privacy mode". For example, `client.create_dataset('name', use_privacy_mode=True)`.
+- Privacy Mode lets customers use Nucleus without sensitive raw data ever leaving their servers.
+- When set to `True`, you can submit URLs to Nucleus that link to raw data assets like images or point clouds, instead of transferring that data to Scale. Access control is then completely in the hands of users: URLs may optionally be protected behind your corporate VPN or an IP whitelist. When you load a Nucleus web page, your browser will directly fetch the raw data from your servers without it ever being accessible to Scale.
 
 
 ## [0.16.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.4) - 2023-10-12
