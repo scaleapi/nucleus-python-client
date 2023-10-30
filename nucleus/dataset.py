@@ -1155,6 +1155,7 @@ class Dataset:
         """
         return self._client.set_primary_index(self.id, image, custom)
 
+    # TODO: How to enforce that this should be false for the datasets which we upload embeddings directly to?
     def set_continuous_indexing(self, enable: bool = True):
         """Toggle whether embeddings are automatically generated for new data.
 
