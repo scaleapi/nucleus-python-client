@@ -14,7 +14,6 @@ from nucleus.constants import (
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
     TRACKS_KEY,
-    UPLOAD_TO_SCALE_KEY,
     VIDEO_LOCATION_KEY,
     VIDEO_URL_KEY,
 )
@@ -496,13 +495,6 @@ class VideoScene(ABC):
             Context Attachments may be provided to display the attachments side by side with the dataset
             item in the Detail View by specifying
             `{ "context_attachments": [ { "attachment": 'https://example.com/1' }, { "attachment": 'https://example.com/2' }, ... ] }`.
-        upload_to_scale (Optional[bool]): Set this to false in order to use
-            `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_. If using privacy mode
-            you must upload both a video_location and items to the VideoScene.
-
-            Setting this to false means the actual data within the video scene will not be
-            uploaded to scale meaning that you can send in links that are only accessible
-            to certain users, and not to Scale.
 
     Refer to our `guide to uploading video data
     <https://nucleus.scale.com/docs/uploading-video-data>`_ for more info!
@@ -513,7 +505,6 @@ class VideoScene(ABC):
     video_location: Optional[str] = None
     items: List[DatasetItem] = field(default_factory=list)
     metadata: Optional[dict] = field(default_factory=dict)
-    upload_to_scale: Optional[bool] = True
     attachment_type: Optional[str] = None
     tracks: List[Track] = field(default_factory=list)
 
@@ -540,9 +531,7 @@ class VideoScene(ABC):
     @property
     def length(self) -> int:
         """Gets number of items in the scene for videos uploaded with an array of images."""
-        assert (
-            not self.upload_to_scale or not self.video_location
-        ), "Only videos with items have a length"
+        assert (not self.video_location), "Only videos with items have a length"
         return len(self.items)
 
     def validate(self):
@@ -550,24 +539,7 @@ class VideoScene(ABC):
         assert (
             self.items or self.video_location
         ), "Please upload either a video_location or an array of dataset items representing frames"
-        if self.upload_to_scale is False:
-            assert (
-                self.frame_rate > 0
-            ), "When using privacy mode frame rate must be at least 1"
-            assert (
-                self.items and self.length > 0
-            ), "When using privacy mode scene must have a list of items of length at least 1"
-            for item in self.items:
-                assert isinstance(
-                    item, DatasetItem
-                ), "Each item in a scene must be a DatasetItem object"
-                assert (
-                    item.image_location is not None
-                ), "Each item in a video scene must have an image_location"
-                assert (
-                    item.upload_to_scale is not False
-                ), "Please specify whether to upload to scale in the VideoScene for videos"
-        elif self.items:
+        if self.items:
             assert (
                 self.frame_rate > 0
             ), "When uploading an array of items frame rate must be at least 1"
@@ -584,9 +556,6 @@ class VideoScene(ABC):
                 assert (
                     item.image_location is not None
                 ), "Each item in a video scene must have an image_location"
-                assert (
-                    item.upload_to_scale is not False
-                ), "Please specify whether to upload to scale in the VideoScene for videos"
         else:
             assert (
                 not self.frame_rate
@@ -609,9 +578,7 @@ class VideoScene(ABC):
             update: Whether to overwrite the item at the specified index, if it
               exists. Default is False.
         """
-        assert (
-            not self.upload_to_scale or not self.video_location
-        ), "Cannot add item to a video without items"
+        assert (not self.video_location), "Cannot add item to a video without items"
         if index is None:
             index = len(self.items)
         assert (
@@ -630,9 +597,7 @@ class VideoScene(ABC):
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
-        assert (
-            not self.upload_to_scale or not self.video_location
-        ), "Cannot add item to a video without items"
+        assert (not self.video_location), "Cannot add item to a video without items"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -645,9 +610,7 @@ class VideoScene(ABC):
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
-        assert (
-            not self.upload_to_scale or not self.video_location
-        ), "Cannot add item to a video without items"
+        assert (not self.video_location), "Cannot add item to a video without items"
         return self.items
 
     def info(self):
@@ -672,9 +635,6 @@ class VideoScene(ABC):
             payload[VIDEO_URL_KEY] = self.video_location
         if self.items:
             payload[LENGTH_KEY] = self.length
-        if self.upload_to_scale:
-            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
-
         return payload
 
     @classmethod
@@ -699,7 +659,6 @@ class VideoScene(ABC):
             items=items,
             metadata=payload.get(METADATA_KEY, {}),
             video_location=payload.get(VIDEO_URL_KEY, None),
-            upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
             tracks=tracks,
         )
 
@@ -720,8 +679,6 @@ class VideoScene(ABC):
                 item.to_payload(is_scene=True) for item in self.items
             ]
             payload[FRAMES_KEY] = items_payload
-        if self.upload_to_scale is not None:
-            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
         if self.tracks:
             payload[TRACKS_KEY] = [track.to_payload() for track in self.tracks]
         return payload

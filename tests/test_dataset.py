@@ -197,12 +197,9 @@ def test_dataset_append(dataset):
     # Plain image upload
     ds_items_plain = []
     for i, url in enumerate(TEST_IMG_URLS):
-        # Upload just the first item in privacy mode
-        upload_to_scale = i == 0
         ds_items_plain.append(
             DatasetItem(
                 image_location=url,
-                upload_to_scale=upload_to_scale,
                 reference_id=url.split("/")[-1] + "_plain",
             )
         )
@@ -220,12 +217,9 @@ def test_scene_dataset_append(dataset_scene):
     # Plain image upload
     ds_items_plain = []
     for i, url in enumerate(TEST_IMG_URLS):
-        # Upload just the first item in privacy mode
-        upload_to_scale = i == 0
         ds_items_plain.append(
             DatasetItem(
                 image_location=url,
-                upload_to_scale=upload_to_scale,
                 reference_id=url.split("/")[-1] + "_plain",
             )
         )

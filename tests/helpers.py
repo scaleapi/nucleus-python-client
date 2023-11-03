@@ -140,7 +140,6 @@ TEST_VIDEO_SCENES = {
                 },
             ],
             "metadata": {"timestamp": "1234", "weather": "rainy"},
-            "upload_to_scale": False,
         },
     ],
     "update": False,
