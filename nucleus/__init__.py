@@ -79,6 +79,7 @@ from .constants import (
     AUTOTAGS_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
+    DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -429,6 +430,7 @@ class NucleusClient:
         self,
         name: str,
         is_scene: Optional[bool] = None,
+        use_privacy_mode: bool = False,
         item_metadata_schema: Optional[Dict] = None,
         annotation_metadata_schema: Optional[Dict] = None,
     ) -> Dataset:
@@ -443,6 +445,8 @@ class NucleusClient:
             is_scene: Whether the dataset contains strictly :class:`scenes
               <LidarScene>` or :class:`items <DatasetItem>`. This value is immutable.
               Default is False (dataset of items).
+            use_privacy_mode: Whether the images of this dataset should be uploaded to Scale. If set to True,
+              customer will have to adjust their file access policy with Scale.
             item_metadata_schema: Dict defining item-level metadata schema. See below.
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
 
@@ -473,6 +477,7 @@ class NucleusClient:
             {
                 NAME_KEY: name,
                 DATASET_IS_SCENE_KEY: is_scene,
+                DATASET_PRIVACY_MODE_KEY: use_privacy_mode,
                 ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
                 ITEM_METADATA_SCHEMA_KEY: item_metadata_schema,
             },
