@@ -127,7 +127,6 @@ class DatasetItem:  # pylint: disable=R0902
     )
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
-    # TODO: Should we disallow the embedding info upload if this is true?
     upload_to_scale: Optional[bool] = True
     embedding_info: Optional[DatasetItemEmbeddingInfo] = None
 
