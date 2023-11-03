@@ -10,7 +10,10 @@ from .camera_params import CameraParams
 from .constants import (
     BACKEND_REFERENCE_ID_KEY,
     CAMERA_PARAMS_KEY,
+    EMBEDDING_INFO_KEY,
+    EMBEDDING_VECTOR_KEY,
     IMAGE_URL_KEY,
+    INDEX_ID_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
     POINTCLOUD_URL_KEY,
@@ -24,6 +27,18 @@ from .constants import (
 class DatasetItemType(Enum):
     IMAGE = "image"
     POINTCLOUD = "pointcloud"
+
+
+@dataclass
+class DatasetItemEmbeddingInfo:
+    index_id: str
+    embedding_vector: list
+
+    def to_payload(self) -> dict:
+        return {
+            INDEX_ID_KEY: self.index_id,
+            EMBEDDING_VECTOR_KEY: self.embedding_vector,
+        }
 
 
 @dataclass  # pylint: disable=R0902
@@ -113,16 +128,23 @@ class DatasetItem:  # pylint: disable=R0902
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     upload_to_scale: Optional[bool] = True
+    embedding_info: Optional[DatasetItemEmbeddingInfo] = None
 
     def __post_init__(self):
         assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
         assert bool(self.image_location) != bool(
             self.pointcloud_location
         ), "Must specify exactly one of the image_location or pointcloud_location parameters"
+        if self.pointcloud_location and self.embedding_info:
+            raise AssertionError(
+                "Cannot upload embedding vector if pointcloud_location is set"
+            )
+
         if (self.pointcloud_location) and not self.upload_to_scale:
             raise NotImplementedError(
                 "Skipping upload to Scale is not currently implemented for pointclouds."
             )
+
         self.local = (
             is_local_path(self.image_location) if self.image_location else None
         )
@@ -178,6 +200,9 @@ class DatasetItem:  # pylint: disable=R0902
         }
 
         payload[REFERENCE_ID_KEY] = self.reference_id
+
+        if self.embedding_info:
+            payload[EMBEDDING_INFO_KEY] = self.embedding_info.to_payload()
 
         if is_scene:
             if self.image_location:
