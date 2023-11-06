@@ -19,6 +19,7 @@ from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
 from nucleus.evaluation_match import EvaluationMatch
 from nucleus.prediction import from_json as prediction_from_json
+from nucleus.search_index import SearchIndex
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
@@ -193,6 +194,17 @@ class Dataset:
             {}, f"dataset/{self.id}/slices", requests.get
         )
         return [Slice.from_request(info, self._client) for info in response]
+
+    @property
+    def search_indexes(self) -> List[SearchIndex]:
+        """Gets all the search indexes belonging to this Dataset."""
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/searchIndexes", requests.get
+        )
+
+        return [
+            SearchIndex.from_json(info) for info in response["search_indexes"]
+        ]
 
     def get_slices(
         self,
