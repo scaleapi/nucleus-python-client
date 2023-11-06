@@ -27,10 +27,10 @@ class IndexStatus(str, Enum):
 
 
 @dataclass
-class SearchIndex:
-    """Represents a Search Index belonging to a Dataset.
+class EmbeddingIndex:
+    """Represents an Embedding Index belonging to a Dataset.
 
-    Search Indexes contain generated embeddings for each item in the dataset,
+    Embedding Indexes contain generated embeddings for each item in the dataset,
     and are used by the Autotag and the Similarity Search functionality.
     """
 
