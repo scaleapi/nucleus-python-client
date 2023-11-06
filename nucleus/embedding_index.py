@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from nucleus.constants import (
+    EMBEDDING_DIMENSION_KEY,
     EMBEDDING_TYPE_KEY,
     ID_KEY,
     INDEX_LEVEL_KEY,
@@ -39,6 +40,7 @@ class EmbeddingIndex:
     index_type: IndexType
     index_level: IndexLevel
     embedding_type: str
+    embedding_dimension: int
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -48,4 +50,5 @@ class EmbeddingIndex:
             index_type=payload[INDEX_TYPE_KEY],
             index_level=payload[INDEX_LEVEL_KEY],
             embedding_type=payload[EMBEDDING_TYPE_KEY],
+            embedding_dimension=payload[EMBEDDING_DIMENSION_KEY],
         )
