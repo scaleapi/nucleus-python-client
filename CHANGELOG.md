@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Allow direct embedding vector upload together with dataset items. `DatasetItem` now has an additional parameter called `embedding_info` which can be used to directly upload embeddings when a dataset is uploaded.
+- Added `dataset.embedding_indexes` property, which exposes information about every embedding index which belongs to the dataset.   
 
 
 ## [0.16.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.6) - 2023-11-01
