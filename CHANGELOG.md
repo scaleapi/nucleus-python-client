@@ -5,6 +5,12 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.7) - 2023-11-03
+
+### Added
+- Allow direct embedding vector upload together with dataset items. `DatasetItem` now has an additional parameter called `embedding_info` which can be used to directly upload embeddings when a dataset is uploaded.
+- Added `dataset.embedding_indexes` property, which exposes information about every embedding index which belongs to the dataset.   
+
 
 ## [0.16.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.6) - 2023-11-01
 
