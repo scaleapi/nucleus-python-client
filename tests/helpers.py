@@ -250,21 +250,20 @@ TEST_VIDEO_ITEMS = [
         reference_id_from_url(TEST_IMG_URLS[0]),
         None,
         None,
-        True,
     ),
     DatasetItem(
         TEST_IMG_URLS[1],
         reference_id_from_url(TEST_IMG_URLS[1]),
         None,
         None,
-        True,
+
     ),
     DatasetItem(
         TEST_IMG_URLS[2],
         reference_id_from_url(TEST_IMG_URLS[2]),
         None,
         None,
-        True,
+
     ),
 ]
 
