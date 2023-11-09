@@ -535,7 +535,6 @@ class VideoScene(ABC):
 
     def validate(self):
         # TODO: make private
-        print("@@ self", self.video_location, len(self.items))
         assert (
             self.items or self.video_location
         ), "Please upload either a video_location or an array of dataset items representing frames"
