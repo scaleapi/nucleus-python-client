@@ -531,7 +531,6 @@ class VideoScene(ABC):
     @property
     def length(self) -> int:
         """Gets number of items in the scene for videos uploaded with an array of images."""
-        assert not self.video_location, "Only videos with items have a length"
         return len(self.items)
 
     def validate(self):
