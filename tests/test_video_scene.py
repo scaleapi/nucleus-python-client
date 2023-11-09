@@ -12,7 +12,6 @@ from nucleus.constants import (
     REFERENCE_ID_KEY,
     SCENES_KEY,
     TYPE_KEY,
-
     URL_KEY,
     VIDEO_URL_KEY,
 )
