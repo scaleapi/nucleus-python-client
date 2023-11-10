@@ -121,27 +121,6 @@ TEST_VIDEO_SCENES = {
             "video_url": TEST_VIDEO_URL,
             "metadata": {"timestamp": "1234", "weather": "rainy"},
         },
-        {
-            "reference_id": "scene_3",
-            "video_url": TEST_INACCESSIBLE_VIDEO_URL,
-            "frame_rate": 15,
-            "frames": [
-                {
-                    "image_url": TEST_INACCESSIBLE_IMG_URLS[0],
-                    "type": "image",
-                    "reference_id": "video_frame_2",
-                    "metadata": {"time": 123, "foo": "bar"},
-                },
-                {
-                    "image_url": TEST_INACCESSIBLE_IMG_URLS[1],
-                    "type": "image",
-                    "reference_id": "video_frame_3",
-                    "metadata": {"time": 124, "foo": "bar_2"},
-                },
-            ],
-            "metadata": {"timestamp": "1234", "weather": "rainy"},
-            "upload_to_scale": False,
-        },
     ],
     "update": False,
 }
@@ -251,21 +230,18 @@ TEST_VIDEO_ITEMS = [
         reference_id_from_url(TEST_IMG_URLS[0]),
         None,
         None,
-        True,
     ),
     DatasetItem(
         TEST_IMG_URLS[1],
         reference_id_from_url(TEST_IMG_URLS[1]),
         None,
         None,
-        True,
     ),
     DatasetItem(
         TEST_IMG_URLS[2],
         reference_id_from_url(TEST_IMG_URLS[2]),
         None,
         None,
-        True,
     ),
 ]
 
