@@ -10,13 +10,15 @@ from .camera_params import CameraParams
 from .constants import (
     BACKEND_REFERENCE_ID_KEY,
     CAMERA_PARAMS_KEY,
+    EMBEDDING_INFO_KEY,
+    EMBEDDING_VECTOR_KEY,
     IMAGE_URL_KEY,
+    INDEX_ID_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
     POINTCLOUD_URL_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
-    UPLOAD_TO_SCALE_KEY,
     URL_KEY,
 )
 
@@ -24,6 +26,18 @@ from .constants import (
 class DatasetItemType(Enum):
     IMAGE = "image"
     POINTCLOUD = "pointcloud"
+
+
+@dataclass
+class DatasetItemEmbeddingInfo:
+    index_id: str
+    embedding_vector: list
+
+    def to_payload(self) -> dict:
+        return {
+            INDEX_ID_KEY: self.index_id,
+            EMBEDDING_VECTOR_KEY: self.embedding_vector,
+        }
 
 
 @dataclass  # pylint: disable=R0902
@@ -97,13 +111,6 @@ class DatasetItem:  # pylint: disable=R0902
               Shorten this once we have a guide migrated for metadata, or maybe link
               from other places to here.
 
-        upload_to_scale (Optional[bool]): Set this to false in order to use
-          `privacy mode <https://nucleus.scale.com/docs/privacy-mode>`_.
-
-          Setting this to false means the actual data within the item will not be
-          uploaded to scale meaning that you can send in links that are only accessible
-          to certain users, and not to Scale. Skipping upload to Scale is currently only
-          implemented for images.
     """
 
     image_location: Optional[str] = None
@@ -112,17 +119,19 @@ class DatasetItem:  # pylint: disable=R0902
     )
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
-    upload_to_scale: Optional[bool] = True
+    embedding_info: Optional[DatasetItemEmbeddingInfo] = None
 
     def __post_init__(self):
         assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
         assert bool(self.image_location) != bool(
             self.pointcloud_location
         ), "Must specify exactly one of the image_location or pointcloud_location parameters"
-        if (self.pointcloud_location) and not self.upload_to_scale:
-            raise NotImplementedError(
-                "Skipping upload to Scale is not currently implemented for pointclouds."
+
+        if self.pointcloud_location and self.embedding_info:
+            raise AssertionError(
+                "Cannot upload embedding vector if pointcloud_location is set"
             )
+
         self.local = (
             is_local_path(self.image_location) if self.image_location else None
         )
@@ -164,7 +173,6 @@ class DatasetItem:  # pylint: disable=R0902
             pointcloud_location=pointcloud_url,
             reference_id=payload.get(REFERENCE_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
-            upload_to_scale=payload.get(UPLOAD_TO_SCALE_KEY, True),
         )
 
     def local_file_exists(self):
@@ -179,6 +187,9 @@ class DatasetItem:  # pylint: disable=R0902
 
         payload[REFERENCE_ID_KEY] = self.reference_id
 
+        if self.embedding_info:
+            payload[EMBEDDING_INFO_KEY] = self.embedding_info.to_payload()
+
         if is_scene:
             if self.image_location:
                 payload[URL_KEY] = self.image_location
@@ -192,7 +203,6 @@ class DatasetItem:  # pylint: disable=R0902
                 self.image_location
             ), "Must specify image_location for DatasetItems not in a LidarScene or VideoScene"
             payload[IMAGE_URL_KEY] = self.image_location
-            payload[UPLOAD_TO_SCALE_KEY] = self.upload_to_scale
 
         return payload
 

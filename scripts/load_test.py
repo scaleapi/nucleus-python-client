@@ -5,7 +5,6 @@ from itertools import zip_longest
 from absl import app, flags
 
 import nucleus
-from nucleus import annotation
 from nucleus.async_job import JobError
 from nucleus.dataset import Dataset
 
@@ -89,7 +88,6 @@ def dataset_item_generator():
             image_location=IMAGE_URL,
             reference_id=str(i),
             metadata=generate_fake_metadata(i),
-            upload_to_scale=False,
         )
 
 
