@@ -56,7 +56,6 @@ from .constants import (
     WIDTH_KEY,
     X_KEY,
     Y_KEY,
-    Z_KEY,
 )
 from .dataset_item import DatasetItem
 from .prediction import (
