@@ -2,17 +2,11 @@
 
 import io
 import json
-import os
 import uuid
 from collections import defaultdict
-from itertools import product
 from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
 
-import boto3
-import numpy as np
 import requests
-from botocore.exceptions import ClientError
-from PIL import Image
 from requests.models import HTTPError
 
 from nucleus.annotation import (
@@ -35,11 +29,8 @@ from .constants import (
     CATEGORY_TYPE,
     CUBOID_TYPE,
     EXPORTED_SCALE_TASK_INFO_ROWS,
-    GEOMETRY_KEY,
-    HEIGHT_KEY,
     ITEM_KEY,
     KEYPOINTS_TYPE,
-    LABEL_KEY,
     LINE_TYPE,
     MAX_PAYLOAD_SIZE,
     MULTICATEGORY_TYPE,
@@ -52,10 +43,6 @@ from .constants import (
     SCALE_TASK_INFO_KEY,
     SCENE_KEY,
     SEGMENTATION_TYPE,
-    TYPE_KEY,
-    WIDTH_KEY,
-    X_KEY,
-    Y_KEY,
 )
 from .dataset_item import DatasetItem
 from .prediction import (
@@ -435,120 +422,3 @@ def paginate_generator(
             yield json_value
         if not next_token:
             break
-
-
-def split_s3_bucket_key(s3_path: str):
-    s3_bucket, s3_key = s3_path.split("//", 1)[-1].split("/", 1)
-    return s3_bucket, s3_key
-
-
-def fetch_image(s3_url: str):
-    s3_bucket, s3_key = split_s3_bucket_key(s3_url)
-    image = Image.open(
-        boto3.resource("s3").Bucket(s3_bucket).Object(s3_key).get()["Body"]
-    )
-    return image
-
-
-def fetch_chip(ref_id: str):
-    image_loc = None
-    annotation_loc = None
-    if ref_id.startswith("s3"):
-        s3_bucket, s3_key = split_s3_bucket_key(ref_id)
-        try:
-            boto3.resource("s3").Bucket(s3_bucket).Object(
-                s3_key + ".jpeg"
-            ).load()
-            image_loc = ref_id + ".jpeg"
-        except ClientError:
-            return None, None
-        try:
-            boto3.resource("s3").Bucket(s3_bucket).Object(
-                s3_key + ".json"
-            ).load()
-            annotation_loc = ref_id + ".json"
-        except ClientError:
-            return image_loc, None
-    else:
-        if os.path.exists(ref_id + ".jpeg"):
-            image_loc = ref_id + ".jpeg"
-            if os.path.exists(ref_id + ".json"):
-                annotation_loc = ref_id + ".json"
-    return image_loc, annotation_loc
-
-
-def write_chip(
-    ref_id: str, image: Image.Image, annotations: List[Dict[str, str]]
-):
-    if ref_id.startswith("s3"):
-        s3_bucket, s3_key = split_s3_bucket_key(ref_id)
-        byteio = io.BytesIO()
-        image.save(byteio, format="jpeg")
-        byteio.seek(0)
-        boto3.resource("s3").Bucket(s3_bucket).Object(
-            s3_key + ".jpeg"
-        ).upload_fileobj(byteio)
-        annotation_loc = None
-        if len(annotations) > 0:
-            boto3.resource("s3").Bucket(s3_bucket).Object(
-                s3_key + ".json"
-            ).put(
-                Body=json.dumps(annotations, ensure_ascii=False).encode(
-                    "UTF-8"
-                ),
-                ContentType="application/json",
-            )
-            annotation_loc = ref_id + ".json"
-        return ref_id + ".jpeg", annotation_loc
-    else:
-        dirs = ref_id.rsplit("/", 1)[0]
-        os.makedirs(dirs, exist_ok=True)
-        image_loc = ref_id + ".jpeg"
-        annotation_loc = None
-        image.save(image_loc)
-        if len(annotations) > 0:
-            annotation_loc = ref_id + ".json"
-            with open(annotation_loc, "w", encoding="utf-8") as f:
-                json.dump(annotations, f, ensure_ascii=False)
-        return image_loc, annotation_loc
-
-
-def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
-    xs = np.arange(0, w - stride_size, chip_size - stride_size)
-    ys = np.arange(0, h - stride_size, chip_size - stride_size)
-    if len(xs) > 1:
-        xs = np.round(xs * (w - chip_size) / xs[-1]).astype(int)
-    if len(ys) > 1:
-        ys = np.round(ys * (h - chip_size) / ys[-1]).astype(int)
-    yield from product(ys, xs)
-
-
-def chip_annotations(data, x0: int, y0: int, x1: int, y1: int):
-    annotations = []
-    X_1_KEY = "x1"
-    Y_1_KEY = "y1"
-    for annotation in data:
-        geometry = annotation[GEOMETRY_KEY].copy()
-        geometry[X_1_KEY] = geometry[X_KEY] + geometry[WIDTH_KEY]
-        geometry[Y_1_KEY] = geometry[Y_KEY] + geometry[HEIGHT_KEY]
-        geometry[X_KEY] = max(min(geometry[X_KEY], x1), x0) - x0
-        geometry[X_1_KEY] = max(min(geometry[X_1_KEY], x1), x0) - x0
-        geometry[Y_KEY] = max(min(geometry[Y_KEY], y1), y0) - y0
-        geometry[Y_1_KEY] = max(min(geometry[Y_1_KEY], y1), y0) - y0
-        geometry[WIDTH_KEY] = geometry[X_1_KEY] - geometry[X_KEY]
-        geometry[HEIGHT_KEY] = geometry[Y_1_KEY] - geometry[Y_KEY]
-        geometry["area"] = geometry[WIDTH_KEY] * geometry[HEIGHT_KEY]
-        if geometry["area"] > 0:
-            annotations.append(
-                {
-                    LABEL_KEY: annotation[LABEL_KEY],
-                    TYPE_KEY: BOX_TYPE,
-                    GEOMETRY_KEY: {
-                        X_KEY: geometry[X_KEY],
-                        Y_KEY: geometry[Y_KEY],
-                        WIDTH_KEY: geometry[WIDTH_KEY],
-                        HEIGHT_KEY: geometry[HEIGHT_KEY],
-                    },
-                }
-            )
-    return annotations

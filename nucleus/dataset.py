@@ -12,8 +12,8 @@ from typing import (
     Tuple,
     Union,
 )
-
 import requests
+from multiprocessing import Pool
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
@@ -23,22 +23,21 @@ from nucleus.prediction import from_json as prediction_from_json
 from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
-    chip_annotations,
     convert_export_payload,
-    fetch_chip,
-    fetch_image,
     format_dataset_item_response,
     format_prediction_response,
     format_scale_task_info_response,
-    generate_offsets,
     paginate_generator,
     serialize_and_write_to_presigned_url,
-    write_chip,
+)
+from nucleus.chip_utils import (
+    fetch_image,
+    generate_offsets,
+    process_chip
 )
 
 from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
-    ANNOTATION_LOCATION_KEY,
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     BACKFILL_JOB_KEY,
@@ -53,7 +52,6 @@ from .constants import (
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
-    IMAGE_LOCATION_KEY,
     ITEM_KEY,
     ITEMS_KEY,
     JOB_REQ_LIMIT,
@@ -1469,6 +1467,8 @@ class Dataset:
     ) -> Iterable[Dict[str, str]]:
         """Provides a generator of chips for all DatasetItems and BoxAnnotations in the dataset.
 
+        A chip is an image created by tiling a source image.
+
         Args:
             chip_size: The size of the image chip
             stride_size: The distance to move when creating the next image chip.
@@ -1500,29 +1500,11 @@ class Dataset:
             w, h = image.size
             annotations = item[BOX_TYPE]
             item_ref_id = item[ITEM_KEY][REFERENCE_ID_KEY]
-            for x0, y0 in generate_offsets(w, h, chip_size, stride_size):
-                x0, y0 = int(x0), int(y0)
-                x1 = x0 + chip_size
-                y1 = y0 + chip_size
-                ref_id = f"{cache_directory}/{item_ref_id}_{x0}_{y0}_{x1}_{y1}"
-                chipped_image_loc, chipped_annotation_loc = fetch_chip(ref_id)
-                if chipped_image_loc:
-                    yield {
-                        IMAGE_LOCATION_KEY: chipped_image_loc,
-                        ANNOTATION_LOCATION_KEY: chipped_annotation_loc,
-                    }
-                    continue
-                chipped_image = image.crop((x0, y0, x1, y1))
-                chipped_annotations = chip_annotations(
-                    annotations, x0, y0, x1, y1
-                )
-                chipped_image_loc, chipped_annotation_loc = write_chip(
-                    ref_id, chipped_image, chipped_annotations
-                )
-                yield {
-                    IMAGE_LOCATION_KEY: chipped_image_loc,
-                    ANNOTATION_LOCATION_KEY: chipped_annotation_loc,
-                }
+            offsets = generate_offsets(w, h, chip_size, stride_size)
+            with Pool() as pool:
+                chip_args = [(offset, chip_size, w, h, item_ref_id, cache_directory, image, annotations) for offset in offsets]
+                for chip_result in pool.imap(process_chip, chip_args):
+                    yield chip_result
 
     def export_embeddings(
         self,
