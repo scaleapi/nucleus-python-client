@@ -1,6 +1,7 @@
 import datetime
 import os
 from enum import Enum
+from multiprocessing import Pool
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -12,11 +13,12 @@ from typing import (
     Tuple,
     Union,
 )
-from multiprocessing import Pool
+
 import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
+from nucleus.chip_utils import fetch_image, generate_offsets, process_chip
 from nucleus.embedding_index import EmbeddingIndex
 from nucleus.evaluation_match import EvaluationMatch
 from nucleus.prediction import from_json as prediction_from_json
@@ -30,7 +32,6 @@ from nucleus.utils import (
     paginate_generator,
     serialize_and_write_to_presigned_url,
 )
-from nucleus.chip_utils import fetch_image, generate_offsets, process_chip
 
 from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
