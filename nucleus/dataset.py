@@ -30,11 +30,7 @@ from nucleus.utils import (
     paginate_generator,
     serialize_and_write_to_presigned_url,
 )
-from nucleus.chip_utils import (
-    fetch_image,
-    generate_offsets,
-    process_chip
-)
+from nucleus.chip_utils import fetch_image, generate_offsets, process_chip
 
 from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
@@ -1502,7 +1498,19 @@ class Dataset:
             item_ref_id = item[ITEM_KEY][REFERENCE_ID_KEY]
             offsets = generate_offsets(w, h, chip_size, stride_size)
             with Pool() as pool:
-                chip_args = [(offset, chip_size, w, h, item_ref_id, cache_directory, image, annotations) for offset in offsets]
+                chip_args = [
+                    (
+                        offset,
+                        chip_size,
+                        w,
+                        h,
+                        item_ref_id,
+                        cache_directory,
+                        image,
+                        annotations,
+                    )
+                    for offset in offsets
+                ]
                 for chip_result in pool.imap(process_chip, chip_args):
                     yield chip_result
 

@@ -24,6 +24,7 @@ from .constants import (
     Y_KEY,
 )
 
+
 def split_s3_bucket_key(s3_path: str):
     s3_bucket, s3_key = s3_path.split("//", 1)[-1].split("/", 1)
     return s3_bucket, s3_key
@@ -168,8 +169,18 @@ def chip_annotations(data, x0: int, y0: int, x1: int, y1: int):
             )
     return annotations
 
+
 def process_chip(chip_arg):
-    offset, chip_size, w, h, item_ref_id, cache_directory, image, annotations = chip_arg
+    (
+        offset,
+        chip_size,
+        w,
+        h,
+        item_ref_id,
+        cache_directory,
+        image,
+        annotations,
+    ) = chip_arg
     x0, y0 = map(int, offset)
     x1 = min(x0 + chip_size, w)
     y1 = min(y0 + chip_size, h)
@@ -181,9 +192,7 @@ def process_chip(chip_arg):
             ANNOTATION_LOCATION_KEY: chipped_annotation_loc,
         }
     chipped_image = image.crop((x0, y0, x1, y1))
-    chipped_annotations = chip_annotations(
-        annotations, x0, y0, x1, y1
-    )
+    chipped_annotations = chip_annotations(annotations, x0, y0, x1, y1)
     chipped_image_loc, chipped_annotation_loc = write_chip(
         ref_id, chipped_image, chipped_annotations
     )
