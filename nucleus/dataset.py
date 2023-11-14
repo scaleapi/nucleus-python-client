@@ -40,6 +40,7 @@ from .constants import (
     DATASET_IS_SCENE_KEY,
     DATASET_ITEM_IDS_KEY,
     DATASET_ITEMS_KEY,
+    DATASET_USE_PRIVACY_MODE,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -69,6 +70,7 @@ from .dataset_item import (
     DatasetItem,
     check_all_paths_remote,
     check_for_duplicate_reference_ids,
+    check_items_have_dimensions,
 )
 from .dataset_item_uploader import DatasetItemUploader
 from .deprecation_warning import deprecated
@@ -145,6 +147,7 @@ class Dataset:
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
         self._name = name
         self._is_scene = None
+        self._use_privacy_mode = None
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):
@@ -177,6 +180,17 @@ class Dataset:
         )[DATASET_IS_SCENE_KEY]
         self._is_scene = response
         return self._is_scene  # type: ignore
+
+    @property
+    def use_privacy_mode(self) -> bool:
+        """Whether or not the dataset was created for privacy mode."""
+        if self._use_privacy_mode is not None:
+            return self._use_privacy_mode
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/use_privacy_mode", requests.get
+        )[DATASET_USE_PRIVACY_MODE]
+        self._use_privacy_mode = response
+        return self._use_privacy_mode  # type: ignore
 
     @property
     def model_runs(self) -> List[str]:
@@ -649,6 +663,9 @@ class Dataset:
         video_scenes = [item for item in items if isinstance(item, VideoScene)]
 
         check_for_duplicate_reference_ids(dataset_items)
+
+        if self.use_privacy_mode:
+            check_items_have_dimensions(dataset_items)
 
         if dataset_items and (lidar_scenes or video_scenes):
             raise Exception(
