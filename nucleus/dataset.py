@@ -12,8 +12,8 @@ from typing import (
     Tuple,
     Union,
 )
-import requests
 from multiprocessing import Pool
+import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
