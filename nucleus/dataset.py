@@ -147,13 +147,20 @@ class Dataset:
         existing_dataset = client.get_dataset("YOUR_DATASET_ID")
     """
 
-    def __init__(self, dataset_id, client: "NucleusClient", name=None):
+    def __init__(
+        self,
+        dataset_id,
+        client: "NucleusClient",
+        name=None,
+        is_scene=None,
+        use_privacy_mode=None,
+    ):
         self.id = dataset_id
         self._client = client
         # NOTE: Optionally set name on creation such that the property access doesn't need to hit the server
         self._name = name
-        self._is_scene = None
-        self._use_privacy_mode = None
+        self._is_scene = is_scene
+        self._use_privacy_mode = use_privacy_mode
 
     def __repr__(self):
         if os.environ.get("NUCLEUS_DEBUG", None):

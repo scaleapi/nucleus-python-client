@@ -483,7 +483,13 @@ class NucleusClient:
             },
             "dataset/create",
         )
-        return Dataset(response[DATASET_ID_KEY], self)
+        return Dataset(
+            response[DATASET_ID_KEY],
+            self,
+            name=name,
+            is_scene=is_scene,
+            use_privacy_mode=use_privacy_mode,
+        )
 
     def delete_dataset(self, dataset_id: str) -> dict:
         """
