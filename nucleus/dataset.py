@@ -1,6 +1,7 @@
 import datetime
 import os
 from enum import Enum
+from multiprocessing import Pool
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -17,6 +18,7 @@ import requests
 
 from nucleus.annotation_uploader import AnnotationUploader, PredictionUploader
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
+from nucleus.chip_utils import fetch_image, generate_offsets, process_chip
 from nucleus.embedding_index import EmbeddingIndex
 from nucleus.evaluation_match import EvaluationMatch
 from nucleus.prediction import from_json as prediction_from_json
@@ -36,6 +38,7 @@ from .constants import (
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     BACKFILL_JOB_KEY,
+    BOX_TYPE,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_ITEM_IDS_KEY,
@@ -47,6 +50,7 @@ from .constants import (
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
+    ITEM_KEY,
     ITEMS_KEY,
     JOB_REQ_LIMIT,
     KEEP_HISTORY_KEY,
@@ -54,6 +58,8 @@ from .constants import (
     MESSAGE_KEY,
     NAME_KEY,
     OBJECT_IDS_KEY,
+    PROCESSED_URL_KEY,
+    REFERENCE_ID_KEY,
     REFERENCE_IDS_KEY,
     REQUEST_ID_KEY,
     SCENE_IDS_KEY,
@@ -1430,8 +1436,12 @@ class Dataset:
 
     def items_and_annotation_generator(
         self,
+        query: Optional[str] = None,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
+
+        Args:
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
@@ -1456,10 +1466,71 @@ class Dataset:
             endpoint=f"dataset/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=10000,  # max ES page size
+            query=query,
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
                 yield ia
+
+    def items_and_annotation_chip_generator(
+        self,
+        chip_size: int,
+        stride_size: int,
+        cache_directory: str,
+        query: Optional[str] = None,
+    ) -> Iterable[Dict[str, str]]:
+        """Provides a generator of chips for all DatasetItems and BoxAnnotations in the dataset.
+
+        A chip is an image created by tiling a source image.
+
+        Args:
+            chip_size: The size of the image chip
+            stride_size: The distance to move when creating the next image chip.
+              When stride is equal to chip size, there will be no overlap.
+              When stride is equal to half the chip size, there will be 50 percent overlap.
+            cache_directory: The s3 or local directory to store the image and annotations of a chip.
+              s3 directories must be in the format s3://s3-bucket/s3-key
+            query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+
+        Returns:
+            Generator where each element is a dict containing the location of the image chip (jpeg) and its annotations (json).
+            ::
+
+                Iterable[{
+                    "image_location": str,
+                    "annotation_location": str
+                }]
+        """
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/exportForTrainingPage",
+            result_key=EXPORT_FOR_TRAINING_KEY,
+            page_size=10000,  # max ES page size
+            query=query,
+            chip=True,
+        )
+        for item in json_generator:
+            image = fetch_image(item[ITEM_KEY][PROCESSED_URL_KEY])
+            w, h = image.size
+            annotations = item[BOX_TYPE]
+            item_ref_id = item[ITEM_KEY][REFERENCE_ID_KEY]
+            offsets = generate_offsets(w, h, chip_size, stride_size)
+            with Pool() as pool:
+                chip_args = [
+                    (
+                        offset,
+                        chip_size,
+                        w,
+                        h,
+                        item_ref_id,
+                        cache_directory,
+                        image,
+                        annotations,
+                    )
+                    for offset in offsets
+                ]
+                for chip_result in pool.imap(process_chip, chip_args):
+                    yield chip_result
 
     def export_embeddings(
         self,

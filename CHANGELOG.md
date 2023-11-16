@@ -5,7 +5,8 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.16.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.7) - 2023-11-09
+
+## [0.16.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.9) - 2023-11-16
 
 ### Added
 - Allow passing width and height to `DatasetItem`
@@ -13,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `upload_to_scale` is no longer a property in `DatasetItem`, users should instead specify `use_privacy_mode` on the dataset during creation
+
+
+## [0.16.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.8) - 2023-11-13
+
+### Added
+
+- Added `dataset.items_and_annotation_chip_generator()` functionality to generate chips of images in s3 or locally.
+- Added `query` parameter for `dataset.items_and_annotation_generator()` to filter dataset items.
+
 
 ## [0.16.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.7) - 2023-11-03
 
