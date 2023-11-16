@@ -12,6 +12,7 @@ from .constants import (
     CAMERA_PARAMS_KEY,
     EMBEDDING_INFO_KEY,
     EMBEDDING_VECTOR_KEY,
+    HEIGHT_KEY,
     IMAGE_URL_KEY,
     INDEX_ID_KEY,
     METADATA_KEY,
@@ -20,6 +21,7 @@ from .constants import (
     REFERENCE_ID_KEY,
     TYPE_KEY,
     URL_KEY,
+    WIDTH_KEY,
 )
 
 
@@ -120,6 +122,8 @@ class DatasetItem:  # pylint: disable=R0902
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     embedding_info: Optional[DatasetItemEmbeddingInfo] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
 
     def __post_init__(self):
         assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
@@ -190,6 +194,12 @@ class DatasetItem:  # pylint: disable=R0902
         if self.embedding_info:
             payload[EMBEDDING_INFO_KEY] = self.embedding_info.to_payload()
 
+        if self.width:
+            payload[WIDTH_KEY] = self.width
+
+        if self.height:
+            payload[HEIGHT_KEY] = self.height
+
         if is_scene:
             if self.image_location:
                 payload[URL_KEY] = self.image_location
@@ -237,3 +247,13 @@ def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
         raise ValueError(
             f"Duplicate reference IDs found among dataset_items: {duplicates}"
         )
+
+
+def check_items_have_dimensions(dataset_items: Sequence[DatasetItem]):
+    for item in dataset_items:
+        has_width = getattr(item, "width")
+        has_height = getattr(item, "height")
+        if not (has_width and has_height):
+            raise Exception(
+                f"When using privacy mode, all items require a width and height. Missing for item: '{item.reference_id}'"
+            )
