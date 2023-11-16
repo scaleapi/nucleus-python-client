@@ -43,7 +43,7 @@ from .constants import (
     DATASET_IS_SCENE_KEY,
     DATASET_ITEM_IDS_KEY,
     DATASET_ITEMS_KEY,
-    DATASET_USE_PRIVACY_MODE,
+    DATASET_PRIVACY_MODE_KEY,
     DEFAULT_ANNOTATION_UPDATE_MODE,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -194,7 +194,7 @@ class Dataset:
             return self._use_privacy_mode
         response = self._client.make_request(
             {}, f"dataset/{self.id}/use_privacy_mode", requests.get
-        )[DATASET_USE_PRIVACY_MODE]
+        )[DATASET_PRIVACY_MODE_KEY]
         self._use_privacy_mode = response
         return self._use_privacy_mode  # type: ignore
 
