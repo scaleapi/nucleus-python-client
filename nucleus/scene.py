@@ -578,9 +578,10 @@ class VideoScene(ABC):
             update: Whether to overwrite the item at the specified index, if it
               exists. Default is False.
         """
-        assert (
-            not self.video_location
-        ), "Cannot add item to a video without items"
+        if not self.use_privacy_mode:
+            assert (
+                not self.video_location
+            ), "Cannot add item to a video without items"
         if index is None:
             index = len(self.items)
         assert (
@@ -599,9 +600,10 @@ class VideoScene(ABC):
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
-        assert (
-            not self.video_location
-        ), "Cannot add item to a video without items"
+        if not self.use_privacy_mode:
+            assert (
+                not self.video_location
+            ), "Cannot add item to a video without items"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -614,9 +616,10 @@ class VideoScene(ABC):
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
-        assert (
-            not self.video_location
-        ), "Cannot add item to a video without items"
+        if not self.use_privacy_mode:
+            assert (
+                not self.video_location
+            ), "Cannot add item to a video without items"
         return self.items
 
     def info(self):
@@ -680,15 +683,14 @@ class VideoScene(ABC):
             payload[METADATA_KEY] = self.metadata
         if self.video_location:
             payload[VIDEO_URL_KEY] = self.video_location
+        # needed in order for the backed validation to work
+        if self.use_privacy_mode is not None:
+            payload["upload_to_scale"] = not self.use_privacy_mode
         if self.items:
             items_payload = [
                 item.to_payload(is_scene=True) for item in self.items
             ]
             payload[FRAMES_KEY] = items_payload
-
-        # needed in order for the backed validation to work
-        if self.use_privacy_mode is not None:
-            payload["upload_to_scale"] = not self.use_privacy_mode
         if self.tracks:
             payload[TRACKS_KEY] = [track.to_payload() for track in self.tracks]
         return payload
