@@ -507,6 +507,7 @@ class VideoScene(ABC):
     metadata: Optional[dict] = field(default_factory=dict)
     attachment_type: Optional[str] = None
     tracks: List[Track] = field(default_factory=list)
+    use_privacy_mode: bool = False
 
     def __post_init__(self):
         if self.attachment_type:
@@ -534,7 +535,6 @@ class VideoScene(ABC):
         return len(self.items)
 
     def validate(self):
-        # TODO: make private
         assert (
             self.items or self.video_location
         ), "Please upload either a video_location or an array of dataset items representing frames"
@@ -545,9 +545,10 @@ class VideoScene(ABC):
             assert (
                 self.length > 0
             ), "When uploading an array of items scene must have a list of items of length at least 1"
-            assert (
-                not self.video_location
-            ), "No video location is accepted when uploading an array of items unless you are using privacy mode"
+            if not self.use_privacy_mode:
+                assert (
+                    not self.video_location
+                ), "No video location is accepted when uploading an array of items unless you are using privacy mode"
             for item in self.items:
                 assert isinstance(
                     item, DatasetItem
@@ -684,6 +685,10 @@ class VideoScene(ABC):
                 item.to_payload(is_scene=True) for item in self.items
             ]
             payload[FRAMES_KEY] = items_payload
+
+        # needed in order for the backed validation to work
+        if self.use_privacy_mode is not None:
+            payload["upload_to_scale"] = not self.use_privacy_mode
         if self.tracks:
             payload[TRACKS_KEY] = [track.to_payload() for track in self.tracks]
         return payload
