@@ -152,6 +152,8 @@ TRUE_POSITIVE_KEY = "true_positive"
 TYPE_KEY = "type"
 UPDATED_ITEMS = "updated_items"
 UPDATE_KEY = "update"
+# avoid using this, as it will be deprecated
+UPLOAD_TO_SCALE_KEY = "upload_to_scale"
 URL_KEY = "url"
 VERTICES_KEY = "vertices"
 VIDEO_LOCATION_KEY = "video_location"

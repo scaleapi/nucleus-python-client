@@ -14,6 +14,7 @@ from nucleus.constants import (
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
     TRACKS_KEY,
+    UPLOAD_TO_SCALE_KEY,
     VIDEO_LOCATION_KEY,
     VIDEO_URL_KEY,
 )
@@ -685,7 +686,7 @@ class VideoScene(ABC):
             payload[VIDEO_URL_KEY] = self.video_location
         # needed in order for the backed validation to work
         if self.use_privacy_mode is not None:
-            payload["upload_to_scale"] = not self.use_privacy_mode
+            payload[UPLOAD_TO_SCALE_KEY] = not self.use_privacy_mode
         if self.items:
             items_payload = [
                 item.to_payload(is_scene=True) for item in self.items
