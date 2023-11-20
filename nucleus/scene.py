@@ -14,6 +14,7 @@ from nucleus.constants import (
     POINTCLOUD_LOCATION_KEY,
     REFERENCE_ID_KEY,
     TRACKS_KEY,
+    UPLOAD_TO_SCALE_KEY,
     VIDEO_LOCATION_KEY,
     VIDEO_URL_KEY,
 )
@@ -507,6 +508,7 @@ class VideoScene(ABC):
     metadata: Optional[dict] = field(default_factory=dict)
     attachment_type: Optional[str] = None
     tracks: List[Track] = field(default_factory=list)
+    use_privacy_mode: bool = False
 
     def __post_init__(self):
         if self.attachment_type:
@@ -534,7 +536,6 @@ class VideoScene(ABC):
         return len(self.items)
 
     def validate(self):
-        # TODO: make private
         assert (
             self.items or self.video_location
         ), "Please upload either a video_location or an array of dataset items representing frames"
@@ -545,9 +546,10 @@ class VideoScene(ABC):
             assert (
                 self.length > 0
             ), "When uploading an array of items scene must have a list of items of length at least 1"
-            assert (
-                not self.video_location
-            ), "No video location is accepted when uploading an array of items unless you are using privacy mode"
+            if not self.use_privacy_mode:
+                assert (
+                    not self.video_location
+                ), "No video location is accepted when uploading an array of items unless you are using privacy mode"
             for item in self.items:
                 assert isinstance(
                     item, DatasetItem
@@ -577,9 +579,10 @@ class VideoScene(ABC):
             update: Whether to overwrite the item at the specified index, if it
               exists. Default is False.
         """
-        assert (
-            not self.video_location
-        ), "Cannot add item to a video without items"
+        if not self.use_privacy_mode:
+            assert (
+                not self.video_location
+            ), "Cannot add item to a video without items"
         if index is None:
             index = len(self.items)
         assert (
@@ -598,9 +601,10 @@ class VideoScene(ABC):
 
         Return:
             :class:`DatasetItem`: DatasetItem at the specified index."""
-        assert (
-            not self.video_location
-        ), "Cannot add item to a video without items"
+        if not self.use_privacy_mode:
+            assert (
+                not self.video_location
+            ), "Cannot add item to a video without items"
         if index < 0 or index > len(self.items):
             raise ValueError(
                 f"This scene does not have an item at index {index}"
@@ -613,9 +617,10 @@ class VideoScene(ABC):
         Returns:
             List[:class:`DatasetItem`]: List of DatasetItems, sorted by index ascending.
         """
-        assert (
-            not self.video_location
-        ), "Cannot add item to a video without items"
+        if not self.use_privacy_mode:
+            assert (
+                not self.video_location
+            ), "Cannot add item to a video without items"
         return self.items
 
     def info(self):
@@ -679,6 +684,9 @@ class VideoScene(ABC):
             payload[METADATA_KEY] = self.metadata
         if self.video_location:
             payload[VIDEO_URL_KEY] = self.video_location
+        # needed in order for the backed validation to work
+        if self.use_privacy_mode is not None:
+            payload[UPLOAD_TO_SCALE_KEY] = not self.use_privacy_mode
         if self.items:
             items_payload = [
                 item.to_payload(is_scene=True) for item in self.items

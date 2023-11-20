@@ -12,6 +12,7 @@ from nucleus.constants import (
     REFERENCE_ID_KEY,
     SCENES_KEY,
     TYPE_KEY,
+    UPLOAD_TO_SCALE_KEY,
     URL_KEY,
     VIDEO_URL_KEY,
 )
@@ -106,6 +107,7 @@ def test_video_scene_add_item():
     assert scene.to_payload() == {
         REFERENCE_ID_KEY: scene_ref_id,
         FRAME_RATE_KEY: frame_rate,
+        UPLOAD_TO_SCALE_KEY: True,
         FRAMES_KEY: [
             {
                 URL_KEY: TEST_VIDEO_ITEMS[2].image_location,

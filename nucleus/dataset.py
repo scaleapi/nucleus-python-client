@@ -785,7 +785,6 @@ class Dataset:
         update: Optional[bool] = False,
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
-        # TODO: make private in favor of Dataset.append invocation
         if not self.is_scene:
             raise Exception(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
@@ -795,6 +794,7 @@ class Dataset:
             )
 
         for scene in scenes:
+            scene.use_privacy_mode = self.use_privacy_mode
             scene.validate()
 
         if not asynchronous:
