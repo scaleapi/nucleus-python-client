@@ -195,7 +195,7 @@ async def _post_form_data(
                         continue
 
                     progressbar.update(1)
-                    return (request, data)
+                    return data
 
 
 async def _make_request(
