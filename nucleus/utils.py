@@ -433,7 +433,7 @@ def get_image_dimension(image_fpath: str) -> Tuple[int, int]:
 
 
 def find_matching_filepaths(
-    dirname: str, allowed_file_types: Tuple[str]
+    dirname: str, allowed_file_types: Tuple[str, ...]
 ) -> List[str]:
     """
     Returns a list of filepaths *relative* to dirname that matched the file globs
@@ -453,7 +453,7 @@ def find_matching_filepaths(
 
 def create_items_from_folder_crawl(
     dirname: str,
-    allowed_file_types: Tuple[str],
+    allowed_file_types: Tuple[str, ...],
     use_privacy_mode: bool,
     privacy_mode_proxy: str,
 ) -> List[DatasetItem]:

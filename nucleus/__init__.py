@@ -1187,7 +1187,7 @@ class NucleusClient:
         dataset_name: Optional[str] = None,
         use_privacy_mode: bool = False,
         privacy_mode_proxy: str = "",
-        allowed_file_types: Tuple[str] = ("png", "jpg", "jpeg"),
+        allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
     ) -> Union[Dataset, None]:
         """
