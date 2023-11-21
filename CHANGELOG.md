@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.10) - 2023-11-22
+
+### Added
+
+- Added `num_processes` parameter to `dataset.items_and_annotation_chip_generator()` to specify parallel processing.
 
 ## [0.16.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.9) - 2023-11-17
 
