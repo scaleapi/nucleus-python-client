@@ -117,7 +117,7 @@ def make_multiple_requests_concurrently(
 async def _request_helper(
     client: "NucleusClient",
     requests: Sequence[Union[FormDataContextHandler, str]],
-    route: str,
+    route: Optional[str],
     progressbar: tqdm,
 ):
     """
@@ -133,6 +133,9 @@ async def _request_helper(
         tasks = []
         for request in requests:
             if isinstance(request, FormDataContextHandler):
+                assert (
+                    route
+                ), "A route must be specified for FormDataContextHandler requests"
                 req = asyncio.ensure_future(
                     _post_form_data(
                         client=client,
