@@ -1485,7 +1485,7 @@ class Dataset:
         stride_size: int,
         cache_directory: str,
         query: Optional[str] = None,
-        num_processes: int = None,
+        num_processes: int = 0,
     ) -> Iterable[Dict[str, str]]:
         """Provides a generator of chips for all DatasetItems and BoxAnnotations in the dataset.
 
