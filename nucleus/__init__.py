@@ -1078,16 +1078,16 @@ class NucleusClient:
             A dictionary from task_id to list of Point3D objects
 
         """
-        requests = [
+        endpoints = [
             f"task/{task_id}/frame/{frame_num}" for task_id in task_ids
         ]
         progressbar = self.tqdm_bar(
-            total=len(requests),
+            total=len(endpoints),
             desc="Downloading pointcloud tasks",
         )
         results = make_multiple_requests_concurrently(
             client=self,
-            requests=requests,
+            requests=endpoints,
             route=None,
             progressbar=progressbar,
         )
