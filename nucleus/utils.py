@@ -1,13 +1,16 @@
 """Shared stateless utility function library"""
-
+import glob
 import io
 import json
+import os
 import uuid
 from collections import defaultdict
-from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Tuple, Type, Union
 
 import requests
 from requests.models import HTTPError
+from PIL import Image
+
 
 from nucleus.annotation import (
     Annotation,
@@ -422,3 +425,51 @@ def paginate_generator(
             yield json_value
         if not next_token:
             break
+
+
+def get_image_dimension(image_fpath: str) -> Tuple[int, int]:
+    im = Image.open(image_fpath)
+    return im.size
+
+
+GLOB_SIZE_THRESHOLD_CHECK = 500
+
+
+def create_items_from_folder_crawl(
+    dirname: str,
+    file_globs: Tuple[str],
+    use_privacy_mode: bool,
+    skip_size_warning: bool,
+) -> List[DatasetItem]:
+    relative_fpaths = []
+    for file_glob in file_globs:
+        pathname = f"**/*.{file_glob}"
+        print(f"Searching for {pathname} in root dir: {dirname}")
+        fpaths = glob.glob(pathname=pathname, root_dir=dirname, recursive=True)
+        relative_fpaths.extend(fpaths)
+
+        if (
+            len(relative_fpaths) > GLOB_SIZE_THRESHOLD_CHECK
+            and not skip_size_warning
+        ):
+            raise Exception(
+                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
+            )
+
+    dataset_items = []
+    for relative_fpath in relative_fpaths:
+        ref_id = relative_fpath
+        image_fpath = os.path.join(dirname, relative_fpath)
+        width, height = None, None
+        if use_privacy_mode:
+            width, height = get_image_dimension(image_fpath)
+
+        item = DatasetItem(
+            image_location=image_fpath,
+            reference_id=ref_id,
+            width=width,
+            height=height,
+        )
+        dataset_items.append(item)
+
+    return dataset_items

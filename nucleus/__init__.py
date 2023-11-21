@@ -45,7 +45,8 @@ __all__ = [
 import datetime
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 
 import pydantic
 import requests
@@ -150,6 +151,7 @@ from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
 from .upload_response import UploadResponse
+from .utils import create_items_from_folder_crawl
 from .validate import Validate
 
 # pylint: disable=E1101
@@ -1177,3 +1179,42 @@ class NucleusClient:
             raise NoAPIKey()
 
         return api_key
+
+    def create_dataset_from_dir(
+        self,
+        dirname: str,
+        dataset_name: Optional[str] = None,
+        use_privacy_mode: bool = False,
+        file_globs: Tuple[str] = (".png", ".jpg", ".jpeg"),
+        skip_size_warning: bool = False,
+    ):
+        """
+        Create a dataset by recursively crawling through a directory.
+        A DatasetItem will be created for each unique image found.
+
+        Parameters:
+            dataset_name: If none is given, the parent folder name is used
+            use_privacy_mode: Whether the dataset should be treated as privacy
+            file_globs: Which image types should be considered
+            skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
+        """
+
+        # ensures path ends with a single slash
+        _dirname = os.path.join(os.path.expanduser(dirname), "")
+        if not os.path.exists(_dirname):
+            raise ValueError(
+                f"Given directory name: {dirname} does not exists. Searched in {_dirname}"
+            )
+
+        folder_name = os.path.basename(_dirname)
+        dataset_name = dataset_name or folder_name
+
+        dataset = self.create_dataset(
+            dataset_name, use_privacy_mode=use_privacy_mode
+        )
+
+        items = create_items_from_folder_crawl(
+            _dirname, file_globs, use_privacy_mode, skip_size_warning
+        )
+
+        dataset.append(items, asynchronous=False)
