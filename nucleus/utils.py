@@ -432,29 +432,22 @@ def get_image_dimension(image_fpath: str) -> Tuple[int, int]:
     return im.size
 
 
-GLOB_SIZE_THRESHOLD_CHECK = 500
-
-
 def find_matching_filepaths(
-    dirname: str, allowed_file_types: Tuple[str], skip_size_warning: bool
+    dirname: str, allowed_file_types: Tuple[str]
 ) -> List[str]:
     """
     Returns a list of filepaths *relative* to dirname that matched the file globs
     """
     relative_fpaths = []
     for file_type in allowed_file_types:
-        pathname = f"**/*.{file_type}"
-        print(f"Searching for {pathname} in root dir: {dirname}")
-        fpaths = glob.glob(pathname=pathname, root_dir=dirname, recursive=True)
-        relative_fpaths.extend(fpaths)
-
-        if (
-            len(relative_fpaths) > GLOB_SIZE_THRESHOLD_CHECK
-            and not skip_size_warning
-        ):
-            raise Exception(
-                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
-            )
+        pathname = os.path.join(dirname, f"**/*.{file_type}")
+        print(f"Searching for filepaths that match {pathname}")
+        fpaths = glob.glob(pathname=pathname, recursive=True)
+        # keep paths relative to dirname for easier management.
+        # TODO: this can be skipped in py version >= 3.10, where `root_dir` can be specified in the glob.
+        relative_fpaths.extend(
+            [fpath.replace(dirname, "") for fpath in fpaths]
+        )
     return relative_fpaths
 
 
@@ -463,11 +456,8 @@ def create_items_from_folder_crawl(
     allowed_file_types: Tuple[str],
     use_privacy_mode: bool,
     privacy_mode_proxy: str,
-    skip_size_warning: bool,
 ) -> List[DatasetItem]:
-    relative_fpaths = find_matching_filepaths(
-        dirname, allowed_file_types, skip_size_warning
-    )
+    relative_fpaths = find_matching_filepaths(dirname, allowed_file_types)
 
     dataset_items = []
     for relative_fpath in relative_fpaths:

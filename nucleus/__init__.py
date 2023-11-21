@@ -87,6 +87,7 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    GLOB_SIZE_THRESHOLD_CHECK,
     I_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
@@ -1188,7 +1189,7 @@ class NucleusClient:
         privacy_mode_proxy: str = "",
         allowed_file_types: Tuple[str] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
-    ):
+    ) -> Union[Dataset, None]:
         """
         Create a dataset by recursively crawling through a directory.
         A DatasetItem will be created for each unique image found.
@@ -1222,11 +1223,16 @@ class NucleusClient:
             allowed_file_types,
             use_privacy_mode,
             privacy_mode_proxy,
-            skip_size_warning,
         )
+
         if len(items) == 0:
             print(f"Did not find any items in {dirname}")
-            return
+            return None
+
+        if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
+            raise Exception(
+                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
+            )
 
         dataset = self.create_dataset(
             name=dataset_name, use_privacy_mode=use_privacy_mode

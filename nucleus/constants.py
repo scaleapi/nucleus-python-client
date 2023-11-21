@@ -166,3 +166,4 @@ W_KEY = "w"
 X_KEY = "x"
 Y_KEY = "y"
 Z_KEY = "z"
+GLOB_SIZE_THRESHOLD_CHECK = 500
