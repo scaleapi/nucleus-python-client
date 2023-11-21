@@ -435,16 +435,15 @@ def get_image_dimension(image_fpath: str) -> Tuple[int, int]:
 GLOB_SIZE_THRESHOLD_CHECK = 500
 
 
-def create_items_from_folder_crawl(
-    dirname: str,
-    file_globs: Tuple[str],
-    use_privacy_mode: bool,
-    privacy_mode_proxy: str,
-    skip_size_warning: bool,
-) -> List[DatasetItem]:
+def find_matching_filepaths(
+    dirname: str, allowed_file_types: Tuple[str], skip_size_warning: bool
+) -> List[str]:
+    """
+    Returns a list of filepaths *relative* to dirname that matched the file globs
+    """
     relative_fpaths = []
-    for file_glob in file_globs:
-        pathname = f"**/*.{file_glob}"
+    for file_type in allowed_file_types:
+        pathname = f"**/*.{file_type}"
         print(f"Searching for {pathname} in root dir: {dirname}")
         fpaths = glob.glob(pathname=pathname, root_dir=dirname, recursive=True)
         relative_fpaths.extend(fpaths)
@@ -456,6 +455,19 @@ def create_items_from_folder_crawl(
             raise Exception(
                 f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
             )
+    return relative_fpaths
+
+
+def create_items_from_folder_crawl(
+    dirname: str,
+    allowed_file_types: Tuple[str],
+    use_privacy_mode: bool,
+    privacy_mode_proxy: str,
+    skip_size_warning: bool,
+) -> List[DatasetItem]:
+    relative_fpaths = find_matching_filepaths(
+        dirname, allowed_file_types, skip_size_warning
+    )
 
     dataset_items = []
     for relative_fpath in relative_fpaths:
