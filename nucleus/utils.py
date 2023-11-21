@@ -439,6 +439,7 @@ def create_items_from_folder_crawl(
     dirname: str,
     file_globs: Tuple[str],
     use_privacy_mode: bool,
+    privacy_mode_proxy: str,
     skip_size_warning: bool,
 ) -> List[DatasetItem]:
     relative_fpaths = []
@@ -459,10 +460,13 @@ def create_items_from_folder_crawl(
     dataset_items = []
     for relative_fpath in relative_fpaths:
         ref_id = relative_fpath
+
         image_fpath = os.path.join(dirname, relative_fpath)
         width, height = None, None
+
         if use_privacy_mode:
             width, height = get_image_dimension(image_fpath)
+            image_fpath = os.path.join(privacy_mode_proxy, relative_fpath)
 
         item = DatasetItem(
             image_location=image_fpath,

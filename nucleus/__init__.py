@@ -1185,6 +1185,7 @@ class NucleusClient:
         dirname: str,
         dataset_name: Optional[str] = None,
         use_privacy_mode: bool = False,
+        privacy_mode_proxy: str = "",
         file_ext_globs: Tuple[str] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
     ):
@@ -1193,11 +1194,17 @@ class NucleusClient:
         A DatasetItem will be created for each unique image found.
 
         Parameters:
+            dirname: Where to look for image files, recursively
             dataset_name: If none is given, the parent folder name is used
             use_privacy_mode: Whether the dataset should be treated as privacy
+            privacy_mode_proxy: Endpoint that serves image files for privacy mode, ignore if not using privacy mode.
+                The proxy should work based on the relative path of the images in the directory.
             file_ext_globs: Which file type extensions to glob
             skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
         """
+
+        if use_privacy_mode:
+            assert privacy_mode_proxy, f"When using privacy mode, must specify a proxy to serve the files"
 
         # ensures path does not end with a slash
         _dirname = os.path.join(os.path.expanduser(dirname), "")
@@ -1209,7 +1216,7 @@ class NucleusClient:
         folder_name = os.path.basename(_dirname.rstrip("/"))
         dataset_name = dataset_name or folder_name
         items = create_items_from_folder_crawl(
-            _dirname, file_ext_globs, use_privacy_mode, skip_size_warning
+            _dirname, file_ext_globs, use_privacy_mode, privacy_mode_proxy, skip_size_warning
         )
         if len(items) == 0:
             print(f"Did not find any items in {dirname}")
