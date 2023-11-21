@@ -2,11 +2,11 @@ import asyncio
 import time
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     BinaryIO,
     Callable,
     Optional,
     Sequence,
-    TYPE_CHECKING,
     Tuple,
     Union,
 )
@@ -18,6 +18,7 @@ from tqdm import tqdm
 from nucleus.constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from nucleus.errors import NucleusAPIError
 from nucleus.retry_strategy import RetryStrategy
+
 from .logger import logger
 
 if TYPE_CHECKING:
