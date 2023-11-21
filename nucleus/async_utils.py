@@ -1,7 +1,15 @@
 import asyncio
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, BinaryIO, Callable, Sequence, Tuple
+from typing import (
+    BinaryIO,
+    Callable,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+)
 
 import aiohttp
 import nest_asyncio
@@ -10,7 +18,6 @@ from tqdm import tqdm
 from nucleus.constants import DEFAULT_NETWORK_TIMEOUT_SEC
 from nucleus.errors import NucleusAPIError
 from nucleus.retry_strategy import RetryStrategy
-
 from .logger import logger
 
 if TYPE_CHECKING:
@@ -84,10 +91,10 @@ def get_event_loop():
     return loop
 
 
-def make_many_form_data_requests_concurrently(
+def make_multiple_requests_concurrently(
     client: "NucleusClient",
-    requests: Sequence[FormDataContextHandler],
-    route: str,
+    requests: Sequence[Union[FormDataContextHandler, str]],
+    route: Optional[str],
     progressbar: tqdm,
 ):
     """
@@ -95,45 +102,57 @@ def make_many_form_data_requests_concurrently(
 
     Args:
         client: The client to use for the request.
-        requests: Each requst should be a FormDataContextHandler object which will
-            handle generating form data, and opening/closing files for each request.
-        route: route for the request.
+        requests: a list of requests to make. This list either comprises a string of endpoints to request,
+        or a list of FormDataContextHandler object which will handle generating form data, and opening/closing files for each request.
+        route: A route is required when requests are for Form Data Post requests
         progressbar: A tqdm progress bar to use for showing progress to the user.
     """
     loop = get_event_loop()
     return loop.run_until_complete(
-        form_data_request_helper(client, requests, route, progressbar)
+        _request_helper(client, requests, route, progressbar)
     )
 
 
-async def form_data_request_helper(
+async def _request_helper(
     client: "NucleusClient",
-    requests: Sequence[FormDataContextHandler],
+    requests: Sequence[Union[FormDataContextHandler, str]],
     route: str,
     progressbar: tqdm,
 ):
     """
-    Makes an async post request with files to a Nucleus endpoint.
+    Makes an async requests to a Nucleus endpoint.
 
     Args:
         client: The client to use for the request.
-        requests: Each request should be a FormDataContextHandler object which will
-            handle generating form data, and opening/closing files for each request.
+        requests: a list of requests to make. This list either comprises a string of endpoints to request,
+        or a list of FormDataContextHandler object which will handle generating form data, and opening/closing files for each request.
         route: route for the request.
     """
     async with aiohttp.ClientSession() as session:
-        tasks = [
-            asyncio.ensure_future(
-                _post_form_data(
-                    client=client,
-                    request=request,
-                    route=route,
-                    session=session,
-                    progressbar=progressbar,
+        tasks = []
+        for request in requests:
+            if isinstance(request, FormDataContextHandler):
+                req = asyncio.ensure_future(
+                    _post_form_data(
+                        client=client,
+                        request=request,
+                        route=route,
+                        session=session,
+                        progressbar=progressbar,
+                    )
                 )
-            )
-            for request in requests
-        ]
+                tasks.append(req)
+            else:
+                req = asyncio.ensure_future(
+                    _make_request(
+                        client=client,
+                        request=request,
+                        session=session,
+                        progressbar=progressbar,
+                    )
+                )
+                tasks.append(req)
+
         return await asyncio.gather(*tasks)
 
 
@@ -165,36 +184,80 @@ async def _post_form_data(
                     auth=aiohttp.BasicAuth(client.api_key, ""),
                     timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
                 ) as response:
-                    logger.info(
-                        "API request has response code %s", response.status
+                    data = await _parse_async_response(
+                        endpoint, session, response, sleep_time
                     )
-
-                    try:
-                        data = await response.json()
-                    except aiohttp.client_exceptions.ContentTypeError:
-                        # In case of 404, the server returns text
-                        data = await response.text()
-                    if (
-                        response.status in RetryStrategy.statuses
-                        and sleep_time != -1
-                    ):
-                        time.sleep(sleep_time)
+                    if data is None:
                         continue
 
-                    if response.status == 503:
-                        raise TimeoutError(
-                            "The request to upload your max is timing out, please lower local_files_per_upload_request in your api call."
-                        )
-
-                    if not response.ok:
-                        raise NucleusAPIError(
-                            endpoint,
-                            session.post,
-                            aiohttp_response=(
-                                response.status,
-                                response.reason,
-                                data,
-                            ),
-                        )
                     progressbar.update(1)
-                    return data
+                    return (request, data)
+
+
+async def _make_request(
+    client: "NucleusClient",
+    request: str,
+    session: aiohttp.ClientSession,
+    progressbar: tqdm,
+):
+    """
+    Makes an async post request with files to a Nucleus endpoint.
+
+    Args:
+        client: The client to use for the request.
+        request: The request to make (See FormDataContextHandler for more details.)
+        route: route for the request.
+        session: The session to use for the request.
+
+    Returns:
+        A tuple (endpoint request string, response from endpoint)
+    """
+    endpoint = f"{client.endpoint}/{request}"
+    logger.info("GET %s", endpoint)
+
+    async with UPLOAD_SEMAPHORE:
+        for sleep_time in RetryStrategy.sleep_times() + [-1]:
+            async with session.get(
+                endpoint,
+                auth=aiohttp.BasicAuth(client.api_key, ""),
+                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+            ) as response:
+                data = await _parse_async_response(
+                    endpoint, session, response, sleep_time
+                )
+                if data is None:
+                    continue
+
+                progressbar.update(1)
+                return (request, data)
+
+
+async def _parse_async_response(endpoint, session, response, sleep_time):
+    logger.info("API request has response code %s", response.status)
+
+    try:
+        data = await response.json()
+    except aiohttp.client_exceptions.ContentTypeError:
+        # In case of 404, the server returns text
+        data = await response.text()
+    if response.status in RetryStrategy.statuses and sleep_time != -1:
+        time.sleep(sleep_time)
+        return None
+
+    if response.status == 503:
+        raise TimeoutError(
+            "The request to upload your max is timing out, please lower local_files_per_upload_request in your api call."
+        )
+
+    if not response.ok:
+        raise NucleusAPIError(
+            endpoint,
+            session.get,
+            aiohttp_response=(
+                response.status,
+                response.reason,
+                data,
+            ),
+        )
+
+    return data
