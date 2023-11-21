@@ -1208,7 +1208,7 @@ class NucleusClient:
                 privacy_mode_proxy
             ), "When using privacy mode, must specify a proxy to serve the files"
 
-        # ensures path does not end with a slash
+        # ensures path ends with a slash
         _dirname = os.path.join(os.path.expanduser(dirname), "")
         if not os.path.exists(_dirname):
             raise ValueError(
