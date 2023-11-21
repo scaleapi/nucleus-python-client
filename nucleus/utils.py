@@ -8,9 +8,8 @@ from collections import defaultdict
 from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Tuple, Type, Union
 
 import requests
-from requests.models import HTTPError
 from PIL import Image
-
+from requests.models import HTTPError
 
 from nucleus.annotation import (
     Annotation,
