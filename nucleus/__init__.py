@@ -1206,7 +1206,7 @@ class NucleusClient:
         if use_privacy_mode:
             assert (
                 privacy_mode_proxy
-            ), f"When using privacy mode, must specify a proxy to serve the files"
+            ), "When using privacy mode, must specify a proxy to serve the files"
 
         # ensures path does not end with a slash
         _dirname = os.path.join(os.path.expanduser(dirname), "")
