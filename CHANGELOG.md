@@ -6,11 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.16.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.10) - 2023-11-21
+
+### Added
+
+- Method to allow for concurrent task fetches for pointcloud data
+
+Example:
+```python
+>>> task_ids = ['task_1', 'task_2']
+>>> resp = client.download_pointcloud_tasks(task_ids=task_ids, frame_num=1)
+>>> resp
+{
+  'task_1': [Point3D(x=5, y=10.7, z=-2.3), ...],
+  'task_2': [Point3D(x=1.3 y=11.1, z=1.5), ...],
+}
+```
+
+
 ## [0.16.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.9) - 2023-11-17
 
 ### Fixes
 
-- Minor fixes to video scene upload on privacy moce
+- Minor fixes to video scene upload on privacy mode
 
 ## [0.16.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.8) - 2023-11-16
 
