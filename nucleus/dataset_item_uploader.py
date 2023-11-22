@@ -14,7 +14,7 @@ from nucleus.async_utils import (
     FileFormData,
     FileFormField,
     FormDataContextHandler,
-    make_many_form_data_requests_concurrently,
+    make_multiple_requests_concurrently,
 )
 
 from .constants import DATASET_ID_KEY, IMAGE_KEY, ITEMS_KEY, UPDATE_KEY
@@ -125,7 +125,7 @@ class DatasetItemUploader:
             desc=f"Uploading {len(items)} items in {len(requests)} batches",
         )
 
-        return make_many_form_data_requests_concurrently(
+        return make_multiple_requests_concurrently(
             self._client,
             requests,
             f"dataset/{dataset_id}/append",

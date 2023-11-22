@@ -70,6 +70,7 @@ from .annotation import (
     SegmentationAnnotation,
 )
 from .async_job import AsyncJob, EmbeddingsExportJob
+from .async_utils import make_multiple_requests_concurrently
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
@@ -1064,6 +1065,50 @@ class NucleusClient:
             return [LidarPoint.from_json(pt) for pt in points]
 
         return [Point3D.from_json(pt) for pt in points]
+
+    def download_pointcloud_tasks(
+        self, task_ids: List[str], frame_num: int
+    ) -> Dict[str, List[Union[Point3D, LidarPoint]]]:
+        """
+        Download the lidar point cloud data for a given set of tasks and frame number.
+
+        Parameters:
+            task_ids: list of task ids to fetch data from
+            frame_num: download point cloud for this particular frame
+
+        Returns:
+            A dictionary from task_id to list of Point3D objects
+
+        """
+        endpoints = [
+            f"task/{task_id}/frame/{frame_num}" for task_id in task_ids
+        ]
+        progressbar = self.tqdm_bar(
+            total=len(endpoints),
+            desc="Downloading pointcloud tasks",
+        )
+        results = make_multiple_requests_concurrently(
+            client=self,
+            requests=endpoints,
+            route=None,
+            progressbar=progressbar,
+        )
+        resp = {}
+
+        for result in results:
+            req, data = result
+            task_id = req.split("/")[1]  # task/<task id>/frame/1 => task_id
+            points = data.get(POINTS_KEY, None)
+            if points is None or len(points) == 0:
+                raise Exception("Response has invalid payload")
+
+            sample_point = points[0]
+            if I_KEY in sample_point.keys():
+                resp[task_id] = [LidarPoint.from_json(pt) for pt in points]
+
+            resp[task_id] = [Point3D.from_json(pt) for pt in points]
+
+        return resp
 
     @deprecated("Prefer calling Dataset.create_custom_index instead.")
     def create_custom_index(

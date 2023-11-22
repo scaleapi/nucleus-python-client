@@ -6,7 +6,7 @@ from nucleus.annotation import Annotation, SegmentationAnnotation
 from nucleus.async_utils import (
     FileFormField,
     FormDataContextHandler,
-    make_many_form_data_requests_concurrently,
+    make_multiple_requests_concurrently,
 )
 from nucleus.constants import MASK_TYPE, SERIALIZED_REQUEST_KEY
 from nucleus.errors import DuplicateIDError
@@ -150,7 +150,7 @@ class AnnotationUploader:
             desc="Local segmentation mask file batches",
         )
 
-        return make_many_form_data_requests_concurrently(
+        return make_multiple_requests_concurrently(
             client=self._client,
             requests=requests,
             route=self._route,
