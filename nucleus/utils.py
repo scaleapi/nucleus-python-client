@@ -1,12 +1,14 @@
 """Shared stateless utility function library"""
-
+import glob
 import io
 import json
+import os
 import uuid
 from collections import defaultdict
-from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Type, Union
+from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Tuple, Type, Union
 
 import requests
+from PIL import Image
 from requests.models import HTTPError
 
 from nucleus.annotation import (
@@ -422,3 +424,57 @@ def paginate_generator(
             yield json_value
         if not next_token:
             break
+
+
+def get_image_dimension(image_fpath: str) -> Tuple[int, int]:
+    im = Image.open(image_fpath)
+    return im.size
+
+
+def find_matching_filepaths(
+    dirname: str, allowed_file_types: Tuple[str, ...]
+) -> List[str]:
+    """
+    Returns a list of filepaths *relative* to dirname that matched the file globs
+    """
+    relative_fpaths = []
+    for file_type in allowed_file_types:
+        pathname = os.path.join(dirname, f"**/*.{file_type}")
+        print(f"Searching for filepaths that match {pathname}")
+        fpaths = glob.glob(pathname=pathname, recursive=True)
+        # keep paths relative to dirname for easier management.
+        # TODO: this can be skipped in py version >= 3.10, where `root_dir` can be specified in the glob.
+        relative_fpaths.extend(
+            [fpath.replace(dirname, "") for fpath in fpaths]
+        )
+    return relative_fpaths
+
+
+def create_items_from_folder_crawl(
+    dirname: str,
+    allowed_file_types: Tuple[str, ...],
+    use_privacy_mode: bool,
+    privacy_mode_proxy: str,
+) -> List[DatasetItem]:
+    relative_fpaths = find_matching_filepaths(dirname, allowed_file_types)
+
+    dataset_items = []
+    for relative_fpath in relative_fpaths:
+        ref_id = relative_fpath
+
+        image_fpath = os.path.join(dirname, relative_fpath)
+        width, height = None, None
+
+        if use_privacy_mode:
+            width, height = get_image_dimension(image_fpath)
+            image_fpath = os.path.join(privacy_mode_proxy, relative_fpath)
+
+        item = DatasetItem(
+            image_location=image_fpath,
+            reference_id=ref_id,
+            width=width,
+            height=height,
+        )
+        dataset_items.append(item)
+
+    return dataset_items
