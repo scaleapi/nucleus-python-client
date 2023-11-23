@@ -45,7 +45,7 @@ __all__ = [
 import datetime
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pydantic
 import requests
@@ -70,6 +70,7 @@ from .annotation import (
     SegmentationAnnotation,
 )
 from .async_job import AsyncJob, EmbeddingsExportJob
+from .async_utils import make_multiple_requests_concurrently
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
@@ -86,6 +87,7 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    GLOB_SIZE_THRESHOLD_CHECK,
     I_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
@@ -150,6 +152,7 @@ from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
 from .upload_response import UploadResponse
+from .utils import create_items_from_folder_crawl
 from .validate import Validate
 
 # pylint: disable=E1101
@@ -1063,6 +1066,50 @@ class NucleusClient:
 
         return [Point3D.from_json(pt) for pt in points]
 
+    def download_pointcloud_tasks(
+        self, task_ids: List[str], frame_num: int
+    ) -> Dict[str, List[Union[Point3D, LidarPoint]]]:
+        """
+        Download the lidar point cloud data for a given set of tasks and frame number.
+
+        Parameters:
+            task_ids: list of task ids to fetch data from
+            frame_num: download point cloud for this particular frame
+
+        Returns:
+            A dictionary from task_id to list of Point3D objects
+
+        """
+        endpoints = [
+            f"task/{task_id}/frame/{frame_num}" for task_id in task_ids
+        ]
+        progressbar = self.tqdm_bar(
+            total=len(endpoints),
+            desc="Downloading pointcloud tasks",
+        )
+        results = make_multiple_requests_concurrently(
+            client=self,
+            requests=endpoints,
+            route=None,
+            progressbar=progressbar,
+        )
+        resp = {}
+
+        for result in results:
+            req, data = result
+            task_id = req.split("/")[1]  # task/<task id>/frame/1 => task_id
+            points = data.get(POINTS_KEY, None)
+            if points is None or len(points) == 0:
+                raise Exception("Response has invalid payload")
+
+            sample_point = points[0]
+            if I_KEY in sample_point.keys():
+                resp[task_id] = [LidarPoint.from_json(pt) for pt in points]
+
+            resp[task_id] = [Point3D.from_json(pt) for pt in points]
+
+        return resp
+
     @deprecated("Prefer calling Dataset.create_custom_index instead.")
     def create_custom_index(
         self, dataset_id: str, embeddings_urls: list, embedding_dim: int
@@ -1177,3 +1224,62 @@ class NucleusClient:
             raise NoAPIKey()
 
         return api_key
+
+    def create_dataset_from_dir(
+        self,
+        dirname: str,
+        dataset_name: Optional[str] = None,
+        use_privacy_mode: bool = False,
+        privacy_mode_proxy: str = "",
+        allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
+        skip_size_warning: bool = False,
+    ) -> Union[Dataset, None]:
+        """
+        Create a dataset by recursively crawling through a directory.
+        A DatasetItem will be created for each unique image found.
+
+        Parameters:
+            dirname: Where to look for image files, recursively
+            dataset_name: If none is given, the parent folder name is used
+            use_privacy_mode: Whether the dataset should be treated as privacy
+            privacy_mode_proxy: Endpoint that serves image files for privacy mode, ignore if not using privacy mode.
+                The proxy should work based on the relative path of the images in the directory.
+            allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
+            skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
+        """
+
+        if use_privacy_mode:
+            assert (
+                privacy_mode_proxy
+            ), "When using privacy mode, must specify a proxy to serve the files"
+
+        # ensures path ends with a slash
+        _dirname = os.path.join(os.path.expanduser(dirname), "")
+        if not os.path.exists(_dirname):
+            raise ValueError(
+                f"Given directory name: {dirname} does not exists. Searched in {_dirname}"
+            )
+
+        folder_name = os.path.basename(_dirname.rstrip("/"))
+        dataset_name = dataset_name or folder_name
+        items = create_items_from_folder_crawl(
+            _dirname,
+            allowed_file_types,
+            use_privacy_mode,
+            privacy_mode_proxy,
+        )
+
+        if len(items) == 0:
+            print(f"Did not find any items in {dirname}")
+            return None
+
+        if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
+            raise Exception(
+                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
+            )
+
+        dataset = self.create_dataset(
+            name=dataset_name, use_privacy_mode=use_privacy_mode
+        )
+        dataset.append(items, asynchronous=False)
+        return dataset

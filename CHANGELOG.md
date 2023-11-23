@@ -11,11 +11,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `num_processes` parameter to `dataset.items_and_annotation_chip_generator()` to specify parallel processing.
 
+## [0.16.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.11) - 2023-11-22
+
+### Added
+
+- Method to allow for concurrent task fetches for pointcloud data
+
+Example:
+```python
+>>> task_ids = ['task_1', 'task_2']
+>>> resp = client.download_pointcloud_tasks(task_ids=task_ids, frame_num=1)
+>>> resp
+{
+  'task_1': [Point3D(x=5, y=10.7, z=-2.3), ...],
+  'task_2': [Point3D(x=1.3 y=11.1, z=1.5), ...],
+}
+```
+
+## [0.16.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.10) - 2023-11-22
+
+Allow creating a dataset by crawling all images in a directory, recursively. Also supports privacy mode datasets.
+
+#### Example structure:
+```
+~/Documents/
+    data/
+        2022/
+            - img01.png
+            - img02.png
+        2023/
+            - img01.png
+            - img02.png
+```
+
+#### Default Example:
+
+```python
+data_dir = "~/Documents/data"
+client.create_dataset_from_dir(data_dir)
+# this will create a dataset named "data" and will contain 4 images, with the ref IDs:
+# ["2022/img01.png", "2022/img02.png", "2023/img01.png", "2023/img02.png"]
+```
+
+#### Example Privacy Mode:
+
+This requires that a proxy (or file server) is setup  and can serve files _relative_ to the data_dir
+
+```python
+data_dir = "~/Documents/data"
+client.create_dataset_from_dir(
+    data_dir,
+    dataset_name='my-dataset',
+    use_privacy_mode=True,
+    privacy_mode_proxy="http://localhost:5000/assets/"
+)
+```
+
+This would create a dataset `my-dataset`, and when opened in Nucleus, the images would be requested to the path:
+`<privacy_mode_proxy>/<img ref id>`, for example: `http://localhost:5000/assets/2022/img01.png`
+
+
 ## [0.16.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.9) - 2023-11-17
 
 ### Fixes
 
-- Minor fixes to video scene upload on privacy moce
+- Minor fixes to video scene upload on privacy mode
 
 ## [0.16.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.8) - 2023-11-16
 
