@@ -1485,6 +1485,7 @@ class Dataset:
         stride_size: int,
         cache_directory: str,
         query: Optional[str] = None,
+        num_processes: int = 0,
     ) -> Iterable[Dict[str, str]]:
         """Provides a generator of chips for all DatasetItems and BoxAnnotations in the dataset.
 
@@ -1498,6 +1499,7 @@ class Dataset:
             cache_directory: The s3 or local directory to store the image and annotations of a chip.
               s3 directories must be in the format s3://s3-bucket/s3-key
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+            num_processes: The number of worker processes to use to chip and upload images. If unset, no parallel processing will occur.
 
         Returns:
             Generator where each element is a dict containing the location of the image chip (jpeg) and its annotations (json).
@@ -1522,22 +1524,26 @@ class Dataset:
             annotations = item[BOX_TYPE]
             item_ref_id = item[ITEM_KEY][REFERENCE_ID_KEY]
             offsets = generate_offsets(w, h, chip_size, stride_size)
-            with Pool() as pool:
-                chip_args = [
-                    (
-                        offset,
-                        chip_size,
-                        w,
-                        h,
-                        item_ref_id,
-                        cache_directory,
-                        image,
-                        annotations,
-                    )
-                    for offset in offsets
-                ]
-                for chip_result in pool.imap(process_chip, chip_args):
-                    yield chip_result
+            chip_args = [
+                (
+                    offset,
+                    chip_size,
+                    w,
+                    h,
+                    item_ref_id,
+                    cache_directory,
+                    image,
+                    annotations,
+                )
+                for offset in offsets
+            ]
+            if num_processes:
+                with Pool(num_processes) as pool:
+                    for chip_result in pool.imap(process_chip, chip_args):
+                        yield chip_result
+            else:
+                for chip_arg in chip_args:
+                    yield process_chip(chip_arg)
 
     def export_embeddings(
         self,
