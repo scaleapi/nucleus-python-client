@@ -8,7 +8,12 @@ import requests
 
 from nucleus.annotation import Annotation
 from nucleus.async_job import AsyncJob, EmbeddingsExportJob
-from nucleus.constants import EXPORT_FOR_TRAINING_KEY, EXPORTED_ROWS, ITEMS_KEY
+from nucleus.constants import (
+    EXPORT_FOR_TRAINING_KEY,
+    EXPORTED_ROWS,
+    ITEMS_KEY,
+    SLICE_TAGS_KEY,
+)
 from nucleus.dataset_item import DatasetItem
 from nucleus.errors import NucleusAPIError
 from nucleus.prediction import Prediction
@@ -351,6 +356,25 @@ class Slice:
         self._type = info["type"]
         self._description = info["description"]
         return info
+
+    def add_tags(self, tags: List[str]) -> dict:
+        """Tag a slice with custom tag names. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            slc = client.get_slice("YOUR_SLICE_ID")
+
+            slc.add_tags(["tag_1", "tag_1"])
+
+        Args:
+            tags: list of tag names
+        """
+        response = self._client.make_request(
+            payload={SLICE_TAGS_KEY: tags},
+            route=f"slice/{self.id}/tag",
+            requests_command=requests.post,
+        )
+        return response
 
     def append(
         self,
