@@ -217,6 +217,10 @@ class Slice:
         return self._dataset_id
 
     @property
+    def tags(self):
+        return self.info()["tags"]
+
+    @property
     def type(self):
         """The type of the Slice."""
         if self._type is None:
@@ -330,6 +334,7 @@ class Slice:
                     "pending_job_count": int
                     "created_at": datetime
                     "description": Union[str, None]
+                    "tags":
                 }
         """
         info = KeyErrorDict(
