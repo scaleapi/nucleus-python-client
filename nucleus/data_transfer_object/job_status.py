@@ -4,7 +4,12 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 from dateutil.parser import ParserError, parse
-from pydantic import validator
+
+try:
+    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator
 
 from nucleus.constants import JOB_REQ_LIMIT
 from nucleus.job import CustomerJobTypes

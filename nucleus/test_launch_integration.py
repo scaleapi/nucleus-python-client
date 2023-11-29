@@ -2,25 +2,36 @@ import io
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from PIL import Image, ImageDraw
-from pydantic import BaseModel, Extra, ValidationError
+
+try:
+    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+    from pydantic.v1 import BaseModel, Extra, ValidationError
+except ImportError:
+    from pydantic import BaseModel, Extra, ValidationError
 
 # From scaleapi/server/src/lib/select/api/types.ts
 # These classes specify how user models must pass output to Launch + Nucleus.
 
 
-class PointModel(BaseModel, extra=Extra.forbid):
+class PointModel(BaseModel):
     x: float
     y: float
 
+    class Config:
+        extra = Extra.forbid
 
-class BoxGeometryModel(BaseModel, extra=Extra.forbid):
+
+class BoxGeometryModel(BaseModel):
     x: float
     y: float
     width: float
     height: float
 
+    class Config:
+        extra = Extra.forbid
 
-class BoxAnnotationModel(BaseModel, extra=Extra.forbid):
+
+class BoxAnnotationModel(BaseModel):
     geometry: BoxGeometryModel
     type: str
     label: Optional[str] = None
@@ -28,12 +39,16 @@ class BoxAnnotationModel(BaseModel, extra=Extra.forbid):
     classPdf: Optional[Dict[str, float]] = None
     metadata: Optional[Dict[str, Any]] = None
 
+    class Config:
+        extra = Extra.forbid
 
-class NoneGeometryModel(BaseModel, extra=Extra.forbid):
-    pass
+
+class NoneGeometryModel(BaseModel):
+    class Config:
+        extra = Extra.forbid
 
 
-class CategoryAnnotationModel(BaseModel, extra=Extra.forbid):
+class CategoryAnnotationModel(BaseModel):
     geometry: NoneGeometryModel
     type: str
     label: Optional[str] = None
@@ -41,12 +56,18 @@ class CategoryAnnotationModel(BaseModel, extra=Extra.forbid):
     classPdf: Optional[Dict[str, float]] = None
     metadata: Optional[Dict[str, Any]] = None
 
+    class Config:
+        extra = Extra.forbid
 
-class LineGeometryModel(BaseModel, extra=Extra.forbid):
+
+class LineGeometryModel(BaseModel):
     vertices: List[PointModel]
 
+    class Config:
+        extra = Extra.forbid
 
-class LineAnnotationModel(BaseModel, extra=Extra.forbid):
+
+class LineAnnotationModel(BaseModel):
     geometry: LineGeometryModel
     type: str
     label: Optional[str] = None
@@ -54,18 +75,27 @@ class LineAnnotationModel(BaseModel, extra=Extra.forbid):
     classPdf: Optional[Dict[str, float]] = None
     metadata: Optional[Dict[str, Any]] = None
 
+    class Config:
+        extra = Extra.forbid
 
-class PolygonGeometryModel(BaseModel, extra=Extra.forbid):
+
+class PolygonGeometryModel(BaseModel):
     vertices: List[PointModel]
 
+    class Config:
+        extra = Extra.forbid
 
-class PolygonAnnotationModel(BaseModel, extra=Extra.forbid):
+
+class PolygonAnnotationModel(BaseModel):
     geometry: PolygonGeometryModel
     type: str
     label: Optional[str] = None
     confidence: Optional[float] = None
     classPdf: Optional[Dict[str, float]] = None
     metadata: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = Extra.forbid
 
 
 def verify_output(

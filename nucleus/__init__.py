@@ -47,7 +47,12 @@ import os
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pydantic
+try:
+    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+    import pydantic.v1 as pydantic
+except ImportError:
+    import pydantic
+
 import requests
 import tqdm
 
