@@ -109,6 +109,7 @@ from .constants import (
     PREDICTIONS_PROCESSED_KEY,
     REFERENCE_IDS_KEY,
     SLICE_ID_KEY,
+    SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
     UPDATE_KEY,
 )
