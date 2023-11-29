@@ -1,6 +1,10 @@
 from typing import Optional
 
-from pydantic import root_validator, validator
+try:
+    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+    from pydantic.v1 import root_validator, validator
+except ImportError:
+    from pydantic import root_validator, validator
 
 from nucleus.pydantic_base import ImmutableModel
 

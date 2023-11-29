@@ -1,6 +1,10 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import validator
+try:
+    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+    from pydantic.v1 import validator
+except ImportError:
+    from pydantic import validator
 
 from ...pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
