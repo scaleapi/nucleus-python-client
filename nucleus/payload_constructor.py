@@ -24,6 +24,7 @@ from .constants import (
     SCENES_KEY,
     SEGMENTATIONS_KEY,
     TAXONOMY_NAME_KEY,
+    TRAINED_SLICE_ID_KEY,
     TYPE_KEY,
     UPDATE_KEY,
 )
@@ -76,6 +77,7 @@ def construct_annotation_payload(
         ]
     ],
     update: bool,
+    trained_slice_id: str,
 ) -> dict:
     annotations = [
         annotation.to_payload()
@@ -92,6 +94,8 @@ def construct_annotation_payload(
         payload[ANNOTATIONS_KEY] = annotations
     if segmentations:
         payload[SEGMENTATIONS_KEY] = segmentations
+    if trained_slice_id:
+        payload[TRAINED_SLICE_ID_KEY] = trained_slice_id
     return payload
 
 
