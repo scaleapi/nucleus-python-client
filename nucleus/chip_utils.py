@@ -122,7 +122,7 @@ def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
         xs = np.round(xs * (w - chip_size) / xs[-1]).astype(int)
     if len(ys) > 1:
         ys = np.round(ys * (h - chip_size) / ys[-1]).astype(int)
-    yield from product(ys, xs)
+    yield from product(xs, ys)
 
 
 def chip_annotations(data, x0: int, y0: int, x1: int, y1: int):
