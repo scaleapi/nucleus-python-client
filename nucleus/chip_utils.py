@@ -116,13 +116,13 @@ def write_chip(
 
 
 def generate_offsets(w: int, h: int, chip_size: int, stride_size: int):
-    xs = np.arange(0, w - stride_size, chip_size - stride_size)
-    ys = np.arange(0, h - stride_size, chip_size - stride_size)
+    xs = np.arange(0, w - stride_size, stride_size)
+    ys = np.arange(0, h - stride_size, stride_size)
     if len(xs) > 1:
         xs = np.round(xs * (w - chip_size) / xs[-1]).astype(int)
     if len(ys) > 1:
         ys = np.round(ys * (h - chip_size) / ys[-1]).astype(int)
-    yield from product(ys, xs)
+    yield from product(xs, ys)
 
 
 def chip_annotations(data, x0: int, y0: int, x1: int, y1: int):
