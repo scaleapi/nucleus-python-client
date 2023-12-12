@@ -242,7 +242,7 @@ class PredictionUploader(AnnotationUploader):
     ):
         super().__init__(dataset_id, client)
         self._client = client
-        self.tra
+        self.trained_slice_id = trained_slice_id
         if model_run_id is not None:
             assert model_id is None and dataset_id is None
             self._route = f"modelRun/{model_run_id}/predict"
