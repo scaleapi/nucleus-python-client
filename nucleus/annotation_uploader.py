@@ -118,7 +118,7 @@ class AnnotationUploader:
         update: bool,
         batch_size: int,
         segmentation: bool,
-        trained_slice_id: str,
+        trained_slice_id: Optional[str],
     ):
         batches = [
             annotations[i : i + batch_size]

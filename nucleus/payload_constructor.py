@@ -77,7 +77,7 @@ def construct_annotation_payload(
         ]
     ],
     update: bool,
-    trained_slice_id: str,
+    trained_slice_id: Optional[str],
 ) -> dict:
     annotations = [
         annotation.to_payload()
