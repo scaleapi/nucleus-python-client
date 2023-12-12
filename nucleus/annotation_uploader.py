@@ -57,7 +57,7 @@ class AnnotationUploader:
         update: bool = False,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-        trained_slice_id: str = None,
+        trained_slice_id: Optional[str] = None,
     ):
         """For more details on parameters and functionality, see dataset.annotate."""
         if local_files_per_upload_request > 10:

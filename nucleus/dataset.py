@@ -1794,7 +1794,7 @@ class Dataset:
         batch_size: int = 5000,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-        trained_slice_id: str = None,
+        trained_slice_id: Optional[str] = None,
     ):
         """Uploads predictions and associates them with an existing :class:`Model`.
 
