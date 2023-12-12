@@ -129,7 +129,9 @@ class AnnotationUploader:
             "Segmentation batches" if segmentation else "Annotation batches"
         )
         for batch in self._client.tqdm_bar(batches, desc=progress_bar_name):
-            payload = construct_annotation_payload(batch, update, trained_slice_id)
+            payload = construct_annotation_payload(
+                batch, update, trained_slice_id
+            )
             responses.append(
                 self._client.make_request(payload, route=self._route)
             )
@@ -238,7 +240,7 @@ class PredictionUploader(AnnotationUploader):
         dataset_id: Optional[str] = None,
         model_id: Optional[str] = None,
         model_run_id: Optional[str] = None,
-        trained_slice_id: Optional[str] = None
+        trained_slice_id: Optional[str] = None,
     ):
         super().__init__(dataset_id, client)
         self._client = client

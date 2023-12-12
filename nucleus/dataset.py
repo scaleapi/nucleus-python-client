@@ -1880,7 +1880,11 @@ class Dataset:
                 predictions, self.id, self._client
             )
             response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update, TRAINED_SLICE_ID_KEY: trained_slice_id},
+                payload={
+                    REQUEST_ID_KEY: request_id,
+                    UPDATE_KEY: update,
+                    TRAINED_SLICE_ID_KEY: trained_slice_id,
+                },
                 route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
             )
             return AsyncJob.from_json(response, self._client)
@@ -1891,7 +1895,7 @@ class Dataset:
             update=update,
             remote_files_per_upload_request=remote_files_per_upload_request,
             local_files_per_upload_request=local_files_per_upload_request,
-            trained_slice_id=trained_slice_id
+            trained_slice_id=trained_slice_id,
         )
 
     def predictions_iloc(self, model, index):
