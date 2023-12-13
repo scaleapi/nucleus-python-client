@@ -1857,7 +1857,6 @@ class Dataset:
 
         Returns:
             Payload describing the synchronous upload::
-
                 {
                     "dataset_id": str,
                     "model_run_id": str,
