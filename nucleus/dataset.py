@@ -66,6 +66,7 @@ from .constants import (
     SLICE_ID_KEY,
     TRACK_REFERENCE_IDS_KEY,
     TRACKS_KEY,
+    TRAINED_SLICE_ID_KEY,
     UPDATE_KEY,
     VIDEO_URL_KEY,
 )
@@ -1793,6 +1794,7 @@ class Dataset:
         batch_size: int = 5000,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
+        trained_slice_id: Optional[str] = None,
     ):
         """Uploads predictions and associates them with an existing :class:`Model`.
 
@@ -1841,19 +1843,20 @@ class Dataset:
               you can try lowering this batch size. This is only relevant for
               asynchronous=False
             remote_files_per_upload_request: Number of remote files to upload in each
-                request. Segmentations have either local or remote files, if you are
-                getting timeouts while uploading segmentations with remote urls, you
-                should lower this value from its default of 20. This is only relevant for
-                asynchronous=False.
+              request. Segmentations have either local or remote files, if you are
+              getting timeouts while uploading segmentations with remote urls, you
+              should lower this value from its default of 20. This is only relevant for
+              asynchronous=False.
             local_files_per_upload_request: Number of local files to upload in each
-                request. Segmentations have either local or remote files, if you are
-                getting timeouts while uploading segmentations with local files, you
-                should lower this value from its default of 10. The maximum is 10.
-                This is only relevant for asynchronous=False
+              request. Segmentations have either local or remote files, if you are
+              getting timeouts while uploading segmentations with local files, you
+              should lower this value from its default of 10. The maximum is 10.
+              This is only relevant for asynchronous=False
+            trained_slice_id: Nucleus-generated slice ID (starts with ``slc_``) which was used
+                to train the model.
 
         Returns:
             Payload describing the synchronous upload::
-
                 {
                     "dataset_id": str,
                     "model_run_id": str,
@@ -1876,7 +1879,11 @@ class Dataset:
                 predictions, self.id, self._client
             )
             response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                payload={
+                    REQUEST_ID_KEY: request_id,
+                    UPDATE_KEY: update,
+                    TRAINED_SLICE_ID_KEY: trained_slice_id,
+                },
                 route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
             )
             return AsyncJob.from_json(response, self._client)
@@ -1887,6 +1894,7 @@ class Dataset:
             update=update,
             remote_files_per_upload_request=remote_files_per_upload_request,
             local_files_per_upload_request=local_files_per_upload_request,
+            trained_slice_id=trained_slice_id,
         )
 
     def predictions_iloc(self, model, index):

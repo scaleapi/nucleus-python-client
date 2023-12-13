@@ -57,6 +57,7 @@ class AnnotationUploader:
         update: bool = False,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
+        trained_slice_id: Optional[str] = None,
     ):
         """For more details on parameters and functionality, see dataset.annotate."""
         if local_files_per_upload_request > 10:
@@ -95,6 +96,7 @@ class AnnotationUploader:
                     update,
                     batch_size=remote_files_per_upload_request,
                     segmentation=True,
+                    trained_slice_id=trained_slice_id,
                 )
             )
         if annotations_without_files:
@@ -104,6 +106,7 @@ class AnnotationUploader:
                     update,
                     batch_size=batch_size,
                     segmentation=False,
+                    trained_slice_id=trained_slice_id,
                 )
             )
 
@@ -115,6 +118,7 @@ class AnnotationUploader:
         update: bool,
         batch_size: int,
         segmentation: bool,
+        trained_slice_id: Optional[str],
     ):
         batches = [
             annotations[i : i + batch_size]
@@ -125,7 +129,9 @@ class AnnotationUploader:
             "Segmentation batches" if segmentation else "Annotation batches"
         )
         for batch in self._client.tqdm_bar(batches, desc=progress_bar_name):
-            payload = construct_annotation_payload(batch, update)
+            payload = construct_annotation_payload(
+                batch, update, trained_slice_id
+            )
             responses.append(
                 self._client.make_request(payload, route=self._route)
             )
@@ -234,9 +240,11 @@ class PredictionUploader(AnnotationUploader):
         dataset_id: Optional[str] = None,
         model_id: Optional[str] = None,
         model_run_id: Optional[str] = None,
+        trained_slice_id: Optional[str] = None,
     ):
         super().__init__(dataset_id, client)
         self._client = client
+        self.trained_slice_id = trained_slice_id
         if model_run_id is not None:
             assert model_id is None and dataset_id is None
             self._route = f"modelRun/{model_run_id}/predict"
