@@ -137,6 +137,7 @@ def construct_model_creation_payload(
     metadata: Optional[Dict],
     bundle_name: Optional[str],
     tags: Optional[List[str]],
+    trained_slice_id: Optional[str],
 ) -> dict:
     payload = {
         NAME_KEY: name,
@@ -144,6 +145,8 @@ def construct_model_creation_payload(
         METADATA_KEY: metadata if metadata else {},
     }
 
+    if trained_slice_id:
+        payload[TRAINED_SLICE_ID_KEY] = trained_slice_id
     if bundle_name:
         payload[MODEL_BUNDLE_NAME_KEY] = bundle_name
     if tags:
@@ -158,6 +161,7 @@ def construct_model_run_creation_payload(
     model_id: Optional[str],
     metadata: Optional[Dict],
     annotation_metadata_schema: Optional[Dict] = None,
+    trained_slice_id: Optional[str] = None,
 ) -> dict:
     payload = {
         NAME_KEY: name,
@@ -167,11 +171,14 @@ def construct_model_run_creation_payload(
         payload[REFERENCE_ID_KEY] = reference_id
     if model_id:
         payload[MODEL_ID_KEY] = model_id
+    if trained_slice_id:
+        payload[TRAINED_SLICE_ID_KEY] = trained_slice_id
     return {
         NAME_KEY: name,
         REFERENCE_ID_KEY: reference_id,
         METADATA_KEY: metadata if metadata else {},
         ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
+        TRAINED_SLICE_ID_KEY: trained_slice_id,
     }
 
 

@@ -3,7 +3,13 @@ from typing import Dict, List, Optional, Union
 import requests
 
 from .async_job import AsyncJob
-from .constants import METADATA_KEY, MODEL_TAGS_KEY, NAME_KEY, REFERENCE_ID_KEY
+from .constants import (
+    METADATA_KEY,
+    MODEL_TAGS_KEY,
+    NAME_KEY,
+    REFERENCE_ID_KEY,
+    TRAINED_SLICE_ID_KEY,
+)
 from .dataset import Dataset
 from .model_run import ModelRun
 from .prediction import (
@@ -101,6 +107,7 @@ class Model:
         client,
         bundle_name=None,
         tags=None,
+        trained_slice_id=None,
     ):
         self.id = model_id
         self.name = name
@@ -109,9 +116,10 @@ class Model:
         self.bundle_name = bundle_name
         self.tags = tags if tags else []
         self._client = client
+        self.trained_slice_id = trained_slice_id
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client}, trained_slice_id={self.trained_slice_id})"
 
     def __eq__(self, other):
         return (
@@ -120,6 +128,7 @@ class Model:
             and (self.metadata == other.metadata)
             and (self._client == other._client)
             and (self.bundle_name == other.bundle_name)
+            and (self.trained_slice_id == other.trained_slice_id)
         )
 
     def __hash__(self):
@@ -134,6 +143,7 @@ class Model:
             reference_id=payload["ref_id"],
             metadata=payload["metadata"] or None,
             client=client,
+            trained_slice_id=payload.get(TRAINED_SLICE_ID_KEY, None),
         )
 
     def create_run(
