@@ -119,7 +119,7 @@ class Model:
         self.trained_slice_id = trained_slice_id
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client}, trained_slice_id={self.trained_slice_id})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client}"
 
     def __eq__(self, other):
         return (
