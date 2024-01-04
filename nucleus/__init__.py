@@ -45,13 +45,17 @@ __all__ = [
 import datetime
 import os
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-try:
-    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
-    import pydantic.v1 as pydantic
-except ImportError:
-    import pydantic
+if TYPE_CHECKING:
+    # Backwards compatibility is even uglier with mypy
+    from pydantic.v1 import parse_obj_as
+else:
+    try:
+        # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+        from pydantic.v1 import parse_obj_as
+    except ImportError:
+        from pydantic import parse_obj_as
 
 import requests
 import tqdm
@@ -216,7 +220,11 @@ class NucleusClient:
             List of all datasets accessible to user
         """
         response = self.make_request({}, "dataset/details", requests.get)
-        dataset_details = pydantic.parse_obj_as(List[DatasetDetails], response)
+        dataset_details = (
+            parse_obj_as(  # pylint: disable=used-before-assignment
+                List[DatasetDetails], response
+            )
+        )
         return [
             Dataset(d.id, client=self, name=d.name) for d in dataset_details
         ]

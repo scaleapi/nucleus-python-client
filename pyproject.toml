@@ -25,7 +25,7 @@ ignore = ["E501", "E741", "E731", "F401"]  # Easy ignore for getting it running 
 
 [tool.poetry]
 name = "scale-nucleus"
-version = "0.16.13"
+version = "0.16.14"
 description = "The official Python client library for Nucleus, the Data Platform for AI"
 license =  "MIT"
 authors = ["Scale AI Nucleus Team <nucleusapi@scaleapi.com>"]
@@ -41,7 +41,7 @@ requests = "^2.23.0"
 tqdm = "^4.41.0"
 aiohttp = "^3.7.4"
 nest-asyncio = "^1.5.1"
-pydantic = "^1.8.2"
+pydantic = ">=1.8.2"
 numpy = [{ version = ">=1.19.5", python = ">=3.7,<3.10" }, { version = ">=1.22.0", python = ">=3.10"}]
 scipy = { version=">=1.4.1", optional = true }  # NOTE: COLAB has 1.4.1 and has problems updating
 click = ">=7.1.2,<9.0"  # NOTE: COLAB has 7.1.2 and has problems updating

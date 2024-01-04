@@ -1,10 +1,14 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-try:
-    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+if TYPE_CHECKING:
+    # Backwards compatibility is even uglier with mypy
     from pydantic.v1 import root_validator, validator
-except ImportError:
-    from pydantic import root_validator, validator
+else:
+    try:
+        # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+        from pydantic.v1 import root_validator, validator
+    except ImportError:
+        from pydantic import root_validator, validator
 
 from nucleus.pydantic_base import ImmutableModel
 
@@ -16,7 +20,7 @@ class EvaluationResult(ImmutableModel):
     score: float = 0
     weight: float = 1
 
-    @root_validator()
+    @root_validator()  # pylint: disable=used-before-assignment
     def is_item_or_scene_provided(
         cls, values
     ):  # pylint: disable=no-self-argument
@@ -31,7 +35,7 @@ class EvaluationResult(ImmutableModel):
             )
         return values
 
-    @validator("weight")
+    @validator("weight")  # pylint: disable=used-before-assignment
     def is_normalized(cls, v):  # pylint: disable=no-self-argument
         if 0 <= v <= 1:
             return v

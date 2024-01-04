@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.14) - 2024-01-03
+
+### Fixes
+- Open up Pydantic version requirements as was fixed in 0.16.11
+
 ## [0.16.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.13) - 2023-12-13
 
 ### Added
