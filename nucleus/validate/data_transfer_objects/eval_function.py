@@ -1,10 +1,14 @@
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-try:
-    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+if TYPE_CHECKING:
+    # Backwards compatibility is even uglier with mypy
     from pydantic.v1 import validator
-except ImportError:
-    from pydantic import validator
+else:
+    try:
+        # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+        from pydantic.v1 import validator
+    except ImportError:
+        from pydantic import validator
 
 from ...pydantic_base import ImmutableModel
 from ..constants import ThresholdComparison
@@ -63,7 +67,7 @@ class EvaluationCriterion(ImmutableModel):
     threshold: float
     eval_func_arguments: Dict[str, Any]
 
-    @validator("eval_function_id")
+    @validator("eval_function_id")  # pylint: disable=used-before-assignment
     def valid_eval_function_id(cls, v):  # pylint: disable=no-self-argument
         if not v.startswith("ef_"):
             raise ValueError(f"Expected field to start with 'ef_', got '{v}'")

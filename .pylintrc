@@ -18,7 +18,8 @@ disable=
     C0114,
     C0111,
     C0103,
-    R0904
+    R0904,
+    wrong-import-position
 
 [tool.pylint.REPORTS]
 reports=no

@@ -1,24 +1,28 @@
 import io
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type
 
 from PIL import Image, ImageDraw
 
-try:
-    # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+if TYPE_CHECKING:
+    # Backwards compatibility is even uglier with mypy
     from pydantic.v1 import BaseModel, Extra, ValidationError
-except ImportError:
-    from pydantic import BaseModel, Extra, ValidationError
+else:
+    try:
+        # NOTE: we always use pydantic v1 but have to do these shenanigans to support both v1 and v2
+        from pydantic.v1 import BaseModel, Extra, ValidationError
+    except ImportError:
+        from pydantic import BaseModel, Extra, ValidationError
 
 # From scaleapi/server/src/lib/select/api/types.ts
 # These classes specify how user models must pass output to Launch + Nucleus.
 
 
-class PointModel(BaseModel):
+class PointModel(BaseModel):  # pylint: disable=used-before-assignment
     x: float
     y: float
 
     class Config:
-        extra = Extra.forbid
+        extra = Extra.forbid  # pylint: disable=used-before-assignment
 
 
 class BoxGeometryModel(BaseModel):
@@ -106,7 +110,7 @@ def verify_output(
     for annotation in annotation_list:
         try:
             model.parse_obj(annotation)
-        except ValidationError as e:
+        except ValidationError as e:  # pylint: disable=used-before-assignment
             raise ValueError("Failed validation") from e
         if annotation["type"] != annotation_type:
             raise ValueError(
