@@ -363,7 +363,7 @@ def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
     # TODO optimize this further to deal with truly huge files and flaky internet connection.
     upload_response = requests.put(presigned_url, file_pointer)
     if not upload_response.ok:
-        raise HTTPError(
+        raise HTTPError(  # type: ignore
             f"Tried to put a file to url, but failed with status {upload_response.status_code}. The detailed error was: {upload_response.text}"
         )
 
