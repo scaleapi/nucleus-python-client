@@ -1119,8 +1119,8 @@ class NucleusClient:
             sample_point = points[0]
             if I_KEY in sample_point.keys():
                 resp[task_id] = [LidarPoint.from_json(pt) for pt in points]
-
-            resp[task_id] = [Point3D.from_json(pt) for pt in points]
+            else:
+                resp[task_id] = [Point3D.from_json(pt) for pt in points]
 
         return resp
 
