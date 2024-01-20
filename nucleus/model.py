@@ -6,9 +6,9 @@ from .async_job import AsyncJob
 from .constants import (
     METADATA_KEY,
     MODEL_TAGS_KEY,
+    MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
-    TRAINED_SLICE_ID_KEY,
 )
 from .dataset import Dataset
 from .model_run import ModelRun
@@ -107,7 +107,7 @@ class Model:
         client,
         bundle_name=None,
         tags=None,
-        trained_slice_id=None,
+        trained_slice_ids=None,
     ):
         self.id = model_id
         self.name = name
@@ -116,10 +116,10 @@ class Model:
         self.bundle_name = bundle_name
         self.tags = tags if tags else []
         self._client = client
-        self.trained_slice_id = trained_slice_id
+        self.trained_slice_ids = trained_slice_ids if trained_slice_ids else []
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client}, trained_slice_id={self.trained_slice_id})"
+        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client}, trained_slice_ids={self.trained_slice_ids})"
 
     def __eq__(self, other):
         return (
@@ -128,7 +128,7 @@ class Model:
             and (self.metadata == other.metadata)
             and (self._client == other._client)
             and (self.bundle_name == other.bundle_name)
-            and (self.trained_slice_id == other.trained_slice_id)
+            and (self.trained_slice_ids == other.trained_slice_ids)
         )
 
     def __hash__(self):
@@ -143,7 +143,8 @@ class Model:
             reference_id=payload["ref_id"],
             metadata=payload["metadata"] or None,
             client=client,
-            trained_slice_id=payload.get(TRAINED_SLICE_ID_KEY, None),
+            tags=payload.get(MODEL_TAGS_KEY, None),
+            trained_slice_ids=payload.get(MODEL_TRAINED_SLICE_IDS_KEY, None),
         )
 
     def create_run(
@@ -277,5 +278,55 @@ class Model:
 
         if response.ok:
             self.tags = list(filter(lambda t: t not in tags, self.tags))
+
+        return response.json()
+
+    def add_trained_slice_ids(self, slide_ids: List[str]):
+        """Add trained slice id(s) to the model. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.add_trained_slice_ids(["slc_...", "slc_..."])
+
+        Args:
+            slice_ids: list of trained slice ids
+        """
+        response: requests.Response = self._client.make_request(
+            {MODEL_TRAINED_SLICE_IDS_KEY: slide_ids},
+            f"model/{self.id}/trainedSliceId",
+            requests_command=requests.post,
+            return_raw_response=True,
+        )
+
+        if response.ok:
+            self.trained_slice_ids.extend(slide_ids)
+
+        return response.json()
+
+    def remove_trained_slice_ids(self, slide_ids: List[str]):
+        """Remove trained slice id(s) from the model. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.list_models()[0]
+
+            model.remove_trained_slice_ids(["slc_...", "slc_..."])
+
+        Args:
+            slice_ids: list of trained slice ids to remove
+        """
+        response: requests.Response = self._client.make_request(
+            {MODEL_TRAINED_SLICE_IDS_KEY: slide_ids},
+            f"model/{self.id}/trainedSliceId",
+            requests_command=requests.delete,
+            return_raw_response=True,
+        )
+
+        if response.ok:
+            self.trained_slice_ids = list(
+                filter(lambda t: t not in slide_ids, self.trained_slice_ids)
+            )
 
         return response.json()
