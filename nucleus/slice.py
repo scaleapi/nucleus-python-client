@@ -223,6 +223,7 @@ class Slice:
 
     @property
     def tags(self):
+        """Get all associated tags for this slice."""
         return self.info()["tags"]
 
     @property
@@ -358,13 +359,13 @@ class Slice:
         return info
 
     def add_tags(self, tags: List[str]) -> dict:
-        """Tag a slice with custom tag names. ::
+        """Tag a slice with custom tag names.
 
             import nucleus
             client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
             slc = client.get_slice("YOUR_SLICE_ID")
 
-            slc.add_tags(["tag_1", "tag_1"])
+            slc.add_tags(["tag_1", "tag_2"])
 
         Args:
             tags: list of tag names
