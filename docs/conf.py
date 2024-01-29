@@ -70,7 +70,7 @@ html_favicon = "favicon.ico"
 html_logo = "nucleus-logo.svg"
 html_theme_options = {
     "logo_only": True,
-    "display_version": False,
+    "display_version": True,
 }
 
 
