@@ -138,7 +138,7 @@ def construct_model_creation_payload(
     metadata: Optional[Dict],
     bundle_name: Optional[str],
     tags: Optional[List[str]],
-    trained_slice_id: Optional[str],
+    trained_slice_ids: Optional[List[str]],
 ) -> dict:
     payload = {
         NAME_KEY: name,
@@ -146,8 +146,8 @@ def construct_model_creation_payload(
         METADATA_KEY: metadata if metadata else {},
     }
 
-    if trained_slice_id:
-        payload[MODEL_TRAINED_SLICE_IDS_KEY] = [trained_slice_id]
+    if trained_slice_ids:
+        payload[MODEL_TRAINED_SLICE_IDS_KEY] = trained_slice_ids
     if bundle_name:
         payload[MODEL_BUNDLE_NAME_KEY] = bundle_name
     if tags:

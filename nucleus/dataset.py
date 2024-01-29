@@ -438,7 +438,6 @@ class Dataset:
         model_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         annotation_metadata_schema: Optional[Dict] = None,
-        trained_slice_ids: Optional[str] = None,
     ):
         payload = construct_model_run_creation_payload(
             name,
@@ -446,7 +445,6 @@ class Dataset:
             model_id,
             metadata,
             annotation_metadata_schema,
-            trained_slice_ids,
         )
         return self._client.create_model_run(self.id, payload)
 

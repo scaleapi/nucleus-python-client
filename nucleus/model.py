@@ -253,7 +253,9 @@ class Model:
         )
 
         if response.ok:
-            self.tags.extend(tags)
+            for tag in tags:
+                if tag not in self.tags:
+                    self.tags.append(tag)
 
         return response.json()
 
@@ -281,7 +283,7 @@ class Model:
 
         return response.json()
 
-    def add_trained_slice_ids(self, slide_ids: List[str]):
+    def add_trained_slice_ids(self, slice_ids: List[str]):
         """Add trained slice id(s) to the model. ::
 
             import nucleus
@@ -294,14 +296,15 @@ class Model:
             slice_ids: list of trained slice ids
         """
         response: requests.Response = self._client.make_request(
-            {MODEL_TRAINED_SLICE_IDS_KEY: slide_ids},
+            {MODEL_TRAINED_SLICE_IDS_KEY: slice_ids},
             f"model/{self.id}/trainedSliceId",
             requests_command=requests.post,
             return_raw_response=True,
         )
 
-        if response.ok:
-            self.trained_slice_ids.extend(slide_ids)
+        for slice_id in slice_ids:
+            if slice_id not in self.trained_slice_ids:
+                self.trained_slice_ids.append(slice_id)
 
         return response.json()
 

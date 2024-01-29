@@ -562,7 +562,7 @@ class NucleusClient:
         metadata: Optional[Dict] = None,
         bundle_name: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        trained_slice_ids: Optional[str] = None,
+        trained_slice_ids: Optional[List[str]] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -612,7 +612,7 @@ class NucleusClient:
         reference_id: str,
         bundle_args: Dict[str, Any],
         metadata: Optional[Dict] = None,
-        trained_slice_ids: Optional[str] = None,
+        trained_slice_ids: Optional[List[str]] = None,
     ) -> Model:
         """
         Adds a :class:`Model` to Nucleus, as well as a Launch bundle from a given function.
@@ -713,7 +713,7 @@ class NucleusClient:
         reference_id: str,
         bundle_from_dir_args: Dict[str, Any],
         metadata: Optional[Dict] = None,
-        trained_slice_ids: Optional[str] = None,
+        trained_slice_ids: Optional[List[str]] = None,
     ) -> Model:
         """
         Adds a :class:`Model` to Nucleus, as well as a Launch bundle from a directory.
