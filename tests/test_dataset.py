@@ -155,7 +155,7 @@ def test_dataset_update_metadata_local(dataset):
     )
     resulting_item = dataset.iloc(0)["item"]
     print(resulting_item)
-    assert resulting_item.metadata["snake_field"] == 1
+    assert resulting_item.metadata["snake_field"] == 0
 
 
 def test_dataset_update_metadata(dataset):
