@@ -85,8 +85,9 @@ poetry run pytest tests/test_dataset.py
 (2) To skip slow integration tests that have to wait for an async job to start.
 
 ```
-poetry run pytest -m "not integration"
+poetry run pytest -n auto -m "not integration"
 ```
+Note: "-n auto" is used for pytest-xdist parallelization
 
 ## Pydantic Models
 
