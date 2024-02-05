@@ -302,9 +302,10 @@ class Model:
             return_raw_response=True,
         )
 
-        for slice_id in slice_ids:
-            if slice_id not in self.trained_slice_ids:
-                self.trained_slice_ids.append(slice_id)
+        if response.ok:
+            for slice_id in slice_ids:
+                if slice_id not in self.trained_slice_ids:
+                    self.trained_slice_ids.append(slice_id)
 
         return response.json()
 

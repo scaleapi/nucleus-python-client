@@ -162,7 +162,6 @@ def construct_model_run_creation_payload(
     model_id: Optional[str],
     metadata: Optional[Dict],
     annotation_metadata_schema: Optional[Dict] = None,
-    trained_slice_ids: Optional[str] = None,
 ) -> dict:
     payload = {
         NAME_KEY: name,
@@ -172,14 +171,11 @@ def construct_model_run_creation_payload(
         payload[REFERENCE_ID_KEY] = reference_id
     if model_id:
         payload[MODEL_ID_KEY] = model_id
-    if trained_slice_ids:
-        payload[MODEL_TRAINED_SLICE_IDS_KEY] = trained_slice_ids
     return {
         NAME_KEY: name,
         REFERENCE_ID_KEY: reference_id,
         METADATA_KEY: metadata if metadata else {},
         ANNOTATION_METADATA_SCHEMA_KEY: annotation_metadata_schema,
-        MODEL_TRAINED_SLICE_IDS_KEY: trained_slice_ids,
     }
 
 
