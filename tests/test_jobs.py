@@ -28,4 +28,6 @@ def test_job_listing_and_retrieval(CLIENT):
     assert len(jobs) > 0, "No jobs found"
     fetch_id = jobs[0].job_id
     fetched_job = CLIENT.get_job(fetch_id)
+    # job_last_known_status can change
+    fetched_job.job_last_known_status = jobs[0].job_last_known_status
     assert fetched_job == jobs[0]
