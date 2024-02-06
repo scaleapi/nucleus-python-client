@@ -628,7 +628,8 @@ def test_create_update_dataset_from_dir(CLIENT):
     dataset = CLIENT.create_dataset_from_dir(
         TEST_LOCAL_TESTDIR, allowed_file_types=tuple(["exe"])
     )
-    assert dataset is None
+    assert dataset is not None
+    CLIENT.delete_dataset(dataset.id)
     dataset = CLIENT.create_dataset_from_dir(
         TEST_LOCAL_TESTDIR, allowed_file_types=tuple(["png"])
     )
