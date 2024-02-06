@@ -1,5 +1,7 @@
 import copy
+import glob
 import math
+import os
 
 import pytest
 
@@ -38,6 +40,7 @@ from .helpers import (
     TEST_DATASET_NAME,
     TEST_IMG_URLS,
     TEST_LIDAR_SCENES,
+    TEST_LOCAL_TESTDIR,
     TEST_MULTICATEGORY_ANNOTATIONS,
     TEST_POLYGON_ANNOTATIONS,
     TEST_SEGMENTATION_ANNOTATIONS,
@@ -611,3 +614,35 @@ def test_query(CLIENT):
     with pytest.raises(NucleusAPIError):
         for qi in dataset.query_items("annotations.count bad syntax"):
             print(qi)  # unreachable, just need to yield an item from generator
+
+
+@pytest.mark.integration
+def test_create_update_dataset_from_dir(CLIENT):
+    reference_ids = set()
+    for file_type in ["png", "jpeg"]:
+        pathname = os.path.join(TEST_LOCAL_TESTDIR, f"**/*.{file_type}")
+        reference_ids.update(
+            path.replace(TEST_LOCAL_TESTDIR + "/", "")
+            for path in glob.glob(pathname=pathname, recursive=True)
+        )
+    dataset = CLIENT.create_dataset_from_dir(
+        TEST_LOCAL_TESTDIR, allowed_file_types=tuple(["exe"])
+    )
+    assert dataset is not None
+    CLIENT.delete_dataset(dataset.id)
+    dataset = CLIENT.create_dataset_from_dir(
+        TEST_LOCAL_TESTDIR, allowed_file_types=tuple(["png"])
+    )
+    dataset_items = dataset.items
+    assert len(dataset_items) == 1
+    assert dataset_items[0].reference_id in reference_ids
+    dataset.add_items_from_dir(
+        dirname=TEST_LOCAL_TESTDIR,
+        allowed_file_types=tuple(["png", "jpeg"]),
+    )
+    dataset_items = dataset.items
+    assert len(dataset_items) == 2
+    for dataset_item in dataset_items:
+        assert dataset_item.reference_id in reference_ids
+        reference_ids.remove(dataset_item.reference_id)
+    CLIENT.delete_dataset(dataset.id)

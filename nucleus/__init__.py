@@ -1252,6 +1252,25 @@ class NucleusClient:
 
         return api_key
 
+    @staticmethod
+    def valid_dirname(dirname) -> str:
+        """
+        Validate directory exists
+        Args:
+            dirname: Path of directory
+
+        Returns:
+            Existing directory path
+
+        """
+        # ensures path ends with a slash
+        _dirname = os.path.join(os.path.expanduser(dirname), "")
+        if not os.path.exists(_dirname):
+            raise ValueError(
+                f"Given directory name: {dirname} does not exists. Searched in {_dirname}"
+            )
+        return _dirname
+
     def create_dataset_from_dir(
         self,
         dirname: str,
@@ -1260,7 +1279,7 @@ class NucleusClient:
         privacy_mode_proxy: str = "",
         allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
-    ) -> Union[Dataset, None]:
+    ) -> Dataset:
         """
         Create a dataset by recursively crawling through a directory.
         A DatasetItem will be created for each unique image found.
@@ -1274,39 +1293,16 @@ class NucleusClient:
             allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
             skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
         """
-
-        if use_privacy_mode:
-            assert (
-                privacy_mode_proxy
-            ), "When using privacy mode, must specify a proxy to serve the files"
-
-        # ensures path ends with a slash
-        _dirname = os.path.join(os.path.expanduser(dirname), "")
-        if not os.path.exists(_dirname):
-            raise ValueError(
-                f"Given directory name: {dirname} does not exists. Searched in {_dirname}"
-            )
-
-        folder_name = os.path.basename(_dirname.rstrip("/"))
+        existing_dirname = self.valid_dirname(dirname)
+        folder_name = os.path.basename(existing_dirname.rstrip("/"))
         dataset_name = dataset_name or folder_name
-        items = create_items_from_folder_crawl(
-            _dirname,
-            allowed_file_types,
-            use_privacy_mode,
-            privacy_mode_proxy,
-        )
-
-        if len(items) == 0:
-            print(f"Did not find any items in {dirname}")
-            return None
-
-        if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
-            raise Exception(
-                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
-            )
-
         dataset = self.create_dataset(
             name=dataset_name, use_privacy_mode=use_privacy_mode
         )
-        dataset.append(items, asynchronous=False)
+        dataset.add_items_from_dir(
+            existing_dirname=existing_dirname,
+            privacy_mode_proxy=privacy_mode_proxy,
+            allowed_file_types=allowed_file_types,
+            skip_size_warning=skip_size_warning,
+        )
         return dataset
