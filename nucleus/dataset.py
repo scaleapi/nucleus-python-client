@@ -726,6 +726,7 @@ class Dataset:
             local_files_per_upload_request=local_files_per_upload_request,
         )
 
+
     @deprecated("Prefer using Dataset.append instead.")
     def append_scenes(
         self,

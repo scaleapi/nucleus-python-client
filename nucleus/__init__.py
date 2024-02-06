@@ -1249,7 +1249,7 @@ class NucleusClient:
         allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
         update_items: bool = False,
-    ) -> Union[Dataset, None]:
+    ) -> Dataset:
         """
         Create or update dataset by recursively crawling through a directory.
         A DatasetItem will be created for each unique image found.
@@ -1267,15 +1267,15 @@ class NucleusClient:
             update_items: Whether to update items in existing dataset
 
         Returns:
-            :class: `Union[Dataset, None]`: Updated dataset or None if there wasn't a dataset to create
+            :class: `Dataset`: Created dataset or updated one
 
         """
         if dataset_id:
-            existing_dataset = self.get_dataset(dataset_id)
+            dataset = self.get_dataset(dataset_id)
             # fetch dataset use_privacy_mode for existence check
-            use_privacy_mode = existing_dataset.use_privacy_mode
+            use_privacy_mode = dataset.use_privacy_mode
         else:
-            existing_dataset = None
+            dataset = None
         if use_privacy_mode:
             assert (
                 privacy_mode_proxy
@@ -1295,17 +1295,13 @@ class NucleusClient:
         )
 
         if len(items) == 0:
-            print(f"Did not find any items in {dirname}")
-            return existing_dataset
-
-        if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
+            print(f"Did not find any items in {dirname}. Creating empty dataset")
+        elif len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
             raise Exception(
                 f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
             )
 
-        if existing_dataset:
-            dataset = existing_dataset
-        else:
+        if dataset is None:
             folder_name = os.path.basename(_dirname.rstrip("/"))
             dataset_name = dataset_name or folder_name
             dataset = self.create_dataset(
@@ -1322,7 +1318,7 @@ class NucleusClient:
         privacy_mode_proxy: str = "",
         allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
-    ) -> Union[Dataset, None]:
+    ) -> Dataset:
         """
         Create a dataset by recursively crawling through a directory.
         A DatasetItem will be created for each unique image found.
