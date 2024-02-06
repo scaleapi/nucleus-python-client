@@ -636,9 +636,8 @@ def test_create_update_dataset_from_dir(CLIENT):
     dataset_items = dataset.items
     assert len(dataset_items) == 1
     assert dataset_items[0].reference_id in reference_ids
-    dataset = CLIENT.update_dataset_from_dir(
-        TEST_LOCAL_TESTDIR,
-        dataset_id=dataset.id,
+    dataset.add_items_from_dir(
+        dirname=TEST_LOCAL_TESTDIR,
         allowed_file_types=tuple(["png", "jpeg"]),
     )
     dataset_items = dataset.items

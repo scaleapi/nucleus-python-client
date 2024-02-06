@@ -26,6 +26,7 @@ from nucleus.track import Track
 from nucleus.url_utils import sanitize_string_args
 from nucleus.utils import (
     convert_export_payload,
+    create_items_from_folder_crawl,
     format_dataset_item_response,
     format_prediction_response,
     format_scale_task_info_response,
@@ -50,6 +51,7 @@ from .constants import (
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
     FRAME_RATE_KEY,
+    GLOB_SIZE_THRESHOLD_CHECK,
     ITEM_KEY,
     ITEMS_KEY,
     JOB_REQ_LIMIT,
@@ -725,7 +727,6 @@ class Dataset:
             batch_size=batch_size,
             local_files_per_upload_request=local_files_per_upload_request,
         )
-
 
     @deprecated("Prefer using Dataset.append instead.")
     def append_scenes(
@@ -2242,3 +2243,50 @@ class Dataset:
         if stats_only:
             return jobs_status_overview(job_objects)
         return job_objects
+
+    def add_items_from_dir(
+        self,
+        dirname: Optional[str] = None,
+        existing_dirname: Optional[str] = None,
+        privacy_mode_proxy: str = "",
+        allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
+        skip_size_warning: bool = False,
+        update_items: bool = False,
+    ):
+        """
+        Update dataset by recursively crawling through a directory.
+        A DatasetItem will be created for each unique image found.
+        The existing items are skipped or updated depending on update_items param
+
+        Args:
+            dirname: Where to look for image files, recursively
+            existing_dirname: Already validated dirname
+            privacy_mode_proxy: Endpoint that serves image files for privacy mode, ignore if not using privacy mode.
+                The proxy should work based on the relative path of the images in the directory.
+            allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
+            skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
+            update_items: Whether to update items in existing dataset
+        """
+        # fetch dataset use_privacy_mode for existence check
+        if self.use_privacy_mode:
+            assert (
+                privacy_mode_proxy
+            ), "When using privacy mode, must specify a proxy to serve the files"
+        if not existing_dirname:
+            # ensures path ends with a slash
+            existing_dirname = self._client.valid_dirname(dirname)
+        items = create_items_from_folder_crawl(
+            existing_dirname,
+            allowed_file_types,
+            self.use_privacy_mode,
+            privacy_mode_proxy,
+        )
+
+        if len(items) == 0:
+            print(f"Did not find any items in {dirname}.")
+        elif len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
+            raise Exception(
+                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
+            )
+
+        self.append(items, asynchronous=False, update=update_items)

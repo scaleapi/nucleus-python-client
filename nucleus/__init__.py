@@ -1239,76 +1239,24 @@ class NucleusClient:
 
         return api_key
 
-    def _create_or_update_dataset_from_dir(
-        self,
-        dirname: str,
-        dataset_id: Optional[str] = None,
-        dataset_name: Optional[str] = None,
-        use_privacy_mode: bool = False,
-        privacy_mode_proxy: str = "",
-        allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
-        skip_size_warning: bool = False,
-        update_items: bool = False,
-    ) -> Dataset:
+    @staticmethod
+    def valid_dirname(dirname) -> str:
         """
-        Create or update dataset by recursively crawling through a directory.
-        A DatasetItem will be created for each unique image found.
-        In case of update the existing items are skipped or updated depending on update_items param
-
+        Validate directory exists
         Args:
-            dirname: Where to look for image files, recursively
-            dataset_id: Dataset Id for update
-            dataset_name: If none is given, the parent folder name is used
-            use_privacy_mode: Whether the dataset should be treated as privacy (ignored if dataset being updated)
-            privacy_mode_proxy: Endpoint that serves image files for privacy mode, ignore if not using privacy mode.
-                The proxy should work based on the relative path of the images in the directory.
-            allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
-            skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
-            update_items: Whether to update items in existing dataset
+            dirname: Path of directory
 
         Returns:
-            :class: `Dataset`: Created dataset or updated one
+            Existing directory path
 
         """
-        if dataset_id:
-            dataset = self.get_dataset(dataset_id)
-            # fetch dataset use_privacy_mode for existence check
-            use_privacy_mode = dataset.use_privacy_mode
-        else:
-            dataset = None
-        if use_privacy_mode:
-            assert (
-                privacy_mode_proxy
-            ), "When using privacy mode, must specify a proxy to serve the files"
-
         # ensures path ends with a slash
         _dirname = os.path.join(os.path.expanduser(dirname), "")
         if not os.path.exists(_dirname):
             raise ValueError(
                 f"Given directory name: {dirname} does not exists. Searched in {_dirname}"
             )
-        items = create_items_from_folder_crawl(
-            _dirname,
-            allowed_file_types,
-            use_privacy_mode,
-            privacy_mode_proxy,
-        )
-
-        if len(items) == 0:
-            print(f"Did not find any items in {dirname}. Creating empty dataset")
-        elif len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
-            raise Exception(
-                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
-            )
-
-        if dataset is None:
-            folder_name = os.path.basename(_dirname.rstrip("/"))
-            dataset_name = dataset_name or folder_name
-            dataset = self.create_dataset(
-                name=dataset_name, use_privacy_mode=use_privacy_mode
-            )
-        dataset.append(items, asynchronous=False, update=update_items)
-        return dataset
+        return _dirname
 
     def create_dataset_from_dir(
         self,
@@ -1332,48 +1280,16 @@ class NucleusClient:
             allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
             skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
         """
-        return self._create_or_update_dataset_from_dir(
-            dirname,
-            dataset_name=dataset_name,
-            use_privacy_mode=use_privacy_mode,
+        existing_dirname = self.valid_dirname(dirname)
+        folder_name = os.path.basename(existing_dirname.rstrip("/"))
+        dataset_name = dataset_name or folder_name
+        dataset = self.create_dataset(
+            name=dataset_name, use_privacy_mode=use_privacy_mode
+        )
+        dataset.add_items_from_dir(
+            existing_dirname=existing_dirname,
             privacy_mode_proxy=privacy_mode_proxy,
             allowed_file_types=allowed_file_types,
             skip_size_warning=skip_size_warning,
         )
-
-    def update_dataset_from_dir(
-        self,
-        dirname: str,
-        dataset_id: str,
-        privacy_mode_proxy: str = "",
-        allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
-        skip_size_warning: bool = False,
-        update_items: bool = False,
-    ) -> Dataset:
-        """
-        Update dataset by recursively crawling through a directory.
-        A DatasetItem will be created for each unique image found.
-        The existing items are skipped or updated depending on update_items param
-
-        Args:
-            dirname: Where to look for image files, recursively
-            dataset_id: ID of existing dataset to update
-            privacy_mode_proxy: Endpoint that serves image files for privacy mode, ignore if not using privacy mode.
-                The proxy should work based on the relative path of the images in the directory.
-            allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
-            skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
-            update_items: Whether to update items in existing dataset
-
-        Returns:
-            :class:`Dataset`: Updated dataset
-        """
-        updated_dataset = self._create_or_update_dataset_from_dir(
-            dirname,
-            dataset_id=dataset_id,
-            privacy_mode_proxy=privacy_mode_proxy,
-            allowed_file_types=allowed_file_types,
-            skip_size_warning=skip_size_warning,
-            update_items=update_items,
-        )
-        assert updated_dataset is not None
-        return updated_dataset
+        return dataset
