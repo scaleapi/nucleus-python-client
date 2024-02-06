@@ -2282,11 +2282,16 @@ class Dataset:
             privacy_mode_proxy,
         )
 
-        if len(items) == 0:
-            print(f"Did not find any items in {dirname}.")
-        elif len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
-            raise Exception(
-                f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended, set skip_size_warning=True when calling this function."
-            )
+        if len(items) > 0:
+            if (
+                len(items) > GLOB_SIZE_THRESHOLD_CHECK
+                and not skip_size_warning
+            ):
+                raise Exception(
+                    f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
+                    f" set skip_size_warning=True when calling this function."
+                )
+            self.append(items, asynchronous=False, update=update_items)
 
-        self.append(items, asynchronous=False, update=update_items)
+        else:
+            print(f"Did not find any items in {dirname}.")
