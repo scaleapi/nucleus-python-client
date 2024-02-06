@@ -19,6 +19,7 @@ from .constants import (
     MODEL_BUNDLE_NAME_KEY,
     MODEL_ID_KEY,
     MODEL_TAGS_KEY,
+    MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
     SCENES_KEY,
@@ -137,6 +138,7 @@ def construct_model_creation_payload(
     metadata: Optional[Dict],
     bundle_name: Optional[str],
     tags: Optional[List[str]],
+    trained_slice_ids: Optional[List[str]],
 ) -> dict:
     payload = {
         NAME_KEY: name,
@@ -144,6 +146,8 @@ def construct_model_creation_payload(
         METADATA_KEY: metadata if metadata else {},
     }
 
+    if trained_slice_ids:
+        payload[MODEL_TRAINED_SLICE_IDS_KEY] = trained_slice_ids
     if bundle_name:
         payload[MODEL_BUNDLE_NAME_KEY] = bundle_name
     if tags:

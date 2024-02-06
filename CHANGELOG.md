@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix test `test_models.test_remove_invalid_tag_from_model`
 
 
+## [0.16.18](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.18) - 2024-02-06
+
+### Added
+- Add the ability to add and remove `trained_slice_id` to a model
+
 ## [0.16.17](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.17) - 2024-01-29
 
 ### Fixes
