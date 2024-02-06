@@ -9,6 +9,7 @@ from nucleus import (
     DatasetItem,
     Model,
     ModelRun,
+    NucleusAPIError,
     NucleusClient,
     UploadResponse,
 )
@@ -143,9 +144,10 @@ def test_remove_invalid_tag_from_model(CLIENT, dataset: Dataset):
 
     model.add_tags(["single tag"])
 
-    response = model.remove_tags(["tag_a"])
-    assert "error" in response
+    with pytest.raises(NucleusAPIError) as e_info:
+        model.remove_tags(["tag_a"])
+    assert e_info.value.status_code == 400
     assert (
-        response["error"]
-        == "Deleted 0 tags from model. Either the tag(s) did not exist, or you are not the owner of this model project."
+        '{"error":"Deleted 0 tags from model. The specified tag(s) were not found."}'
+        in e_info.value.message
     )
