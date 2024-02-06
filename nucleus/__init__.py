@@ -111,6 +111,7 @@ from .constants import (
     MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
     MODEL_TAGS_KEY,
+    MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
     POINTS_KEY,
@@ -247,6 +248,7 @@ class NucleusClient:
                 metadata=model["metadata"] or None,
                 client=self,
                 tags=model.get(MODEL_TAGS_KEY, []),
+                trained_slice_ids=model.get(MODEL_TRAINED_SLICE_IDS_KEY, None),
             )
             for model in model_objects["models"]
         ]
@@ -560,6 +562,7 @@ class NucleusClient:
         metadata: Optional[Dict] = None,
         bundle_name: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        trained_slice_ids: Optional[List[str]] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -579,7 +582,12 @@ class NucleusClient:
         """
         response = self.make_request(
             construct_model_creation_payload(
-                name, reference_id, metadata, bundle_name, tags
+                name,
+                reference_id,
+                metadata,
+                bundle_name,
+                tags,
+                trained_slice_ids,
             ),
             "models/add",
         )
@@ -595,6 +603,7 @@ class NucleusClient:
             bundle_name=bundle_name,
             client=self,
             tags=tags,
+            trained_slice_ids=trained_slice_ids,
         )
 
     def create_launch_model(
@@ -603,6 +612,7 @@ class NucleusClient:
         reference_id: str,
         bundle_args: Dict[str, Any],
         metadata: Optional[Dict] = None,
+        trained_slice_ids: Optional[List[str]] = None,
     ) -> Model:
         """
         Adds a :class:`Model` to Nucleus, as well as a Launch bundle from a given function.
@@ -694,6 +704,7 @@ class NucleusClient:
             reference_id,
             metadata,
             bundle_name,
+            trained_slice_ids=trained_slice_ids,
         )
 
     def create_launch_model_from_dir(
@@ -702,6 +713,7 @@ class NucleusClient:
         reference_id: str,
         bundle_from_dir_args: Dict[str, Any],
         metadata: Optional[Dict] = None,
+        trained_slice_ids: Optional[List[str]] = None,
     ) -> Model:
         """
         Adds a :class:`Model` to Nucleus, as well as a Launch bundle from a directory.
@@ -816,6 +828,7 @@ class NucleusClient:
             reference_id,
             metadata,
             bundle_name,
+            trained_slice_ids=trained_slice_ids,
         )
 
     @deprecated(
