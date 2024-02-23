@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixes
 - Fix test `test_models.test_remove_invalid_tag_from_model`
 
+## [0.17.1] - 2024-02-22
+
+### Added
+- Environment variable `NUCLEUS_SKIP_SSL_VERIFY` to skip SSL verification on requests
 
 ## [0.16.18](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.18) - 2024-02-06
 

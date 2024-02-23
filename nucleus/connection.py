@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Optional
 
@@ -68,6 +69,7 @@ class Connection:
                 headers={"Content-Type": "application/json"},
                 auth=(self.api_key, ""),
                 timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+                verify=os.environ.get("NUCLEUS_SKIP_SSL_VERIFY", None) is None,
             )
             logger.info(
                 "API request has response code %s", response.status_code

@@ -361,7 +361,11 @@ def serialize_and_write(
 
 def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
     # TODO optimize this further to deal with truly huge files and flaky internet connection.
-    upload_response = requests.put(presigned_url, file_pointer)
+    upload_response = requests.put(
+        presigned_url,
+        file_pointer,
+        verify=os.environ.get("NUCLEUS_SKIP_SSL_VERIFY", None) is None,
+    )
     if not upload_response.ok:
         raise HTTPError(  # type: ignore
             f"Tried to put a file to url, but failed with status {upload_response.status_code}. The detailed error was: {upload_response.text}"
