@@ -385,7 +385,7 @@ def serialize_and_write_to_presigned_url(
     route = f"dataset/{dataset_id}/signedUrl/{request_id}"
     if os.environ.get("S3_ENDPOINT") is not None:
         route += "?s3Endpoint=" + urllib.request.pathname2url(
-            os.environ.get("S3_ENDPOINT")
+            os.environ["S3_ENDPOINT"]
         )
     response = client.make_request(
         payload={},
