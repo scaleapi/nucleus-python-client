@@ -383,8 +383,10 @@ def serialize_and_write_to_presigned_url(
     """This helper function can be used to serialize a list of API objects to NDJSON."""
     request_id = uuid.uuid4().hex
     route = f"dataset/{dataset_id}/signedUrl/{request_id}"
-    if (os.environ.get("S3_ENDPOINT") is not None):
-        route += "?s3Endpoint=" + urllib.request.pathname2url(os.environ.get("S3_ENDPOINT"))
+    if os.environ.get("S3_ENDPOINT") is not None:
+        route += "?s3Endpoint=" + urllib.request.pathname2url(
+            os.environ.get("S3_ENDPOINT")
+        )
     response = client.make_request(
         payload={},
         route=route,
