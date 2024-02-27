@@ -1447,6 +1447,7 @@ class Dataset:
     def items_and_annotation_generator(
         self,
         query: Optional[str] = None,
+        use_mirrored_images: bool = False,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
 
@@ -1477,6 +1478,7 @@ class Dataset:
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=10000,  # max ES page size
             query=query,
+            chip=use_mirrored_images,
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
