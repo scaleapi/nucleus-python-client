@@ -3,6 +3,7 @@ import glob
 import io
 import json
 import os
+import urllib.request
 import uuid
 from collections import defaultdict
 from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Tuple, Type, Union
@@ -381,9 +382,12 @@ def serialize_and_write_to_presigned_url(
 ):
     """This helper function can be used to serialize a list of API objects to NDJSON."""
     request_id = uuid.uuid4().hex
+    route = f"dataset/{dataset_id}/signedUrl/{request_id}"
+    if (os.environ.get("S3_ENDPOINT") is not None):
+        route += "?s3Endpoint=" + urllib.request.pathname2url(os.environ.get("S3_ENDPOINT"))
     response = client.make_request(
         payload={},
-        route=f"dataset/{dataset_id}/signedUrl/{request_id}",
+        route=route,
         requests_command=requests.get,
     )
 

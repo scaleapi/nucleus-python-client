@@ -5,6 +5,16 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.2] - 2024-02-26
+
+### Added
+- Added the environment variable `S3_ENDPOINT` to accomodate for nonstandard S3 Endpoint URLs when asking for presigned URLs
+
+## [0.17.1] - 2024-02-22
+
+### Added
+- Added the environment variable `NUCLEUS_SKIP_SSL_VERIFY` to skip SSL verification on requests
+
 ## [0.17.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.0) - 2024-02-06
 
 ### Added
@@ -13,11 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixes
 - Fix test `test_models.test_remove_invalid_tag_from_model`
-
-## [0.17.1] - 2024-02-22
-
-### Added
-- Environment variable `NUCLEUS_SKIP_SSL_VERIFY` to skip SSL verification on requests
 
 ## [0.16.18](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.18) - 2024-02-06
 
