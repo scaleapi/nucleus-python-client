@@ -1453,6 +1453,7 @@ class Dataset:
 
         Args:
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
+            use_mirrored_images: If True, returns the location of the mirrored image hosted in Scale S3. Useful when the original image is no longer available.
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
