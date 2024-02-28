@@ -36,6 +36,7 @@ from nucleus.utils import (
 
 from .annotation import Annotation, check_all_mask_paths_remote
 from .constants import (
+    ALLOW_EMPTY,
     ANNOTATIONS_KEY,
     AUTOTAG_SCORE_THRESHOLD,
     BACKFILL_JOB_KEY,
@@ -937,15 +938,14 @@ class Dataset:
         return Annotation.from_json(response)
 
     def create_slice(
-        self,
-        name: str,
-        reference_ids: List[str],
+        self, name: str, reference_ids: Optional[List[str]] = None
     ) -> Slice:
         """Creates a :class:`Slice` of dataset items within a dataset.
 
         Parameters:
             name: A human-readable name for the slice.
             reference_ids: List of reference IDs of dataset items to add to the slice, cannot exceed 10,000 items.
+                Can be left unspecified, and an empty slice will be created.
 
         Returns:
             :class:`Slice`: The newly constructed slice item.
@@ -953,7 +953,12 @@ class Dataset:
         Raises:
             BadRequest: If length of reference_ids is too large (> 10,000 items)
         """
-        payload = {NAME_KEY: name, REFERENCE_IDS_KEY: reference_ids}
+        payload = {NAME_KEY: name}
+        if reference_ids:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+        else:
+            payload[ALLOW_EMPTY] = 1
+
         response = self._client.make_request(
             payload, f"dataset/{self.id}/create_slice"
         )
