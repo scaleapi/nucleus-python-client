@@ -953,7 +953,7 @@ class Dataset:
         Raises:
             BadRequest: If length of reference_ids is too large (> 10,000 items)
         """
-        payload = {NAME_KEY: name}
+        payload = {NAME_KEY: name}  # type: Dict[str, Any]
         if reference_ids:
             payload[REFERENCE_IDS_KEY] = reference_ids
         else:
