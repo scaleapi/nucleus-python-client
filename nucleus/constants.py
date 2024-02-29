@@ -13,6 +13,7 @@ CUBOID_TYPE = "cuboid"
 KEYPOINTS_TYPE = "keypoints"
 CATEGORY_TYPE = "category"
 MULTICATEGORY_TYPE = "multicategory"
+ALLOW_EMPTY = "allow_empty"
 ANNOTATION_TYPES = (
     BOX_TYPE,
     LINE_TYPE,
