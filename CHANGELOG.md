@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.3] - 2024-02-26
+## [0.17.3] - 2024-02-29
 
 ### Added
 - Added the environment variable `S3_ENDPOINT` to accomodate for nonstandard S3 Endpoint URLs when asking for presigned URLs
