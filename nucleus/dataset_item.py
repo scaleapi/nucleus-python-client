@@ -18,6 +18,7 @@ from .constants import (
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
     POINTCLOUD_URL_KEY,
+    PROCESSED_URL_KEY,
     REFERENCE_ID_KEY,
     TYPE_KEY,
     URL_KEY,
@@ -156,8 +157,10 @@ class DatasetItem:  # pylint: disable=R0902
     @classmethod
     def from_json(cls, payload: dict):
         """Instantiates dataset item object from schematized JSON dict payload."""
-        image_url = payload.get(IMAGE_URL_KEY, None) or payload.get(
-            ORIGINAL_IMAGE_URL_KEY, None
+        image_url = (
+            payload.get(PROCESSED_URL_KEY, None)
+            or payload.get(IMAGE_URL_KEY, None)
+            or payload.get(ORIGINAL_IMAGE_URL_KEY, None)
         )
         pointcloud_url = payload.get(POINTCLOUD_URL_KEY, None)
 
