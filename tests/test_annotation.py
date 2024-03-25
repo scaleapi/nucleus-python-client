@@ -824,7 +824,6 @@ def test_default_category_gt_upload_async(dataset):
         "status": "Completed",
         "message": {
             "annotation_upload": {
-                "epoch": 1,
                 "total": 1,
                 "errored": 0,
                 "ignored": 0,

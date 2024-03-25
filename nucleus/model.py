@@ -211,7 +211,9 @@ class Model:
         )
         return AsyncJob.from_json(response, self._client)
 
-    def run(self, dataset_id: str, slice_id: Optional[str]) -> str:
+    def run(
+        self, dataset_id: str, model_run_name: str, slice_id: Optional[str]
+    ) -> str:
         """Runs inference on the bundle associated with the model on the dataset. ::
 
             import nucleus
@@ -222,11 +224,18 @@ class Model:
 
         Args:
             dataset_id: The ID of the dataset to run inference on.
-            job_id: The ID of the :class:`AsyncJob` used to track job progress.
+            model_run_name: The name of the model run.
             slice_id: The ID of the slice of the dataset to run inference on.
+
+        Returns:
+            job_id: The ID of the :class:`AsyncJob` used to track job progress.
         """
         response = self._client.make_request(
-            {"dataset_id": dataset_id, "slice_id": slice_id},
+            {
+                "dataset_id": dataset_id,
+                "slice_id": slice_id,
+                "model_run_name": model_run_name,
+            },
             f"model/run/{self.id}/",
             requests_command=requests.post,
         )
