@@ -382,7 +382,6 @@ def test_annotate_async(dataset: Dataset):
         "status": "Completed",
         "message": {
             "annotation_upload": {
-                "epoch": 1,
                 "total": 4,
                 "errored": 0,
                 "ignored": 0,
@@ -425,7 +424,6 @@ def test_annotate_async_with_error(dataset: Dataset):
         "status": "Completed",
         "message": {
             "annotation_upload": {
-                "epoch": 1,
                 "total": 4,
                 "errored": 1,
                 "ignored": 0,
