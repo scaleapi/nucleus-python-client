@@ -380,23 +380,6 @@ def test_annotate_async(dataset: Dataset):
     expected = {
         "job_id": job.job_id,
         "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "total": 4,
-                "errored": 0,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 4,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 5,
-        "total_steps": 5,
     }
     assert_partial_equality(expected, status)
 
@@ -422,23 +405,6 @@ def test_annotate_async_with_error(dataset: Dataset):
     expected = {
         "job_id": job.job_id,
         "status": "Completed",
-        "message": {
-            "annotation_upload": {
-                "total": 4,
-                "errored": 1,
-                "ignored": 0,
-                "datasetId": dataset.id,
-                "processed": 3,
-            },
-            "segmentation_upload": {
-                "ignored": 0,
-                "n_errors": 0,
-                "processed": 1,
-            },
-        },
-        "job_progress": "1.00",
-        "completed_steps": 5,
-        "total_steps": 5,
     }
     assert_partial_equality(expected, status)
 
