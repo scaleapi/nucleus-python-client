@@ -5,6 +5,25 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.5) - 2024-04-15
+
+### Added
+- Method for uploading lidar semantic segmentation predictions, via `dataset.upload_lidar_semseg_predictions`
+
+Example usage:
+
+```python
+dataset = client.get_dataset("ds_...")
+model = client.get_model("prj_...")
+pointcloud_ref_id = 'pc_ref_1'
+predictions_s3 = "s3://temp/predictions.json"
+
+dataset.upload_lidar_semseg_predictions(model, pointcloud_ref_id, predictions_s3)
+```
+
+For the expected format of the s3 predictions, refer to the [documentation here](https://docs.nucleus.scale.com/en/latest/api/nucleus/index.html#nucleus.Dataset.upload_lidar_semseg_predictions)
+
+
 ## [0.17.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.4) - 2024-03-25
 
 ### Modified
