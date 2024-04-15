@@ -104,7 +104,7 @@ from .slice import (
 from .upload_response import UploadResponse
 
 if TYPE_CHECKING:
-    from . import NucleusClient
+    from . import Model, NucleusClient
 
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
@@ -2303,3 +2303,41 @@ class Dataset:
 
         else:
             print(f"Did not find any items in {dirname}.")
+
+    def upload_lidar_semseg_predictions(
+        self,
+        model: "Model",
+        pointcloud_ref_id: str,
+        predictions_s3_path: str,
+    ):
+        """Upload Lidar Semantic Segmentation predictions for a given pointcloud.
+
+        Assuming a pointcloud with only 4 points (three labeled as Car, one labeled as Person),
+        the contents of the predictions s3 object should be formatted as such:
+
+        .. code-block:: json
+
+            {
+                "objects": [
+                    { "label": "Car", "index": 1},
+                    { "label": "Person", "index": 2}
+                ],
+                "point_objects": [1, 1, 1, 2],
+                "point_confidence": [0.5, 0.9, 0.9, 0.3]
+            }
+
+        The order of the points in the `"point_objects"` should be in the same order as the points that
+        were originally uploaded to Scale.
+
+        Parameters:
+            model (:class:`Model`): Nucleus model used to store these predictions
+            pointcloud_ref_id (str): The reference ID of the pointcloud for which these predictions belong to
+            predictions_s3_path (str): S3 path to where the predictions are stored
+
+        """
+
+        return self._client.make_request(
+            payload={"pointsSegmentationUrl": predictions_s3_path},
+            route=f"dataset/{self.id}/model/{model.id}/pointcloud/{pointcloud_ref_id}/uploadLSSPrediction",
+            requests_command=requests.post,
+        )
