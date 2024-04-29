@@ -2310,9 +2310,9 @@ class Dataset:
         pointcloud_ref_id: str,
         predictions_s3_path: str,
     ):
-        """Upload Lidar Semantic Segmentation predictions for a given pointcloud.
+        """Upload Lidar Semantic Segmentation predictions for a given point-cloud.
 
-        Assuming a pointcloud with only 4 points (three labeled as Car, one labeled as Person),
+        Assuming a point-cloud with only 4 points (three labeled as Car, one labeled as Person),
         the contents of the predictions s3 object should be formatted as such:
 
         .. code-block:: json
