@@ -1453,6 +1453,7 @@ class Dataset:
         self,
         query: Optional[str] = None,
         use_mirrored_images: bool = False,
+        group_by_scene: bool = False,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
 
@@ -1478,11 +1479,13 @@ class Dataset:
                     }
                 }]
         """
+        endpoint_name = "exportForTrainingByScene" if group_by_scene else "exportForTrainingPage"; 
+        page_size = 50 if group_by_scene else 10000 # 50 scenes or 10000 dataset items
         json_generator = paginate_generator(
             client=self._client,
-            endpoint=f"dataset/{self.id}/exportForTrainingPage",
+            endpoint=f"dataset/{self.id}/{endpoint_name}",
             result_key=EXPORT_FOR_TRAINING_KEY,
-            page_size=10000,  # max ES page size
+            page_size=page_size,  # max ES page size
             query=query,
             chip=use_mirrored_images,
         )
