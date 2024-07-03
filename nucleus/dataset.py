@@ -1449,10 +1449,9 @@ class Dataset:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
-    
     def scene_and_annotation_generator(self):
         endpoint_name = "exportForTrainingByScene"
-        page_size = 10 # 10 scenes per page
+        page_size = 10  # 10 scenes per page
         json_generator = paginate_generator(
             client=self._client,
             endpoint=f"dataset/{self.id}/{endpoint_name}",
@@ -1492,13 +1491,11 @@ class Dataset:
                     }
                 }]
         """
-        endpoint_name = "exportForTrainingPage"; 
-        page_size = 10000 # 50 scenes 
         json_generator = paginate_generator(
             client=self._client,
-            endpoint=f"dataset/{self.id}/{endpoint_name}",
+            endpoint=f"dataset/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
-            page_size=page_size,  # max ES page size
+            page_size=10000,  # max ES page size
             query=query,
             chip=use_mirrored_images,
         )
