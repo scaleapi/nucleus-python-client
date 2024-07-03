@@ -1449,11 +1449,24 @@ class Dataset:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
+    
+    def scene_and_annotation_generator(self):
+        endpoint_name = "exportForTrainingByScene"
+        page_size = 10 # 10 scenes per page
+        json_generator = paginate_generator(
+            client=self._client,
+            endpoint=f"dataset/{self.id}/{endpoint_name}",
+            result_key=EXPORT_FOR_TRAINING_KEY,
+            page_size=page_size,
+        )
+
+        for data in json_generator:
+            yield data
+
     def items_and_annotation_generator(
         self,
         query: Optional[str] = None,
         use_mirrored_images: bool = False,
-        group_by_scene: bool = False,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
 
@@ -1479,8 +1492,8 @@ class Dataset:
                     }
                 }]
         """
-        endpoint_name = "exportForTrainingByScene" if group_by_scene else "exportForTrainingPage"; 
-        page_size = 50 if group_by_scene else 10000 # 50 scenes or 10000 dataset items
+        endpoint_name = "exportForTrainingPage"; 
+        page_size = 10000 # 50 scenes 
         json_generator = paginate_generator(
             client=self._client,
             endpoint=f"dataset/{self.id}/{endpoint_name}",
