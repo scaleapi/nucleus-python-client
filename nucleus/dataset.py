@@ -1449,9 +1449,39 @@ class Dataset:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
-    def scene_and_annotation_generator(self):
+    def scene_and_annotation_generator(self, page_size=10):
+        """Provides a generator of all DatasetItems and Annotations in the dataset grouped by scene.
+
+
+        Returns:
+            Generator where each element is a nested dict (representing a JSON) structured in the following way:
+
+            Iterable[{
+                "file_location": str,
+                "metadata": Dict[str, Any],
+                "annotations": {
+                    "{trackId}": {
+                        "label": str,
+                        "name": str,
+                        "frames": List[{
+                            "left": int,
+                            "top": int,
+                            "width": int,
+                            "height": int,
+                            "key": str, # frame key
+                            "metadata": Dict[str, Any]
+                        }]
+                    }
+                }
+            }]
+
+            This is similar to how the Scale API returns task data
+        """
+
+        if page_size > 30:
+            raise ValueError("Page size must be less than or equal to 30")
+
         endpoint_name = "exportForTrainingByScene"
-        page_size = 10  # 10 scenes per page
         json_generator = paginate_generator(
             client=self._client,
             endpoint=f"dataset/{self.id}/{endpoint_name}",
