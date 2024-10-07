@@ -332,8 +332,7 @@ class Dataset:
         dataset_item_jsons = response.get(DATASET_ITEMS_KEY, None)
 
         return [
-            DatasetItem.from_json(item_json)
-            for item_json in dataset_item_jsons
+            DatasetItem.from_json(item_json) for item_json in dataset_item_jsons
         ]
 
     @property
@@ -699,9 +698,7 @@ class Dataset:
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
 
-            return self._append_video_scenes(
-                video_scenes, update, asynchronous
-            )
+            return self._append_video_scenes(video_scenes, update, asynchronous)
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
@@ -997,9 +994,9 @@ class Dataset:
             raise Exception("Must provide at least one list of internal IDs")
         payload = {
             NAME_KEY: name,
-            DATASET_ITEM_IDS_KEY: dataset_item_ids
-            if dataset_item_ids
-            else None,
+            DATASET_ITEM_IDS_KEY: (
+                dataset_item_ids if dataset_item_ids else None
+            ),
             SCENE_IDS_KEY: scene_ids if scene_ids else None,
             OBJECT_IDS_KEY: [*(annotation_ids or []), *(prediction_ids or [])]
             or None,
@@ -1449,7 +1446,7 @@ class Dataset:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
-    def scene_and_annotation_generator(self, page_size: int=10):
+    def scene_and_annotation_generator(self, page_size: int = 10):
         """Provides a generator of all Scenes and Annotations in the dataset grouped by scene.
 
         Args:
@@ -2352,10 +2349,7 @@ class Dataset:
         )
 
         if len(items) > 0:
-            if (
-                len(items) > GLOB_SIZE_THRESHOLD_CHECK
-                and not skip_size_warning
-            ):
+            if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
                 raise Exception(
                     f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
                     f" set skip_size_warning=True when calling this function."
