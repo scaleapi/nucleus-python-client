@@ -997,9 +997,9 @@ class Dataset:
             raise Exception("Must provide at least one list of internal IDs")
         payload = {
             NAME_KEY: name,
-            DATASET_ITEM_IDS_KEY: dataset_item_ids
-            if dataset_item_ids
-            else None,
+            DATASET_ITEM_IDS_KEY: (
+                dataset_item_ids if dataset_item_ids else None
+            ),
             SCENE_IDS_KEY: scene_ids if scene_ids else None,
             OBJECT_IDS_KEY: [*(annotation_ids or []), *(prediction_ids or [])]
             or None,
@@ -1449,16 +1449,34 @@ class Dataset:
         )
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
-    def scene_and_annotation_generator(self, page_size=10):
-        """Provides a generator of all DatasetItems and Annotations in the dataset grouped by scene.
+    def scene_and_annotation_generator(self, page_size: int = 10):
+        """Provides a generator of all Scenes and Annotations in the dataset grouped by scene.
 
+        Args:
+            page_size: Number of scenes to fetch per page. Default is 10.
 
         Returns:
-            Generator where each element is a nested dict (representing a JSON) structured in the following way:
+            Generator where each element is a nested dict containing scene and annotation information of the dataset structured as a JSON.
 
+            Track grouping is slightly more complicated and is done in the following order:
+            1. If track_id is defined in the annotations table, use it as the track id.
+            2. If track_reference_id is defined in the metadata field of the annotations table, use it as the track id.
+            3. If track_id is defined in the metadata field of the annotations table, use it as the track id.
+            4. If track_id is not defined and annotation_id is defined, use annotation_id as track id.
+            5. If annotation_id grouping is unsuccessful such that the annotation id is unique across all frames in the scene for all annotations, throw an error that the annotation format is incompatible.
+            6. If there is no track or annotation id, throw an error that the annotation format is incompatible.
+
+            If you use the generator and discover that no scenes were generated, check the response error message for more information. It is likely that the annotations are not in the correct format.
+
+            ::
             Iterable[{
-                "file_location": str,
-                "metadata": Dict[str, Any],
+                "scene": {
+                    "id": str,
+                    "reference_id": str,
+                    "metadata": Dict[str, Any]
+                    "type": str,
+                    "fileLocation": str,
+                }
                 "annotations": {
                     "{trackId}": {
                         "label": str,
