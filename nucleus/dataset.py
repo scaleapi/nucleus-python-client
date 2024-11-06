@@ -1450,12 +1450,12 @@ class Dataset:
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
     def scene_and_annotation_generator(
-        self, sliceId=None, page_size: int = 10
+        self, slice_id=None, page_size: int = 10
     ):
         """Provides a generator of all Scenes and Annotations in the dataset grouped by scene.
 
         Args:
-            sliceId: Optional slice ID to filter the scenes and annotations.
+            slice_id: Optional slice ID to filter the scenes and annotations.
             page_size: Number of scenes to fetch per page. Default is 10.
 
         Returns:
@@ -1508,7 +1508,7 @@ class Dataset:
             endpoint=f"dataset/{self.id}/{endpoint_name}",
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=page_size,
-            sliceId=sliceId,
+            sliceId=slice_id,
         )
 
         for data in json_generator:
