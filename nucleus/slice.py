@@ -410,8 +410,12 @@ class Slice:
 
     def items_and_annotation_generator(
         self,
+        use_mirrored_images: bool = False,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the slice.
+
+        Args:
+            use_mirrored_images: If True, returns the location of the mirrored image hosted in Scale S3. Useful when the original image is no longer available.
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
@@ -436,6 +440,7 @@ class Slice:
             endpoint=f"slice/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=10000,  # max ES page size
+            chip=use_mirrored_images,
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
