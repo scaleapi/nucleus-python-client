@@ -220,7 +220,7 @@ class AnnotationUploader:
         tuple_ids = [
             (ann.reference_id, ann.annotation_id, ann.task_id)  # type: ignore
             for ann in annotations
-            if hasattr(ann, "annotation_id")
+            if hasattr(ann, "annotation_id") and hasattr(ann, "task_id")
         ]
         tuple_count = Counter(tuple_ids)
         duplicates = {key for key, value in tuple_count.items() if value > 1}
