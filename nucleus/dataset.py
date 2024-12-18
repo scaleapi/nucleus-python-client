@@ -1450,13 +1450,14 @@ class Dataset:
         return convert_export_payload(api_payload[EXPORTED_ROWS])
 
     def scene_and_annotation_generator(
-        self, slice_id=None, page_size: int = 10
+        self, slice_id=None, page_size: int = 10, only_most_recent_tasks=True
     ):
         """Provides a generator of all Scenes and Annotations in the dataset grouped by scene.
 
         Args:
             slice_id: Optional slice ID to filter the scenes and annotations.
             page_size: Number of scenes to fetch per page. Default is 10.
+            only_most_recent_tasks: If True, only the annotations corresponding to the most recent task for each item is returned.
 
         Returns:
             Generator where each element is a nested dict containing scene and annotation information of the dataset structured as a JSON.
@@ -1509,6 +1510,7 @@ class Dataset:
             result_key=EXPORT_FOR_TRAINING_KEY,
             page_size=page_size,
             sliceId=slice_id,
+            onlyMostRecentTask=only_most_recent_tasks,
         )
 
         for data in json_generator:
@@ -1518,12 +1520,14 @@ class Dataset:
         self,
         query: Optional[str] = None,
         use_mirrored_images: bool = False,
+        only_most_recent_tasks: bool = True,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
 
         Args:
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
             use_mirrored_images: If True, returns the location of the mirrored image hosted in Scale S3. Useful when the original image is no longer available.
+            only_most_recent_tasks: If True, only the annotations corresponding to the most recent task for each item is returned.
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
@@ -1550,6 +1554,7 @@ class Dataset:
             page_size=10000,  # max ES page size
             query=query,
             chip=use_mirrored_images,
+            onlyMostRecentTask=only_most_recent_tasks,
         )
         for data in json_generator:
             for ia in convert_export_payload([data], has_predictions=False):
