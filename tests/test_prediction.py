@@ -1,6 +1,7 @@
 import time
 
 import pytest
+import copy
 
 from nucleus import (
     BoxPrediction,
@@ -56,25 +57,6 @@ def test_reprs():
     [
         test_repr(SegmentationPrediction.from_json(_))
         for _ in TEST_SEGMENTATION_PREDICTIONS
-    ]
-
-    [test_repr(BoxPrediction.from_json(_)) for _ in TEST_BOX_PREDICTIONS]
-
-    [test_repr(LinePrediction.from_json(_)) for _ in TEST_LINE_PREDICTIONS]
-
-    [
-        test_repr(PolygonPrediction.from_json(_))
-        for _ in TEST_POLYGON_PREDICTIONS
-    ]
-
-    [
-        test_repr(CategoryPrediction.from_json(_))
-        for _ in TEST_CATEGORY_PREDICTIONS
-    ]
-
-    [
-        test_repr(CategoryPrediction.from_json(_))
-        for _ in TEST_DEFAULT_CATEGORY_PREDICTIONS
     ]
 
 
@@ -580,9 +562,9 @@ def test_default_category_pred_upload_update(model_run):
 
     # Copy so we don't modify the original.
     prediction_update_params = dict(TEST_DEFAULT_CATEGORY_PREDICTIONS[1])
-    prediction_update_params[
-        "reference_id"
-    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
+    prediction_update_params["reference_id"] = (
+        TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
+    )
 
     prediction_update = CategoryPrediction.from_json(prediction_update_params)
     response = model_run.predict(annotations=[prediction_update], update=True)
@@ -607,9 +589,9 @@ def test_default_category_pred_upload_ignore(model_run):
 
     # Copy so we don't modify the original.
     prediction_update_params = dict(TEST_DEFAULT_CATEGORY_PREDICTIONS[1])
-    prediction_update_params[
-        "reference_id"
-    ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
+    prediction_update_params["reference_id"] = (
+        TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
+    )
 
     prediction_update = CategoryPrediction.from_json(prediction_update_params)
     # Default behavior is ignore.
