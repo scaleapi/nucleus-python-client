@@ -1,7 +1,6 @@
 import time
 
 import pytest
-import copy
 
 from nucleus import (
     BoxPrediction,
