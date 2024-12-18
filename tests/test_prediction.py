@@ -564,7 +564,6 @@ def test_default_category_pred_upload_update(model_run):
     prediction_update_params[
         "reference_id"
     ] = TEST_DEFAULT_CATEGORY_PREDICTIONS[0]["reference_id"]
-    
 
     prediction_update = CategoryPrediction.from_json(prediction_update_params)
     response = model_run.predict(annotations=[prediction_update], update=True)
