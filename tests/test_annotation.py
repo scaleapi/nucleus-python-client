@@ -510,9 +510,9 @@ def test_category_gt_upload_update(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_CATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = TEST_CATEGORY_ANNOTATIONS[0][
-        "reference_id"
-    ]
+    annotation_update_params["reference_id"] = (
+        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
+    )
 
     annotation_update = CategoryAnnotation.from_json(annotation_update_params)
     response = dataset.annotate(annotations=[annotation_update], update=True)
@@ -540,9 +540,9 @@ def test_category_gt_upload_ignore(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_CATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = TEST_CATEGORY_ANNOTATIONS[0][
-        "reference_id"
-    ]
+    annotation_update_params["reference_id"] = (
+        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
+    )
 
     annotation_update = CategoryAnnotation.from_json(annotation_update_params)
     # Default behavior is ignore.
@@ -634,9 +634,9 @@ def test_multicategory_gt_upload_update(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_MULTICATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = TEST_MULTICATEGORY_ANNOTATIONS[
-        0
-    ]["reference_id"]
+    annotation_update_params["reference_id"] = (
+        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
+    )
 
     annotation_update = MultiCategoryAnnotation.from_json(
         annotation_update_params
@@ -666,9 +666,9 @@ def test_multicategory_gt_upload_ignore(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_MULTICATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = TEST_MULTICATEGORY_ANNOTATIONS[
-        0
-    ]["reference_id"]
+    annotation_update_params["reference_id"] = (
+        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
+    )
 
     annotation_update = MultiCategoryAnnotation.from_json(
         annotation_update_params
