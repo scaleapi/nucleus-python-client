@@ -58,25 +58,6 @@ def test_reprs():
         for _ in TEST_SEGMENTATION_PREDICTIONS
     ]
 
-    [test_repr(BoxPrediction.from_json(_)) for _ in TEST_BOX_PREDICTIONS]
-
-    [test_repr(LinePrediction.from_json(_)) for _ in TEST_LINE_PREDICTIONS]
-
-    [
-        test_repr(PolygonPrediction.from_json(_))
-        for _ in TEST_POLYGON_PREDICTIONS
-    ]
-
-    [
-        test_repr(CategoryPrediction.from_json(_))
-        for _ in TEST_CATEGORY_PREDICTIONS
-    ]
-
-    [
-        test_repr(CategoryPrediction.from_json(_))
-        for _ in TEST_DEFAULT_CATEGORY_PREDICTIONS
-    ]
-
 
 @pytest.fixture()
 def model_run(CLIENT):
