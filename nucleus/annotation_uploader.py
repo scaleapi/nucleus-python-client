@@ -214,19 +214,19 @@ class AnnotationUploader:
 
     @staticmethod
     def check_for_duplicate_ids(annotations: Iterable[Annotation]):
-        """Do not allow annotations to have the same (annotation_id, reference_id) tuple"""
+        """Do not allow annotations to have the same (annotation_id, reference_id, task_id) tuple"""
 
         # some annotations like CategoryAnnotation do not have annotation_id attribute, and as such, we allow duplicates
         tuple_ids = [
-            (ann.reference_id, ann.annotation_id)  # type: ignore
+            (ann.reference_id, ann.annotation_id, ann.task_id)  # type: ignore
             for ann in annotations
-            if hasattr(ann, "annotation_id")
+            if hasattr(ann, "annotation_id") and hasattr(ann, "task_id")
         ]
         tuple_count = Counter(tuple_ids)
         duplicates = {key for key, value in tuple_count.items() if value > 1}
         if len(duplicates) > 0:
             raise DuplicateIDError(
-                f"Duplicate annotations with the same (reference_id, annotation_id) properties found.\n"
+                f"Duplicate annotations with the same (reference_id, annotation_id, task_id) properties found.\n"
                 f"Duplicates: {duplicates}\n"
                 f"To fix this, avoid duplicate annotations, or specify a different annotation_id attribute "
                 f"for the failing items."
