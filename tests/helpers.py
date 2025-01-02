@@ -272,6 +272,7 @@ TEST_BOX_ANNOTATIONS = [
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Box Annotation Annotation Id{i}",
         "metadata": {"field_1": "string", "index": i},
+        "task_id": str(uuid.uuid4()),
     }
     for i in range(len(TEST_IMG_URLS))
 ]
@@ -315,6 +316,7 @@ TEST_POLYGON_ANNOTATIONS = [
         },
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Polygon Annotation Annotation Id{i}",
+        "task_id": str(uuid.uuid4()),
     }
     for i in range(len(TEST_IMG_URLS))
 ]
@@ -503,100 +505,114 @@ TEST_CATEGORY_MODEL_PDF = {
 }
 
 TEST_BOX_PREDICTIONS = [
-    {
-        **TEST_BOX_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_BOX_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_BOX_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_BOX_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_BOX_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_BOX_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_BOX_ANNOTATIONS))
 ]
 
 TEST_BOX_PREDICTIONS_EMBEDDINGS = [
-    {
-        **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_BOX_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_BOX_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_BOX_ANNOTATIONS_EMBEDDINGS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_BOX_ANNOTATIONS_EMBEDDINGS))
 ]
 
 TEST_LINE_PREDICTIONS = [
-    {
-        **TEST_LINE_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_LINE_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_LINE_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_LINE_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_LINE_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_LINE_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_LINE_ANNOTATIONS))
 ]
 
 TEST_POLYGON_PREDICTIONS = [
-    {
-        **TEST_POLYGON_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_POLYGON_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_POLYGON_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_POLYGON_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_POLYGON_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_POLYGON_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_POLYGON_ANNOTATIONS))
 ]
 
 TEST_KEYPOINTS_PREDICTIONS = [
-    {
-        **TEST_KEYPOINTS_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_KEYPOINTS_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_KEYPOINTS_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_KEYPOINTS_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_KEYPOINTS_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_KEYPOINTS_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_KEYPOINTS_ANNOTATIONS))
 ]
 
 TEST_CATEGORY_PREDICTIONS = [
-    {
-        **TEST_CATEGORY_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_CATEGORY_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_CATEGORY_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_CATEGORY_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_CATEGORY_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_CATEGORY_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_CATEGORY_ANNOTATIONS))
 ]
 
 TEST_DEFAULT_CATEGORY_PREDICTIONS = [
-    {
-        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-        "class_pdf": TEST_CATEGORY_MODEL_PDF,
-    }
-    if i != 0
-    else {
-        **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
-        "confidence": 0.10 * i,
-    }
+    (
+        {
+            **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+            "class_pdf": TEST_CATEGORY_MODEL_PDF,
+        }
+        if i != 0
+        else {
+            **TEST_DEFAULT_CATEGORY_ANNOTATIONS[i],
+            "confidence": 0.10 * i,
+        }
+    )
     for i in range(len(TEST_DEFAULT_CATEGORY_ANNOTATIONS))
 ]
 
