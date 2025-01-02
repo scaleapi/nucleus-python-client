@@ -272,7 +272,6 @@ TEST_BOX_ANNOTATIONS = [
         "reference_id": reference_id_from_url(TEST_IMG_URLS[i]),
         "annotation_id": f"[Pytest] Box Annotation Annotation Id{i}",
         "metadata": {"field_1": "string", "index": i},
-        "task_id": str(uuid.uuid4()),
     }
     for i in range(len(TEST_IMG_URLS))
 ]
