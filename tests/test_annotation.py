@@ -383,9 +383,7 @@ def test_box_gt_upload_update(dataset):
     annotation_update_params["reference_id"] = TEST_BOX_ANNOTATIONS[0][
         "reference_id"
     ]
-    annotation_update_params["task_id"] = TEST_BOX_ANNOTATIONS[0][
-        "task_id"
-    ]
+    annotation_update_params["task_id"] = TEST_BOX_ANNOTATIONS[0]["task_id"]
 
     annotation_update = BoxAnnotation(**annotation_update_params)
     response = dataset.annotate(annotations=[annotation_update], update=True)
@@ -418,9 +416,7 @@ def test_box_gt_upload_ignore(dataset):
     annotation_update_params["reference_id"] = TEST_BOX_ANNOTATIONS[0][
         "reference_id"
     ]
-    annotation_update_params["task_id"] = TEST_BOX_ANNOTATIONS[0][
-        "task_id"
-    ]
+    annotation_update_params["task_id"] = TEST_BOX_ANNOTATIONS[0]["task_id"]
     annotation_update = BoxAnnotation(**annotation_update_params)
 
     # Default behavior is ignore.
