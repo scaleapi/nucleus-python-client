@@ -213,7 +213,8 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             and sorted(self.metadata.items()) == sorted(other.metadata.items())
             and self.embedding_vector == other.embedding_vector
             and self.track_reference_id == other.track_reference_id
-            and self.__task_id == other.__task_id
+            and getattr(self, "_BoxAnnotation__task_id")
+            == getattr(other, "_BoxAnnotation__task_id")
         )
 
 
