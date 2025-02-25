@@ -176,9 +176,7 @@ class AnnotationUploader:
         """
 
         def fn():
-            request_json = construct_segmentation_payload(
-                segmentations, update
-            )
+            request_json = construct_segmentation_payload(segmentations, update)
             form_data = [
                 FileFormField(
                     name=SERIALIZED_REQUEST_KEY,
@@ -212,15 +210,17 @@ class AnnotationUploader:
 
         return fn
 
-    @staticmethod
-    def check_for_duplicate_ids(annotations: Iterable[Annotation]):
+    def check_for_duplicate_ids(self, annotations: Iterable[Annotation]):
         """Do not allow annotations to have the same (annotation_id, reference_id, task_id) tuple"""
 
-        # some annotations like CategoryAnnotation do not have annotation_id attribute, and as such, we allow duplicates
         tuple_ids = [
-            (ann.reference_id, ann.annotation_id, ann.task_id)  # type: ignore
+            (
+                ann.reference_id,
+                ann.annotation_id,
+                getattr(ann, "_task_id", None),
+            )
             for ann in annotations
-            if hasattr(ann, "annotation_id") and hasattr(ann, "task_id")
+            if hasattr(ann, "annotation_id")
         ]
         tuple_count = Counter(tuple_ids)
         duplicates = {key for key, value in tuple_count.items() if value > 1}
@@ -254,4 +254,21 @@ class PredictionUploader(AnnotationUploader):
             ), "Model ID and dataset ID are required if not using model run id."
             self._route = (
                 f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
+            )
+
+    def check_for_duplicate_ids(self, predictions: Iterable[Annotation]):
+        """Do not allow predictions to have the same (annotation_id, reference_id) tuple"""
+        tuple_ids = [
+            (pred.annotation_id, pred.reference_id)  # type: ignore
+            for pred in predictions
+            if hasattr(pred, "annotation_id") and hasattr(pred, "reference_id")
+        ]
+        tuple_count = Counter(tuple_ids)
+        duplicates = {key for key, value in tuple_count.items() if value > 1}
+        if len(duplicates) > 0:
+            raise DuplicateIDError(
+                f"Duplicate predictions with the same (annotation_id, reference_id) properties found.\n"
+                f"Duplicates: {duplicates}\n"
+                f"To fix this, avoid duplicate predictions, or specify a different annotation_id attribute "
+                f"for the failing items."
             )
