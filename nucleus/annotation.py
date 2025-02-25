@@ -169,7 +169,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     @classmethod
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
-        instance = cls(
+        return cls(
             label=payload.get(LABEL_KEY, 0),
             x=geometry.get(X_KEY, 0),
             y=geometry.get(Y_KEY, 0),
@@ -182,7 +182,6 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         return {
@@ -302,7 +301,7 @@ class LineAnnotation(Annotation):
     @classmethod
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
-        instance = cls(
+        return cls(
             label=payload.get(LABEL_KEY, 0),
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
@@ -313,7 +312,6 @@ class LineAnnotation(Annotation):
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         payload = {
@@ -398,7 +396,7 @@ class PolygonAnnotation(Annotation):
     @classmethod
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
-        instance = cls(
+        return cls(
             label=payload.get(LABEL_KEY, 0),
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
@@ -410,7 +408,6 @@ class PolygonAnnotation(Annotation):
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         payload = {
@@ -563,7 +560,7 @@ class KeypointsAnnotation(Annotation):
             else None
         )
 
-        instance = cls(
+        return cls(
             label=payload.get(LABEL_KEY, 0),
             keypoints=[
                 Keypoint.from_json(_) for _ in geometry.get(KEYPOINTS_KEY, [])
@@ -576,7 +573,6 @@ class KeypointsAnnotation(Annotation):
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         payload = {
@@ -704,7 +700,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     @classmethod
     def from_json(cls, payload: dict):
         geometry = payload.get(GEOMETRY_KEY, {})
-        instance = cls(
+        return cls(
             label=payload.get(LABEL_KEY, 0),
             position=Point3D.from_json(geometry.get(POSITION_KEY, {})),
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
@@ -715,7 +711,6 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         payload = {
@@ -955,7 +950,7 @@ class CategoryAnnotation(Annotation):
 
     @classmethod
     def from_json(cls, payload: dict):
-        instance = cls(
+        return cls(
             label=payload[LABEL_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
@@ -963,7 +958,6 @@ class CategoryAnnotation(Annotation):
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         payload = {
@@ -996,7 +990,7 @@ class MultiCategoryAnnotation(Annotation):
 
     @classmethod
     def from_json(cls, payload: dict):
-        instance = cls(
+        return cls(
             labels=payload[LABELS_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
@@ -1004,7 +998,6 @@ class MultiCategoryAnnotation(Annotation):
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
         )
-        return instance
 
     def to_payload(self) -> dict:
         payload = {

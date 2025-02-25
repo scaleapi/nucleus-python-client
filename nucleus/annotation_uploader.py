@@ -256,11 +256,11 @@ class PredictionUploader(AnnotationUploader):
                 f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
             )
 
-    def check_for_duplicate_ids(self, predictions: Iterable[Annotation]):
+    def check_for_duplicate_ids(self, annotations: Iterable[Annotation]):
         """Do not allow predictions to have the same (annotation_id, reference_id) tuple"""
         tuple_ids = [
             (pred.annotation_id, pred.reference_id)  # type: ignore
-            for pred in predictions
+            for pred in annotations
             if hasattr(pred, "annotation_id") and hasattr(pred, "reference_id")
         ]
         tuple_count = Counter(tuple_ids)
