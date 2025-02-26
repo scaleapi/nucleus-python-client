@@ -434,7 +434,7 @@ def test_box_gt_upload_ignore(dataset):
 
 
 def test_polygon_gt_upload_update(dataset):
-    TEST_POLYGON_ANNOTATIONS[0]["_task_id"] = "test_task_id"
+    TEST_POLYGON_ANNOTATIONS[0]["task_id"] = "test_task_id"
     annotation = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
 
@@ -448,9 +448,7 @@ def test_polygon_gt_upload_update(dataset):
     annotation_update_params["reference_id"] = TEST_POLYGON_ANNOTATIONS[0][
         "reference_id"
     ]
-    annotation_update_params["_task_id"] = TEST_POLYGON_ANNOTATIONS[0][
-        "_task_id"
-    ]
+    annotation_update_params["task_id"] = TEST_POLYGON_ANNOTATIONS[0]["task_id"]
 
     annotation_update = PolygonAnnotation.from_json(annotation_update_params)
     response = dataset.annotate(annotations=[annotation_update], update=True)
@@ -467,7 +465,7 @@ def test_polygon_gt_upload_update(dataset):
 
 
 def test_polygon_gt_upload_ignore(dataset):
-    TEST_POLYGON_ANNOTATIONS[0]["_task_id"] = "test_task_id"
+    TEST_POLYGON_ANNOTATIONS[0]["task_id"] = "test_task_id"
     annotation = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     response = dataset.annotate(annotations=[annotation])
 
@@ -481,9 +479,7 @@ def test_polygon_gt_upload_ignore(dataset):
     annotation_update_params["reference_id"] = TEST_POLYGON_ANNOTATIONS[0][
         "reference_id"
     ]
-    annotation_update_params["_task_id"] = TEST_POLYGON_ANNOTATIONS[0][
-        "_task_id"
-    ]
+    annotation_update_params["task_id"] = TEST_POLYGON_ANNOTATIONS[0]["task_id"]
 
     annotation_update = PolygonAnnotation.from_json(annotation_update_params)
     # Default behavior is ignore.
