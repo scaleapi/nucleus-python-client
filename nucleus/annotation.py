@@ -159,7 +159,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -180,7 +180,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -198,7 +198,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             METADATA_KEY: self.metadata,
             EMBEDDING_VECTOR_KEY: self.embedding_vector,
             TRACK_REFERENCE_ID_KEY: self.track_reference_id,
-            TASK_ID_KEY: self.task_id,
+            TASK_ID_KEY: self._task_id,
         }
 
     def __eq__(self, other):
@@ -213,7 +213,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             and sorted(self.metadata.items()) == sorted(other.metadata.items())
             and self.embedding_vector == other.embedding_vector
             and self.track_reference_id == other.track_reference_id
-            and self.task_id == other.task_id
+            and self._task_id == other._task_id
         )
 
 
@@ -280,7 +280,7 @@ class LineAnnotation(Annotation):
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -310,7 +310,7 @@ class LineAnnotation(Annotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -324,7 +324,7 @@ class LineAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
             TRACK_REFERENCE_ID_KEY: self.track_reference_id,
-            TASK_ID_KEY: self.task_id,
+            TASK_ID_KEY: self._task_id,
         }
         return payload
 
@@ -375,7 +375,7 @@ class PolygonAnnotation(Annotation):
     metadata: Optional[Dict] = None
     embedding_vector: Optional[list] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -406,7 +406,7 @@ class PolygonAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -421,7 +421,7 @@ class PolygonAnnotation(Annotation):
             METADATA_KEY: self.metadata,
             EMBEDDING_VECTOR_KEY: self.embedding_vector,
             TRACK_REFERENCE_ID_KEY: self.track_reference_id,
-            TASK_ID_KEY: self.task_id,
+            TASK_ID_KEY: self._task_id,
         }
         return payload
 
@@ -518,7 +518,7 @@ class KeypointsAnnotation(Annotation):
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata or {}
@@ -571,7 +571,7 @@ class KeypointsAnnotation(Annotation):
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -587,7 +587,7 @@ class KeypointsAnnotation(Annotation):
             ANNOTATION_ID_KEY: self.annotation_id,
             METADATA_KEY: self.metadata,
             TRACK_REFERENCE_ID_KEY: self.track_reference_id,
-            TASK_ID_KEY: self.task_id,
+            TASK_ID_KEY: self._task_id,
         }
         return payload
 
@@ -692,7 +692,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     annotation_id: Optional[str] = None
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -709,7 +709,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -729,7 +729,8 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             payload[METADATA_KEY] = self.metadata
         if self.track_reference_id:
             payload[TRACK_REFERENCE_ID_KEY] = self.track_reference_id
-
+        if self._task_id:
+            payload[TASK_ID_KEY] = self._task_id
         return payload
 
 
@@ -942,7 +943,7 @@ class CategoryAnnotation(Annotation):
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -955,7 +956,7 @@ class CategoryAnnotation(Annotation):
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -966,7 +967,7 @@ class CategoryAnnotation(Annotation):
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
             TRACK_REFERENCE_ID_KEY: self.track_reference_id,
-            TASK_ID_KEY: self.task_id,
+            TASK_ID_KEY: self._task_id,
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
@@ -982,7 +983,7 @@ class MultiCategoryAnnotation(Annotation):
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
-    task_id: Optional[str] = None
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -995,7 +996,7 @@ class MultiCategoryAnnotation(Annotation):
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
-            task_id=payload.get(TASK_ID_KEY, None),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -1006,7 +1007,7 @@ class MultiCategoryAnnotation(Annotation):
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
             TRACK_REFERENCE_ID_KEY: self.track_reference_id,
-            TASK_ID_KEY: self.task_id,
+            TASK_ID_KEY: self._task_id,
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
@@ -1045,6 +1046,7 @@ class SceneCategoryAnnotation(Annotation):
     reference_id: str
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = field(default_factory=dict)
+    _task_id: Optional[str] = field(default=None, repr=False)
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -1053,6 +1055,7 @@ class SceneCategoryAnnotation(Annotation):
             reference_id=payload[REFERENCE_ID_KEY],
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
+            _task_id=payload.get(TASK_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -1062,6 +1065,7 @@ class SceneCategoryAnnotation(Annotation):
             GEOMETRY_KEY: {},
             REFERENCE_ID_KEY: self.reference_id,
             METADATA_KEY: self.metadata,
+            TASK_ID_KEY: self._task_id,
         }
         if self.taxonomy_name is not None:
             payload[TAXONOMY_NAME_KEY] = self.taxonomy_name
@@ -1079,9 +1083,7 @@ class AnnotationList:
         default_factory=list
     )
     cuboid_annotations: List[CuboidAnnotation] = field(default_factory=list)
-    category_annotations: List[CategoryAnnotation] = field(
-        default_factory=list
-    )
+    category_annotations: List[CategoryAnnotation] = field(default_factory=list)
     multi_category_annotations: List[MultiCategoryAnnotation] = field(
         default_factory=list
     )

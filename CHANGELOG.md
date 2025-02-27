@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.17.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.7) - 2024-11-05
+## [0.17.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.8) - 2025-01-02
 
 ### Added
 - Adding `only_most_recent_tasks` parameter for `dataset.scene_and_annotation_generator()` and `dataset.items_and_annotation_generator()` to accommodate for multiple sets of ground truth caused by relabeled tasks. Also returns the task_id in the annotation results.
