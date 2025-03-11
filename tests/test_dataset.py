@@ -354,7 +354,8 @@ def test_raises_error_for_duplicate():
             ]
         )
     assert (
-        str(error.value) == "Duplicate reference IDs found among dataset_items:"
+        str(error.value)
+        == "Duplicate reference IDs found among dataset_items:"
         " {'duplicate': 'Count: 2'}"
     )
 
@@ -479,7 +480,9 @@ def test_append_and_export(dataset):
         exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
     ) == sort_labelmap(clear_fields(segmentation_annotation))
     assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
-    assert exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
+    assert (
+        exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
+    )
     exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels = set(
         exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels
     )
@@ -532,7 +535,8 @@ def test_dataset_item_iterator(dataset):
     dataset.append(items)
     expected_items = {item.reference_id: item for item in dataset.items}
     actual_items = {
-        item.reference_id: item for item in dataset.items_generator(page_size=1)
+        item.reference_id: item
+        for item in dataset.items_generator(page_size=1)
     }
     for key in expected_items:
         assert actual_items[key] == expected_items[key]

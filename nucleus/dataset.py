@@ -2406,11 +2406,11 @@ class Dataset:
             requests_command=requests.post,
         )
 
-    def export_class_labels(self, slice_id: str = None):
+    def export_class_labels(self, slice_id: str | None = None):
         """Fetches a list of class labels for the dataset.
 
         Args:
-            slice_id (str): The ID of the slice to export class labels for. If None, export class labels for the entire dataset.
+            slice_id (str | None): The ID of the slice to export class labels for. If None, export class labels for the entire dataset.
 
         Returns:
             A list of class labels for the dataset.

@@ -1,4 +1,5 @@
 """Data types for Scenario Test Evaluation results."""
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional

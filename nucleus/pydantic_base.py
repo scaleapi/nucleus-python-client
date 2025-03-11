@@ -4,6 +4,7 @@ We started using pydantic during v1 and are kind of stuck with it now unless we 
 As a library we want to support v1 and v2 such that we're not causing downstream problems for our users.
 This means we have to do some import shenanigans to support both v1 and v2.
 """
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
