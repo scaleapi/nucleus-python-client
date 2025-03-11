@@ -332,8 +332,7 @@ class Dataset:
         dataset_item_jsons = response.get(DATASET_ITEMS_KEY, None)
 
         return [
-            DatasetItem.from_json(item_json)
-            for item_json in dataset_item_jsons
+            DatasetItem.from_json(item_json) for item_json in dataset_item_jsons
         ]
 
     @property
@@ -699,9 +698,7 @@ class Dataset:
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
 
-            return self._append_video_scenes(
-                video_scenes, update, asynchronous
-            )
+            return self._append_video_scenes(video_scenes, update, asynchronous)
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
@@ -2361,10 +2358,7 @@ class Dataset:
         )
 
         if len(items) > 0:
-            if (
-                len(items) > GLOB_SIZE_THRESHOLD_CHECK
-                and not skip_size_warning
-            ):
+            if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
                 raise Exception(
                     f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
                     f" set skip_size_warning=True when calling this function."
@@ -2411,3 +2405,26 @@ class Dataset:
             route=f"dataset/{self.id}/model/{model.id}/pointcloud/{pointcloud_ref_id}/uploadLSSPrediction",
             requests_command=requests.post,
         )
+
+    def export_class_labels(self, slice_id: str = None):
+        """Fetches a list of class labels for the dataset.
+
+        Args:
+            slice_id (str): The ID of the slice to export class labels for. If None, export class labels for the entire dataset.
+
+        Returns:
+            A list of class labels for the dataset.
+        """
+        if slice_id:
+            api_payload = self._client.make_request(
+                payload=None,
+                route=f"slice/{slice_id}/class_labels",
+                requests_command=requests.get,
+            )
+        else:
+            api_payload = self._client.make_request(
+                payload=None,
+                route=f"dataset/{self.id}/class_labels",
+                requests_command=requests.get,
+            )
+        return api_payload.get("data", [])
