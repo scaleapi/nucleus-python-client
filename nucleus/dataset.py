@@ -2406,7 +2406,7 @@ class Dataset:
             requests_command=requests.post,
         )
 
-    def export_class_labels(self, slice_id: str | None = None):
+    def export_class_labels(self, slice_id: Optional[str] = None):
         """Fetches a list of class labels for the dataset.
 
         Args:
