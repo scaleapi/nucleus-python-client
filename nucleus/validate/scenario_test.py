@@ -4,7 +4,6 @@ With Model CI Scenario Tests, an ML engineer can define a Scenario Test from cri
 edge case scenarios that the model must get right (e.g. pedestrians at night),
 and have confidence that they’re always shipping the best model.
 """
-
 from dataclasses import dataclass, field
 from typing import List, Optional, Union
 

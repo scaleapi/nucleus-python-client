@@ -1253,24 +1253,16 @@ class AvailableEvalFunctions:
         self.bbox_iou: BoundingBoxIOUConfig = (
             self._assign_eval_function_if_defined(BoundingBoxIOUConfig)
         )  # type: ignore
-        self.bbox_precision: (
-            BoundingBoxPrecisionConfig
-        ) = self._assign_eval_function_if_defined(
+        self.bbox_precision: BoundingBoxPrecisionConfig = self._assign_eval_function_if_defined(
             BoundingBoxPrecisionConfig  # type: ignore
         )
-        self.bbox_recall: (
-            BoundingBoxRecallConfig
-        ) = self._assign_eval_function_if_defined(
+        self.bbox_recall: BoundingBoxRecallConfig = self._assign_eval_function_if_defined(
             BoundingBoxRecallConfig  # type: ignore
         )
-        self.bbox_map: (
-            BoundingBoxMAPConfig
-        ) = self._assign_eval_function_if_defined(
+        self.bbox_map: BoundingBoxMAPConfig = self._assign_eval_function_if_defined(
             BoundingBoxMAPConfig  # type: ignore
         )
-        self.cat_f1: (
-            CategorizationF1Config
-        ) = self._assign_eval_function_if_defined(
+        self.cat_f1: CategorizationF1Config = self._assign_eval_function_if_defined(
             CategorizationF1Config  # type: ignore
         )
         self.cuboid_iou_2d: CuboidIOU2DConfig = self._assign_eval_function_if_defined(CuboidIOU2DConfig)  # type: ignore
@@ -1282,76 +1274,52 @@ class AvailableEvalFunctions:
             self._assign_eval_function_if_defined(CuboidRecallConfig)
         )  # type: ignore
         self.poly_iou: PolygonIOUConfig = self._assign_eval_function_if_defined(PolygonIOUConfig)  # type: ignore
-        self.poly_precision: (
-            PolygonPrecisionConfig
-        ) = self._assign_eval_function_if_defined(
+        self.poly_precision: PolygonPrecisionConfig = self._assign_eval_function_if_defined(
             PolygonPrecisionConfig  # type: ignore
         )
-        self.poly_recall: (
-            PolygonRecallConfig
-        ) = self._assign_eval_function_if_defined(
+        self.poly_recall: PolygonRecallConfig = self._assign_eval_function_if_defined(
             PolygonRecallConfig  # type: ignore
         )
-        self.poly_map: (
-            PolygonMAPConfig
-        ) = self._assign_eval_function_if_defined(
+        self.poly_map: PolygonMAPConfig = self._assign_eval_function_if_defined(
             PolygonMAPConfig  # type: ignore
         )
         self.segmentation_to_poly_iou: SegmentationToPolyIOUConfig = (
             self._assign_eval_function_if_defined(SegmentationToPolyIOUConfig)
         )  # type: ignore
-        self.segmentation_to_poly_precision: (
-            SegmentationToPolyPrecisionConfig
-        ) = self._assign_eval_function_if_defined(
+        self.segmentation_to_poly_precision: SegmentationToPolyPrecisionConfig = self._assign_eval_function_if_defined(
             SegmentationToPolyPrecisionConfig  # type: ignore
         )
-        self.segmentation_to_poly_recall: (
-            SegmentationToPolyRecallConfig
-        ) = self._assign_eval_function_if_defined(
+        self.segmentation_to_poly_recall: SegmentationToPolyRecallConfig = self._assign_eval_function_if_defined(
             SegmentationToPolyRecallConfig  # type: ignore
         )
-        self.segmentation_to_poly_map: (
-            SegmentationToPolyMAPConfig
-        ) = self._assign_eval_function_if_defined(
+        self.segmentation_to_poly_map: SegmentationToPolyMAPConfig = self._assign_eval_function_if_defined(
             SegmentationToPolyMAPConfig  # type: ignore
         )
-        self.segmentation_to_poly_ap: (
-            SegmentationToPolyAveragePrecisionConfig
-        ) = self._assign_eval_function_if_defined(
+        self.segmentation_to_poly_ap: SegmentationToPolyAveragePrecisionConfig = self._assign_eval_function_if_defined(
             SegmentationToPolyAveragePrecisionConfig  # type: ignore
         )
 
-        self.seg_iou: (
-            SegmentationIOUConfig
-        ) = self._assign_eval_function_if_defined(
+        self.seg_iou: SegmentationIOUConfig = self._assign_eval_function_if_defined(
             SegmentationIOUConfig  # type: ignore
         )
-        self.seg_recall: (
-            SegmentationRecallConfig
-        ) = self._assign_eval_function_if_defined(
+        self.seg_recall: SegmentationRecallConfig = self._assign_eval_function_if_defined(
             SegmentationRecallConfig  # type: ignore
         )
-        self.seg_map: (
-            SegmentationMAPConfig
-        ) = self._assign_eval_function_if_defined(
+        self.seg_map: SegmentationMAPConfig = self._assign_eval_function_if_defined(
             SegmentationMAPConfig  # type: ignore
         )
-        self.seg_precision: (
-            SegmentationPrecisionConfig
-        ) = self._assign_eval_function_if_defined(
+        self.seg_precision: SegmentationPrecisionConfig = self._assign_eval_function_if_defined(
             SegmentationPrecisionConfig  # type: ignore
         )
-        self.seg_fwavacc: (
-            SegmentationFWAVACCConfig
-        ) = self._assign_eval_function_if_defined(
+        self.seg_fwavacc: SegmentationFWAVACCConfig = self._assign_eval_function_if_defined(
             SegmentationFWAVACCConfig  # type: ignore
         )
         # Add public entries that have not been implemented as an attribute on this class
         for func_entry in self._public_func_entries.values():
             if func_entry.name not in self._public_to_function:
-                self._public_to_function[func_entry.name] = (
-                    StandardEvalFunction(func_entry)
-                )
+                self._public_to_function[
+                    func_entry.name
+                ] = StandardEvalFunction(func_entry)
 
     def __repr__(self):
         """Standard functions are ones Scale provides and custom ones customer defined"""

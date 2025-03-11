@@ -168,9 +168,7 @@ class Slice:
     @property
     def pending_job_count(self) -> Optional[int]:
         if self._pending_job_count is None:
-            self._pending_job_count = self.info().get(
-                "pending_job_count", None
-            )
+            self._pending_job_count = self.info().get("pending_job_count", None)
         return self._pending_job_count
 
     @classmethod

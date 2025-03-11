@@ -1083,9 +1083,7 @@ class AnnotationList:
         default_factory=list
     )
     cuboid_annotations: List[CuboidAnnotation] = field(default_factory=list)
-    category_annotations: List[CategoryAnnotation] = field(
-        default_factory=list
-    )
+    category_annotations: List[CategoryAnnotation] = field(default_factory=list)
     multi_category_annotations: List[MultiCategoryAnnotation] = field(
         default_factory=list
     )

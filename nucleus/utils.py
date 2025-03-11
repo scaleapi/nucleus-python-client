@@ -1,5 +1,4 @@
 """Shared stateless utility function library"""
-
 import glob
 import io
 import json
@@ -245,13 +244,13 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
             segmentation = row[SEGMENTATION_TYPE]
             segmentation[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             if not has_predictions:
-                annotations[SEGMENTATION_TYPE] = (
-                    SegmentationAnnotation.from_json(segmentation)
-                )
+                annotations[
+                    SEGMENTATION_TYPE
+                ] = SegmentationAnnotation.from_json(segmentation)
             else:
-                annotations[SEGMENTATION_TYPE] = (
-                    SegmentationPrediction.from_json(segmentation)
-                )
+                annotations[
+                    SEGMENTATION_TYPE
+                ] = SegmentationPrediction.from_json(segmentation)
         for polygon in row[POLYGON_TYPE]:
             polygon[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
             if not has_predictions:

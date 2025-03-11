@@ -12,6 +12,7 @@ For example::
     response = dataset.upload_predictions(model, [prediction_1, prediction_2])
 """
 
+
 from typing import List, Optional, Union
 
 import requests

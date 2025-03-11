@@ -70,8 +70,7 @@ def test_slice_create_and_export(dataset):
     slice_ref_ids = [item.reference_id for item in ds_items[:1]]
     # This test assumes one box annotation per item.
     annotations = [
-        BoxAnnotation.from_json(json_data)
-        for json_data in TEST_BOX_ANNOTATIONS
+        BoxAnnotation.from_json(json_data) for json_data in TEST_BOX_ANNOTATIONS
     ]
     # Slice creation
     slc = dataset.create_slice(
@@ -96,17 +95,17 @@ def test_slice_create_and_export(dataset):
     for row in slc.items_and_annotations():
         reference_id = row[ITEM_KEY].reference_id
         assert row[ITEM_KEY] == get_expected_item(reference_id)
-        assert row[ANNOTATIONS_KEY][BOX_TYPE][
-            0
-        ] == get_expected_box_annotation(reference_id)
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][0] == get_expected_box_annotation(
+            reference_id
+        )
 
     # test async
     for row in slc.items_and_annotation_generator():
         reference_id = row[ITEM_KEY].reference_id
         assert row[ITEM_KEY] == get_expected_item(reference_id)
-        assert row[ANNOTATIONS_KEY][BOX_TYPE][
-            0
-        ] == get_expected_box_annotation(reference_id)
+        assert row[ANNOTATIONS_KEY][BOX_TYPE][0] == get_expected_box_annotation(
+            reference_id
+        )
 
 
 @pytest.mark.integration
@@ -167,9 +166,9 @@ def test_slice_create_and_prediction_export(dataset, slc, model):
     for row in exported:
         reference_id = row[ITEM_KEY].reference_id
         assert row[ITEM_KEY] == get_expected_item(reference_id)
-        assert row[PREDICTIONS_KEY][BOX_TYPE][
-            0
-        ] == get_expected_box_prediction(reference_id)
+        assert row[PREDICTIONS_KEY][BOX_TYPE][0] == get_expected_box_prediction(
+            reference_id
+        )
 
 
 def test_slice_append(dataset):

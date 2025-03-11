@@ -3,7 +3,6 @@ All of the prediction types supported. In general, prediction types are the same
 as annotation types, but come with additional, optional data that can be attached
 such as confidence or probability distributions.
 """
-
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Type, Union
 
