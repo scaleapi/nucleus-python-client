@@ -309,9 +309,9 @@ def test_dataset_append_async(dataset: Dataset):
 
 def test_dataset_append_async_with_local_path(dataset: Dataset):
     ds_items = make_dataset_items()
-    ds_items[
-        0
-    ].image_location = "/a/fake/local/path/you/can/tell/is/local/but/is/fake"
+    ds_items[0].image_location = (
+        "/a/fake/local/path/you/can/tell/is/local/but/is/fake"
+    )
     with pytest.raises(ValueError):
         dataset.append(ds_items, asynchronous=True)
 
@@ -354,8 +354,7 @@ def test_raises_error_for_duplicate():
             ]
         )
     assert (
-        str(error.value)
-        == "Duplicate reference IDs found among dataset_items:"
+        str(error.value) == "Duplicate reference IDs found among dataset_items:"
         " {'duplicate': 'Count: 2'}"
     )
 
@@ -480,9 +479,7 @@ def test_append_and_export(dataset):
         exported[0][ANNOTATIONS_KEY][SEGMENTATION_TYPE]
     ) == sort_labelmap(clear_fields(segmentation_annotation))
     assert exported[0][ANNOTATIONS_KEY][POLYGON_TYPE][0] == polygon_annotation
-    assert (
-        exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
-    )
+    assert exported[0][ANNOTATIONS_KEY][CATEGORY_TYPE][0] == category_annotation
     exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels = set(
         exported[0][ANNOTATIONS_KEY][MULTICATEGORY_TYPE][0].labels
     )
@@ -535,8 +532,7 @@ def test_dataset_item_iterator(dataset):
     dataset.append(items)
     expected_items = {item.reference_id: item for item in dataset.items}
     actual_items = {
-        item.reference_id: item
-        for item in dataset.items_generator(page_size=1)
+        item.reference_id: item for item in dataset.items_generator(page_size=1)
     }
     for key in expected_items:
         assert actual_items[key] == expected_items[key]
@@ -610,3 +606,19 @@ def test_create_update_dataset_from_dir(CLIENT):
         assert dataset_item.reference_id in reference_ids
         reference_ids.remove(dataset_item.reference_id)
     CLIENT.delete_dataset(dataset.id)
+
+
+@pytest.mark.integration
+def test_dataset_export_class_labels(dataset):
+    dataset.append(make_dataset_items())
+    # Create box annotation from the test data
+    box_annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
+    dataset.annotate(annotations=[box_annotation])
+
+    # Wait annotations to be uploaded (takes a while)
+    import time
+
+    time.sleep(40)
+    class_labels = dataset.export_class_labels()
+    # Compare against just the label from the test annotation
+    assert class_labels == [box_annotation.label]

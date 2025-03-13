@@ -168,9 +168,7 @@ class Slice:
     @property
     def pending_job_count(self) -> Optional[int]:
         if self._pending_job_count is None:
-            self._pending_job_count = self.info().get(
-                "pending_job_count", None
-            )
+            self._pending_job_count = self.info().get("pending_job_count", None)
         return self._pending_job_count
 
     @classmethod
@@ -704,6 +702,15 @@ class Slice:
             requests_command=requests.get,
         )
         return api_payload
+
+    def export_class_labels(self):
+        """Fetches a list of class labels for the slice."""
+        api_payload = self._client.make_request(
+            payload=None,
+            route=f"slice/{self.id}/class_labels",
+            requests_command=requests.get,
+        )
+        return api_payload.get("data", [])
 
 
 def check_annotations_are_in_slice(
