@@ -615,9 +615,10 @@ def test_dataset_export_class_labels(dataset):
     box_annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     dataset.annotate(annotations=[box_annotation])
 
+    # Wait annotations to be uploaded (takes a while)
     import time
 
-    time.sleep(60)
+    time.sleep(40)
     class_labels = dataset.export_class_labels()
     # Compare against just the label from the test annotation
     assert class_labels == [box_annotation.label]

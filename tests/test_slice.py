@@ -126,9 +126,10 @@ def test_slice_export_class_labels(dataset):
 
     dataset.annotate(annotations=annotations)
 
+    # Wait annotations to be uploaded (takes a while)
     import time
 
-    time.sleep(60)
+    time.sleep(40)
     class_labels = slc.export_class_labels()
 
     expected_class_labels = [anno.label for anno in annotations]
