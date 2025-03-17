@@ -1518,6 +1518,7 @@ class Dataset:
         query: Optional[str] = None,
         use_mirrored_images: bool = False,
         only_most_recent_tasks: bool = True,
+        page_size=10000
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
 
@@ -1525,6 +1526,7 @@ class Dataset:
             query: Structured query compatible with the `Nucleus query language <https://nucleus.scale.com/docs/query-language-reference>`_.
             use_mirrored_images: If True, returns the location of the mirrored image hosted in Scale S3. Useful when the original image is no longer available.
             only_most_recent_tasks: If True, only the annotations corresponding to the most recent task for each item is returned.
+            page_size: Number of items to fetch per page. Default is maximum ES page size of 10000.
 
         Returns:
             Generator where each element is a dict containing the DatasetItem
@@ -1548,7 +1550,7 @@ class Dataset:
             client=self._client,
             endpoint=f"dataset/{self.id}/exportForTrainingPage",
             result_key=EXPORT_FOR_TRAINING_KEY,
-            page_size=10000,  # max ES page size
+            page_size=page_size,  # default is max ES page size of 10000
             query=query,
             chip=use_mirrored_images,
             onlyMostRecentTask=only_most_recent_tasks,
