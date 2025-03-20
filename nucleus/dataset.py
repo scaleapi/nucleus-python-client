@@ -1688,6 +1688,17 @@ class Dataset:
         )
         return AsyncJob.from_json(response, self._client)
 
+    def delete_annotation_refloc(
+        self,
+        reference_id: str,
+        annotation_id: str,
+    ):
+        return self._client.make_request(
+            {},
+            f"dataset/{self.id}/annotation/{reference_id}/{annotation_id}",
+            requests_command=requests.delete,
+        )
+
     def get_scene(self, reference_id: str) -> Scene:
         """Fetches a single scene in the dataset by its reference ID.
 
