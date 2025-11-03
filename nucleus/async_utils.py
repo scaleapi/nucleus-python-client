@@ -186,7 +186,9 @@ async def _post_form_data(
                     endpoint,
                     data=form,
                     auth=(
-                        aiohttp.BasicAuth(client.api_key, "")
+                        (lambda k: aiohttp.BasicAuth(str(k), ""))(
+                            getattr(client, "api_key", None)
+                        )
                         if getattr(client, "api_key", None) is not None
                         else None
                     ),
@@ -229,7 +231,9 @@ async def _make_request(
             async with session.get(
                 endpoint,
                 auth=(
-                    aiohttp.BasicAuth(client.api_key, "")
+                    (lambda k: aiohttp.BasicAuth(str(k), ""))(
+                        getattr(client, "api_key", None)
+                    )
                     if getattr(client, "api_key", None) is not None
                     else None
                 ),
