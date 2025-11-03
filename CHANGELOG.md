@@ -23,6 +23,7 @@ client = nucleus.NucleusClient(limited_access_key="<LIMITED_ACCESS_KEY>")
 - `Connection` accepts `extra_headers` and only includes Basic Auth when `api_key` is provided. This enables header-only auth with limited access keys.
 - Header propagation applies across all request paths, including Validate endpoints and concurrent async helpers.
 - Tests updated to be tolerant of limited-access-only runs.
+- NoAPIKey error messaging updated to account for limited_access_key support.
 
 ## [0.17.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.10) - 2025-03-19
 
