@@ -5,7 +5,7 @@ from typing import Optional
 import requests
 
 from .constants import DEFAULT_NETWORK_TIMEOUT_SEC
-from .errors import NucleusAPIError
+from .errors import NucleusAPIError, NoAPIKey
 from .logger import logger
 from .retry_strategy import RetryStrategy
 
@@ -13,9 +13,13 @@ from .retry_strategy import RetryStrategy
 class Connection:
     """Wrapper of HTTP requests to the Nucleus endpoint."""
 
-    def __init__(self, api_key: str, endpoint: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, endpoint: Optional[str] = None, extra_headers: Optional[dict] = None):
         self.api_key = api_key
         self.endpoint = endpoint
+        self.extra_headers = extra_headers or {}
+        # Require at least one auth mechanism: Basic (api_key) or limited access header
+        if self.api_key is None and not self.extra_headers.get("x-limited-access-key"):
+            raise NoAPIKey()
 
     def __repr__(self):
         return (
@@ -63,13 +67,19 @@ class Connection:
         logger.info("Make request to %s", endpoint)
 
         for retry_wait_time in RetryStrategy.sleep_times():
+            auth_kwargs = (
+                {"auth": (self.api_key, "")} if self.api_key is not None else {}
+            )
             response = requests_command(
                 endpoint,
                 json=payload,
-                headers={"Content-Type": "application/json"},
-                auth=(self.api_key, ""),
+                headers={
+                    "Content-Type": "application/json",
+                    **(self.extra_headers or {}),
+                },
                 timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
                 verify=os.environ.get("NUCLEUS_SKIP_SSL_VERIFY", None) is None,
+                **auth_kwargs,
             )
             logger.info(
                 "API request has response code %s", response.status_code

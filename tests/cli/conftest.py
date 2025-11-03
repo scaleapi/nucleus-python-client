@@ -6,7 +6,8 @@ from click.testing import CliRunner
 from tests.helpers import create_box_annotations, create_predictions, get_uuid
 from tests.test_dataset import make_dataset_items
 
-os.environ["NUCLEUS_API_KEY"] = os.environ["NUCLEUS_PYTEST_API_KEY"]
+API_KEY = os.environ.get("NUCLEUS_PYTEST_API_KEY") if "NUCLEUS_PYTEST_API_KEY" in os.environ else None
+LIMITED_ACCESS_KEY = os.environ.get("NUCLEUS_PYTEST_LIMITED_ACCESS_KEY") if "NUCLEUS_PYTEST_LIMITED_ACCESS_KEY" in os.environ else None
 
 
 @pytest.fixture

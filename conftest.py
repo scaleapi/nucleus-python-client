@@ -11,18 +11,23 @@ from tests.helpers import TEST_DATASET_ITEMS, TEST_DATASET_NAME
 if TYPE_CHECKING:
     from nucleus import NucleusClient
 
-assert "NUCLEUS_PYTEST_API_KEY" in os.environ, (
-    "You must set the 'NUCLEUS_PYTEST_API_KEY' environment variable to a valid "
-    "Nucleus API key to run the test suite"
+assert "NUCLEUS_PYTEST_API_KEY" in os.environ or "NUCLEUS_PYTEST_LIMITED_ACCESS_KEY" in os.environ, (
+    "You must set at least one of 'NUCLEUS_PYTEST_API_KEY' or "
+    "'NUCLEUS_PYTEST_LIMITED_ACCESS_KEY' environment variables to run the test suite"
 )
 
-API_KEY = os.environ["NUCLEUS_PYTEST_API_KEY"]
+API_KEY = os.environ.get("NUCLEUS_PYTEST_API_KEY") if "NUCLEUS_PYTEST_API_KEY" in os.environ else None
+LIMITED_ACCESS_KEY = os.environ.get("NUCLEUS_PYTEST_LIMITED_ACCESS_KEY") if "NUCLEUS_PYTEST_LIMITED_ACCESS_KEY" in os.environ else None
 
 
 @pytest.fixture(scope="session")
 def CLIENT():
-    client = nucleus.NucleusClient(API_KEY)
-    return client
+    if API_KEY and LIMITED_ACCESS_KEY:
+        return nucleus.NucleusClient(api_key=API_KEY, limited_access_key=LIMITED_ACCESS_KEY)
+    if API_KEY:
+        return nucleus.NucleusClient(api_key=API_KEY)
+    # LIMITED_ACCESS_KEY only
+    return nucleus.NucleusClient(limited_access_key=LIMITED_ACCESS_KEY)
 
 
 @pytest.fixture()

@@ -185,7 +185,12 @@ async def _post_form_data(
                 async with session.post(
                     endpoint,
                     data=form,
-                    auth=aiohttp.BasicAuth(client.api_key, ""),
+                    auth=(
+                        aiohttp.BasicAuth(client.api_key, "")
+                        if getattr(client, "api_key", None) is not None
+                        else None
+                    ),
+                    headers=getattr(client, "extra_headers", None),
                     timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
                 ) as response:
                     data = await _parse_async_response(
@@ -223,7 +228,12 @@ async def _make_request(
         for sleep_time in RetryStrategy.sleep_times() + [-1]:
             async with session.get(
                 endpoint,
-                auth=aiohttp.BasicAuth(client.api_key, ""),
+                auth=(
+                    aiohttp.BasicAuth(client.api_key, "")
+                    if getattr(client, "api_key", None) is not None
+                    else None
+                ),
+                headers=getattr(client, "extra_headers", None),
                 timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
             ) as response:
                 data = await _parse_async_response(

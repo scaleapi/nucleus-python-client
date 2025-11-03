@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.17.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.11) - 2025-11-03
+
+### Added
+- Support passing a limited access key via `NucleusClient(limited_access_key=...)`. When provided, the client sends the `x-limited-access-key` header on all requests (sync and async).
+- Allow using the SDK without a standard API key when a `limited_access_key` is supplied. In this mode, Basic Auth is omitted and only the limited access header is used.
+
+Example usage:
+
+```python
+client = nucleus.NucleusClient(limited_access_key="<LIMITED_ACCESS_KEY>")
+#...
+```
+
+### Changed
+- `Connection` accepts `extra_headers` and only includes Basic Auth when `api_key` is provided. This enables header-only auth with limited access keys.
+- Header propagation applies across all request paths, including Validate endpoints and concurrent async helpers.
+- Tests updated to be tolerant of limited-access-only runs.
+
 ## [0.17.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.10) - 2025-03-19
 
 ### Added
