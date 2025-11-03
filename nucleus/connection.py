@@ -5,7 +5,7 @@ from typing import Optional
 import requests
 
 from .constants import DEFAULT_NETWORK_TIMEOUT_SEC
-from .errors import NucleusAPIError, NoAPIKey
+from .errors import NoAPIKey, NucleusAPIError
 from .logger import logger
 from .retry_strategy import RetryStrategy
 
