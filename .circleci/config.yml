@@ -10,7 +10,7 @@ jobs:
     docker:
       # Important: Don't change this otherwise we will stop testing the earliest
       # python version we have to support.
-      - image: cimg/python:3.7
+      - image: python:3.7-bullseye
     resource_class: medium
     parallelism: 6
     steps:
