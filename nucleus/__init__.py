@@ -176,7 +176,7 @@ class NucleusClient:
 
     Parameters:
         api_key: Follow `this guide <https://scale.com/docs/account#section-api-keys>`_
-          to retrieve your API keys. Optional when ``limited_access_key`` is provided.
+          to retrieve your API keys. **Only** optional when ``limited_access_key`` is provided.
         use_notebook: Whether the client is being used in a notebook (toggles tqdm
           style). Default is ``False``.
         endpoint: Base URL of the API. Default is Nucleus's current production API.
@@ -190,20 +190,21 @@ class NucleusClient:
         ``api_key`` and ``limited_access_key`` are provided, Basic Auth (``api_key``) and the
         additional limited access key will both be sent.
 
-        Examples::
-           # Use a basic auth key
+        .. code-block:: python
+
+           # Using a basic auth key
            import nucleus
            client = nucleus.NucleusClient(api_key="YOUR_API_KEY")
 
-            # Use only a limited access key (no Basic Auth)
-            import nucleus
-            client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY")
+           # Using only a limited access key (no Basic Auth)
+           import nucleus
+           client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY")
 
-            # Or provide both keys if needed
-            client = nucleus.NucleusClient(
-                api_key="YOUR_API_KEY",
-                limited_access_key="YOUR_LIMITED_KEY",
-            )
+           # Or providing both keys
+           client = nucleus.NucleusClient(
+               api_key="YOUR_API_KEY",
+               limited_access_key="YOUR_LIMITED_KEY",
+           )
     """
 
     def __init__(
