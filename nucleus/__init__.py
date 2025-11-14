@@ -176,10 +176,35 @@ class NucleusClient:
 
     Parameters:
         api_key: Follow `this guide <https://scale.com/docs/account#section-api-keys>`_
-          to retrieve your API keys.
+          to retrieve your API keys. **Only** optional when ``limited_access_key`` is provided.
         use_notebook: Whether the client is being used in a notebook (toggles tqdm
           style). Default is ``False``.
         endpoint: Base URL of the API. Default is Nucleus's current production API.
+        limited_access_key: Key enabling additional, scoped access. **Only** optional when ``api_key`` is provided. Reach out to your Scale representative to obtain a limited access key.
+
+    Authentication notes:
+        Some users have Nucleus-only API keys. You can
+        instantiate the client with only ``limited_access_key`` (no ``api_key``) and the SDK
+        will authenticate requests using this key only. If both
+        ``api_key`` and ``limited_access_key`` are provided, Basic Auth (``api_key``) and the
+        additional limited access key will both be sent.
+
+        .. code-block:: python
+
+           # Using a basic auth key
+           import nucleus
+           client = nucleus.NucleusClient(api_key="YOUR_API_KEY", ...)
+
+           # Using only a limited access key (no Basic Auth)
+           import nucleus
+           client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY", ...)
+
+           # Using both keys (Basic Auth and limited access header)
+           client = nucleus.NucleusClient(
+               api_key="YOUR_API_KEY",
+               limited_access_key="YOUR_LIMITED_KEY",
+               ...
+           )
     """
 
     def __init__(
@@ -187,8 +212,13 @@ class NucleusClient:
         api_key: Optional[str] = None,
         use_notebook: bool = False,
         endpoint: Optional[str] = None,
+        limited_access_key: Optional[str] = None,
     ):
-        self.api_key = self._set_api_key(api_key)
+        # Allow usage with only a limited access key
+        if api_key is None and limited_access_key:
+            self.api_key = None
+        else:
+            self.api_key = self._set_api_key(api_key)
         self.tqdm_bar = tqdm.tqdm
         if endpoint is None:
             self.endpoint = os.environ.get(
@@ -201,8 +231,11 @@ class NucleusClient:
             import tqdm.notebook as tqdm_notebook
 
             self.tqdm_bar = tqdm_notebook.tqdm
-        self.connection = Connection(self.api_key, self.endpoint)
-        self.validate = Validate(self.api_key, self.endpoint)
+        self.extra_headers: Dict[str, str] = {}
+        if limited_access_key:
+            self.extra_headers["x-limited-access-key"] = limited_access_key
+        self.connection = Connection(self.api_key, self.endpoint, extra_headers=self.extra_headers)
+        self.validate = Validate(self.api_key, self.endpoint, extra_headers=self.extra_headers)
 
     def __repr__(self):
         return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"

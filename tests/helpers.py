@@ -829,7 +829,8 @@ def get_uuid():
 
 
 def running_as_nucleus_pytest_user(client):
-    if NUCLEUS_PYTEST_USER_ID in client.api_key:
+    api_key = getattr(client, "api_key", None)
+    if api_key and NUCLEUS_PYTEST_USER_ID in api_key:
         return True
     if os.environ.get("NUCLEUS_PYTEST_USER_ID") == NUCLEUS_PYTEST_USER_ID:
         return True

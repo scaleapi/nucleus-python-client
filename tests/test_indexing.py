@@ -1,7 +1,6 @@
 import pytest
 
 from nucleus import DatasetItem
-from nucleus.async_job import AsyncJob
 from nucleus.constants import (
     BACKFILL_JOB_KEY,
     ERROR_PAYLOAD,
@@ -36,6 +35,7 @@ def dataset(CLIENT):
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Skipping temporarily - Issue with underlying sfn state machine and celery worker")
 def test_set_continuous_indexing(dataset):
     resp = dataset.set_continuous_indexing(True)
     job = resp[BACKFILL_JOB_KEY]
@@ -53,6 +53,7 @@ def test_set_continuous_indexing(dataset):
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Skipping temporarily - Issue with underlying sfn state machine and celery worker")
 def test_set_primary_index(dataset):
     dataset.set_continuous_indexing()
     resp = dataset.set_primary_index(image=True, custom=False)
@@ -60,6 +61,7 @@ def test_set_primary_index(dataset):
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Skipping temporarily - Issue with underlying sfn state machine and celery worker")
 def test_create_custom_index(dataset):
     signed_embeddings_url = TEST_INDEX_EMBEDDINGS_FILE
     job = dataset.create_custom_index([signed_embeddings_url], embedding_dim=3)
@@ -77,6 +79,7 @@ def test_create_custom_index(dataset):
 
 
 @pytest.mark.integration
+@pytest.mark.skip(reason="Skipping temporarily - Issue with underlying sfn state machine and celery worker")
 def test_create_and_delete_custom_index(dataset):
     # Creates image index
     resp = dataset.set_continuous_indexing(True)

@@ -15,8 +15,18 @@ IMAGE_URL = "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/
 # Global flags
 flags.DEFINE_string(
     "api_key",
-    os.environ["NUCLEUS_PYTEST_API_KEY"],
+    os.environ.get("NUCLEUS_PYTEST_API_KEY", None),
     "API Key to use. Defaults to NUCLEUS_PYTEST_API_KEY environment variable",
+)
+
+# Optional limited access key (header-only auth)
+flags.DEFINE_string(
+    "limited_access_key",
+    os.environ.get("NUCLEUS_PYTEST_LIMITED_ACCESS_KEY", None),
+    (
+        "Limited access key to use. Defaults to NUCLEUS_PYTEST_LIMITED_ACCESS_KEY "
+        "environment variable"
+    ),
 )
 
 flags.DEFINE_integer("job_parallelism", 8, "Amount of concurrent jobs to use.")
@@ -71,7 +81,13 @@ def chunk(iterable, chunk_size, fillvalue=None):
 
 
 def client():
-    return nucleus.NucleusClient(api_key=FLAGS.api_key)
+    if not FLAGS.api_key and not FLAGS.limited_access_key:
+        raise RuntimeError(
+            "Set at least one of api_key or limited_access_key (via flags or env)."
+        )
+    return nucleus.NucleusClient(
+        api_key=FLAGS.api_key, limited_access_key=FLAGS.limited_access_key
+    )
 
 
 def generate_fake_metadata(index):
