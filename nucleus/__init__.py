@@ -180,8 +180,7 @@ class NucleusClient:
         use_notebook: Whether the client is being used in a notebook (toggles tqdm
           style). Default is ``False``.
         endpoint: Base URL of the API. Default is Nucleus's current production API.
-        limited_access_key: Optional key enabling additional, scoped access. Reach out to 
-        your Scale representative to obtain a limited access key.
+        limited_access_key: Key enabling additional, scoped access. **Only** optional when ``api_key`` is provided. Reach out to your Scale representative to obtain a limited access key.
 
     Authentication notes:
         Some users have Nucleus-only API keys. You can
@@ -194,16 +193,17 @@ class NucleusClient:
 
            # Using a basic auth key
            import nucleus
-           client = nucleus.NucleusClient(api_key="YOUR_API_KEY")
+           client = nucleus.NucleusClient(api_key="YOUR_API_KEY", ...)
 
            # Using only a limited access key (no Basic Auth)
            import nucleus
-           client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY")
+           client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY", ...)
 
            # Using both keys (Basic Auth and limited access header)
            client = nucleus.NucleusClient(
                api_key="YOUR_API_KEY",
                limited_access_key="YOUR_LIMITED_KEY",
+               ...
            )
     """
 
