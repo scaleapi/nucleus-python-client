@@ -1,4 +1,5 @@
 import sys
+import warnings
 from abc import abstractmethod
 from typing import List, Optional, Union
 
@@ -9,6 +10,9 @@ from .base import Metric, ScalarResult
 from .cuboid_utils import detection_iou, label_match_wrapper, recall_precision
 from .filtering import ListOfAndFilters, ListOfOrAndFilters
 from .filters import confidence_filter
+
+DEFAULT_IOU_THRESHOLD = 0.1
+DEFAULT_CONFIDENCE_THRESHOLD = 0.0
 
 
 class CuboidMetric(Metric):
@@ -27,8 +31,9 @@ class CuboidMetric(Metric):
 
     def __init__(
         self,
+        iou_threshold: float,
         enforce_label_match: bool = False,
-        confidence_threshold: float = 0.0,
+        confidence_threshold: Optional[float] = None,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -54,6 +59,11 @@ class CuboidMetric(Metric):
                 (AND), forming a more selective and multiple column predicate. Finally, the most outer list combines
                 these filters as a disjunction (OR).
         """
+        if not confidence_threshold:
+            confidence_threshold = DEFAULT_CONFIDENCE_THRESHOLD
+            warnings.warn(
+                f"Got confidence_threshold value of `None`. In this case, we set the confidence_threshold to {confidence_threshold} (include all predictions, regardless of confidence).  Consider specifying this value explicitly during metric initialization"
+            )
         self.enforce_label_match = enforce_label_match
         assert 0 <= confidence_threshold <= 1
         self.confidence_threshold = confidence_threshold
@@ -99,8 +109,8 @@ class CuboidIOU(CuboidMetric):
     def __init__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
-        confidence_threshold: float = 0.0,
+        iou_threshold: Optional[float] = None,
+        confidence_threshold: Optional[float] = None,
         iou_2d: bool = False,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
@@ -127,6 +137,11 @@ class CuboidIOU(CuboidMetric):
                 interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        if not iou_threshold:
+            iou_threshold = DEFAULT_IOU_THRESHOLD
+            warnings.warn(
+                f"The IoU threshold used for matching was initialized to `None`. In this case, the value of iou_threshold defaults to {iou_threshold}. If this values will produce unexpected behavior, consider specifying the iou_threshold argument during metric initialization"
+            )
         assert (
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
@@ -134,6 +149,7 @@ class CuboidIOU(CuboidMetric):
         self.iou_2d = iou_2d
         super().__init__(
             enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
@@ -147,14 +163,16 @@ class CuboidIOU(CuboidMetric):
         iou_3d_metric, iou_2d_metric = detection_iou(
             predictions,
             annotations,
-            threshold_in_overlap_ratio=self.iou_threshold,
+            self.iou_threshold,
         )
 
-        weight = max(len(annotations), len(predictions))
+        # If there are zero IoU matches, avg_iou defaults to value 0
         if self.iou_2d:
-            avg_iou = iou_2d_metric.sum() / max(weight, sys.float_info.epsilon)
+            weight = len(iou_2d_metric)
+            avg_iou = iou_2d_metric.sum() / weight if weight > 0 else 0.0
         else:
-            avg_iou = iou_3d_metric.sum() / max(weight, sys.float_info.epsilon)
+            weight = len(iou_3d_metric)
+            avg_iou = iou_3d_metric.sum() / weight if weight > 0 else 0.0
 
         return ScalarResult(avg_iou, weight)
 
@@ -166,8 +184,8 @@ class CuboidPrecision(CuboidMetric):
     def __init__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
-        confidence_threshold: float = 0.0,
+        iou_threshold: Optional[float] = None,
+        confidence_threshold: Optional[float] = None,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -192,12 +210,18 @@ class CuboidPrecision(CuboidMetric):
                 interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
         """
+        if not iou_threshold:
+            iou_threshold = DEFAULT_IOU_THRESHOLD
+            warnings.warn(
+                f"The IoU threshold used for matching was initialized to `None`. In this case, the value of iou_threshold defaults to {iou_threshold}. If this values will produce unexpected behavior, consider specifying the iou_threshold argument during metric initialization"
+            )
         assert (
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
         self.iou_threshold = iou_threshold
         super().__init__(
             enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
@@ -211,7 +235,7 @@ class CuboidPrecision(CuboidMetric):
         stats = recall_precision(
             predictions,
             annotations,
-            threshold_in_overlap_ratio=self.iou_threshold,
+            self.iou_threshold,
         )
         weight = stats["tp_sum"] + stats["fp_sum"]
         precision = stats["tp_sum"] / max(weight, sys.float_info.epsilon)
@@ -225,8 +249,8 @@ class CuboidRecall(CuboidMetric):
     def __init__(
         self,
         enforce_label_match: bool = True,
-        iou_threshold: float = 0.0,
-        confidence_threshold: float = 0.0,
+        iou_threshold: Optional[float] = None,
+        confidence_threshold: Optional[float] = None,
         annotation_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
@@ -241,12 +265,18 @@ class CuboidRecall(CuboidMetric):
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
         """
+        if not iou_threshold:
+            iou_threshold = DEFAULT_IOU_THRESHOLD
+            warnings.warn(
+                f"The IoU threshold used for matching was initialized to `None`. In this case, the value of iou_threshold defaults to {iou_threshold}. If this values will produce unexpected behavior, consider specifying the iou_threshold argument during metric initialization"
+            )
         assert (
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
         self.iou_threshold = iou_threshold
         super().__init__(
             enforce_label_match=enforce_label_match,
+            iou_threshold=iou_threshold,
             confidence_threshold=confidence_threshold,
             annotation_filters=annotation_filters,
             prediction_filters=prediction_filters,
@@ -260,7 +290,7 @@ class CuboidRecall(CuboidMetric):
         stats = recall_precision(
             predictions,
             annotations,
-            threshold_in_overlap_ratio=self.iou_threshold,
+            self.iou_threshold,
         )
         weight = stats["tp_sum"] + stats["fn_sum"]
         recall = stats["tp_sum"] / max(weight, sys.float_info.epsilon)
