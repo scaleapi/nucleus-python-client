@@ -247,14 +247,16 @@ def associate_cuboids_on_iou(
     wlh_1: "np.ndarray",
     yaw_1: "np.ndarray",
     threshold_in_overlap_ratio: float = 0.1,
+    use_2d_iou: bool = False,
 ) -> List[Tuple[int, int]]:
     if xyz_0.shape[0] < 1 or xyz_1.shape[0] < 1:
         return []
-    iou_matrix, _ = compute_outer_iou(xyz_0, wlh_0, yaw_0, xyz_1, wlh_1, yaw_1)
+    iou_3d, iou_2d = compute_outer_iou(xyz_0, wlh_0, yaw_0, xyz_1, wlh_1, yaw_1)
+    iou = iou_2d if use_2d_iou else iou_3d
     mapping = []
-    for i, m in enumerate(iou_matrix.max(axis=1)):
+    for i, m in enumerate(iou.max(axis=1)):
         if m >= threshold_in_overlap_ratio:
-            mapping.append((i, iou_matrix[i].argmax()))
+            mapping.append((i, iou[i].argmax()))
     return mapping
 
 
@@ -262,6 +264,7 @@ def recall_precision(
     prediction: List[CuboidPrediction],
     groundtruth: List[CuboidAnnotation],
     threshold_in_overlap_ratio: float,
+    use_2d_iou: bool = False,
 ) -> Dict[str, float]:
     """
     Calculates the precision and recall of each lidar frame.
@@ -270,6 +273,7 @@ def recall_precision(
         :param predictions: list of cuboid annotation predictions.
         :param ground_truth: list of cuboid annotation groundtruths.
         :param threshold: IOU threshold to consider detection as valid. Must be in [0, 1].
+        :param use_2d_iou: flag whether to use 2d or 3d iou for evaluation.
     """
 
     tp_sum = 0
@@ -296,6 +300,7 @@ def recall_precision(
         gt_items["wlh"],
         gt_items["yaw"] + np.pi / 2,
         threshold_in_overlap_ratio=threshold_in_overlap_ratio,
+        use_2d_iou=use_2d_iou,
     )
 
     for pred_id, gt_id in mapping:
