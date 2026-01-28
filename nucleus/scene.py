@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from nucleus.constants import (
+    FRAME_FORMAT_KEY,
     FRAME_RATE_KEY,
     FRAMES_KEY,
     IMAGE_LOCATION_KEY,
@@ -496,6 +497,10 @@ class VideoScene(ABC):
             Context Attachments may be provided to display the attachments side by side with the dataset
             item in the Detail View by specifying
             `{ "context_attachments": [ { "attachment": 'https://example.com/1' }, { "attachment": 'https://example.com/2' }, ... ] }`.
+        frame_format (Optional[str]):
+            Format for extracted video frames. When uploading a video_location, this determines
+            the format used when extracting frames from the video. Valid values are "jpeg" (default)
+            or "png" for lossless frame extraction.
 
     Refer to our `guide to uploading video data
     <https://nucleus.scale.com/docs/uploading-video-data>`_ for more info!
@@ -509,6 +514,7 @@ class VideoScene(ABC):
     attachment_type: Optional[str] = None
     tracks: List[Track] = field(default_factory=list)
     use_privacy_mode: bool = False
+    frame_format: Optional[str] = None
 
     def __post_init__(self):
         if self.attachment_type:
@@ -694,6 +700,8 @@ class VideoScene(ABC):
             payload[FRAMES_KEY] = items_payload
         if self.tracks:
             payload[TRACKS_KEY] = [track.to_payload() for track in self.tracks]
+        if self.frame_format:
+            payload[FRAME_FORMAT_KEY] = self.frame_format
         return payload
 
     def to_json(self) -> str:

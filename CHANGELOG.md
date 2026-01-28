@@ -5,6 +5,22 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.12) - 2026-01-26
+
+### Added
+- Added `frame_format` parameter to `VideoScene` for PNG frame extraction support. When uploading videos via `video_location`, you can now specify `frame_format="png"` for lossless frame extraction (defaults to `"jpeg"`).
+
+Example usage:
+
+```python
+scene = VideoScene(
+    reference_id="my_video",
+    video_location="s3://bucket/video.mp4",
+    frame_format="png"  # Use PNG for lossless frames
+)
+dataset.append(scenes=[scene])
+```
+
 
 ## [0.17.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.11) - 2025-11-03
 
