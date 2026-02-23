@@ -149,6 +149,7 @@ SUCCESS_STATUS_CODES = [200, 201, 202]
 SLICE_TAGS_KEY = "slice_tags"
 TAXONOMY_NAME_KEY = "taxonomy_name"
 TASK_ID_KEY = "task_id"
+THRESHOLD_KEY = "threshold"
 TRACK_REFERENCE_ID_KEY = "track_reference_id"
 TRACK_REFERENCE_IDS_KEY = "track_reference_ids"
 TRACKS_KEY = "tracks"

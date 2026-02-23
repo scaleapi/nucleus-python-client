@@ -67,6 +67,7 @@ from .constants import (
     REQUEST_ID_KEY,
     SCENE_IDS_KEY,
     SLICE_ID_KEY,
+    THRESHOLD_KEY,
     TRACK_REFERENCE_IDS_KEY,
     TRACKS_KEY,
     TRAINED_SLICE_ID_KEY,
@@ -74,6 +75,7 @@ from .constants import (
     VIDEO_URL_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
+from .deduplication import DeduplicationResult, DeduplicationStats
 from .data_transfer_object.dataset_size import DatasetSize
 from .data_transfer_object.scenes_list import ScenesList, ScenesListEntry
 from .dataset_item import (
@@ -1005,6 +1007,106 @@ class Dataset:
             payload, f"dataset/{self.id}/create_slice"
         )
         return Slice(response[SLICE_ID_KEY], self._client)
+
+    def deduplicate(
+        self,
+        threshold: int,
+        reference_ids: Optional[List[str]] = None,
+    ) -> DeduplicationResult:
+        """Deduplicate images or frames in this dataset.
+
+        Parameters:
+            threshold: Hamming distance threshold (0-64). Lower = stricter.
+                0 = exact matches only.
+            reference_ids: Optional list of reference IDs to deduplicate.
+                If not provided (or None), deduplicates the entire dataset.
+                Cannot be an empty list - use None for entire dataset.
+
+        Returns:
+            DeduplicationResult with unique_reference_ids, unique_item_ids, and stats.
+
+        Raises:
+            ValueError: If reference_ids is an empty list (use None for entire dataset).
+            NucleusAPIError: If threshold is not an integer between 0 and 64 inclusive.
+            NucleusAPIError: If any reference_id is not found in the dataset.
+            NucleusAPIError: If any item is missing a perceptual hash (pHash).
+                Contact Scale support if this occurs.
+
+        Note:
+            - For scene datasets, this deduplicates the underlying scene frames,
+              not the scenes themselves. Frame reference IDs or dataset item IDs 
+              should be provided for scene datasets.
+            - For very large datasets, this operation may take significant time.
+        """
+        # Client-side validation
+        if reference_ids is not None and len(reference_ids) == 0:
+            raise ValueError(
+                "reference_ids cannot be empty. Omit reference_ids parameter to deduplicate entire dataset."
+            )
+
+        payload: Dict[str, Any] = {THRESHOLD_KEY: threshold}
+        if reference_ids is not None:
+            payload[REFERENCE_IDS_KEY] = reference_ids
+
+        response = self._client.make_request(
+            payload, f"dataset/{self.id}/deduplicate"
+        )
+        return DeduplicationResult(
+            unique_item_ids=response["unique_item_ids"],
+            unique_reference_ids=response["unique_reference_ids"],
+            stats=DeduplicationStats(
+                threshold=threshold,
+                original_count=response["stats"]["original_count"],
+                deduplicated_count=response["stats"]["deduplicated_count"],
+            ),
+        )
+
+    def deduplicate_by_ids(
+        self,
+        threshold: int,
+        dataset_item_ids: List[str],
+    ) -> DeduplicationResult:
+        """Deduplicate images or frames by internal dataset item IDs.
+
+        Parameters:
+            threshold: Hamming distance threshold (0-64). Lower = stricter.
+                0 = exact matches only.
+            dataset_item_ids: List of internal dataset item IDs to deduplicate.
+                Must be non-empty. To deduplicate the entire dataset, refer to
+                the documentation for `deduplicate()` instead.
+
+        Returns:
+            DeduplicationResult with unique_item_ids, unique_reference_ids, and stats.
+
+        Raises:
+            ValueError: If dataset_item_ids is empty.
+            NucleusAPIError: If threshold is not an integer between 0 and 64 inclusive.
+            NucleusAPIError: If any dataset_item_id is not found in the dataset.
+            NucleusAPIError: If any item is missing a perceptual hash (pHash).
+                Contact Scale support if this occurs.
+        """
+        # Client-side validation
+        if not dataset_item_ids:
+            raise ValueError(
+                "dataset_item_ids must be non-empty. Use deduplicate() for entire dataset."
+            )
+
+        payload = {
+            DATASET_ITEM_IDS_KEY: dataset_item_ids,
+            THRESHOLD_KEY: threshold,
+        }
+        response = self._client.make_request(
+            payload, f"dataset/{self.id}/deduplicate"
+        )
+        return DeduplicationResult(
+            unique_item_ids=response["unique_item_ids"],
+            unique_reference_ids=response["unique_reference_ids"],
+            stats=DeduplicationStats(
+                threshold=threshold,
+                original_count=response["stats"]["original_count"],
+                deduplicated_count=response["stats"]["deduplicated_count"],
+            ),
+        )
 
     def build_slice(
         self,

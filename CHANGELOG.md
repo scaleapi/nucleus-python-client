@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.17.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.12) - 2026-02-23
+
+### Added
+- `Dataset.deduplicate()` method to deduplicate images using perceptual hashing. Accepts optional `reference_ids` to deduplicate specific items, or deduplicates the entire dataset when only `threshold` is provided. Required `threshold` parameter (0-64) controls similarity matching (lower = stricter, 0 = exact matches only).
+- `Dataset.deduplicate_by_ids()` method for deduplication using internal `dataset_item_ids` directly, avoiding the reference ID to item ID mapping for improved efficiency.
+- `DeduplicationResult` and `DeduplicationStats` dataclasses for structured deduplication results.
+
+Example usage:
+
+```python
+dataset = client.get_dataset("ds_...")
+
+# Deduplicate entire dataset
+result = dataset.deduplicate(threshold=10)
+
+# Deduplicate specific items by reference IDs
+result = dataset.deduplicate(threshold=10, reference_ids=["ref_1", "ref_2", "ref_3"])
+
+# Deduplicate by internal item IDs (more efficient if you have them)
+result = dataset.deduplicate_by_ids(threshold=10, dataset_item_ids=["item_1", "item_2"])
+
+# Access results
+print(f"Threshold: {result.stats.threshold}")
+print(f"Original: {result.stats.original_count}, Unique: {result.stats.deduplicated_count}")
+print(result.unique_reference_ids)
+```
+
 ## [0.17.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.11) - 2025-11-03
 
 ### Added
