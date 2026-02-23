@@ -75,7 +75,6 @@ from .constants import (
     VIDEO_URL_KEY,
 )
 from .data_transfer_object.dataset_info import DatasetInfo
-from .deduplication import DeduplicationResult, DeduplicationStats
 from .data_transfer_object.dataset_size import DatasetSize
 from .data_transfer_object.scenes_list import ScenesList, ScenesListEntry
 from .dataset_item import (
@@ -85,6 +84,7 @@ from .dataset_item import (
     check_items_have_dimensions,
 )
 from .dataset_item_uploader import DatasetItemUploader
+from .deduplication import DeduplicationResult, DeduplicationStats
 from .deprecation_warning import deprecated
 from .errors import NotFoundError, NucleusAPIError
 from .job import CustomerJobTypes, jobs_status_overview
