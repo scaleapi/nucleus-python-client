@@ -1034,7 +1034,7 @@ class Dataset:
 
         Note:
             - For scene datasets, this deduplicates the underlying scene frames,
-              not the scenes themselves. Frame reference IDs or dataset item IDs 
+              not the scenes themselves. Frame reference IDs or dataset item IDs
               should be provided for scene datasets.
             - For very large datasets, this operation may take significant time.
         """
