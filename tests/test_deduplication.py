@@ -29,8 +29,7 @@ def test_deduplicate_by_ids_empty_list_raises_error():
 def dataset_image(CLIENT):
     """Image dataset with TEST_DATASET_ITEMS (waits for phash calculation)."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup", is_scene=False)
-    job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
-    job.sleep_until_complete()
+    ds.append(TEST_DATASET_ITEMS)
     yield ds
     CLIENT.delete_dataset(ds.id)
 
