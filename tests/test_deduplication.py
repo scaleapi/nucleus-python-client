@@ -10,6 +10,7 @@ from .helpers import (
     TEST_IMG_URLS,
     TEST_VIDEO_DATASET_NAME,
     TEST_VIDEO_SCENES,
+    TEST_VIDEO_URL,
 )
 
 
@@ -108,6 +109,46 @@ def test_deduplicate_video_scene_by_ids(dataset_video_scene):
     assert len(item_ids) > 0
 
     result = dataset_video_scene.deduplicate_by_ids(
+        threshold=10, dataset_item_ids=item_ids
+    )
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(item_ids)
+    assert result.unique_item_ids == initial_result.unique_item_ids
+
+
+@pytest.fixture(scope="module")
+def dataset_video_url(CLIENT):
+    """Scene dataset created from a video URL (not a list of frames)."""
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " video_url dedup", is_scene=True)
+    scene = VideoScene.from_json({
+        "reference_id": "video_url_scene",
+        "video_url": TEST_VIDEO_URL,
+        "metadata": {"test": "video_url_dedup"},
+    })
+    job = ds.append([scene], asynchronous=True)
+    job.sleep_until_complete()
+    yield ds
+    CLIENT.delete_dataset(ds.id)
+
+
+@pytest.mark.integration
+def test_deduplicate_video_url_entire_dataset(dataset_video_url):
+    """Test deduplication on a dataset created from a video URL."""
+    result = dataset_video_url.deduplicate(threshold=10)
+    assert isinstance(result, DeduplicationResult)
+    assert len(result.unique_reference_ids) > 0
+    assert len(result.unique_item_ids) > 0
+    assert result.stats.original_count > 0
+
+
+@pytest.mark.integration
+def test_deduplicate_video_url_by_ids(dataset_video_url):
+    """Test deduplicate_by_ids on a dataset created from a video URL."""
+    initial_result = dataset_video_url.deduplicate(threshold=10)
+    item_ids = initial_result.unique_item_ids
+    assert len(item_ids) > 0
+
+    result = dataset_video_url.deduplicate_by_ids(
         threshold=10, dataset_item_ids=item_ids
     )
     assert isinstance(result, DeduplicationResult)
