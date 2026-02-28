@@ -1,6 +1,6 @@
 import pytest
 
-from nucleus import DatasetItem, Dataset, NucleusClient, VideoScene
+from nucleus import Dataset, DatasetItem, NucleusClient, VideoScene
 from nucleus.deduplication import DeduplicationResult
 from nucleus.errors import NucleusAPIError
 
