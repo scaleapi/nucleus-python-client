@@ -247,8 +247,7 @@ def dataset_with_duplicates(CLIENT):
         DatasetItem(TEST_IMG_URLS[0], reference_id="img_duplicate"),
         DatasetItem(TEST_IMG_URLS[1], reference_id="img_different"),
     ]
-    job = ds.append(items, asynchronous=True)
-    job.sleep_until_complete()
+    ds.append(items)
     yield ds
     CLIENT.delete_dataset(ds.id)
 
