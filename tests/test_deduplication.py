@@ -25,9 +25,19 @@ def test_deduplicate_by_ids_empty_list_raises_error():
         fake_dataset.deduplicate_by_ids(threshold=10, dataset_item_ids=[])
 
 
+@pytest.fixture(scope="module")
+def dataset_image(CLIENT):
+    """Image dataset with TEST_DATASET_ITEMS (waits for phash calculation)."""
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup", is_scene=False)
+    job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
+    job.sleep_until_complete()
+    yield ds
+    CLIENT.delete_dataset(ds.id)
+
+
 @pytest.mark.integration
-def test_deduplicate_entire_dataset(dataset):
-    result = dataset.deduplicate(threshold=10)
+def test_deduplicate_entire_dataset(dataset_image):
+    result = dataset_image.deduplicate(threshold=10)
     assert isinstance(result, DeduplicationResult)
     assert len(result.unique_reference_ids) > 0
     assert len(result.unique_item_ids) > 0
@@ -35,9 +45,9 @@ def test_deduplicate_entire_dataset(dataset):
 
 
 @pytest.mark.integration
-def test_deduplicate_with_reference_ids(dataset):
+def test_deduplicate_with_reference_ids(dataset_image):
     reference_ids = [item.reference_id for item in TEST_DATASET_ITEMS[:2]]
-    result = dataset.deduplicate(threshold=10, reference_ids=reference_ids)
+    result = dataset_image.deduplicate(threshold=10, reference_ids=reference_ids)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.original_count == len(reference_ids)
     assert len(result.unique_reference_ids) <= len(reference_ids)
@@ -45,12 +55,12 @@ def test_deduplicate_with_reference_ids(dataset):
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids(dataset):
-    initial_result = dataset.deduplicate(threshold=10)
+def test_deduplicate_by_ids(dataset_image):
+    initial_result = dataset_image.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
     assert len(item_ids) > 0
 
-    result = dataset.deduplicate_by_ids(threshold=10, dataset_item_ids=item_ids)
+    result = dataset_image.deduplicate_by_ids(threshold=10, dataset_item_ids=item_ids)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.original_count == len(item_ids)
     assert result.unique_item_ids == initial_result.unique_item_ids
@@ -110,58 +120,58 @@ def test_deduplicate_video_scene_by_ids(dataset_video_scene):
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_zero(dataset):
+def test_deduplicate_threshold_zero(dataset_image):
     """Threshold=0 means exact matches only."""
-    result = dataset.deduplicate(threshold=0)
+    result = dataset_image.deduplicate(threshold=0)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.threshold == 0
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_max(dataset):
+def test_deduplicate_threshold_max(dataset_image):
     """Threshold=64 is the maximum allowed value."""
-    result = dataset.deduplicate(threshold=64)
+    result = dataset_image.deduplicate(threshold=64)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.threshold == 64
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_negative(dataset):
+def test_deduplicate_threshold_negative(dataset_image):
     """Threshold must be >= 0."""
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate(threshold=-1)
+        dataset_image.deduplicate(threshold=-1)
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_too_high(dataset):
+def test_deduplicate_threshold_too_high(dataset_image):
     """Threshold must be <= 64."""
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate(threshold=65)
+        dataset_image.deduplicate(threshold=65)
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_non_integer(dataset):
+def test_deduplicate_threshold_non_integer(dataset_image):
     """Threshold must be an integer."""
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate(threshold=10.5)
+        dataset_image.deduplicate(threshold=10.5)
 
 
 @pytest.mark.integration
-def test_deduplicate_nonexistent_reference_id(dataset):
+def test_deduplicate_nonexistent_reference_id(dataset_image):
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate(threshold=10, reference_ids=["nonexistent_ref_id"])
+        dataset_image.deduplicate(threshold=10, reference_ids=["nonexistent_ref_id"])
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids_nonexistent_id(dataset):
+def test_deduplicate_by_ids_nonexistent_id(dataset_image):
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate_by_ids(threshold=10, dataset_item_ids=["di_nonexistent"])
+        dataset_image.deduplicate_by_ids(threshold=10, dataset_item_ids=["di_nonexistent"])
 
 
 @pytest.mark.integration
-def test_deduplicate_idempotency(dataset):
-    result1 = dataset.deduplicate(threshold=10)
-    result2 = dataset.deduplicate(threshold=10)
+def test_deduplicate_idempotency(dataset_image):
+    result1 = dataset_image.deduplicate(threshold=10)
+    result2 = dataset_image.deduplicate(threshold=10)
 
     assert result1.unique_item_ids == result2.unique_item_ids
     assert result1.unique_reference_ids == result2.unique_reference_ids
@@ -170,8 +180,8 @@ def test_deduplicate_idempotency(dataset):
 
 
 @pytest.mark.integration
-def test_deduplicate_response_invariants(dataset):
-    result = dataset.deduplicate(threshold=10)
+def test_deduplicate_response_invariants(dataset_image):
+    result = dataset_image.deduplicate(threshold=10)
 
     assert len(result.unique_item_ids) == len(result.unique_reference_ids)
     assert result.stats.deduplicated_count == len(result.unique_item_ids)
@@ -180,30 +190,30 @@ def test_deduplicate_response_invariants(dataset):
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids_threshold_negative(dataset):
+def test_deduplicate_by_ids_threshold_negative(dataset_image):
     """deduplicate_by_ids should enforce the same threshold constraints."""
-    initial_result = dataset.deduplicate(threshold=10)
+    initial_result = dataset_image.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
 
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate_by_ids(threshold=-1, dataset_item_ids=item_ids)
+        dataset_image.deduplicate_by_ids(threshold=-1, dataset_item_ids=item_ids)
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids_threshold_too_high(dataset):
+def test_deduplicate_by_ids_threshold_too_high(dataset_image):
     """deduplicate_by_ids should enforce the same threshold constraints."""
-    initial_result = dataset.deduplicate(threshold=10)
+    initial_result = dataset_image.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
 
     with pytest.raises(NucleusAPIError):
-        dataset.deduplicate_by_ids(threshold=65, dataset_item_ids=item_ids)
+        dataset_image.deduplicate_by_ids(threshold=65, dataset_item_ids=item_ids)
 
 
 @pytest.mark.integration
-def test_deduplicate_single_item(dataset):
+def test_deduplicate_single_item(dataset_image):
     """Single item should always be unique."""
     reference_ids = [TEST_DATASET_ITEMS[0].reference_id]
-    result = dataset.deduplicate(threshold=10, reference_ids=reference_ids)
+    result = dataset_image.deduplicate(threshold=10, reference_ids=reference_ids)
 
     assert result.stats.original_count == 1
     assert result.stats.deduplicated_count == 1
@@ -255,9 +265,9 @@ def test_deduplicate_identifies_duplicates(dataset_with_duplicates):
 
 
 @pytest.mark.integration
-def test_deduplicate_distinct_images_all_unique(dataset):
+def test_deduplicate_distinct_images_all_unique(dataset_image):
     """Distinct images should all remain after deduplication."""
-    result = dataset.deduplicate(threshold=0)
+    result = dataset_image.deduplicate(threshold=0)
 
     # With threshold=0 (exact match only), all distinct images should be unique
     assert result.stats.deduplicated_count == result.stats.original_count
