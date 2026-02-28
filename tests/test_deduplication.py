@@ -244,11 +244,12 @@ def dataset_with_duplicates(CLIENT):
     """Dataset with duplicate images (same image uploaded twice)."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " duplicates", is_scene=False)
     items = [
-        DatasetItem(image_url=TEST_IMG_URLS[0], reference_id="img_original"),
-        DatasetItem(image_url=TEST_IMG_URLS[0], reference_id="img_duplicate"),
-        DatasetItem(image_url=TEST_IMG_URLS[1], reference_id="img_different"),
+        DatasetItem(TEST_IMG_URLS[0], reference_id="img_original"),
+        DatasetItem(TEST_IMG_URLS[0], reference_id="img_duplicate"),
+        DatasetItem(TEST_IMG_URLS[1], reference_id="img_different"),
     ]
-    ds.append(items)
+    job = ds.append(items, asynchronous=True)
+    job.sleep_until_complete()
     yield ds
     CLIENT.delete_dataset(ds.id)
 
