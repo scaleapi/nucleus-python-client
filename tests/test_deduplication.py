@@ -31,19 +31,23 @@ def test_deduplicate_by_ids_empty_list_raises_error():
 def dataset_image_sync(CLIENT):
     """Image dataset uploaded synchronously."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup sync", is_scene=False)
-    ds.append(TEST_DATASET_ITEMS)
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        ds.append(TEST_DATASET_ITEMS)
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.fixture(scope="module")
 def dataset_image_async(CLIENT):
     """Image dataset uploaded asynchronously."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup async", is_scene=False)
-    job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
-    job.sleep_until_complete()
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
+        job.sleep_until_complete()
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.mark.integration
@@ -118,23 +122,27 @@ def test_deduplicate_image_async_by_ids(dataset_image_async):
 def dataset_video_scene_sync(CLIENT):
     """Video scene dataset (with frames) uploaded synchronously."""
     ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " dedup sync", is_scene=True)
-    scene_1 = TEST_VIDEO_SCENES["scenes"][0]
-    scenes = [VideoScene.from_json(scene_1)]
-    ds.append(scenes)
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        scene_1 = TEST_VIDEO_SCENES["scenes"][0]
+        scenes = [VideoScene.from_json(scene_1)]
+        ds.append(scenes)
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.fixture(scope="module")
 def dataset_video_scene_async(CLIENT):
     """Video scene dataset (with frames) uploaded asynchronously."""
     ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " dedup async", is_scene=True)
-    scene_1 = TEST_VIDEO_SCENES["scenes"][0]
-    scenes = [VideoScene.from_json(scene_1)]
-    job = ds.append(scenes, asynchronous=True)
-    job.sleep_until_complete()
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        scene_1 = TEST_VIDEO_SCENES["scenes"][0]
+        scenes = [VideoScene.from_json(scene_1)]
+        job = ds.append(scenes, asynchronous=True)
+        job.sleep_until_complete()
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 def _get_scene_frame_ref_ids():
@@ -218,29 +226,33 @@ def test_deduplicate_video_scene_async_by_ids(dataset_video_scene_async):
 def dataset_video_url_sync(CLIENT):
     """Video URL dataset uploaded synchronously."""
     ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " video_url dedup sync", is_scene=True)
-    scene = VideoScene.from_json({
-        "reference_id": "video_url_scene_sync",
-        "video_url": TEST_VIDEO_URL,
-        "metadata": {"test": "video_url_dedup_sync"},
-    })
-    ds.append([scene])
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        scene = VideoScene.from_json({
+            "reference_id": "video_url_scene_sync",
+            "video_url": TEST_VIDEO_URL,
+            "metadata": {"test": "video_url_dedup_sync"},
+        })
+        ds.append([scene])
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.fixture(scope="module")
 def dataset_video_url_async(CLIENT):
     """Video URL dataset uploaded asynchronously."""
     ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " video_url dedup async", is_scene=True)
-    scene = VideoScene.from_json({
-        "reference_id": "video_url_scene_async",
-        "video_url": TEST_VIDEO_URL,
-        "metadata": {"test": "video_url_dedup_async"},
-    })
-    job = ds.append([scene], asynchronous=True)
-    job.sleep_until_complete()
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        scene = VideoScene.from_json({
+            "reference_id": "video_url_scene_async",
+            "video_url": TEST_VIDEO_URL,
+            "metadata": {"test": "video_url_dedup_async"},
+        })
+        job = ds.append([scene], asynchronous=True)
+        job.sleep_until_complete()
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.mark.integration
@@ -403,12 +415,14 @@ def test_deduplicate_single_item(dataset_image_sync):
     assert len(result.unique_reference_ids) == 1
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def dataset_empty(CLIENT):
     """Empty dataset with no items."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " empty", is_scene=False)
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.mark.integration
@@ -422,18 +436,20 @@ def test_deduplicate_empty_dataset(dataset_empty):
     assert len(result.unique_item_ids) == 0
 
 
-@pytest.fixture()
+@pytest.fixture(scope="function")
 def dataset_with_duplicates(CLIENT):
     """Dataset with duplicate images (same image uploaded twice)."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " duplicates", is_scene=False)
-    items = [
-        DatasetItem(TEST_IMG_URLS[0], reference_id="img_original"),
-        DatasetItem(TEST_IMG_URLS[0], reference_id="img_duplicate"),
-        DatasetItem(TEST_IMG_URLS[1], reference_id="img_different"),
-    ]
-    ds.append(items)
-    yield ds
-    CLIENT.delete_dataset(ds.id)
+    try:
+        items = [
+            DatasetItem(TEST_IMG_URLS[0], reference_id="img_original"),
+            DatasetItem(TEST_IMG_URLS[0], reference_id="img_duplicate"),
+            DatasetItem(TEST_IMG_URLS[1], reference_id="img_different"),
+        ]
+        ds.append(items)
+        yield ds
+    finally:
+        CLIENT.delete_dataset(ds.id)
 
 
 @pytest.mark.integration
