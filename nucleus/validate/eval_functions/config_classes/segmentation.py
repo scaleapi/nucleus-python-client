@@ -1,5 +1,3 @@
-# pylint: disable=cyclic-import
-
 from typing import Optional, Union
 
 from nucleus.validate.eval_functions.base_eval_function import (

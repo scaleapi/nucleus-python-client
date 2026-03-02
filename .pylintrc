@@ -1,6 +1,5 @@
 [tool.pylint.MESSAGE_CONTROL]
 disable=
-    bad-continuation,
     no-else-return,
     no-name-in-module,
     too-few-public-methods,
@@ -8,7 +7,6 @@ disable=
     duplicate-code,
     import-error,
     unused-argument,
-    no-self-use,
     import-outside-toplevel,
     too-many-instance-attributes,
     no-member,

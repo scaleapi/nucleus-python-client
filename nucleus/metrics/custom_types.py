@@ -1,11 +1,7 @@
 from typing import TypeVar
 
-from nucleus import (
-    BoxAnnotation,
-    BoxPrediction,
-    PolygonAnnotation,
-    PolygonPrediction,
-)
+from nucleus.annotation import BoxAnnotation, PolygonAnnotation
+from nucleus.prediction import BoxPrediction, PolygonPrediction
 
 BoxOrPolygonPrediction = TypeVar(
     "BoxOrPolygonPrediction", BoxPrediction, PolygonPrediction
