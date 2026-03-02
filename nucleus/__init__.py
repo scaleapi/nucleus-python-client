@@ -49,6 +49,9 @@ import os
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
+import requests
+import tqdm
+
 if TYPE_CHECKING:
     # Backwards compatibility is even uglier with mypy
     from pydantic.v1 import parse_obj_as
@@ -59,11 +62,9 @@ else:
     except ImportError:
         from pydantic import parse_obj_as
 
-import requests
-import tqdm
-
 from nucleus.url_utils import sanitize_string_args
 
+from . import metrics
 from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
@@ -168,7 +169,6 @@ from .slice import Slice
 from .upload_response import UploadResponse
 from .utils import create_items_from_folder_crawl
 from .validate import Validate
-from . import metrics
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
