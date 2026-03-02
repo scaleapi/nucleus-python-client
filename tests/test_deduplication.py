@@ -310,7 +310,7 @@ def test_deduplicate_video_url_async_by_ids(dataset_video_url_async):
 
 @pytest.mark.integration
 def test_deduplicate_threshold_zero(dataset_image_sync):
-    """Threshold=0 means exact matches only."""
+    """Verify threshold=0 (exact match only) succeeds and returns correct stats."""
     result = dataset_image_sync.deduplicate(threshold=0)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.threshold == 0
@@ -318,7 +318,7 @@ def test_deduplicate_threshold_zero(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_threshold_max(dataset_image_sync):
-    """Threshold=64 is the maximum allowed value."""
+    """Verify threshold=64 (maximum allowed) succeeds and returns correct stats."""
     result = dataset_image_sync.deduplicate(threshold=64)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.threshold == 64
@@ -326,27 +326,28 @@ def test_deduplicate_threshold_max(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_threshold_negative(dataset_image_sync):
-    """Threshold must be >= 0."""
+    """Verify negative threshold raises NucleusAPIError (must be >= 0)."""
     with pytest.raises(NucleusAPIError):
         dataset_image_sync.deduplicate(threshold=-1)
 
 
 @pytest.mark.integration
 def test_deduplicate_threshold_too_high(dataset_image_sync):
-    """Threshold must be <= 64."""
+    """Verify threshold > 64 raises NucleusAPIError (must be <= 64)."""
     with pytest.raises(NucleusAPIError):
         dataset_image_sync.deduplicate(threshold=65)
 
 
 @pytest.mark.integration
 def test_deduplicate_threshold_non_integer(dataset_image_sync):
-    """Threshold must be an integer."""
+    """Verify non-integer threshold raises NucleusAPIError."""
     with pytest.raises(NucleusAPIError):
         dataset_image_sync.deduplicate(threshold=10.5)
 
 
 @pytest.mark.integration
 def test_deduplicate_nonexistent_reference_id(dataset_image_sync):
+    """Verify nonexistent reference_id raises NucleusAPIError."""
     with pytest.raises(NucleusAPIError):
         dataset_image_sync.deduplicate(
             threshold=DEDUP_DEFAULT_TEST_THRESHOLD, reference_ids=["nonexistent_ref_id"]
@@ -355,6 +356,7 @@ def test_deduplicate_nonexistent_reference_id(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_by_ids_nonexistent_id(dataset_image_sync):
+    """Verify nonexistent dataset_item_id raises NucleusAPIError."""
     with pytest.raises(NucleusAPIError):
         dataset_image_sync.deduplicate_by_ids(
             threshold=DEDUP_DEFAULT_TEST_THRESHOLD, dataset_item_ids=["di_nonexistent"]
@@ -363,6 +365,7 @@ def test_deduplicate_by_ids_nonexistent_id(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_idempotency(dataset_image_sync):
+    """Verify repeated deduplication calls return consistent results."""
     result1 = dataset_image_sync.deduplicate(threshold=DEDUP_DEFAULT_TEST_THRESHOLD)
     result2 = dataset_image_sync.deduplicate(threshold=DEDUP_DEFAULT_TEST_THRESHOLD)
 
@@ -374,6 +377,7 @@ def test_deduplicate_idempotency(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_response_invariants(dataset_image_sync):
+    """Verify response maintains expected invariants between fields."""
     result = dataset_image_sync.deduplicate(threshold=DEDUP_DEFAULT_TEST_THRESHOLD)
 
     assert len(result.unique_item_ids) == len(result.unique_reference_ids)
@@ -384,7 +388,7 @@ def test_deduplicate_response_invariants(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_by_ids_threshold_negative(dataset_image_sync):
-    """deduplicate_by_ids should enforce the same threshold constraints."""
+    """Verify deduplicate_by_ids rejects negative threshold."""
     initial_result = dataset_image_sync.deduplicate(threshold=DEDUP_DEFAULT_TEST_THRESHOLD)
     item_ids = initial_result.unique_item_ids
 
@@ -394,7 +398,7 @@ def test_deduplicate_by_ids_threshold_negative(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_by_ids_threshold_too_high(dataset_image_sync):
-    """deduplicate_by_ids should enforce the same threshold constraints."""
+    """Verify deduplicate_by_ids rejects threshold > 64."""
     initial_result = dataset_image_sync.deduplicate(threshold=DEDUP_DEFAULT_TEST_THRESHOLD)
     item_ids = initial_result.unique_item_ids
 
@@ -404,7 +408,7 @@ def test_deduplicate_by_ids_threshold_too_high(dataset_image_sync):
 
 @pytest.mark.integration
 def test_deduplicate_single_item(dataset_image_sync):
-    """Single item should always be unique."""
+    """Verify single item deduplication returns that item as unique."""
     reference_ids = [TEST_DATASET_ITEMS[0].reference_id]
     result = dataset_image_sync.deduplicate(
         threshold=DEDUP_DEFAULT_TEST_THRESHOLD, reference_ids=reference_ids
@@ -427,7 +431,7 @@ def dataset_empty(CLIENT):
 
 @pytest.mark.integration
 def test_deduplicate_empty_dataset(dataset_empty):
-    """Empty dataset should return zero counts."""
+    """Verify deduplication on empty dataset returns zero counts."""
     result = dataset_empty.deduplicate(threshold=DEDUP_DEFAULT_TEST_THRESHOLD)
 
     assert result.stats.original_count == 0
