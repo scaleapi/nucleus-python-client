@@ -67,11 +67,6 @@ html_css_files = [
 html_favicon = "favicon.ico"
 
 html_logo = "nucleus-logo.svg"
-html_theme_options = {
-    "logo_only": True,
-    "display_version": True,
-}
-
 
 # -- autogen configuration ---------------------------------------------------
 autoapi_type = "python"
