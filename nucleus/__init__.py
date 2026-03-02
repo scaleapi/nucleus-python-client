@@ -168,6 +168,7 @@ from .slice import Slice
 from .upload_response import UploadResponse
 from .utils import create_items_from_folder_crawl
 from .validate import Validate
+from . import metrics
 
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
