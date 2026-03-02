@@ -12,8 +12,7 @@
 #
 import os
 import sys
-
-import pkg_resources
+from importlib.metadata import version as get_version
 
 sys.path.insert(0, os.path.abspath("../../"))
 
@@ -26,7 +25,7 @@ author = "Scale"
 
 
 # The full version, including alpha/beta/rc tags
-release = "v" + str(pkg_resources.get_distribution("scale-nucleus").version)
+release = "v" + get_version("scale-nucleus")
 
 
 # -- General configuration ---------------------------------------------------

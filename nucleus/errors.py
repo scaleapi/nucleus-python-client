@@ -34,11 +34,9 @@ class NucleusAPIError(Exception):
     def __init__(
         self, endpoint, command, requests_response=None, aiohttp_response=None
     ):
-        import pkg_resources
+        from importlib.metadata import version as get_version
 
-        nucleus_client_version = pkg_resources.get_distribution(
-            "scale-nucleus"
-        ).version
+        nucleus_client_version = get_version("scale-nucleus")
 
         self.message = f"Your client is on version {nucleus_client_version}. If you have not recently done so, please make sure you have updated to the latest version of the client by running pip install --upgrade scale-nucleus\n"
         if requests_response is not None:
