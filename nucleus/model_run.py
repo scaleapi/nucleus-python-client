@@ -97,7 +97,7 @@ class ModelRun:
                   specify allowed matches for ground truth and model predictions.
                   If specified, class_agnostic flag is assumed to be False.
                   Each AllowedMatch has ``ground_truth_label`` and ``model_prediction_label``.
-                  
+
                   Example response format::
 
                       [
@@ -108,7 +108,7 @@ class ModelRun:
                       ]
         Returns:
             Dict with ``model_run_id``.
-            
+
             Example response format::
 
                 {
@@ -158,7 +158,7 @@ class ModelRun:
                 should lower this value from its default of 10. The maximum is 10.
                 This is only relevant for asynchronous=False
 
-        Returns::   
+        Returns::
 
             {
                 "model_run_id": str,
@@ -245,7 +245,7 @@ class ModelRun:
                 provided, the Scale internally generated id for the prediction.
 
         Returns::
-        
+
             BoxPrediction | PolygonPrediction | CuboidPrediction
         """
         response = self._client.make_request(

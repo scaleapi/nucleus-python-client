@@ -1217,7 +1217,7 @@ class Dataset:
                     "status": "completed" | "pending",
                     "autotag_level": "Image" | "Object"
                 }]
-                
+
         """
         return self._client.list_autotags(self.id)
 
