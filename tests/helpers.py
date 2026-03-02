@@ -24,6 +24,8 @@ EVAL_FUNCTION_NAME = "eval_fn"
 EVAL_FUNCTION_THRESHOLD = 0.5
 EVAL_FUNCTION_COMPARISON = ThresholdComparison.GREATER_THAN_EQUAL_TO
 
+DEDUP_DEFAULT_TEST_THRESHOLD = 10
+
 
 TEST_IMG_URLS = [
     "https://github.com/scaleapi/nucleus-python-client/raw/master/tests/testdata/airplane.jpeg",

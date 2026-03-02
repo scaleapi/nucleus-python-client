@@ -4,6 +4,8 @@ __all__ = [
     "AsyncJob",
     "EmbeddingsExportJob",
     "BoxAnnotation",
+    "DeduplicationResult",
+    "DeduplicationStats",
     "BoxPrediction",
     "CameraParams",
     "CategoryAnnotation",
@@ -128,6 +130,7 @@ from .data_transfer_object.dataset_info import DatasetInfo
 from .data_transfer_object.job_status import JobInfoRequestPayload
 from .dataset import Dataset
 from .dataset_item import DatasetItem
+from .deduplication import DeduplicationResult, DeduplicationStats
 from .deprecation_warning import deprecated
 from .errors import (
     DatasetItemRetrievalError,
