@@ -27,17 +27,28 @@ def test_deduplicate_by_ids_empty_list_raises_error():
 
 
 @pytest.fixture(scope="module")
-def dataset_image(CLIENT):
-    """Image dataset with TEST_DATASET_ITEMS (waits for phash calculation)."""
-    ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup", is_scene=False)
+def dataset_image_sync(CLIENT):
+    """Image dataset uploaded synchronously."""
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup sync", is_scene=False)
     ds.append(TEST_DATASET_ITEMS)
     yield ds
     CLIENT.delete_dataset(ds.id)
 
 
+@pytest.fixture(scope="module")
+def dataset_image_async(CLIENT):
+    """Image dataset uploaded asynchronously."""
+    ds = CLIENT.create_dataset(TEST_DATASET_NAME + " dedup async", is_scene=False)
+    job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
+    job.sleep_until_complete()
+    yield ds
+    CLIENT.delete_dataset(ds.id)
+
+
 @pytest.mark.integration
-def test_deduplicate_entire_dataset(dataset_image):
-    result = dataset_image.deduplicate(threshold=10)
+def test_deduplicate_image_sync_entire_dataset(dataset_image_sync):
+    """Test deduplication on image dataset uploaded synchronously."""
+    result = dataset_image_sync.deduplicate(threshold=10)
     assert isinstance(result, DeduplicationResult)
     assert len(result.unique_reference_ids) > 0
     assert len(result.unique_item_ids) > 0
@@ -45,9 +56,10 @@ def test_deduplicate_entire_dataset(dataset_image):
 
 
 @pytest.mark.integration
-def test_deduplicate_with_reference_ids(dataset_image):
+def test_deduplicate_image_sync_with_reference_ids(dataset_image_sync):
+    """Test deduplication with reference IDs on image dataset uploaded synchronously."""
     reference_ids = [item.reference_id for item in TEST_DATASET_ITEMS[:2]]
-    result = dataset_image.deduplicate(threshold=10, reference_ids=reference_ids)
+    result = dataset_image_sync.deduplicate(threshold=10, reference_ids=reference_ids)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.original_count == len(reference_ids)
     assert len(result.unique_reference_ids) <= len(reference_ids)
@@ -55,21 +67,67 @@ def test_deduplicate_with_reference_ids(dataset_image):
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids(dataset_image):
-    initial_result = dataset_image.deduplicate(threshold=10)
+def test_deduplicate_image_sync_by_ids(dataset_image_sync):
+    """Test deduplicate_by_ids on image dataset uploaded synchronously."""
+    initial_result = dataset_image_sync.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
     assert len(item_ids) > 0
 
-    result = dataset_image.deduplicate_by_ids(threshold=10, dataset_item_ids=item_ids)
+    result = dataset_image_sync.deduplicate_by_ids(threshold=10, dataset_item_ids=item_ids)
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(item_ids)
+    assert result.unique_item_ids == initial_result.unique_item_ids
+
+
+@pytest.mark.integration
+def test_deduplicate_image_async_entire_dataset(dataset_image_async):
+    """Test deduplication on image dataset uploaded asynchronously."""
+    result = dataset_image_async.deduplicate(threshold=10)
+    assert isinstance(result, DeduplicationResult)
+    assert len(result.unique_reference_ids) > 0
+    assert len(result.unique_item_ids) > 0
+    assert result.stats.original_count == len(TEST_DATASET_ITEMS)
+
+
+@pytest.mark.integration
+def test_deduplicate_image_async_with_reference_ids(dataset_image_async):
+    """Test deduplication with reference IDs on image dataset uploaded asynchronously."""
+    reference_ids = [item.reference_id for item in TEST_DATASET_ITEMS[:2]]
+    result = dataset_image_async.deduplicate(threshold=10, reference_ids=reference_ids)
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(reference_ids)
+    assert len(result.unique_reference_ids) <= len(reference_ids)
+    assert len(result.unique_item_ids) <= len(reference_ids)
+
+
+@pytest.mark.integration
+def test_deduplicate_image_async_by_ids(dataset_image_async):
+    """Test deduplicate_by_ids on image dataset uploaded asynchronously."""
+    initial_result = dataset_image_async.deduplicate(threshold=10)
+    item_ids = initial_result.unique_item_ids
+    assert len(item_ids) > 0
+
+    result = dataset_image_async.deduplicate_by_ids(threshold=10, dataset_item_ids=item_ids)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.original_count == len(item_ids)
     assert result.unique_item_ids == initial_result.unique_item_ids
 
 
 @pytest.fixture(scope="module")
-def dataset_video_scene(CLIENT):
-    """Scene dataset with scene_1 (frame IDs: video_frame_0, video_frame_1)."""
-    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " dedup", is_scene=True)
+def dataset_video_scene_sync(CLIENT):
+    """Video scene dataset (with frames) uploaded synchronously."""
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " dedup sync", is_scene=True)
+    scene_1 = TEST_VIDEO_SCENES["scenes"][0]
+    scenes = [VideoScene.from_json(scene_1)]
+    ds.append(scenes)
+    yield ds
+    CLIENT.delete_dataset(ds.id)
+
+
+@pytest.fixture(scope="module")
+def dataset_video_scene_async(CLIENT):
+    """Video scene dataset (with frames) uploaded asynchronously."""
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " dedup async", is_scene=True)
     scene_1 = TEST_VIDEO_SCENES["scenes"][0]
     scenes = [VideoScene.from_json(scene_1)]
     job = ds.append(scenes, asynchronous=True)
@@ -84,8 +142,9 @@ def _get_scene_frame_ref_ids():
 
 
 @pytest.mark.integration
-def test_deduplicate_video_scene_entire_dataset(dataset_video_scene):
-    result = dataset_video_scene.deduplicate(threshold=10)
+def test_deduplicate_video_scene_sync_entire_dataset(dataset_video_scene_sync):
+    """Test deduplication on video scene dataset uploaded synchronously."""
+    result = dataset_video_scene_sync.deduplicate(threshold=10)
     assert isinstance(result, DeduplicationResult)
     assert len(result.unique_reference_ids) > 0
     assert len(result.unique_item_ids) > 0
@@ -93,9 +152,10 @@ def test_deduplicate_video_scene_entire_dataset(dataset_video_scene):
 
 
 @pytest.mark.integration
-def test_deduplicate_video_scene_with_frame_reference_ids(dataset_video_scene):
+def test_deduplicate_video_scene_sync_with_frame_reference_ids(dataset_video_scene_sync):
+    """Test deduplication with frame reference IDs on video scene dataset uploaded synchronously."""
     frame_ref_ids = _get_scene_frame_ref_ids()
-    result = dataset_video_scene.deduplicate(threshold=10, reference_ids=frame_ref_ids)
+    result = dataset_video_scene_sync.deduplicate(threshold=10, reference_ids=frame_ref_ids)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.original_count == len(frame_ref_ids)
     assert len(result.unique_reference_ids) <= len(frame_ref_ids)
@@ -103,12 +163,49 @@ def test_deduplicate_video_scene_with_frame_reference_ids(dataset_video_scene):
 
 
 @pytest.mark.integration
-def test_deduplicate_video_scene_by_ids(dataset_video_scene):
-    initial_result = dataset_video_scene.deduplicate(threshold=10)
+def test_deduplicate_video_scene_sync_by_ids(dataset_video_scene_sync):
+    """Test deduplicate_by_ids on video scene dataset uploaded synchronously."""
+    initial_result = dataset_video_scene_sync.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
     assert len(item_ids) > 0
 
-    result = dataset_video_scene.deduplicate_by_ids(
+    result = dataset_video_scene_sync.deduplicate_by_ids(
+        threshold=10, dataset_item_ids=item_ids
+    )
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(item_ids)
+    assert result.unique_item_ids == initial_result.unique_item_ids
+
+
+@pytest.mark.integration
+def test_deduplicate_video_scene_async_entire_dataset(dataset_video_scene_async):
+    """Test deduplication on video scene dataset uploaded asynchronously."""
+    result = dataset_video_scene_async.deduplicate(threshold=10)
+    assert isinstance(result, DeduplicationResult)
+    assert len(result.unique_reference_ids) > 0
+    assert len(result.unique_item_ids) > 0
+    assert result.stats.original_count == len(_get_scene_frame_ref_ids())
+
+
+@pytest.mark.integration
+def test_deduplicate_video_scene_async_with_frame_reference_ids(dataset_video_scene_async):
+    """Test deduplication with frame reference IDs on video scene dataset uploaded asynchronously."""
+    frame_ref_ids = _get_scene_frame_ref_ids()
+    result = dataset_video_scene_async.deduplicate(threshold=10, reference_ids=frame_ref_ids)
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(frame_ref_ids)
+    assert len(result.unique_reference_ids) <= len(frame_ref_ids)
+    assert len(result.unique_item_ids) <= len(frame_ref_ids)
+
+
+@pytest.mark.integration
+def test_deduplicate_video_scene_async_by_ids(dataset_video_scene_async):
+    """Test deduplicate_by_ids on video scene dataset uploaded asynchronously."""
+    initial_result = dataset_video_scene_async.deduplicate(threshold=10)
+    item_ids = initial_result.unique_item_ids
+    assert len(item_ids) > 0
+
+    result = dataset_video_scene_async.deduplicate_by_ids(
         threshold=10, dataset_item_ids=item_ids
     )
     assert isinstance(result, DeduplicationResult)
@@ -117,13 +214,27 @@ def test_deduplicate_video_scene_by_ids(dataset_video_scene):
 
 
 @pytest.fixture(scope="module")
-def dataset_video_url(CLIENT):
-    """Scene dataset created from a video URL (not a list of frames)."""
-    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " video_url dedup", is_scene=True)
+def dataset_video_url_sync(CLIENT):
+    """Video URL dataset uploaded synchronously."""
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " video_url dedup sync", is_scene=True)
     scene = VideoScene.from_json({
-        "reference_id": "video_url_scene",
+        "reference_id": "video_url_scene_sync",
         "video_url": TEST_VIDEO_URL,
-        "metadata": {"test": "video_url_dedup"},
+        "metadata": {"test": "video_url_dedup_sync"},
+    })
+    ds.append([scene])
+    yield ds
+    CLIENT.delete_dataset(ds.id)
+
+
+@pytest.fixture(scope="module")
+def dataset_video_url_async(CLIENT):
+    """Video URL dataset uploaded asynchronously."""
+    ds = CLIENT.create_dataset(TEST_VIDEO_DATASET_NAME + " video_url dedup async", is_scene=True)
+    scene = VideoScene.from_json({
+        "reference_id": "video_url_scene_async",
+        "video_url": TEST_VIDEO_URL,
+        "metadata": {"test": "video_url_dedup_async"},
     })
     job = ds.append([scene], asynchronous=True)
     job.sleep_until_complete()
@@ -132,9 +243,9 @@ def dataset_video_url(CLIENT):
 
 
 @pytest.mark.integration
-def test_deduplicate_video_url_entire_dataset(dataset_video_url):
-    """Test deduplication on a dataset created from a video URL."""
-    result = dataset_video_url.deduplicate(threshold=10)
+def test_deduplicate_video_url_sync_entire_dataset(dataset_video_url_sync):
+    """Test deduplication on video URL dataset uploaded synchronously."""
+    result = dataset_video_url_sync.deduplicate(threshold=10)
     assert isinstance(result, DeduplicationResult)
     assert len(result.unique_reference_ids) > 0
     assert len(result.unique_item_ids) > 0
@@ -142,13 +253,38 @@ def test_deduplicate_video_url_entire_dataset(dataset_video_url):
 
 
 @pytest.mark.integration
-def test_deduplicate_video_url_by_ids(dataset_video_url):
-    """Test deduplicate_by_ids on a dataset created from a video URL."""
-    initial_result = dataset_video_url.deduplicate(threshold=10)
+def test_deduplicate_video_url_sync_by_ids(dataset_video_url_sync):
+    """Test deduplicate_by_ids on video URL dataset uploaded synchronously."""
+    initial_result = dataset_video_url_sync.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
     assert len(item_ids) > 0
 
-    result = dataset_video_url.deduplicate_by_ids(
+    result = dataset_video_url_sync.deduplicate_by_ids(
+        threshold=10, dataset_item_ids=item_ids
+    )
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(item_ids)
+    assert result.unique_item_ids == initial_result.unique_item_ids
+
+
+@pytest.mark.integration
+def test_deduplicate_video_url_async_entire_dataset(dataset_video_url_async):
+    """Test deduplication on video URL dataset uploaded asynchronously."""
+    result = dataset_video_url_async.deduplicate(threshold=10)
+    assert isinstance(result, DeduplicationResult)
+    assert len(result.unique_reference_ids) > 0
+    assert len(result.unique_item_ids) > 0
+    assert result.stats.original_count > 0
+
+
+@pytest.mark.integration
+def test_deduplicate_video_url_async_by_ids(dataset_video_url_async):
+    """Test deduplicate_by_ids on video URL dataset uploaded asynchronously."""
+    initial_result = dataset_video_url_async.deduplicate(threshold=10)
+    item_ids = initial_result.unique_item_ids
+    assert len(item_ids) > 0
+
+    result = dataset_video_url_async.deduplicate_by_ids(
         threshold=10, dataset_item_ids=item_ids
     )
     assert isinstance(result, DeduplicationResult)
@@ -160,58 +296,58 @@ def test_deduplicate_video_url_by_ids(dataset_video_url):
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_zero(dataset_image):
+def test_deduplicate_threshold_zero(dataset_image_sync):
     """Threshold=0 means exact matches only."""
-    result = dataset_image.deduplicate(threshold=0)
+    result = dataset_image_sync.deduplicate(threshold=0)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.threshold == 0
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_max(dataset_image):
+def test_deduplicate_threshold_max(dataset_image_sync):
     """Threshold=64 is the maximum allowed value."""
-    result = dataset_image.deduplicate(threshold=64)
+    result = dataset_image_sync.deduplicate(threshold=64)
     assert isinstance(result, DeduplicationResult)
     assert result.stats.threshold == 64
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_negative(dataset_image):
+def test_deduplicate_threshold_negative(dataset_image_sync):
     """Threshold must be >= 0."""
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate(threshold=-1)
+        dataset_image_sync.deduplicate(threshold=-1)
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_too_high(dataset_image):
+def test_deduplicate_threshold_too_high(dataset_image_sync):
     """Threshold must be <= 64."""
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate(threshold=65)
+        dataset_image_sync.deduplicate(threshold=65)
 
 
 @pytest.mark.integration
-def test_deduplicate_threshold_non_integer(dataset_image):
+def test_deduplicate_threshold_non_integer(dataset_image_sync):
     """Threshold must be an integer."""
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate(threshold=10.5)
+        dataset_image_sync.deduplicate(threshold=10.5)
 
 
 @pytest.mark.integration
-def test_deduplicate_nonexistent_reference_id(dataset_image):
+def test_deduplicate_nonexistent_reference_id(dataset_image_sync):
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate(threshold=10, reference_ids=["nonexistent_ref_id"])
+        dataset_image_sync.deduplicate(threshold=10, reference_ids=["nonexistent_ref_id"])
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids_nonexistent_id(dataset_image):
+def test_deduplicate_by_ids_nonexistent_id(dataset_image_sync):
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate_by_ids(threshold=10, dataset_item_ids=["di_nonexistent"])
+        dataset_image_sync.deduplicate_by_ids(threshold=10, dataset_item_ids=["di_nonexistent"])
 
 
 @pytest.mark.integration
-def test_deduplicate_idempotency(dataset_image):
-    result1 = dataset_image.deduplicate(threshold=10)
-    result2 = dataset_image.deduplicate(threshold=10)
+def test_deduplicate_idempotency(dataset_image_sync):
+    result1 = dataset_image_sync.deduplicate(threshold=10)
+    result2 = dataset_image_sync.deduplicate(threshold=10)
 
     assert result1.unique_item_ids == result2.unique_item_ids
     assert result1.unique_reference_ids == result2.unique_reference_ids
@@ -220,8 +356,8 @@ def test_deduplicate_idempotency(dataset_image):
 
 
 @pytest.mark.integration
-def test_deduplicate_response_invariants(dataset_image):
-    result = dataset_image.deduplicate(threshold=10)
+def test_deduplicate_response_invariants(dataset_image_sync):
+    result = dataset_image_sync.deduplicate(threshold=10)
 
     assert len(result.unique_item_ids) == len(result.unique_reference_ids)
     assert result.stats.deduplicated_count == len(result.unique_item_ids)
@@ -230,30 +366,30 @@ def test_deduplicate_response_invariants(dataset_image):
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids_threshold_negative(dataset_image):
+def test_deduplicate_by_ids_threshold_negative(dataset_image_sync):
     """deduplicate_by_ids should enforce the same threshold constraints."""
-    initial_result = dataset_image.deduplicate(threshold=10)
+    initial_result = dataset_image_sync.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
 
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate_by_ids(threshold=-1, dataset_item_ids=item_ids)
+        dataset_image_sync.deduplicate_by_ids(threshold=-1, dataset_item_ids=item_ids)
 
 
 @pytest.mark.integration
-def test_deduplicate_by_ids_threshold_too_high(dataset_image):
+def test_deduplicate_by_ids_threshold_too_high(dataset_image_sync):
     """deduplicate_by_ids should enforce the same threshold constraints."""
-    initial_result = dataset_image.deduplicate(threshold=10)
+    initial_result = dataset_image_sync.deduplicate(threshold=10)
     item_ids = initial_result.unique_item_ids
 
     with pytest.raises(NucleusAPIError):
-        dataset_image.deduplicate_by_ids(threshold=65, dataset_item_ids=item_ids)
+        dataset_image_sync.deduplicate_by_ids(threshold=65, dataset_item_ids=item_ids)
 
 
 @pytest.mark.integration
-def test_deduplicate_single_item(dataset_image):
+def test_deduplicate_single_item(dataset_image_sync):
     """Single item should always be unique."""
     reference_ids = [TEST_DATASET_ITEMS[0].reference_id]
-    result = dataset_image.deduplicate(threshold=10, reference_ids=reference_ids)
+    result = dataset_image_sync.deduplicate(threshold=10, reference_ids=reference_ids)
 
     assert result.stats.original_count == 1
     assert result.stats.deduplicated_count == 1
@@ -305,9 +441,9 @@ def test_deduplicate_identifies_duplicates(dataset_with_duplicates):
 
 
 @pytest.mark.integration
-def test_deduplicate_distinct_images_all_unique(dataset_image):
+def test_deduplicate_distinct_images_all_unique(dataset_image_sync):
     """Distinct images should all remain after deduplication."""
-    result = dataset_image.deduplicate(threshold=0)
+    result = dataset_image_sync.deduplicate(threshold=0)
 
     # With threshold=0 (exact match only), all distinct images should be unique
     assert result.stats.deduplicated_count == result.stats.original_count
