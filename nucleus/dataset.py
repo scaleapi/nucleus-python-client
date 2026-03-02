@@ -252,7 +252,7 @@ class Dataset:
             slice_type: Type of slice to look up. This can be one of ('dataset_item', 'object', 'scene')
 
         Raises:
-            NotFound if no slice(s) were found with the given criteria
+            NotFound: If no slice(s) were found with the given criteria.
 
         Returns:
             :class:`Slice`: The Nucleus slice as an object.
@@ -636,12 +636,13 @@ class Dataset:
             )
 
         Parameters:
-            items: ( \
-              Union[ \
-                Sequence[:class:`DatasetItem`], \
-                Sequence[:class:`LidarScene`] \
-                Sequence[:class:`VideoScene`]
-              ]): List of items or scenes to upload.
+            items: (\
+                Union[\
+                    Sequence[:class:`DatasetItem`], \
+                    Sequence[:class:`LidarScene`], \
+                    Sequence[:class:`VideoScene`]\
+                ]\
+            ): List of items or scenes to upload.
             batch_size: Size of the batch for larger uploads. Default is 20. This is
                 for items that have a remote URL and do not require a local upload.
                 If you get timeouts for uploading remote urls, try decreasing this.
@@ -925,8 +926,8 @@ class Dataset:
                 :class:`PolygonAnnotation`, \
                 :class:`KeypointsAnnotation`, \
                 :class:`CuboidAnnotation`, \
-                :class:`SegmentationAnnotation` \
-                :class:`CategoryAnnotation` \
+                :class:`SegmentationAnnotation`, \
+                :class:`CategoryAnnotation`\
             ]: Ground truth annotation object with the specified annotation ID.
         """
         response = self._client.make_request(
@@ -943,14 +944,14 @@ class Dataset:
 
         Parameters:
             name: A human-readable name for the slice.
-            reference_ids: List of reference IDs of dataset items to add to the slice, cannot exceed 10,000 items.
-                Can be left unspecified, and an empty slice will be created.
+            reference_ids: List of reference IDs of dataset items to add to the slice,
+                cannot exceed 10,000 items. Can be left unspecified, in which case an empty slice will be created.
 
         Returns:
             :class:`Slice`: The newly constructed slice item.
 
         Raises:
-            BadRequest: If length of reference_ids is too large (> 10,000 items)
+            BadRequest: If length of reference_ids is too large (over 10,000 items).
         """
         payload = {NAME_KEY: name}  # type: Dict[str, Any]
         if reference_ids:
@@ -979,10 +980,10 @@ class Dataset:
 
         Parameters:
             name: A human-readable name for the slice.
-            dataset_item_ids: List of internal IDs of dataset items to add to the slice::
-            scene_ids: List of internal IDs of scenes to add to the slice::
-            annotation_ids: List of internal IDs of Annotations to add to the slice::
-            prediction_ids: List of internal IDs of Predictions to add to the slice::
+            dataset_item_ids: List of internal IDs of dataset items to add to the slice.
+            scene_ids: List of internal IDs of scenes to add to the slice.
+            annotation_ids: List of internal IDs of Annotations to add to the slice.
+            prediction_ids: List of internal IDs of Predictions to add to the slice.
 
         Returns:
             :class:`Slice`: The newly constructed slice item.
@@ -1018,7 +1019,13 @@ class Dataset:
         This method can deduplicate an entire dataset (when reference_ids is omitted)
         or a specific subset of items identified by the reference_id you assigned
         when uploading (e.g., "image_001", "frame_xyz"). To deduplicate using
-        internal Nucleus item IDs instead, use `deduplicate_by_ids()`.
+        internal Nucleus item IDs, use `deduplicate_by_ids()`.
+
+        .. note::
+            - For scene datasets, this deduplicates the underlying scene frames,
+              not the scenes themselves. Frame reference IDs or dataset item IDs
+              should be provided for scene datasets.
+            - For very large datasets, this operation may take significant time.
 
         Parameters:
             threshold: Hamming distance threshold (0-64). Lower = stricter.
@@ -1036,12 +1043,6 @@ class Dataset:
             NucleusAPIError: If any reference_id is not found in the dataset.
             NucleusAPIError: If any item is missing a perceptual hash (pHash).
                 Contact Scale support if this occurs.
-
-        Note:
-            - For scene datasets, this deduplicates the underlying scene frames,
-              not the scenes themselves. Frame reference IDs or dataset item IDs
-              should be provided for scene datasets.
-            - For very large datasets, this operation may take significant time.
         """
         # Client-side validation
         if reference_ids is not None and len(reference_ids) == 0:
@@ -1128,14 +1129,21 @@ class Dataset:
         """Build a slice using Nucleus' Smart Sample tool. Allowing slices to be built
         based on certain criteria, and filters.
 
-        Args:
-            name: Name for the slice being created. Must be unique per dataset.
-            sample_size: Size of the slice to create. Capped by the size of the dataset and the applied filters.
-            sample_method: How to sample the dataset, currently supports 'Random' and 'Uniqueness'
-            filters: Apply filters to only sample from an existing slice or autotag
+        :param name: Name for the slice being created. Must be unique per dataset.
+        :param sample_size: Size of the slice to create. Capped by the size of the dataset and the applied filters.
+        :param sample_method: How to sample the dataset, currently supports 'Random' and 'Uniqueness'
+        :param filters: Apply filters to only sample from an existing slice or autotag
+        :returns: An async job
 
-        Examples:
-            from nucleus.slice import SliceBuilderFilters, SliceBuilderMethods, SliceBuilderFilterAutotag
+        .. rubric:: Examples
+
+        ::
+
+            from nucleus.slice import (
+                SliceBuilderFilterAutotag,
+                SliceBuilderFilters,
+                SliceBuilderMethods,
+            )
 
             # random slice
             job = dataset.build_slice("RandomSlice", 20, SliceBuilderMethods.RANDOM)
@@ -1145,9 +1153,8 @@ class Dataset:
                 slice_id="<some slice id>",
                 autotag=SliceBuilderFilterAutotag("tag_cd41jhjdqyti07h8m1n1", [-0.5, 0.5])
             )
-            job = dataset.build_slice("NewSlice", 20, SliceBuilderMethods.RANDOM, filters)
 
-        Returns: An async job
+            job = dataset.build_slice("NewSlice", 20, SliceBuilderMethods.RANDOM, filters)
 
         """
         payload = create_slice_builder_payload(
@@ -1187,7 +1194,7 @@ class Dataset:
 
     @sanitize_string_args
     def delete_scene(self, reference_id: str):
-        """Deletes a sene from the Dataset by scene reference ID.
+        """Deletes a scene from the Dataset by scene reference ID.
 
         All items, annotations, and predictions associated with the scene will be
         deleted as well.
@@ -1210,6 +1217,7 @@ class Dataset:
                     "status": "completed" | "pending",
                     "autotag_level": "Image" | "Object"
                 }]
+                
         """
         return self._client.list_autotags(self.id)
 
@@ -1308,10 +1316,11 @@ class Dataset:
             custom: Whether to set the primary index to use custom or Nucleus-generated
                 embeddings. Default is True (use custom embeddings as the primary index).
         Returns:
+            Returns a response with success status of the operation::
 
-            {
-                "success": bool,
-            }
+                {
+                    "success": bool,
+                }
         """
         return self._client.set_primary_index(self.id, image, custom)
 
@@ -1417,11 +1426,11 @@ class Dataset:
         will not have new embeddings recomputed. The same is true for ground truth
         annotations.
 
-        Note that this means if you change update a prediction or ground truth
+        Note that this means if you update a prediction or ground truth
         bounding box that already has an associated embedding, the embedding will
         not be updated, even with another call to this endpoint. For now, we
         recommend deleting the prediction or ground truth annotation and
-        re-inserting it to force generate a new embedding.
+        re-inserting it to force generation of a new embedding.
 
         This endpoint is limited to generating embeddings for 3 million objects
         at a time and the job will fail for payloads that exceed this limit.
@@ -1582,31 +1591,32 @@ class Dataset:
             If you use the generator and discover that no scenes were generated, check the response error message for more information. It is likely that the annotations are not in the correct format.
 
             ::
-            Iterable[{
-                "scene": {
-                    "id": str,
-                    "reference_id": str,
-                    "metadata": Dict[str, Any]
-                    "type": str,
-                    "fileLocation": str,
-                }
-                "annotations": {
-                    "{trackId}": {
-                        "label": str,
-                        "name": str,
-                        "frames": List[{
-                            "left": int,
-                            "top": int,
-                            "width": int,
-                            "height": int,
-                            "key": str, # frame key
-                            "metadata": Dict[str, Any]
-                        }]
-                    }
-                }
-            }]
 
-            This is similar to how the Scale API returns task data
+                Iterable[{
+                    "scene": {
+                        "id": str,
+                        "reference_id": str,
+                        "metadata": Dict[str, Any]
+                        "type": str,
+                        "fileLocation": str,
+                    }
+                    "annotations": {
+                        "{trackId}": {
+                            "label": str,
+                            "name": str,
+                            "frames": List[{
+                                "left": int,
+                                "top": int,
+                                "width": int,
+                                "height": int,
+                                "key": str, # frame key
+                                "metadata": Dict[str, Any]
+                            }]
+                        }
+                    }
+                }]
+
+            This is similar to how the Scale API returns task data.
         """
 
         if page_size > 30:
@@ -1758,6 +1768,7 @@ class Dataset:
 
             Otherwise, returns an :class:`EmbeddingsExportJob` object.
         """
+
         if asynchronous:
             api_payload = self._client.make_request(
                 payload=None,
@@ -1849,9 +1860,9 @@ class Dataset:
                 :class:`BoxPrediction`, \
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
-                :class:`SegmentationPrediction` \
+                :class:`SegmentationPrediction`, \
                 :class:`CategoryPrediction`, \
-                :class:`KeypointsPrediction`, \
+                :class:`KeypointsPrediction` \
             ]]: List of prediction objects from the model.
 
         """
@@ -2022,7 +2033,7 @@ class Dataset:
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
                 :class:`SegmentationPrediction`, \
-                :class:`CategoryPrediction` \
+                :class:`CategoryPrediction`, \
                 :class:`SceneCategoryPrediction` \
             ]]): List of prediction objects to upload.
             update: Whether or not to overwrite metadata or ignore on reference ID
@@ -2048,6 +2059,7 @@ class Dataset:
 
         Returns:
             Payload describing the synchronous upload::
+
                 {
                     "dataset_id": str,
                     "model_run_id": str,
@@ -2100,9 +2112,9 @@ class Dataset:
                 :class:`BoxPrediction`, \
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
-                :class:`SegmentationPrediction` \
+                :class:`SegmentationPrediction`, \
                 :class:`CategoryPrediction`, \
-                :class:`KeypointsPrediction`, \
+                :class:`KeypointsPrediction` \
             ]]: Dictionary mapping prediction type to a list of such prediction
             objects from the given model::
 
@@ -2112,7 +2124,7 @@ class Dataset:
                     "cuboid": List[CuboidPrediction],
                     "segmentation": List[SegmentationPrediction],
                     "category": List[CategoryPrediction],
-                    "keypoints": List[KeypointsPrediction],
+                    "keypoints": List[KeypointsPrediction]
                 }
         """
         return format_prediction_response(
@@ -2136,9 +2148,9 @@ class Dataset:
                 :class:`BoxPrediction`, \
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
-                :class:`SegmentationPrediction` \
+                :class:`SegmentationPrediction`, \
                 :class:`CategoryPrediction`, \
-                :class:`KeypointsPrediction`, \
+                :class:`KeypointsPrediction` \
             ]]: Dictionary mapping prediction type to a list of such prediction
             objects from the given model::
 
@@ -2148,7 +2160,7 @@ class Dataset:
                     "cuboid": List[CuboidPrediction],
                     "segmentation": List[SegmentationPrediction],
                     "category": List[CategoryPrediction],
-                    "keypoints": List[KeypointsPrediction],
+                    "keypoints": List[KeypointsPrediction]
                 }
         """
         return format_prediction_response(
@@ -2160,7 +2172,7 @@ class Dataset:
         )
 
     def prediction_loc(self, model, reference_id, annotation_id):
-        """Fetches a single ground truth annotation by id.
+        """Fetches a single prediction by id.
 
         Parameters:
             model (:class:`Model`): Model object from which to fetch the prediction.
@@ -2173,8 +2185,8 @@ class Dataset:
                 :class:`BoxPrediction`, \
                 :class:`PolygonPrediction`, \
                 :class:`CuboidPrediction`, \
-                :class:`SegmentationPrediction` \
-                :class:`CategoryPrediction` \
+                :class:`SegmentationPrediction`, \
+                :class:`CategoryPrediction`, \
                 :class:`KeypointsPrediction` \
             ]: Model prediction object with the specified annotation ID.
         """
@@ -2232,16 +2244,15 @@ class Dataset:
         The backend will join the specified mapping metadata to the existing metadata.
         If there is a key-collision, the value given in the mapping will take precedence.
 
-        Args:
-            mapping: key-value pair of <reference_id>: <metadata>
-            asynchronous: if True, run the update as a background job
+        :param mapping: Key-value mapping of ``<reference_id>: <metadata>``.
+        :param asynchronous: If True, run the update as a background job.
 
-        Examples:
+        :returns: A dictionary outlining success or failures.
+
+        Examples::
+
             >>> mapping = {"scene_ref_1": {"new_key": "foo"}, "scene_ref_2": {"some_value": 123}}
             >>> dataset.update_scene_metadata(mapping)
-
-        Returns:
-            A dictionary outlining success or failures.
         """
         mm = MetadataManager(
             self.id,
@@ -2255,24 +2266,21 @@ class Dataset:
     def update_item_metadata(
         self, mapping: Dict[str, dict], asynchronous: bool = False
     ):
-        """
-        Update (merge) dataset item metadata for each reference_id given in the mapping.
+        """Update (merge) dataset item metadata for each reference_id given in the mapping.
+
         The backend will join the specified mapping metadata to the existing metadata.
         If there is a key-collision, the value given in the mapping will take precedence.
+        This method may also be used to update ``camera_params`` for items by including
+        the key in the metadata dict.
 
-        This method may also be used to udpate the `camera_params` for a particular set of items.
-        Just specify the key `camera_params` in the metadata for each reference_id along with all the necessary fields.
+        :param mapping: Dict mapping reference_id to metadata dict.
+        :param asynchronous: If True, run the update as a background job.
+        :returns: A dictionary outlining success or failures.
 
-        Args:
-            mapping: key-value pair of <reference_id>: <metadata>
-            asynchronous: if True, run the update as a background job
+        Examples::
 
-        Examples:
             >>> mapping = {"item_ref_1": {"new_key": "foo"}, "item_ref_2": {"some_value": 123, "camera_params": {...}}}
             >>> dataset.update_item_metadata(mapping)
-
-        Returns:
-            A dictionary outlining success or failures.
         """
         mm = MetadataManager(
             self.id,
@@ -2456,6 +2464,7 @@ class Dataset:
             skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
             update_items: Whether to update items in existing dataset
         """
+
         # fetch dataset use_privacy_mode for existence check
         if self.use_privacy_mode:
             assert (

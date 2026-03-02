@@ -60,46 +60,60 @@ class ModelRun:
         return False
 
     def info(self) -> dict:
-        """
-        provides information about the Model Run:
-        model_id -- Model Id corresponding to the run
-        name -- A human-readable name of the model project.
-        status -- Status of the Model Run.
-        metadata -- An arbitrary metadata blob specified for the run.
-        :return:
-        {
-            "model_id": str,
-            "name": str,
-            "status": str,
-            "metadata": Dict[str, Any],
-        }
+        """Provides information about the Model Run.
+
+        ``model_id``: Model Id corresponding to the run.
+
+        ``name``: A human-readable name of the model project.
+
+        ``status``: Status of the Model Run.
+
+        ``metadata``: An arbitrary metadata blob specified for the run.
+
+        Returns:
+            Dict with the following keys:
+            ``model_id``, ``name``, ``status``, and ``metadata``.
+
+            Example response format::
+
+                {
+                    "model_id": "prj_123",
+                    "name": "example-model-project",
+                    "status": "Completed",
+                    "metadata": Dict[str, Any],
+                }
         """
         return self._client.model_run_info(self.model_run_id)
 
     def commit(self, payload: Optional[dict] = None) -> dict:
-        """
-        Commits the model run. Starts matching algorithm defined by payload.
-        class_agnostic -- A flag to specify if matching algorithm should be class-agnostic or not.
-                          Default value: True
+        """Commits the model run. Starts matching algorithm defined by payload.
 
-        allowed_label_matches -- An optional list of AllowedMatch objects to specify allowed matches
-                                 for ground truth and model predictions.
-                                 If specified, 'class_agnostic' flag is assumed to be False
+        Parameters:
+            payload: Dict with optional keys:
 
-        Type 'AllowedMatch':
-        {
-            ground_truth_label: string,       # A label for ground truth annotation.
-            model_prediction_label: string,   # A label for model prediction that can be matched with
-                                              # corresponding ground truth label.
-        }
+                - ``class_agnostic``: A flag to specify if matching algorithm should be
+                  class-agnostic or not. Default value: True.
+                - ``allowed_label_matches``: An optional list of AllowedMatch objects to
+                  specify allowed matches for ground truth and model predictions.
+                  If specified, class_agnostic flag is assumed to be False.
+                  Each AllowedMatch has ``ground_truth_label`` and ``model_prediction_label``.
+                  
+                  Example response format::
 
-        payload:
-        {
-            "class_agnostic": boolean,
-            "allowed_label_matches": List[AllowedMatch],
-        }
+                      [
+                          {
+                              "ground_truth_label": "car",
+                              "model_prediction_label": "car",
+                          }
+                      ]
+        Returns:
+            Dict with ``model_run_id``.
+            
+            Example response format::
 
-        :return: {"model_run_id": str}
+                {
+                    "model_run_id": "run_123",
+                }
         """
         if payload is None:
             payload = {}
@@ -121,11 +135,10 @@ class ModelRun:
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
     ) -> Union[dict, AsyncJob]:
-        """
-        Uploads model outputs as predictions for a model_run. Returns info about the upload.
+        """Uploads model outputs as predictions for a model_run.
 
         Args:
-            annotations: Predictions to upload for this model run,
+            annotations: Predictions to upload for this model run.
             update: If True, existing predictions for the same (reference_id, annotation_id)
                 will be overwritten. If False, existing predictions will be skipped.
             asynchronous: Whether or not to process the upload asynchronously (and
@@ -138,18 +151,20 @@ class ModelRun:
                 request. Segmentations have either local or remote files, if you are
                 getting timeouts while uploading segmentations with remote urls, you
                 should lower this value from its default of 20. This is only relevant for
-                asynchronous=False
+                asynchronous=False.
             local_files_per_upload_request: Number of local files to upload in each
                 request. Segmentations have either local or remote files, if you are
                 getting timeouts while uploading segmentations with local files, you
                 should lower this value from its default of 10. The maximum is 10.
                 This is only relevant for asynchronous=False
-        :return:
-        {
-            "model_run_id": str,
-            "predictions_processed": int,
-            "predictions_ignored": int,
-        }
+
+        Returns::   
+
+            {
+                "model_run_id": str,
+                "predictions_processed": int,
+                "predictions_ignored": int,
+            }
         """
         uploader = PredictionUploader(
             model_run_id=self.model_run_id, client=self._client
@@ -177,20 +192,27 @@ class ModelRun:
         )
 
     def iloc(self, i: int):
-        """
-        Returns Model Run Info For Dataset Item by its number.
-        :param i: absolute number of Dataset Item for a dataset corresponding to the model run.
-        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
-        }
+        """Returns Model Run Info For Dataset Item by its number.
+
+        Parameters:
+            i: Absolute number of Dataset Item for a dataset corresponding to the model run.
+
+        Returns::
+
+            List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]]
         """
         response = self._client.predictions_iloc(self.model_run_id, i)
         return format_prediction_response(response)
 
     def refloc(self, reference_id: str):
-        """
-        Returns Model Run Info For Dataset Item by its reference_id.
-        :param reference_id: reference_id of a dataset item.
-        :return: List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]],
+        """Returns Model Run Info For Dataset Item by its reference_id.
+
+        Parameters:
+            reference_id: reference_id of a dataset item.
+
+        Returns::
+
+            List[Union[BoxPrediction, PolygonPrediction, CuboidPrediction, SegmentationPrediction]]
         """
         response = self._client.get(
             f"modelRun/{self.model_run_id}/refloc/{reference_id}"
@@ -198,13 +220,16 @@ class ModelRun:
         return format_prediction_response(response)
 
     def loc(self, dataset_item_id: str):
-        """
-        Returns Model Run Info For Dataset Item by its id.
-        :param dataset_item_id: internally controlled id for dataset item.
-        :return:
-        {
-            "annotations": List[Box2DPrediction],
-        }
+        """Returns Model Run Info For Dataset Item by its id.
+
+        Parameters:
+            dataset_item_id: Internally controlled id for dataset item.
+
+        Returns::
+
+            {
+                "annotations": List[Box2DPrediction],
+            }
         """
         response = self._client.predictions_loc(
             self.model_run_id, dataset_item_id
@@ -212,14 +237,17 @@ class ModelRun:
         return format_prediction_response(response)
 
     def prediction_loc(self, reference_id: str, annotation_id: str):
-        """
-        Returns info for single Prediction by its reference id and annotation id.
-        :param reference_id: the user specified id for the image
-        :param annotation_id: the user specified id for the prediction, or if one was not provided, the Scale internally generated id for the prediction
-        :return:
-         BoxPrediction | PolygonPrediction | CuboidPrediction
-        """
+        """Returns info for single Prediction by its reference id and annotation id.
 
+        Parameters:
+            reference_id: The user specified id for the image.
+            annotation_id: The user specified id for the prediction, or if one was not
+                provided, the Scale internally generated id for the prediction.
+
+        Returns::
+        
+            BoxPrediction | PolygonPrediction | CuboidPrediction
+        """
         response = self._client.make_request(
             {},
             f"modelRun/{self.model_run_id}/prediction/loc/{reference_id}/{annotation_id}",

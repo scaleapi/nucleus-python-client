@@ -21,9 +21,10 @@ class ScenarioTestMetric:
     )
 
     def set_threshold(self, threshold: Optional[float] = None) -> None:
-        """Sets the threshold of the metric to the new value passed in as a parameters.
-        Attributes:
-            threshold (str): The ID of the scenario test.
+        """Sets the threshold of the metric to the new value.
+
+        Parameters:
+            threshold: The new threshold value for the metric.
         """
         payload = {"threshold": threshold}
         response = self.connection.post(

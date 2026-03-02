@@ -74,7 +74,7 @@ class Validate:
             name: unique name of test
             slice_id: id of (pre-defined) slice of items to evaluate test on.
             evaluation_functions: :class:`EvalFunctionEntry` defines an evaluation metric for the test.
-            Created with an element from the list of available eval functions. See :class:`eval_functions`.
+                Created with an element from the list of available eval functions. See :class:`eval_functions`.
 
         Returns:
             Created ScenarioTest object.
@@ -216,8 +216,8 @@ class Validate:
             level: level at which the eval function is run, defaults to EntityLevel.ITEM.
 
         Raises:
-            - NucleusAPIError if the creation of the function fails on the server side
-            - ValidationError if the evaluation name is not well defined
+            NucleusAPIError: If the creation of the function fails on the server side.
+            ValidationError: If the evaluation name is not well defined.
 
         Returns:
             Created EvalFunctionConfig object.

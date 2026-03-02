@@ -312,7 +312,7 @@ class PolygonPrediction(PolygonAnnotation):
 
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
-        vertices List[:class:`Point`]: The list of points making up the polygon.
+        vertices (List[:class:`Point`]): The list of points making up the polygon.
         reference_id (str): User-defined ID of the image to which to apply this
             annotation.
         confidence: 0-1 indicating the confidence of the prediction.
