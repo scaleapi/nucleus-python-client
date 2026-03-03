@@ -34,7 +34,7 @@ class NucleusAPIError(Exception):
     def __init__(
         self, endpoint, command, requests_response=None, aiohttp_response=None
     ):
-        from importlib.metadata import version as get_version
+        from importlib_metadata import version as get_version
 
         nucleus_client_version = get_version("scale-nucleus")
 
