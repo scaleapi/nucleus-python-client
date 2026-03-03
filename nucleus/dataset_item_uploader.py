@@ -49,8 +49,6 @@ class DatasetItemUploader:
                 request for items with files to upload
             update: Update records instead of overwriting
 
-        Returns:
-
         """
         local_items = []
         remote_items = []

@@ -3,7 +3,7 @@
 
 {% endif %}
 {{ obj.name }}
-=============
+{{ "=" * obj.name|length }}
 
 .. py:module:: {{ obj.name }}
 

@@ -13,7 +13,7 @@
 import os
 import sys
 
-import pkg_resources
+from importlib_metadata import version as get_version
 
 sys.path.insert(0, os.path.abspath("../../"))
 
@@ -26,7 +26,7 @@ author = "Scale"
 
 
 # The full version, including alpha/beta/rc tags
-release = "v" + str(pkg_resources.get_distribution("scale-nucleus").version)
+release = "v" + get_version("scale-nucleus")
 
 
 # -- General configuration ---------------------------------------------------
@@ -68,11 +68,6 @@ html_css_files = [
 html_favicon = "favicon.ico"
 
 html_logo = "nucleus-logo.svg"
-html_theme_options = {
-    "logo_only": True,
-    "display_version": True,
-}
-
 
 # -- autogen configuration ---------------------------------------------------
 autoapi_type = "python"

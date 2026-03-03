@@ -13,6 +13,7 @@ Scale Nucleus helps you:
 Nucleus is a new way—the right way—to develop ML models, helping us move away from the concept of one dataset and towards a paradigm of collections of scenarios.
 
 .. _installation:
+
 Installation
 ------------
 
@@ -24,6 +25,7 @@ To use Nucleus, first install it using `pip`:
 
 
 .. _api:
+
 Sections
 --------
 

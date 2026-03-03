@@ -353,8 +353,6 @@ def _filter_to_comparison_function(  # pylint: disable=too-many-return-statement
     Parameters:
         filter_def: Definition of a filter conditions
 
-    Returns:
-
     """
     if FilterType(filter_def.type) == FilterType.FIELD:
         getter = functools.partial(

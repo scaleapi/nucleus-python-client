@@ -182,7 +182,9 @@ class EmbeddingsExportJob(AsyncJob):
         Returns:
             A list of signed Scale URLs which contain batches of embeddings.
 
-            The files contain a JSON array of embedding records with the following schema:
+            The files contain a JSON array of embedding records with the
+            following schema::
+
                 [{
                     "reference_id": str,
                     "embedding_vector": List[float]

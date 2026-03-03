@@ -2,12 +2,13 @@ import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING, List, Sequence, Tuple, Union
 
-from nucleus import Point, PolygonPrediction, Segment
+from nucleus.annotation import Point, Segment
 from nucleus.metrics.custom_types import BoxOrPolygonAnnotation
 from nucleus.metrics.polygon_utils import polygon_annotation_to_shape
 from nucleus.package_not_installed import (  # pylint: disable=ungrouped-imports
     PackageNotInstalled,
 )
+from nucleus.prediction import PolygonPrediction
 
 FALSE_POSITIVES = "__non_max_false_positive"
 
