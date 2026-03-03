@@ -57,7 +57,7 @@ python-dateutil = "^2.8.2"
 boto3 = "^1.28.56"
 importlib-metadata = "^1.0.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = [
   { version = ">=7.1.1", python = ">=3.7,<4.0" }
 ]
@@ -74,6 +74,11 @@ sphinx-autobuild = "^2021.3.14"
 furo = ">=2021.10.9"
 sphinx-autoapi = "^1.8.4"
 python-dateutil = "^2.8.2"
+ruff = "^0.0.290"
+types-setuptools = "^68.2.0.0"
+types-requests = "^2.31.0.2"
+types-python-dateutil = "^2.8.19.14"
+pytest-xdist = "^3.5.0"
 
 [tool.poetry.scripts]
 nu = "cli.nu:nu"
@@ -81,14 +86,6 @@ nu = "cli.nu:nu"
 [tool.poetry.extras]
 metrics = ["Shapely", "rasterio", "scipy", "scikit-learn"]
 launch = ["scale-launch"]
-
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.0.290"
-types-setuptools = "^68.2.0.0"
-types-requests = "^2.31.0.2"
-types-python-dateutil = "^2.8.19.14"
-pytest-xdist = "^3.5.0"
 
 [tool.pytest.ini_options]
 markers = [

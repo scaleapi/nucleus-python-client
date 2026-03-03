@@ -5024,4 +5024,4 @@ metrics = ["Shapely", "rasterio", "scikit-learn", "scipy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.7,<4.0"
-content-hash = "9badc84cddaf57968f4563732a40ea973b2fa006b2dbd8d7d0147ad452cb1bc7"
+content-hash = "2c180a69adf526280d302b8c6afb07c9d15be9a9899dfd9fb77d594ca6ba0f83"
