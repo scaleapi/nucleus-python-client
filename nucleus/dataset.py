@@ -433,6 +433,49 @@ class Dataset:
         dataset_info = DatasetInfo.parse_obj(response)
         return dataset_info
 
+    def get_tags(self) -> List[str]:
+        """Fetches tags associated with the dataset.
+
+        Returns:
+            List of tag strings associated with this dataset.
+        """
+        response = self._client.make_request(
+            {}, f"dataset/{self.id}/tags", requests.get
+        )
+        return response["tags"]
+
+    def add_tags(self, tags: List[str]) -> List[str]:
+        """Adds tags to the dataset.
+
+        Args:
+            tags: List of tag strings to add.
+
+        Returns:
+            Updated list of all tags on the dataset.
+        """
+        if isinstance(tags, str):
+            raise TypeError("tags must be a list of strings, not a single string")
+        response = self._client.make_request(
+            {"tags": tags}, f"dataset/{self.id}/tags", requests.post
+        )
+        return response["tags"]
+
+    def remove_tags(self, tags: List[str]) -> List[str]:
+        """Removes tags from the dataset.
+
+        Args:
+            tags: List of tag strings to remove.
+
+        Returns:
+            Updated list of remaining tags on the dataset.
+        """
+        if isinstance(tags, str):
+            raise TypeError("tags must be a list of strings, not a single string")
+        response = self._client.make_request(
+            {"tags": tags}, f"dataset/{self.id}/tags", requests.delete
+        )
+        return response["tags"]
+
     @deprecated(
         "Model runs have been deprecated and will be removed. Use a Model instead"
     )
