@@ -41,6 +41,7 @@ __all__ = [
     "SegmentationAnnotation",
     "SegmentationPrediction",
     "Slice",
+    "UploadResponse",
     "VideoScene",
 ]
 
@@ -137,6 +138,7 @@ from .prediction import (
 from .quaternion import Quaternion
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
+from .upload_response import UploadResponse
 from .validate import Validate
 
 # pylint: disable=E1101
