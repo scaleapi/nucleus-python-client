@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Docstring improvements across `NucleusClient`: fixed copy-paste errors (`get_job`, `get_slice`, `delete_slice`), removed phantom `stats_only` parameter from `list_jobs`, corrected `make_request` parameter name, and restructured `create_launch_model`/`create_launch_model_from_dir` docs for proper rendering.
-- Removed unused imports from `nucleus/__init__.py`.
 - Suppressed Sphinx warnings from inherited pydantic `BaseModel` methods by removing `inherited-members` from autoapi options.
 
 ## [0.17.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.13) - 2026-03-06
