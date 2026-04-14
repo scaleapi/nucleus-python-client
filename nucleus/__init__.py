@@ -186,7 +186,7 @@ class NucleusClient:
         limited_access_key: Optional[str] = None,
     ):
         effective_basic_key = (
-            api_key if api_key else os.environ.get("NUCLEUS_API_KEY", None)
+            api_key if api_key else os.environ.get("NUCLEUS_API_KEY")
         )
         if limited_access_key and effective_basic_key:
             raise ValueError(
@@ -1223,7 +1223,7 @@ class NucleusClient:
     def _set_api_key(self, api_key):
         """Fetch API key from environment variable NUCLEUS_API_KEY if not set"""
         api_key = (
-            api_key if api_key else os.environ.get("NUCLEUS_API_KEY", None)
+            api_key if api_key else os.environ.get("NUCLEUS_API_KEY")
         )
         if api_key is None:
             raise NoAPIKey()
