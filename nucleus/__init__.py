@@ -64,7 +64,6 @@ else:
 
 from nucleus.url_utils import sanitize_string_args
 
-from . import metrics
 from .annotation import (
     BoxAnnotation,
     CategoryAnnotation,
@@ -73,7 +72,6 @@ from .annotation import (
     KeypointsAnnotation,
     LidarPoint,
     LineAnnotation,
-    MultiCategoryAnnotation,
     Point,
     Point3D,
     PolygonAnnotation,
@@ -87,44 +85,25 @@ from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
-    ANNOTATIONS_IGNORED_KEY,
-    ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
-    DEFAULT_NETWORK_TIMEOUT_SEC,
-    EMBEDDING_DIMENSION_KEY,
-    EMBEDDINGS_URL_KEY,
-    ERROR_ITEMS,
-    ERROR_PAYLOAD,
-    ERRORS_KEY,
-    GLOB_SIZE_THRESHOLD_CHECK,
     I_KEY,
-    IMAGE_KEY,
-    IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
     ITEM_METADATA_SCHEMA_KEY,
-    ITEMS_KEY,
     JOB_CREATION_TIME_KEY,
     JOB_ID_KEY,
     JOB_LAST_KNOWN_STATUS_KEY,
     JOB_TYPE_KEY,
-    KEEP_HISTORY_KEY,
-    MESSAGE_KEY,
     MODEL_RUN_ID_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
     POINTS_KEY,
-    PREDICTIONS_IGNORED_KEY,
-    PREDICTIONS_PROCESSED_KEY,
     REFERENCE_IDS_KEY,
-    SLICE_ID_KEY,
-    SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
-    UPDATE_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -142,16 +121,9 @@ from .errors import (
     NucleusAPIError,
 )
 from .job import CustomerJobTypes
-from .logger import logger
 from .model import Model
 from .model_run import ModelRun
-from .payload_constructor import (
-    construct_annotation_payload,
-    construct_append_payload,
-    construct_box_predictions_payload,
-    construct_model_creation_payload,
-    construct_segmentation_payload,
-)
+from .payload_constructor import construct_model_creation_payload
 from .prediction import (
     BoxPrediction,
     CategoryPrediction,
@@ -163,11 +135,8 @@ from .prediction import (
     SegmentationPrediction,
 )
 from .quaternion import Quaternion
-from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
-from .upload_response import UploadResponse
-from .utils import create_items_from_folder_crawl
 from .validate import Validate
 
 # pylint: disable=E1101
@@ -179,36 +148,34 @@ class NucleusClient:
     """Client to interact with the Nucleus API via Python SDK.
 
     Parameters:
-        api_key: Follow `this guide <https://scale.com/docs/account#section-api-keys>`_
-          to retrieve your API keys. **Only** optional when ``limited_access_key`` is provided.
+        api_key: One of ``api_key`` or ``limited_access_key`` must be provided; you cannot pass
+          both. For standard Scale API key authentication, pass the key here. Follow `this guide
+          <https://scale.com/docs/api-reference/authentication>`_ to retrieve API keys. If you omit
+          this argument and are not using ``limited_access_key``, the SDK falls back to the
+          ``NUCLEUS_API_KEY`` environment variable.
+        limited_access_key: Nucleus-only API key for scoped access. Reach out to your Scale
+          representative to obtain a limited access key.
         use_notebook: Whether the client is being used in a notebook (toggles tqdm
           style). Default is ``False``.
         endpoint: Base URL of the API. Default is Nucleus's current production API.
-        limited_access_key: Key enabling additional, scoped access. **Only** optional when ``api_key`` is provided. Reach out to your Scale representative to obtain a limited access key.
 
-    Authentication notes:
-        Some users have Nucleus-only API keys. You can
-        instantiate the client with only ``limited_access_key`` (no ``api_key``) and the SDK
-        will authenticate requests using this key only. If both
-        ``api_key`` and ``limited_access_key`` are provided, Basic Auth (``api_key``) and the
-        additional limited access key will both be sent.
+    .. note::
 
-        .. code-block:: python
+        You must provide **either** a standard Scale API key (``api_key``, or
+        ``NUCLEUS_API_KEY`` in the environment) **or** a Nucleus-only key
+        (``limited_access_key``), never both. Passing both arguments, or setting
+        the environment variable ``NUCLEUS_API_KEY`` while also passing
+        ``limited_access_key``, will raise an error.
 
-           # Using a basic auth key
-           import nucleus
-           client = nucleus.NucleusClient(api_key="YOUR_API_KEY", ...)
+    Example::
 
-           # Using only a limited access key (no Basic Auth)
-           import nucleus
-           client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY", ...)
+        # Using a basic auth key
+        import nucleus
+        client = nucleus.NucleusClient(api_key="YOUR_API_KEY", ...)
 
-           # Using both keys (Basic Auth and limited access header)
-           client = nucleus.NucleusClient(
-               api_key="YOUR_API_KEY",
-               limited_access_key="YOUR_LIMITED_KEY",
-               ...
-           )
+        # Using only a limited access key (no Basic Auth)
+        import nucleus
+        client = nucleus.NucleusClient(limited_access_key="YOUR_LIMITED_KEY", ...)
     """
 
     def __init__(
@@ -218,6 +185,15 @@ class NucleusClient:
         endpoint: Optional[str] = None,
         limited_access_key: Optional[str] = None,
     ):
+        effective_basic_key = (
+            api_key if api_key else os.environ.get("NUCLEUS_API_KEY", None)
+        )
+        if limited_access_key and effective_basic_key:
+            raise ValueError(
+                "Cannot provide both 'api_key' and 'limited_access_key'. "
+                "Use 'api_key' for standard Scale API key authentication, "
+                "or 'limited_access_key' for Nucleus-only access, but not both."
+            )
         # Allow usage with only a limited access key
         if api_key is None and limited_access_key:
             self.api_key = None
@@ -328,14 +304,13 @@ class NucleusClient:
         """Fetches all of your running jobs in Nucleus.
 
         Parameters:
-            job_types: Filter on set of job types, if None, fetch all types
-            from_date: beginning of date range filter
-            to_date: end of date range filter
-            limit: number of results to fetch, max 50_000
-            show_completed: dont fetch jobs with Completed status
-            stats_only: return overview of jobs, instead of a list of job objects
-            dataset_id: filter on a particular dataset
-            date_limit: Deprecated, do not use
+            show_completed: Whether to include jobs with Completed status.
+            from_date: Beginning of date range filter.
+            to_date: End of date range filter.
+            job_types: Filter on set of job types. If None, fetch all types.
+            limit: Number of results to fetch, max 50,000.
+            dataset_id: Filter on a particular dataset.
+            date_limit: Deprecated, do not use.
 
         Returns:
             List[:class:`AsyncJob`]: List of running asynchronous jobs
@@ -385,10 +360,10 @@ class NucleusClient:
         return Dataset(dataset_id, self)
 
     def get_job(self, job_id: str) -> AsyncJob:
-        """Fetches a dataset by its ID.
+        """Fetches a job by its ID.
 
         Parameters:
-            job_id: The ID of the dataset to fetch.
+            job_id: The ID of the job to fetch.
 
         Returns:
             :class:`AsyncJob`: The Nucleus async job as an object.
@@ -506,19 +481,19 @@ class NucleusClient:
               Default is False (dataset of items).
             use_privacy_mode: Whether the images of this dataset should be uploaded to Scale. If set to True,
               customer will have to adjust their file access policy with Scale.
-            item_metadata_schema: Dict defining item-level metadata schema. See below.
+            item_metadata_schema: Dict defining item-level metadata schema, structured as::
+
+                {
+                    "field_name": {
+                        "type": "category" | "number" | "text" | "json"
+                        "choices": List[str] | None
+                        "description": str | None
+                    },
+                    ...
+                }
+
             annotation_metadata_schema: Dict defining annotation-level metadata schema.
-
-                Metadata schemas must be structured as follows::
-
-                    {
-                        "field_name": {
-                            "type": "category" | "number" | "text" | "json"
-                            "choices": List[str] | None
-                            "description": str | None
-                        },
-                        ...
-                    }
+              Same format as ``item_metadata_schema``.
 
         Returns:
             :class:`Dataset`: The newly created Nucleus dataset as an object.
@@ -660,10 +635,10 @@ class NucleusClient:
         Parameters:
             name: A human-readable name for the model.
             reference_id: Unique, user-controlled ID for the model. This can be
-                used, for example, to link to an external storage of models which
-                may have its own ID scheme.
-            bundle_args: Dict for kwargs for the creation of a Launch bundle,
-                more details on the keys below.
+              used, for example, to link to an external storage of models which
+              may have its own ID scheme.
+            bundle_args: Dict of kwargs for creating a Launch bundle. See the
+              note below for supported keys.
             metadata: An arbitrary dictionary of additional data about this model
               that can be stored and retrieved. For example, you can store information
               about the hyperparameters used in training this model.
@@ -671,55 +646,28 @@ class NucleusClient:
         Returns:
             :class:`Model`: The newly created model as an object.
 
-        Details on ``bundle_args``:
-            Grabs an S3 signed URL and uploads a model bundle to Scale Launch.
+        .. note::
 
-            A model bundle consists of exactly ``{predict_fn_or_cls}``,
-            ``{load_predict_fn + model}``, or ``{load_predict_fn + load_model_fn}``.
-            Pre/post-processing code can be included inside ``load_predict_fn``/``model``
-            or in the ``predict_fn_or_cls`` call.
-            Note: the exact parameters used depend on the version of the Launch client.
-            If you are on Launch client version 0.x, use ``env_params``. Otherwise,
-            use ``pytorch_image_tag`` and ``tensorflow_version``.
+            A bundle consists of exactly ``{predict_fn_or_cls}``,
+            ``{load_predict_fn + model}``, or
+            ``{load_predict_fn + load_model_fn}``. The exact keys depend on
+            the Launch client version (use ``env_params`` for v0.x, or
+            ``pytorch_image_tag``/``tensorflow_version`` otherwise).
 
-        ``bundle_args`` keys:
+            Supported ``bundle_args`` keys:
 
-            - ``model_bundle_name``: Name of model bundle you want to create.
-              This acts as a unique identifier.
-            - ``predict_fn_or_cls``: Function or a callable class that runs
-              end-to-end (pre/post processing and model inference) on the call.
-              I.e. ``predict_fn_or_cls(REQUEST) -> RESPONSE``.
-            - ``model``: Typically a trained neural network, e.g. a PyTorch
-              module.
-            - ``load_predict_fn``: Function that, when called with ``model``,
-              returns a function that carries out inference.
-              I.e. ``load_predict_fn(model) -> func; func(REQUEST) -> RESPONSE``.
-            - ``load_model_fn``: Function that, when run, loads a model, e.g. a
-              PyTorch module.
-              I.e. ``load_predict_fn(load_model_fn()) -> func; func(REQUEST) -> RESPONSE``.
-            - ``bundle_url``: Only for self-hosted mode. Desired location of
-              bundle. Overrides any value given by ``self.bundle_location_fn``.
-            - ``requirements``: A list of Python package requirements, e.g.
-              ``["tensorflow==2.3.0", "tensorflow-hub==0.11.0"]``. If no list
-              has been passed, this defaults to the currently imported list of
-              packages.
-            - ``app_config``: Either a dictionary representing YAML file
-              contents or a local path to a YAML file.
-            - ``env_params``: Only for Launch v0. A dictionary that dictates
-              environment information, e.g. whether to use PyTorch or
-              TensorFlow and which CUDA/cuDNN versions to use. Specifically,
-              the dictionary should contain ``"framework_type"`` (either
-              ``"tensorflow"`` or ``"pytorch"``), ``"pytorch_version"``
-              (if framework type is PyTorch), ``"cuda_version"``,
-              ``"cudnn_version"``, and ``"tensorflow_version"``
-              (if framework type is TensorFlow).
-            - ``globals_copy``: Dictionary of the global symbol table.
-              Normally provided by the built-in ``globals()`` function.
-            - ``pytorch_image_tag``: Only for Launch v1 when using the PyTorch
-              framework type. The tag of the PyTorch Docker image you want to
-              use, e.g. ``1.11.0-cuda11.3-cudnn8-runtime``.
-            - ``tensorflow_version``: Only for Launch v1 when using TensorFlow.
-              Version of TensorFlow, e.g. ``"2.3.0"``.
+            - ``model_bundle_name``: Unique identifier for the bundle.
+            - ``predict_fn_or_cls``: End-to-end callable for inference.
+            - ``model``: Trained neural network, e.g. a PyTorch module.
+            - ``load_predict_fn``: Returns an inference function given a model.
+            - ``load_model_fn``: Loads a model.
+            - ``bundle_url``: Self-hosted mode only. Desired bundle location.
+            - ``requirements``: List of pip packages.
+            - ``app_config``: YAML dict or local path.
+            - ``env_params``: Launch v0 framework/CUDA config.
+            - ``globals_copy``: Global symbol table (from ``globals()``).
+            - ``pytorch_image_tag``: Launch v1 + PyTorch image tag.
+            - ``tensorflow_version``: Launch v1 + TensorFlow version.
         """
         from launch import LaunchClient
 
@@ -774,8 +722,8 @@ class NucleusClient:
             reference_id: Unique, user-controlled ID for the model. This can be
               used, for example, to link to an external storage of models which
               may have its own id scheme.
-            bundle_from_dir_args: Dict for kwargs for the creation of a bundle from directory,
-              more details on the keys below.
+            bundle_from_dir_args: Dict of kwargs for creating a bundle from
+              local directories. See the note below for supported keys.
             metadata: An arbitrary dictionary of additional data about this model
               that can be stored and retrieved. For example, you can store information
               about the hyperparameters used in training this model.
@@ -783,13 +731,30 @@ class NucleusClient:
         Returns:
             :class:`Model`: The newly created model as an object.
 
-        Details on ``bundle_from_dir_args``:
-            Packages up code from one or more local filesystem folders and uploads
-            them as a bundle to Scale Launch. In this mode, a bundle is just local
-            code instead of a serialized object.
+        .. note::
 
-            For example, if you have a directory structure like this, and your
-            current working directory is also ``my_root``::
+            Code from one or more local filesystem folders is packaged into a
+            zip and uploaded to Scale Launch. Contents are unzipped relative to
+            the server-side ``PYTHONPATH``, so module paths should reflect the
+            directory structure (e.g. ``my_module.my_file.f``). The exact keys
+            depend on the Launch client version (use ``env_params`` for v0.x,
+            or ``pytorch_image_tag``/``tensorflow_version`` otherwise).
+
+            Supported ``bundle_from_dir_args`` keys:
+
+            - ``model_bundle_name``: Unique identifier for the bundle.
+            - ``base_paths``: Local dirs containing the bundle code.
+            - ``requirements_path``: Path to a ``requirements.txt`` file.
+            - ``env_params``: Launch v0 framework/CUDA config.
+            - ``load_predict_fn_module_path``: Module path for inference fn.
+            - ``load_model_fn_module_path``: Module path for model loader.
+            - ``app_config``: YAML dict or local path.
+            - ``pytorch_image_tag``: Launch v1 + PyTorch image tag.
+            - ``tensorflow_version``: Launch v1 + TensorFlow version.
+
+        .. note::
+
+            For example, given this directory structure::
 
                 my_root/
                     my_module1/
@@ -800,60 +765,12 @@ class NucleusClient:
                         __init__.py
                         ...files and directories
 
-            Calling ``create_model_bundle_from_dirs`` with
-            ``base_paths=["my_module1", "my_module2"]`` essentially creates a zip
-            file without the root directory, e.g.::
-
-                my_module1/
-                    __init__.py
-                    ...files and directories
-                    my_inference_file.py
-                my_module2/
-                    __init__.py
-                    ...files and directories
-
-            These contents will be unzipped relative to the server-side
-            ``PYTHONPATH``. Bear this in mind when referencing Python module paths
-            for this bundle. For instance, if ``my_inference_file.py`` has
-            ``def f(...)`` as the desired inference loading function, then
+            Calling with ``base_paths=["my_module1", "my_module2"]`` creates a
+            zip without the root directory. Contents are unzipped relative to
+            the server-side ``PYTHONPATH``. If ``my_inference_file.py`` has
+            ``def f(...)`` as the inference loading function, then
             ``load_predict_fn_module_path`` should be
             ``my_module1.my_inference_file.f``.
-
-            Note: the exact keys for ``bundle_from_dir_args`` depend on the
-            version of the Launch client. If you are on Launch client version 0.x,
-            you will use ``env_params``; otherwise, you will use
-            ``pytorch_image_tag`` and ``tensorflow_version``.
-
-        Keys for ``bundle_from_dir_args``:
-
-            - ``model_bundle_name``: Name of model bundle you want to create.
-              This acts as a unique identifier.
-            - ``base_paths``: The paths on the local filesystem where the bundle
-              code lives.
-            - ``requirements_path``: A path on the local filesystem where a
-              ``requirements.txt`` file lives.
-            - ``env_params``: Only for Launch v0. A dictionary that dictates
-              environment information, e.g. whether to use PyTorch or
-              TensorFlow and which CUDA/cuDNN versions to use. Specifically,
-              the dictionary should contain ``"framework_type"`` (either
-              ``"tensorflow"`` or ``"pytorch"``), ``"pytorch_version"``
-              (if framework type is PyTorch), ``"cuda_version"``,
-              ``"cudnn_version"``, and ``"tensorflow_version"``
-              (if framework type is TensorFlow).
-            - ``load_predict_fn_module_path``: A Python module path for a
-              function that, when called with the output of
-              ``load_model_fn_module_path``, returns a function that carries out
-              inference.
-            - ``load_model_fn_module_path``: A Python module path for a
-              function that returns a model. The output feeds into the function
-              located at ``load_predict_fn_module_path``.
-            - ``app_config``: Either a dictionary representing YAML file
-              contents or a local path to a YAML file.
-            - ``pytorch_image_tag``: Only for Launch v1, and if you want to use
-              the PyTorch framework type. The tag of the PyTorch Docker image
-              you want to use, e.g. ``1.11.0-cuda11.3-cudnn8-runtime``.
-            - ``tensorflow_version``: Only for Launch v1, and if you want to
-              use TensorFlow. Version of TensorFlow, e.g. ``"2.3.0"``.
         """
         from launch import LaunchClient
 
@@ -993,7 +910,7 @@ class NucleusClient:
         """Returns a slice object by Nucleus-generated ID.
 
         Parameters:
-            slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
+            slice_id: Nucleus-generated slice ID (starts with ``slc_``). This can
               be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
 
         Returns:
@@ -1016,7 +933,7 @@ class NucleusClient:
         """Deletes slice from Nucleus.
 
         Parameters:
-            slice_id: Nucleus-generated dataset ID (starts with ``slc_``). This can
+            slice_id: Nucleus-generated slice ID (starts with ``slc_``). This can
               be retrieved via :meth:`Dataset.slices` or a Nucleus dashboard URL.
 
         Returns:
@@ -1128,7 +1045,7 @@ class NucleusClient:
         self, task_id: str, frame_num: int
     ) -> List[Union[Point3D, LidarPoint]]:
         """
-        Download the lidar point cloud data for a give task and frame number.
+        Download the lidar point cloud data for a given task and frame number.
 
         Parameters:
             task_id: download point cloud for this particular task
@@ -1287,8 +1204,8 @@ class NucleusClient:
         Parameters:
             payload: Given request payload.
             route: Route for the request.
-            Requests command: ``requests.post``, ``requests.get``, or ``requests.delete``.
-            return_raw_response: return the request's response object entirely
+            requests_command: ``requests.post``, ``requests.get``, or ``requests.delete``.
+            return_raw_response: Whether to return the raw response object.
 
         Returns:
             Response payload as JSON dict or request object.
@@ -1315,14 +1232,13 @@ class NucleusClient:
 
     @staticmethod
     def valid_dirname(dirname) -> str:
-        """
-        Validate directory exists
-        Args:
-            dirname: Path of directory
+        """Validates that a directory exists.
+
+        Parameters:
+            dirname: Path of directory.
 
         Returns:
-            Existing directory path
-
+            Existing directory path.
         """
         # ensures path ends with a slash
         _dirname = os.path.join(os.path.expanduser(dirname), "")

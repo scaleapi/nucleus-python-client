@@ -85,6 +85,10 @@ def client():
         raise RuntimeError(
             "Set at least one of api_key or limited_access_key (via flags or env)."
         )
+    if FLAGS.api_key and FLAGS.limited_access_key:
+        raise RuntimeError(
+            "Set only one of api_key or limited_access_key (via flags or env), not both."
+        )
     return nucleus.NucleusClient(
         api_key=FLAGS.api_key, limited_access_key=FLAGS.limited_access_key
     )

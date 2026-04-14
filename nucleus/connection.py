@@ -17,6 +17,12 @@ class Connection:
         self.api_key = api_key
         self.endpoint = endpoint
         self.extra_headers = extra_headers or {}
+        if self.api_key is not None and self.extra_headers.get(
+            "x-limited-access-key"
+        ):
+            raise ValueError(
+                "Cannot use both api key and limited access key simultaneously."
+            )
         # Require at least one auth mechanism: Basic (api_key) or limited access header
         if self.api_key is None and not self.extra_headers.get("x-limited-access-key"):
             raise NoAPIKey()
