@@ -23,7 +23,9 @@ LIMITED_ACCESS_KEY = os.environ.get("NUCLEUS_PYTEST_LIMITED_ACCESS_KEY") if "NUC
 @pytest.fixture(scope="session")
 def CLIENT():
     if API_KEY and LIMITED_ACCESS_KEY:
-        return nucleus.NucleusClient(api_key=API_KEY, limited_access_key=LIMITED_ACCESS_KEY)
+        raise RuntimeError(
+            "Set only one of NUCLEUS_PYTEST_API_KEY or NUCLEUS_PYTEST_LIMITED_ACCESS_KEY, not both."
+        )
     if API_KEY:
         return nucleus.NucleusClient(api_key=API_KEY)
     # LIMITED_ACCESS_KEY only

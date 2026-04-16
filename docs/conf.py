@@ -48,6 +48,7 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
+suppress_warnings = ["toc.not_included"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -75,7 +76,6 @@ autoapi_dirs = ["../nucleus"]
 autoapi_options = [
     "members",
     "no-undoc-members",
-    "inherited-members",
     "show-module-summary",
     "imported-members",
 ]
