@@ -9,25 +9,24 @@ from .polygon_utils import polygon_annotation_to_shape
 def polygon_area_filter(
     polygons: List[BoxOrPolygonAnnoOrPred], min_area: float, max_area: float
 ) -> List[BoxOrPolygonAnnoOrPred]:
-    filter_fn = (
-        lambda polygon: min_area
-        <= polygon_annotation_to_shape(polygon)
-        <= max_area
-    )
-    return list(filter(filter_fn, polygons))
+    def _in_area_range(polygon: BoxOrPolygonAnnoOrPred) -> bool:
+        return min_area <= polygon_annotation_to_shape(polygon) <= max_area
+
+    return list(filter(_in_area_range, polygons))
 
 
 def confidence_filter(
     predictions: PredictionList, min_confidence: float
 ) -> PredictionList:
+    def _meets_min_confidence(prediction) -> bool:
+        return not hasattr(prediction, "confidence") or (
+            prediction.confidence >= min_confidence
+        )
+
     predictions_copy = PredictionList()
-    filter_fn = (
-        lambda prediction: not hasattr(prediction, "confidence")
-        or prediction.confidence >= min_confidence
-    )
     for attr in predictions.__dict__:
         predictions_copy.__dict__[attr] = list(
-            filter(filter_fn, predictions.__dict__[attr])
+            filter(_meets_min_confidence, predictions.__dict__[attr])
         )
     return predictions_copy
 
