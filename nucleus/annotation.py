@@ -881,7 +881,9 @@ class SegmentationAnnotation(Annotation):
         """Check if the mask url is local and needs to be uploaded."""
         if is_local_path(self.mask_url):
             if not os.path.isfile(self.mask_url):
-                raise FileNotFoundError(f"Mask file {self.mask_url} does not exist.")
+                raise FileNotFoundError(
+                    f"Mask file {self.mask_url} does not exist."
+                )
             return True
         return False
 
