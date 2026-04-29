@@ -182,14 +182,13 @@ async def _post_form_data(
     async with UPLOAD_SEMAPHORE:
         for sleep_time in RetryStrategy.sleep_times() + [-1]:
             with request as form:
+                api_key = getattr(client, "api_key", None)
                 async with session.post(
                     endpoint,
                     data=form,
                     auth=(
-                        (lambda k: aiohttp.BasicAuth(str(k), ""))(
-                            getattr(client, "api_key", None)
-                        )
-                        if getattr(client, "api_key", None) is not None
+                        aiohttp.BasicAuth(str(api_key), "")
+                        if api_key is not None
                         else None
                     ),
                     headers=getattr(client, "extra_headers", None),
@@ -228,13 +227,12 @@ async def _make_request(
 
     async with UPLOAD_SEMAPHORE:
         for sleep_time in RetryStrategy.sleep_times() + [-1]:
+            api_key = getattr(client, "api_key", None)
             async with session.get(
                 endpoint,
                 auth=(
-                    (lambda k: aiohttp.BasicAuth(str(k), ""))(
-                        getattr(client, "api_key", None)
-                    )
-                    if getattr(client, "api_key", None) is not None
+                    aiohttp.BasicAuth(str(api_key), "")
+                    if api_key is not None
                     else None
                 ),
                 headers=getattr(client, "extra_headers", None),
