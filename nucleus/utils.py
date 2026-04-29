@@ -362,6 +362,7 @@ def serialize_and_write(
 
 def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
     # TODO optimize this further to deal with truly huge files and flaky internet connection.
+    # pylint: disable-next=missing-timeout
     upload_response = requests.put(
         presigned_url,
         file_pointer,
