@@ -5,6 +5,32 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.0) - 2026-04-29
+
+### Removed
+- Dropped support for Python 3.7, 3.8, and 3.9. The minimum supported Python version is now **3.10**.
+
+### Changed
+- `DatasetItem.reference_id` is now typed `Optional[str]` (defaulting to `None`) instead of `str` with a `"DUMMY_VALUE"` sentinel. The field is still required at runtime: `__post_init__` now asserts `reference_id is not None`. This matches the existing docstring (already documented as `Optional[str]`) and removes the magic sentinel.
+- `nucleus/async_utils.py` now passes `aiohttp.ClientTimeout(total=DEFAULT_NETWORK_TIMEOUT_SEC)` to `session.post`/`session.get` instead of a bare integer (no behavioral change; aligns with the typed `aiohttp` API).
+- `NucleusClient.list_autotags` now always returns a `list` (`List[dict]`) regardless of the response shape, matching its declared return type.
+
+### Fixed
+- All `mypy --ignore-missing-imports nucleus` errors and notes resolved (zero issues across all source files):
+  - `nucleus/evaluation_match.py`: widen `infer_confusion_category` parameters to `Optional[str]`.
+  - `nucleus/annotation.py`: default `TYPE_KEY` lookup to `""`; make `Segment.index` `Optional[int]`; type `Segment.to_payload`'s `payload` as `Dict[str, Any]`.
+  - `nucleus/prediction.py`: default `TYPE_KEY` lookup to `""`.
+  - `nucleus/camera_params.py`: make `camera_model`, `k1`–`k4`, `p1`, `p2` `Optional[...]` to match `from_json`.
+  - `nucleus/metrics/segmentation_utils.py` & `segmentation_metrics.py`: replace `np.float_` (removed in NumPy 2.x) with `np.float64`; use `shape[-1]` to satisfy NumPy stub typing.
+  - `nucleus/test_launch_integration.py`: use `Image.Image` (the class) instead of `Image` (the module) in return annotations.
+  - `nucleus/dataset.py`: default `dataset_item_jsons` to `[]` so the comprehension always iterates.
+  - `nucleus/scene.py`: annotate `Frame.__init__` and `VideoScene.info` so their bodies are type-checked.
+
+### Tooling / CI
+- Cleaned up several pylint findings across the codebase (`E0606`, `W3101`, `R1737`, `R1728`, `C3001`, `C3002`, `W0719`).
+- Updated pylint disables (`+R0913`, `-R0201`).
+- Re-applied `black` formatting after the lint pass.
+
 ## [0.17.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.14) - 2026-04-14
 
 ### Changed
