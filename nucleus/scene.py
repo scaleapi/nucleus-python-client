@@ -46,7 +46,7 @@ class Frame:
     <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: DatasetItem) -> None:
         self.items: Dict[str, DatasetItem] = {}
         for key, value in kwargs.items():
             assert isinstance(key, str), "All keys must be names of sensors"
@@ -621,7 +621,7 @@ class VideoScene(ABC):
             ), "Cannot add item to a video without items"
         return self.items
 
-    def info(self):
+    def info(self) -> Dict[str, Any]:
         """Fetches information about the video scene.
 
         Returns:

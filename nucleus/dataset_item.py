@@ -117,9 +117,7 @@ class DatasetItem:  # pylint: disable=R0902
     """
 
     image_location: Optional[str] = None
-    reference_id: str = (
-        "DUMMY_VALUE"  # preserve argument ordering for backwards compatibility
-    )
+    reference_id: Optional[str] = None
     metadata: Optional[dict] = None
     pointcloud_location: Optional[str] = None
     embedding_info: Optional[DatasetItemEmbeddingInfo] = None
@@ -127,7 +125,7 @@ class DatasetItem:  # pylint: disable=R0902
     height: Optional[int] = None
 
     def __post_init__(self):
-        assert self.reference_id != "DUMMY_VALUE", "reference_id is required."
+        assert self.reference_id is not None, "reference_id is required."
         assert bool(self.image_location) != bool(
             self.pointcloud_location
         ), "Must specify exactly one of the image_location or pointcloud_location parameters"
@@ -178,7 +176,7 @@ class DatasetItem:  # pylint: disable=R0902
         return cls(
             image_location=image_url,
             pointcloud_location=pointcloud_url,
-            reference_id=payload.get(REFERENCE_ID_KEY, None),
+            reference_id=payload.get(REFERENCE_ID_KEY),
             metadata=payload.get(METADATA_KEY, {}),
         )
 

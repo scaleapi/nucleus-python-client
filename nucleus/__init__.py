@@ -1023,7 +1023,11 @@ class NucleusClient:
             f"{dataset_id}/list_autotags",
             requests_command=requests.get,
         )
-        return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
+        if isinstance(response, dict) and AUTOTAGS_KEY in response:
+            return list(response[AUTOTAGS_KEY])
+        if isinstance(response, list):
+            return list(response)
+        return []
 
     def delete_autotag(self, autotag_id: str) -> dict:
         # TODO: migrate to Dataset method (use autotag name, not id) and deprecate

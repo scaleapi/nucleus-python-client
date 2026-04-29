@@ -331,7 +331,7 @@ class Dataset:
             if e.status_code == 503:
                 e.message += "\nThe server timed out while trying to load your items. Please try iterating over dataset.items_generator() instead."
             raise e
-        dataset_item_jsons = response.get(DATASET_ITEMS_KEY, None)
+        dataset_item_jsons = response.get(DATASET_ITEMS_KEY, [])
 
         return [
             DatasetItem.from_json(item_json)

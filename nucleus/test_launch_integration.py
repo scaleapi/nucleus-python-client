@@ -182,7 +182,7 @@ def visualize_box_launch_bundle(
     model: Optional[Any] = None,
     show_image: bool = False,
     max_annotations: int = 5,
-) -> Image:
+) -> Image.Image:
     """
     Run this function locally to visualize what your Launch bundle will do on a local image
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
@@ -256,7 +256,7 @@ def visualize_line_launch_bundle(
     model: Optional[Any] = None,
     show_image: bool = False,
     max_annotations: int = 5,
-) -> Image:
+) -> Image.Image:
     """
     Run this function locally to visualize what your Launch bundle will do on a local image
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check
@@ -304,7 +304,7 @@ def visualize_polygon_launch_bundle(
     model: Optional[Any] = None,
     show_image: bool = False,
     max_annotations: int = 5,
-) -> Image:
+) -> Image.Image:
     """
     Run this function locally to visualize what your Launch bundle will do on a local image
     Intended to verify that your Launch bundle returns annotations in the correct format, as well as sanity check

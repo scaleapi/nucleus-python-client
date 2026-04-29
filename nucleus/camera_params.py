@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .annotation import Point3D
 from .constants import (
@@ -56,6 +56,8 @@ class CameraParams:
         fy (float): Focal length in y direction (in pixels).
         cx (float): Principal point x value.
         cy (float): Principal point y value.
+        camera_model (Optional[str]): Distortion model name when present.
+        k1, k2, k3, k4, p1, p2 (Optional[float]): Distortion coefficients when present.
     """
 
     position: Point3D
@@ -64,13 +66,13 @@ class CameraParams:
     fy: float
     cx: float
     cy: float
-    camera_model: str
-    k1: float
-    k2: float
-    k3: float
-    k4: float
-    p1: float
-    p2: float
+    camera_model: Optional[str] = None
+    k1: Optional[float] = None
+    k2: Optional[float] = None
+    k3: Optional[float] = None
+    k4: Optional[float] = None
+    p1: Optional[float] = None
+    p2: Optional[float] = None
 
     def __post_init__(self):
         if self.camera_model is not None:

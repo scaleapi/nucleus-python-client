@@ -164,7 +164,7 @@ def non_max_suppress_confusion(confusion: "np.ndarray", iou_threshold):
     # -- move valid confusions over
     valid_confusion = confusion > 0
     valid_row, valid_col = np.where(confusion > 0)
-    flat_idxs = valid_col + valid_row * non_max_suppressed.shape[1]
+    flat_idxs = valid_col + valid_row * non_max_suppressed.shape[-1]
     non_max_suppressed.put(flat_idxs, confusion[valid_confusion])
     # --
     assert original_count == non_max_suppressed.sum()
@@ -279,7 +279,7 @@ def setup_iou_thresholds(iou_thresholds: Union[Sequence[float], str] = "coco"):
 
     supported_iou_setups = {"coco"}
     if isinstance(iou_thresholds, (list, np.ndarray)):
-        return np.array(iou_thresholds, np.float_)
+        return np.array(iou_thresholds, np.float64)
     elif isinstance(iou_thresholds, str):
         if iou_thresholds in supported_iou_setups:
             return np.arange(0.5, 1.0, 0.05)

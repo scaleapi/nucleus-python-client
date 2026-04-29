@@ -192,7 +192,9 @@ async def _post_form_data(
                         else None
                     ),
                     headers=getattr(client, "extra_headers", None),
-                    timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+                    timeout=aiohttp.ClientTimeout(
+                        total=DEFAULT_NETWORK_TIMEOUT_SEC
+                    ),
                 ) as response:
                     data = await _parse_async_response(
                         endpoint, session, response, sleep_time
@@ -236,7 +238,9 @@ async def _make_request(
                     else None
                 ),
                 headers=getattr(client, "extra_headers", None),
-                timeout=DEFAULT_NETWORK_TIMEOUT_SEC,
+                timeout=aiohttp.ClientTimeout(
+                    total=DEFAULT_NETWORK_TIMEOUT_SEC
+                ),
             ) as response:
                 data = await _parse_async_response(
                     endpoint, session, response, sleep_time
