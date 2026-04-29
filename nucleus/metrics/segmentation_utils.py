@@ -69,7 +69,7 @@ def max_iou_match_from_confusion(confusion):
     import numpy as np
     from scipy.optimize import linear_sum_assignment
 
-    iou = np.zeros(confusion.shape, dtype=np.float)
+    iou = np.zeros(confusion.shape, dtype=np.float64)
     with np.errstate(divide="ignore", invalid="ignore"):
         for i in range(confusion.shape[0]):
             for j in range(confusion.shape[1]):
