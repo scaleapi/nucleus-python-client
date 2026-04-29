@@ -443,8 +443,7 @@ class Slice:
             chip=use_mirrored_images,
         )
         for data in json_generator:
-            for ia in convert_export_payload([data], has_predictions=False):
-                yield ia
+            yield from convert_export_payload([data], has_predictions=False)
 
     def items_and_annotations(
         self,
@@ -567,8 +566,7 @@ class Slice:
             page_size=100000,
         )
         for data in json_generator:
-            for ip in convert_export_payload([data], has_predictions=True):
-                yield ip
+            yield from convert_export_payload([data], has_predictions=True)
 
     def export_scale_task_info(self):
         """Fetches info for all linked Scale tasks of items/scenes in the slice.

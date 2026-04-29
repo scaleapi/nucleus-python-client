@@ -431,8 +431,7 @@ def paginate_generator(
                 e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page_size."
             raise e
         next_token = response[NEXT_TOKEN_KEY]
-        for json_value in response[result_key]:
-            yield json_value
+        yield from response[result_key]
         if not next_token:
             break
 

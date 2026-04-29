@@ -1635,8 +1635,7 @@ class Dataset:
             onlyMostRecentTask=only_most_recent_tasks,
         )
 
-        for data in json_generator:
-            yield data
+        yield from json_generator
 
     def items_and_annotation_generator(
         self,
@@ -1681,8 +1680,7 @@ class Dataset:
             onlyMostRecentTask=only_most_recent_tasks,
         )
         for data in json_generator:
-            for ia in convert_export_payload([data], has_predictions=False):
-                yield ia
+            yield from convert_export_payload([data], has_predictions=False)
 
     def items_and_annotation_chip_generator(
         self,
@@ -1744,11 +1742,9 @@ class Dataset:
             ]
             if num_processes:
                 with Pool(num_processes) as pool:
-                    for chip_result in pool.imap(process_chip, chip_args):
-                        yield chip_result
+                    yield from pool.imap(process_chip, chip_args)
             else:
-                for chip_arg in chip_args:
-                    yield process_chip(chip_arg)
+                yield from map(process_chip, chip_args)
 
     def export_embeddings(
         self,
