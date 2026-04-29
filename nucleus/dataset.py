@@ -688,7 +688,7 @@ class Dataset:
             check_items_have_dimensions(dataset_items)
 
         if dataset_items and (lidar_scenes or video_scenes):
-            raise Exception(
+            raise ValueError(
                 "You must append either DatasetItems or Scenes to the dataset."
             )
         if lidar_scenes:
@@ -749,7 +749,7 @@ class Dataset:
     ) -> Union[dict, AsyncJob]:
         # TODO: make private in favor of Dataset.append invocation
         if not self.is_scene:
-            raise Exception(
+            raise ValueError(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
                 "In order to be able to add scenes, please create another dataset with "
                 "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
@@ -793,7 +793,7 @@ class Dataset:
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
         if not self.is_scene:
-            raise Exception(
+            raise ValueError(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
                 "In order to be able to add scenes, please create another dataset with "
                 "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
@@ -997,7 +997,7 @@ class Dataset:
             and not annotation_ids
             and not prediction_ids
         ):
-            raise Exception("Must provide at least one list of internal IDs")
+            raise ValueError("Must provide at least one list of internal IDs")
         payload = {
             NAME_KEY: name,
             DATASET_ITEM_IDS_KEY: (
@@ -2221,7 +2221,7 @@ class Dataset:
             UploadResponse
         """
         if self.is_scene:
-            raise Exception(
+            raise ValueError(
                 "Your dataset is a scene dataset and does not support the upload of single dataset items. "
                 "In order to be able to add dataset items, please create another dataset with "
                 "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
@@ -2484,7 +2484,7 @@ class Dataset:
                 len(items) > GLOB_SIZE_THRESHOLD_CHECK
                 and not skip_size_warning
             ):
-                raise Exception(
+                raise ValueError(
                     f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
                     f" set skip_size_warning=True when calling this function."
                 )

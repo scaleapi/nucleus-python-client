@@ -257,6 +257,6 @@ def check_items_have_dimensions(dataset_items: Sequence[DatasetItem]):
         has_width = getattr(item, "width")
         has_height = getattr(item, "height")
         if not (has_width and has_height):
-            raise Exception(
+            raise ValueError(
                 f"When using privacy mode, all items require a width and height. Missing for item: '{item.reference_id}'"
             )

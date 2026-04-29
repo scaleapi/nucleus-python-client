@@ -848,7 +848,7 @@ class SegmentationAnnotation(Annotation):
 
     def __post_init__(self):
         if not self.mask_url:
-            raise Exception("You must specify a mask_url.")
+            raise ValueError("You must specify a mask_url.")
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -881,7 +881,7 @@ class SegmentationAnnotation(Annotation):
         """Check if the mask url is local and needs to be uploaded."""
         if is_local_path(self.mask_url):
             if not os.path.isfile(self.mask_url):
-                raise Exception(f"Mask file {self.mask_url} does not exist.")
+                raise FileNotFoundError(f"Mask file {self.mask_url} does not exist.")
             return True
         return False
 

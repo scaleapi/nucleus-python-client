@@ -1097,7 +1097,7 @@ class NucleusClient:
         )
         points = response.get(POINTS_KEY, None)
         if points is None or len(points) == 0:
-            raise Exception("Response has invalid payload")
+            raise RuntimeError("Response has invalid payload")
 
         sample_point = points[0]
         if I_KEY in sample_point.keys():
@@ -1139,7 +1139,7 @@ class NucleusClient:
             task_id = req.split("/")[1]  # task/<task id>/frame/1 => task_id
             points = data.get(POINTS_KEY, None)
             if points is None or len(points) == 0:
-                raise Exception("Response has invalid payload")
+                raise RuntimeError("Response has invalid payload")
 
             sample_point = points[0]
             if I_KEY in sample_point.keys():
