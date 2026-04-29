@@ -156,7 +156,7 @@ workflows:
       - test_client_installation:
           matrix:
             parameters:
-              python_version: ['3.10', '3.11']
+              python_version: ['3.10', '3.11', '3.12', '3.13', '3.14']
           context: Nucleus
   build_test_publish:
     jobs:
