@@ -444,10 +444,8 @@ class LidarScene(Scene):
 
         for frame in self.frames_dict.values():
             num_pointclouds = sum(
-                [
-                    int(item.type == DatasetItemType.POINTCLOUD)
-                    for item in frame.get_items()
-                ]
+                int(item.type == DatasetItemType.POINTCLOUD)
+                for item in frame.get_items()
             )
             assert (
                 num_pointclouds == 1

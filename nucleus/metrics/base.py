@@ -39,8 +39,8 @@ class ScalarResult(MetricResult):
     def aggregate(results: Iterable["ScalarResult"]) -> "ScalarResult":
         """Aggregates results using a weighted average."""
         results = list(filter(lambda x: x.weight != 0, results))
-        total_weight = sum([result.weight for result in results])
-        total_value = sum([result.value * result.weight for result in results])
+        total_weight = sum(result.weight for result in results)
+        total_value = sum(result.value * result.weight for result in results)
         value = total_value / max(total_weight, sys.float_info.epsilon)
         return ScalarResult(value, total_weight)
 
