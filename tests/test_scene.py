@@ -54,7 +54,6 @@ def dataset_non_scene(CLIENT):
 
 
 @pytest.fixture(scope="module")
-@pytest.mark.integration
 def scenes_fixture(dataset_scene_module):
     payload = TEST_LIDAR_SCENES
     scenes = [
