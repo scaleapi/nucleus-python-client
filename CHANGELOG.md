@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.0) - 2026-04-29
 
 ### Removed
-- Dropped support for Python 3.7, 3.8, and 3.9. The minimum supported Python version is now **3.10**.
+- Dropped support for Python 3.7, 3.8, and 3.9. The minimum supported Python version is now **3.10**, and the SDK now supports Python **3.10, 3.11, 3.12, 3.13, and 3.14**.
 
 ### Changed
 - `DatasetItem.reference_id` is now typed `Optional[str]` (defaulting to `None`) instead of `str` with a `"DUMMY_VALUE"` sentinel. The field is still required at runtime: `__post_init__` now asserts `reference_id is not None`. This matches the existing docstring (already documented as `Optional[str]`) and removes the magic sentinel.
@@ -27,9 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `nucleus/scene.py`: annotate `Frame.__init__` and `VideoScene.info` so their bodies are type-checked.
 
 ### Tooling / CI
+- Expanded CircleCI installation matrix from `[3.10, 3.11]` to `[3.10, 3.11, 3.12, 3.13, 3.14]`, so every supported Python version is exercised on every PR (build sdist, install with each extras combination, smoke-test `import nucleus`).
+- Fixed pytest 9 fixture-mark errors across the test suite (`tests/cli/conftest.py`, `tests/validate/conftest.py`, `tests/test_scene.py`, `tests/test_video_scene.py`); pytest 9 turns `@pytest.mark.*` on a fixture into a hard error.
 - Cleaned up several pylint findings across the codebase (`E0606`, `W3101`, `R1737`, `R1728`, `C3001`, `C3002`, `W0719`).
 - Updated pylint disables (`+R0913`, `-R0201`).
 - Re-applied `black` formatting after the lint pass.
+- Replaced removed NumPy alias `np.float` with `np.float64` in `nucleus/metrics/segmentation_utils.py` (in addition to the previously fixed `np.float_`).
 
 ## [0.17.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.14) - 2026-04-14
 
