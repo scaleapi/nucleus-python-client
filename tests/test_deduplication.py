@@ -1,7 +1,7 @@
 import pytest
 
 from nucleus import Dataset, DatasetItem, NucleusClient, VideoScene
-from nucleus.deduplication import DeduplicationResult
+from nucleus.deduplication import DeduplicationJob, DeduplicationResult
 from nucleus.errors import NucleusAPIError
 
 from .helpers import (
@@ -28,6 +28,28 @@ def test_deduplicate_by_ids_empty_list_raises_error():
     with pytest.raises(ValueError, match="dataset_item_ids must be non-empty"):
         fake_dataset.deduplicate_by_ids(
             threshold=DEDUP_DEFAULT_TEST_THRESHOLD, dataset_item_ids=[]
+        )
+
+
+def test_deduplicate_async_empty_reference_ids_raises_error():
+    """Async mode performs the same client-side validation as sync mode and
+    must raise before issuing any HTTP request."""
+    fake_dataset = Dataset("fake", NucleusClient("fake"))
+    with pytest.raises(ValueError, match="reference_ids cannot be empty"):
+        fake_dataset.deduplicate(
+            threshold=DEDUP_DEFAULT_TEST_THRESHOLD,
+            reference_ids=[],
+            asynchronous=True,
+        )
+
+
+def test_deduplicate_by_ids_async_empty_list_raises_error():
+    fake_dataset = Dataset("fake", NucleusClient("fake"))
+    with pytest.raises(ValueError, match="dataset_item_ids must be non-empty"):
+        fake_dataset.deduplicate_by_ids(
+            threshold=DEDUP_DEFAULT_TEST_THRESHOLD,
+            dataset_item_ids=[],
+            asynchronous=True,
         )
 
 
@@ -449,3 +471,114 @@ def test_deduplicate_distinct_images_all_unique(dataset_image_sync):
 
     # With threshold=0 (exact match only), all distinct images should be unique
     assert result.stats.deduplicated_count == result.stats.original_count
+
+
+# ---------------------------------------------------------------------------
+# Async-mode tests
+#
+# These exercise the `asynchronous=True` code path: the SDK kicks off a
+# Temporal-backed dedup job on the server, returns a `DeduplicationJob`, and
+# the caller polls/awaits via `job.result()`. The result payload should match
+# the sync flow for the same inputs.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+def test_deduplicate_async_returns_job_and_result(dataset_image_sync):
+    """`asynchronous=True` returns a DeduplicationJob whose `.result()` blocks
+    until the workflow completes and yields a DeduplicationResult equivalent
+    to the sync output for the same inputs."""
+    sync_result = dataset_image_sync.deduplicate(
+        threshold=DEDUP_DEFAULT_TEST_THRESHOLD
+    )
+
+    job = dataset_image_sync.deduplicate(
+        threshold=DEDUP_DEFAULT_TEST_THRESHOLD, asynchronous=True
+    )
+    assert isinstance(job, DeduplicationJob)
+    assert (
+        job.job_type
+    )  # populated by AsyncJob.from_json from the server response
+
+    async_result = job.result()
+    assert isinstance(async_result, DeduplicationResult)
+    assert async_result.stats.threshold == DEDUP_DEFAULT_TEST_THRESHOLD
+    assert (
+        async_result.stats.original_count == sync_result.stats.original_count
+    )
+    assert (
+        async_result.stats.deduplicated_count
+        == sync_result.stats.deduplicated_count
+    )
+    assert set(async_result.unique_reference_ids) == set(
+        sync_result.unique_reference_ids
+    )
+
+
+@pytest.mark.integration
+def test_deduplicate_async_with_reference_ids(dataset_image_sync):
+    """Async mode respects an explicit `reference_ids` scope just like sync."""
+    reference_ids = [item.reference_id for item in TEST_DATASET_ITEMS[:2]]
+
+    job = dataset_image_sync.deduplicate(
+        threshold=DEDUP_DEFAULT_TEST_THRESHOLD,
+        reference_ids=reference_ids,
+        asynchronous=True,
+    )
+    assert isinstance(job, DeduplicationJob)
+
+    result = job.result()
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(reference_ids)
+    assert len(result.unique_reference_ids) <= len(reference_ids)
+
+
+@pytest.mark.integration
+def test_deduplicate_by_ids_async(dataset_image_sync):
+    """Async `deduplicate_by_ids` parallels the sync entrypoint."""
+    initial_result = dataset_image_sync.deduplicate(
+        threshold=DEDUP_DEFAULT_TEST_THRESHOLD
+    )
+    item_ids = initial_result.unique_item_ids
+    assert len(item_ids) > 0
+
+    job = dataset_image_sync.deduplicate_by_ids(
+        threshold=DEDUP_DEFAULT_TEST_THRESHOLD,
+        dataset_item_ids=item_ids,
+        asynchronous=True,
+    )
+    assert isinstance(job, DeduplicationJob)
+
+    result = job.result()
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.original_count == len(item_ids)
+    assert result.unique_item_ids == initial_result.unique_item_ids
+
+
+@pytest.mark.integration
+def test_deduplicate_async_identifies_duplicates(dataset_with_duplicates):
+    """Sanity check: async mode produces the same dedup outcome as sync for a
+    dataset with known duplicates."""
+    job = dataset_with_duplicates.deduplicate(threshold=0, asynchronous=True)
+    assert isinstance(job, DeduplicationJob)
+
+    result = job.result()
+    assert result.stats.original_count == 3
+    # Same duplicate-detection logic regardless of transport.
+    assert result.stats.deduplicated_count == 2
+    assert len(result.unique_reference_ids) == 2
+
+
+@pytest.mark.integration
+def test_deduplicate_async_split_wait_and_fetch(dataset_image_sync):
+    """`result(wait_for_completion=False)` is a usable mode when the caller
+    has already blocked via `sleep_until_complete()`."""
+    job = dataset_image_sync.deduplicate(
+        threshold=DEDUP_DEFAULT_TEST_THRESHOLD, asynchronous=True
+    )
+    assert isinstance(job, DeduplicationJob)
+
+    job.sleep_until_complete(verbose_std_out=False)
+    result = job.result(wait_for_completion=False)
+    assert isinstance(result, DeduplicationResult)
+    assert result.stats.threshold == DEDUP_DEFAULT_TEST_THRESHOLD
