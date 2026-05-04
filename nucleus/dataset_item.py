@@ -100,7 +100,7 @@ class DatasetItem:  # pylint: disable=R0902
           camera intrinsics the metadata of your camera image items. Nucleus
           requires these intrinsics to create visualizations such as cuboid
           projections. Refer to our `guide to uploading 3D data
-          <https://nucleus.scale.com/docs/uploading-3d-data>`_ for more
+          <https://nucleus.scale.com/docs/uploading-3d-data>`__ for more
           info.
 
           Coordinate metadata may be provided to enable the Map Chart in the Nucleus Dataset charts page.
