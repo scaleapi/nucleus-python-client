@@ -5,6 +5,14 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.1) - 2026-05-05
+
+### Changed
+- `Dataset.deduplicate()` and `Dataset.deduplicate_by_ids()` now run asynchronously and return a `DeduplicationJob` instead of returning a `DeduplicationResult` directly. Call `job.result()` to wait for completion and retrieve the result.
+
+### Removed
+- Sync deduplication support for `Dataset.deduplicate()` and `Dataset.deduplicate_by_ids()`.
+
 ## [0.18.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.0) - 2026-04-29
 
 ### Removed

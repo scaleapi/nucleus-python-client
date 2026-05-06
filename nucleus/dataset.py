@@ -84,7 +84,7 @@ from .dataset_item import (
     check_items_have_dimensions,
 )
 from .dataset_item_uploader import DatasetItemUploader
-from .deduplication import DeduplicationResult, DeduplicationStats
+from .deduplication import DeduplicationJob
 from .deprecation_warning import deprecated
 from .errors import NotFoundError, NucleusAPIError
 from .job import CustomerJobTypes, jobs_status_overview
@@ -1016,7 +1016,7 @@ class Dataset:
         self,
         threshold: int,
         reference_ids: Optional[List[str]] = None,
-    ) -> DeduplicationResult:
+    ) -> DeduplicationJob:
         """Deduplicate images or frames using user-defined reference IDs.
 
         This method can deduplicate an entire dataset (when reference_ids is omitted)
@@ -1029,6 +1029,7 @@ class Dataset:
               not the scenes themselves. Frame reference IDs or dataset item IDs
               should be provided for scene datasets.
             - For very large datasets, this operation may take significant time.
+              This operation runs asynchronously to avoid HTTP timeouts.
 
         Parameters:
             threshold: Hamming distance threshold (0-64). Lower = stricter.
@@ -1038,7 +1039,9 @@ class Dataset:
                 Cannot be an empty list - use None for entire dataset.
 
         Returns:
-            DeduplicationResult with unique_reference_ids, unique_item_ids, and stats.
+            :class:`DeduplicationJob`: A background job. Call
+            ``job.result()`` to block and unpack the
+            :class:`DeduplicationResult`.
 
         Raises:
             ValueError: If reference_ids is an empty list (use None for entire dataset).
@@ -1058,23 +1061,15 @@ class Dataset:
             payload[REFERENCE_IDS_KEY] = reference_ids
 
         response = self._client.make_request(
-            payload, f"dataset/{self.id}/deduplicate"
+            payload, f"dataset/{self.id}/deduplicate_async"
         )
-        return DeduplicationResult(
-            unique_item_ids=response["unique_item_ids"],
-            unique_reference_ids=response["unique_reference_ids"],
-            stats=DeduplicationStats(
-                threshold=threshold,
-                original_count=response["stats"]["original_count"],
-                deduplicated_count=response["stats"]["deduplicated_count"],
-            ),
-        )
+        return DeduplicationJob.from_json(response, self._client)
 
     def deduplicate_by_ids(
         self,
         threshold: int,
         dataset_item_ids: List[str],
-    ) -> DeduplicationResult:
+    ) -> DeduplicationJob:
         """Deduplicate images or frames using internal Nucleus dataset item IDs.
 
         This method identifies items by internal Nucleus IDs (e.g., "di_abc123...")
@@ -1090,7 +1085,9 @@ class Dataset:
                 user-defined reference IDs. Must be non-empty.
 
         Returns:
-            DeduplicationResult with unique_item_ids, unique_reference_ids, and stats.
+            :class:`DeduplicationJob`: A background job. Call
+            ``job.result()`` to block and unpack the
+            :class:`DeduplicationResult`.
 
         Raises:
             ValueError: If dataset_item_ids is empty.
@@ -1109,18 +1106,11 @@ class Dataset:
             DATASET_ITEM_IDS_KEY: dataset_item_ids,
             THRESHOLD_KEY: threshold,
         }
+
         response = self._client.make_request(
-            payload, f"dataset/{self.id}/deduplicate"
+            payload, f"dataset/{self.id}/deduplicate_async"
         )
-        return DeduplicationResult(
-            unique_item_ids=response["unique_item_ids"],
-            unique_reference_ids=response["unique_reference_ids"],
-            stats=DeduplicationStats(
-                threshold=threshold,
-                original_count=response["stats"]["original_count"],
-                deduplicated_count=response["stats"]["deduplicated_count"],
-            ),
-        )
+        return DeduplicationJob.from_json(response, self._client)
 
     def build_slice(
         self,

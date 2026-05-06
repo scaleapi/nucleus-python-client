@@ -43,7 +43,7 @@ class Frame:
           pointcloud and any number of images (e.g. from different angles).
 
     Refer to our `guide to uploading 3D data
-    <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!
+    <https://nucleus.scale.com/docs/uploading-3d-data>`__ for more info!
     """
 
     def __init__(self, **kwargs: DatasetItem) -> None:
@@ -419,7 +419,7 @@ class LidarScene(Scene):
             `{ "context_attachments": [ { "attachment": 'https://example.com/1' }, { "attachment": 'https://example.com/2' }, ... ] }`.
 
     Refer to our `guide to uploading 3D data
-    <https://docs.nucleus.scale.com/docs/uploading-3d-data>`_ for more info!
+    <https://nucleus.scale.com/docs/uploading-3d-data>`__ for more info!
     """
 
     def __repr__(self) -> str:
