@@ -42,10 +42,8 @@ class DeduplicationJob(AsyncJob):
     """Handle to a long-running deduplication job.
 
     Returned from :meth:`Dataset.deduplicate` and
-    :meth:`Dataset.deduplicate_by_ids` when called with ``asynchronous=True``.
-    Use this when your dataset (or item list) is large enough that the
-    synchronous request would risk timing out — the job runs in the background
-    and you collect the result with :meth:`result`.
+    :meth:`Dataset.deduplicate_by_ids`. Deduplication always runs in the
+    background; collect the completed output with :meth:`result`.
 
     Inherits all the standard :class:`AsyncJob` controls
     (:meth:`status`, :meth:`errors`, :meth:`sleep_until_complete`).
@@ -57,14 +55,17 @@ class DeduplicationJob(AsyncJob):
         client = nucleus.NucleusClient(YOUR_API_KEY)
         dataset = client.get_dataset("ds_xxx")
 
-        # Sync — fine for small datasets, returns the result inline.
-        result = dataset.deduplicate(threshold=10)
-
-        # Async — recommended for large datasets.
-        job = dataset.deduplicate(threshold=10, asynchronous=True)
+        job = dataset.deduplicate(threshold=10)
         result = job.result()              # blocks until done
         print(result.stats.deduplicated_count)
         print(result.unique_reference_ids)
+
+        # You can also deduplicate a known set of internal dataset item IDs.
+        job = dataset.deduplicate_by_ids(
+            threshold=10,
+            dataset_item_ids=["di_xxx", "di_yyy"],
+        )
+        result = job.result()
 
         # Or split the wait and fetch yourself.
         job.sleep_until_complete()
