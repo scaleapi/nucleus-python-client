@@ -176,7 +176,9 @@ class AnnotationUploader:
         """
 
         def fn():
-            request_json = construct_segmentation_payload(segmentations, update)
+            request_json = construct_segmentation_payload(
+                segmentations, update
+            )
             form_data = [
                 FileFormField(
                     name=SERIALIZED_REQUEST_KEY,

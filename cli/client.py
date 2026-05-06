@@ -19,7 +19,9 @@ def init_client():
                 "Please set only one."
             )
         if api_key or limited_access_key:
-            client = nucleus.NucleusClient(api_key=api_key, limited_access_key=limited_access_key)
+            client = nucleus.NucleusClient(
+                api_key=api_key, limited_access_key=limited_access_key
+            )
         else:
             raise RuntimeError(
                 "Set NUCLEUS_API_KEY or NUCLEUS_LIMITED_ACCESS_KEY"

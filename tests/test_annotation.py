@@ -193,7 +193,9 @@ def test_polygon_gt_upload(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]["polygon"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "polygon"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
@@ -448,7 +450,9 @@ def test_polygon_gt_upload_update(dataset):
     annotation_update_params["reference_id"] = TEST_POLYGON_ANNOTATIONS[0][
         "reference_id"
     ]
-    annotation_update_params["task_id"] = TEST_POLYGON_ANNOTATIONS[0]["task_id"]
+    annotation_update_params["task_id"] = TEST_POLYGON_ANNOTATIONS[0][
+        "task_id"
+    ]
 
     annotation_update = PolygonAnnotation.from_json(annotation_update_params)
     response = dataset.annotate(annotations=[annotation_update], update=True)
@@ -456,7 +460,9 @@ def test_polygon_gt_upload_update(dataset):
     assert response["annotations_processed"] == 1
     assert response["annotations_ignored"] == 0
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]["polygon"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "polygon"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
@@ -479,7 +485,9 @@ def test_polygon_gt_upload_ignore(dataset):
     annotation_update_params["reference_id"] = TEST_POLYGON_ANNOTATIONS[0][
         "reference_id"
     ]
-    annotation_update_params["task_id"] = TEST_POLYGON_ANNOTATIONS[0]["task_id"]
+    annotation_update_params["task_id"] = TEST_POLYGON_ANNOTATIONS[0][
+        "task_id"
+    ]
 
     annotation_update = PolygonAnnotation.from_json(annotation_update_params)
     # Default behavior is ignore.
@@ -488,7 +496,9 @@ def test_polygon_gt_upload_ignore(dataset):
     assert response["annotations_processed"] == 0
     assert response["annotations_ignored"] == 1
 
-    response = dataset.refloc(annotation.reference_id)["annotations"]["polygon"]
+    response = dataset.refloc(annotation.reference_id)["annotations"][
+        "polygon"
+    ]
     assert len(response) == 1
     response_annotation = response[0]
     assert_polygon_annotation_matches_dict(
@@ -567,9 +577,9 @@ def test_default_category_gt_upload_update(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_DEFAULT_CATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = (
-        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
-    )
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
 
     annotation_update = CategoryAnnotation.from_json(annotation_update_params)
     response = dataset.annotate(annotations=[annotation_update], update=True)
@@ -597,9 +607,9 @@ def test_default_category_gt_upload_ignore(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_DEFAULT_CATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = (
-        TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
-    )
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_CATEGORY_ANNOTATIONS[0]["reference_id"]
 
     annotation_update = CategoryAnnotation.from_json(annotation_update_params)
     # Default behavior is ignore.
@@ -693,9 +703,9 @@ def test_default_multicategory_gt_upload_update(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = (
-        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
-    )
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
 
     annotation_update = MultiCategoryAnnotation.from_json(
         annotation_update_params
@@ -725,9 +735,9 @@ def test_default_multicategory_gt_upload_ignore(dataset):
 
     # Copy so we don't modify the original.
     annotation_update_params = dict(TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[1])
-    annotation_update_params["reference_id"] = (
-        TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
-    )
+    annotation_update_params[
+        "reference_id"
+    ] = TEST_DEFAULT_MULTICATEGORY_ANNOTATIONS[0]["reference_id"]
 
     annotation_update = MultiCategoryAnnotation.from_json(
         annotation_update_params

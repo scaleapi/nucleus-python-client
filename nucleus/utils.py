@@ -362,6 +362,7 @@ def serialize_and_write(
 
 def upload_to_presigned_url(presigned_url: str, file_pointer: IO):
     # TODO optimize this further to deal with truly huge files and flaky internet connection.
+    # pylint: disable-next=missing-timeout
     upload_response = requests.put(
         presigned_url,
         file_pointer,
@@ -430,8 +431,7 @@ def paginate_generator(
                 e.message += f"/n Your request timed out while trying to get a page size of {page_size}. Try lowering the page_size."
             raise e
         next_token = response[NEXT_TOKEN_KEY]
-        for json_value in response[result_key]:
-            yield json_value
+        yield from response[result_key]
         if not next_token:
             break
 

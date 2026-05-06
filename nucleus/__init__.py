@@ -244,8 +244,12 @@ class NucleusClient:
         self.extra_headers: Dict[str, str] = {}
         if limited_access_key:
             self.extra_headers["x-limited-access-key"] = limited_access_key
-        self.connection = Connection(self.api_key, self.endpoint, extra_headers=self.extra_headers)
-        self.validate = Validate(self.api_key, self.endpoint, extra_headers=self.extra_headers)
+        self.connection = Connection(
+            self.api_key, self.endpoint, extra_headers=self.extra_headers
+        )
+        self.validate = Validate(
+            self.api_key, self.endpoint, extra_headers=self.extra_headers
+        )
 
     def __repr__(self):
         return f"NucleusClient(api_key='{self.api_key}', use_notebook={self._use_notebook}, endpoint='{self.endpoint}')"
@@ -1019,7 +1023,11 @@ class NucleusClient:
             f"{dataset_id}/list_autotags",
             requests_command=requests.get,
         )
-        return response[AUTOTAGS_KEY] if AUTOTAGS_KEY in response else response
+        if isinstance(response, dict) and AUTOTAGS_KEY in response:
+            return list(response[AUTOTAGS_KEY])
+        if isinstance(response, list):
+            return list(response)
+        return []
 
     def delete_autotag(self, autotag_id: str) -> dict:
         # TODO: migrate to Dataset method (use autotag name, not id) and deprecate
@@ -1093,7 +1101,7 @@ class NucleusClient:
         )
         points = response.get(POINTS_KEY, None)
         if points is None or len(points) == 0:
-            raise Exception("Response has invalid payload")
+            raise RuntimeError("Response has invalid payload")
 
         sample_point = points[0]
         if I_KEY in sample_point.keys():
@@ -1135,7 +1143,7 @@ class NucleusClient:
             task_id = req.split("/")[1]  # task/<task id>/frame/1 => task_id
             points = data.get(POINTS_KEY, None)
             if points is None or len(points) == 0:
-                raise Exception("Response has invalid payload")
+                raise RuntimeError("Response has invalid payload")
 
             sample_point = points[0]
             if I_KEY in sample_point.keys():
@@ -1252,9 +1260,7 @@ class NucleusClient:
 
     def _set_api_key(self, api_key):
         """Fetch API key from environment variable NUCLEUS_API_KEY if not set"""
-        api_key = (
-            api_key if api_key else os.environ.get("NUCLEUS_API_KEY")
-        )
+        api_key = api_key if api_key else os.environ.get("NUCLEUS_API_KEY")
         if api_key is None:
             raise NoAPIKey()
 

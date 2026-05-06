@@ -143,6 +143,10 @@ def compute_outer_iou(
         (cuboid_corners_0.shape[0], cuboid_corners_1.shape[0]),
         dtype=np.float32,
     )
+    distance_mask = np.zeros(
+        (cuboid_corners_0.shape[0], cuboid_corners_1.shape[0]),
+        dtype=bool,
+    )
 
     if cuboid_corners_0.shape[0] != 0 and cuboid_corners_1.shape[0] != 0:
         distance_mask = (

@@ -2,7 +2,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
@@ -71,7 +71,7 @@ class Annotation:
             CATEGORY_TYPE: CategoryAnnotation,
             MULTICATEGORY_TYPE: MultiCategoryAnnotation,
         }
-        type_key = payload.get(TYPE_KEY, None)
+        type_key = payload.get(TYPE_KEY, "")
         AnnotationCls = type_key_to_type.get(type_key, SegmentationAnnotation)
         return AnnotationCls.from_json(payload)
 
@@ -749,7 +749,8 @@ class Segment:
     Parameters:
         label (str): The label name of the class for the class or instance
           represented by index in the associated mask.
-        index (int): The integer pixel value in the mask this mapping refers to.
+        index (Optional[int]): The integer pixel value in the mask this mapping
+          refers to, if present in the payload.
         metadata (Optional[Dict]): Arbitrary key/value dictionary of info to attach to this segment.
           Strings, floats and ints are supported best by querying and insights
           features within Nucleus. For more details see our `metadata guide
@@ -757,7 +758,7 @@ class Segment:
     """
 
     label: str
-    index: int
+    index: Optional[int] = None
     metadata: Optional[dict] = None
 
     @classmethod
@@ -769,7 +770,7 @@ class Segment:
         )
 
     def to_payload(self) -> dict:
-        payload = {
+        payload: Dict[str, Any] = {
             LABEL_KEY: self.label,
             INDEX_KEY: self.index,
         }
@@ -848,7 +849,7 @@ class SegmentationAnnotation(Annotation):
 
     def __post_init__(self):
         if not self.mask_url:
-            raise Exception("You must specify a mask_url.")
+            raise ValueError("You must specify a mask_url.")
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -881,7 +882,9 @@ class SegmentationAnnotation(Annotation):
         """Check if the mask url is local and needs to be uploaded."""
         if is_local_path(self.mask_url):
             if not os.path.isfile(self.mask_url):
-                raise Exception(f"Mask file {self.mask_url} does not exist.")
+                raise FileNotFoundError(
+                    f"Mask file {self.mask_url} does not exist."
+                )
             return True
         return False
 
@@ -1083,7 +1086,9 @@ class AnnotationList:
         default_factory=list
     )
     cuboid_annotations: List[CuboidAnnotation] = field(default_factory=list)
-    category_annotations: List[CategoryAnnotation] = field(default_factory=list)
+    category_annotations: List[CategoryAnnotation] = field(
+        default_factory=list
+    )
     multi_category_annotations: List[MultiCategoryAnnotation] = field(
         default_factory=list
     )

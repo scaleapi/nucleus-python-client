@@ -112,10 +112,9 @@ def predictions(model, validate_dataset, annotations):
 
 
 @pytest.fixture(scope="module")
-@pytest.mark.usefixtures(
-    "annotations"
-)  # Scenario test needs to have annotations in the slice
-def scenario_test(CLIENT, test_slice):
+def scenario_test(
+    CLIENT, test_slice, annotations
+):  # `annotations` must run first so the slice has annotations
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
     scenario_test = CLIENT.validate.create_scenario_test(
         name=test_name,

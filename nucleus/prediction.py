@@ -64,7 +64,7 @@ def from_json(payload: dict):
         CUBOID_TYPE: CuboidPrediction,
         CATEGORY_TYPE: CategoryPrediction,
     }
-    type_key = payload.get(TYPE_KEY, None)
+    type_key = payload.get(TYPE_KEY, "")
     PredictionCls = type_key_to_type.get(type_key, SegmentationPrediction)
     return PredictionCls.from_json(payload)
 

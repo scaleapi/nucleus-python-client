@@ -645,7 +645,7 @@ class SegmentationFWAVACC(SegmentationMaskMetric):
                 + confusion.sum(axis=0)
                 - np.diag(confusion)
             )
-            predicted_counts = confusion.sum(axis=0).astype(np.float_)
+            predicted_counts = confusion.sum(axis=0).astype(np.float64)
             predicted_counts.put(list(non_taxonomy_classes), np.nan)
             freq = predicted_counts / np.nansum(predicted_counts)
             iu.put(list(non_taxonomy_classes), np.nan)

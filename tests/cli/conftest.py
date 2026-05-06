@@ -10,9 +10,13 @@ NUCLEUS_PYTEST_API_KEY = os.environ.get("NUCLEUS_PYTEST_API_KEY")
 if NUCLEUS_PYTEST_API_KEY is not None:
     os.environ["NUCLEUS_API_KEY"] = NUCLEUS_PYTEST_API_KEY
 
-NUCLEUS_PYTEST_LIMITED_ACCESS_KEY = os.environ.get("NUCLEUS_PYTEST_LIMITED_ACCESS_KEY")
+NUCLEUS_PYTEST_LIMITED_ACCESS_KEY = os.environ.get(
+    "NUCLEUS_PYTEST_LIMITED_ACCESS_KEY"
+)
 if NUCLEUS_PYTEST_LIMITED_ACCESS_KEY is not None:
-    os.environ["NUCLEUS_PYTEST_LIMITED_ACCESS_KEY"] = NUCLEUS_PYTEST_LIMITED_ACCESS_KEY
+    os.environ[
+        "NUCLEUS_PYTEST_LIMITED_ACCESS_KEY"
+    ] = NUCLEUS_PYTEST_LIMITED_ACCESS_KEY
 
 
 @pytest.fixture
@@ -133,9 +137,6 @@ def predictions(model, populated_dataset, annotations):
 
 
 @pytest.fixture(scope="module")
-@pytest.mark.usefixtures(
-    "annotations"
-)  # Unit test needs to have annotations in the slice
 def scenario_test(CLIENT, test_slice, annotations, predictions):
     test_name = "scenario_test_" + get_uuid()  # use uuid to make unique
     scenario_test = CLIENT.validate.create_scenario_test(

@@ -41,7 +41,6 @@ def dataset_video_module(CLIENT):
 
 
 @pytest.fixture(scope="module")
-@pytest.mark.integration
 def video_scenes(dataset_video_module):
     payload = TEST_VIDEO_SCENES
     scenes = [

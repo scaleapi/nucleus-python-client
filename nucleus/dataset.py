@@ -331,10 +331,11 @@ class Dataset:
             if e.status_code == 503:
                 e.message += "\nThe server timed out while trying to load your items. Please try iterating over dataset.items_generator() instead."
             raise e
-        dataset_item_jsons = response.get(DATASET_ITEMS_KEY, None)
+        dataset_item_jsons = response.get(DATASET_ITEMS_KEY, [])
 
         return [
-            DatasetItem.from_json(item_json) for item_json in dataset_item_jsons
+            DatasetItem.from_json(item_json)
+            for item_json in dataset_item_jsons
         ]
 
     @property
@@ -687,7 +688,7 @@ class Dataset:
             check_items_have_dimensions(dataset_items)
 
         if dataset_items and (lidar_scenes or video_scenes):
-            raise Exception(
+            raise ValueError(
                 "You must append either DatasetItems or Scenes to the dataset."
             )
         if lidar_scenes:
@@ -701,7 +702,9 @@ class Dataset:
                 asynchronous
             ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
 
-            return self._append_video_scenes(video_scenes, update, asynchronous)
+            return self._append_video_scenes(
+                video_scenes, update, asynchronous
+            )
 
         if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
             print(
@@ -746,7 +749,7 @@ class Dataset:
     ) -> Union[dict, AsyncJob]:
         # TODO: make private in favor of Dataset.append invocation
         if not self.is_scene:
-            raise Exception(
+            raise ValueError(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
                 "In order to be able to add scenes, please create another dataset with "
                 "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
@@ -790,7 +793,7 @@ class Dataset:
         asynchronous: Optional[bool] = False,
     ) -> Union[dict, AsyncJob]:
         if not self.is_scene:
-            raise Exception(
+            raise ValueError(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
                 "In order to be able to add scenes, please create another dataset with "
                 "client.create_dataset(<dataset_name>, is_scene=True) or add the scenes to "
@@ -994,7 +997,7 @@ class Dataset:
             and not annotation_ids
             and not prediction_ids
         ):
-            raise Exception("Must provide at least one list of internal IDs")
+            raise ValueError("Must provide at least one list of internal IDs")
         payload = {
             NAME_KEY: name,
             DATASET_ITEM_IDS_KEY: (
@@ -1632,15 +1635,14 @@ class Dataset:
             onlyMostRecentTask=only_most_recent_tasks,
         )
 
-        for data in json_generator:
-            yield data
+        yield from json_generator
 
     def items_and_annotation_generator(
         self,
         query: Optional[str] = None,
         use_mirrored_images: bool = False,
         only_most_recent_tasks: bool = True,
-        page_size=10000
+        page_size=10000,
     ) -> Iterable[Dict[str, Union[DatasetItem, Dict[str, List[Annotation]]]]]:
         """Provides a generator of all DatasetItems and Annotations in the dataset.
 
@@ -1678,8 +1680,7 @@ class Dataset:
             onlyMostRecentTask=only_most_recent_tasks,
         )
         for data in json_generator:
-            for ia in convert_export_payload([data], has_predictions=False):
-                yield ia
+            yield from convert_export_payload([data], has_predictions=False)
 
     def items_and_annotation_chip_generator(
         self,
@@ -1741,11 +1742,9 @@ class Dataset:
             ]
             if num_processes:
                 with Pool(num_processes) as pool:
-                    for chip_result in pool.imap(process_chip, chip_args):
-                        yield chip_result
+                    yield from pool.imap(process_chip, chip_args)
             else:
-                for chip_arg in chip_args:
-                    yield process_chip(chip_arg)
+                yield from map(process_chip, chip_args)
 
     def export_embeddings(
         self,
@@ -2222,7 +2221,7 @@ class Dataset:
             UploadResponse
         """
         if self.is_scene:
-            raise Exception(
+            raise ValueError(
                 "Your dataset is a scene dataset and does not support the upload of single dataset items. "
                 "In order to be able to add dataset items, please create another dataset with "
                 "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
@@ -2481,8 +2480,11 @@ class Dataset:
         )
 
         if len(items) > 0:
-            if len(items) > GLOB_SIZE_THRESHOLD_CHECK and not skip_size_warning:
-                raise Exception(
+            if (
+                len(items) > GLOB_SIZE_THRESHOLD_CHECK
+                and not skip_size_warning
+            ):
+                raise ValueError(
                     f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
                     f" set skip_size_warning=True when calling this function."
                 )

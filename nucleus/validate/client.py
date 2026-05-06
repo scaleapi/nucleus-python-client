@@ -25,8 +25,15 @@ EVAL_FUNCTIONS_KEY = "eval_functions"
 class Validate:
     """Model CI Python Client extension."""
 
-    def __init__(self, api_key: Optional[str], endpoint: str, extra_headers: Optional[dict] = None):
-        self.connection = Connection(api_key, endpoint, extra_headers=extra_headers)
+    def __init__(
+        self,
+        api_key: Optional[str],
+        endpoint: str,
+        extra_headers: Optional[dict] = None,
+    ):
+        self.connection = Connection(
+            api_key, endpoint, extra_headers=extra_headers
+        )
 
     def __repr__(self):
         return f"Validate(connection='{self.connection}')"
