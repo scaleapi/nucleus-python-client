@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.18.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.1) - 2026-05-05
 
-### Tooling / CI
-- Added local Trivy scanning targets and usage docs for reproducing SG2.0 filesystem/image vulnerability scans, SARIF CI output, SBOM generation, and cleanup workflows.
+### Changed
+- `Dataset.deduplicate()` and `Dataset.deduplicate_by_ids()` now run asynchronously and return a `DeduplicationJob` instead of returning a `DeduplicationResult` directly. Call `job.result()` to wait for completion and retrieve the result.
+
+### Removed
+- Sync deduplication support for `Dataset.deduplicate()` and `Dataset.deduplicate_by_ids()`.
 
 ## [0.18.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.0) - 2026-04-29
 
