@@ -1,7 +1,23 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Sequence, cast
 
 from nucleus.async_job import AsyncJob, JobError
+
+REQUIRED_RESULT_FIELDS = ("unique_item_ids", "unique_reference_ids", "stats")
+REQUIRED_STATS_FIELDS = ("threshold", "original_count", "deduplicated_count")
+
+
+def _require_fields(
+    payload: Dict[str, Any], required_fields: Sequence[str], context: str
+) -> None:
+    missing_fields = [
+        field for field in required_fields if field not in payload
+    ]
+    if missing_fields:
+        missing_fields_message = ", ".join(missing_fields)
+        raise RuntimeError(
+            f"Deduplication job result missing {context} field(s): {missing_fields_message}"
+        )
 
 
 @dataclass
@@ -90,6 +106,8 @@ class DeduplicationJob(AsyncJob):
         Raises:
             JobError: If the job did not finish successfully (e.g. it was
                 cancelled or hit a server error).
+            RuntimeError: If the completed job response is missing expected
+                result fields.
         """
         if wait_for_completion:
             self.sleep_until_complete(verbose_std_out=False)
@@ -102,12 +120,14 @@ class DeduplicationJob(AsyncJob):
         # the `message` slot is a JSON dict in practice. Cast locally so
         # static checkers don't flag the dict accesses below.
         msg = cast(Dict[str, Any], status["message"] or {})
+        _require_fields(msg, REQUIRED_RESULT_FIELDS, "result")
         stats = cast(Dict[str, Any], msg.get("stats") or {})
+        _require_fields(stats, REQUIRED_STATS_FIELDS, "stats")
         return DeduplicationResult(
             unique_item_ids=msg["unique_item_ids"],
             unique_reference_ids=msg["unique_reference_ids"],
             stats=DeduplicationStats(
-                threshold=stats.get("threshold", 0),
+                threshold=stats["threshold"],
                 original_count=stats["original_count"],
                 deduplicated_count=stats["deduplicated_count"],
             ),
