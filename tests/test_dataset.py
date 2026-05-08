@@ -257,6 +257,41 @@ def test_dataset_slices(CLIENT, dataset):
     # TODO(gunnar): Test slice items -> Split up info!
 
 
+def test_dataset_tags(CLIENT, dataset):
+    # Fresh dataset should have no tags
+    assert dataset.get_tags() == []
+
+    # Add tags
+    updated = dataset.add_tags(["Labeled by: Scale", "production"])
+    assert "Labeled by: Scale" in updated
+    assert "production" in updated
+
+    # Info should include tags
+    info = dataset.info()
+    assert "Labeled by: Scale" in info.tags
+    assert "production" in info.tags
+
+    # Adding duplicate tags is idempotent
+    updated2 = dataset.add_tags(["production", "v2"])
+    assert "production" in updated2
+    assert "v2" in updated2
+
+    # Remove tags
+    remaining = dataset.remove_tags(["production"])
+    assert "production" not in remaining
+    assert "Labeled by: Scale" in remaining
+
+    # Removing non-existent tags is idempotent
+    remaining2 = dataset.remove_tags(["nonexistent"])
+    assert remaining2 == remaining
+
+    # String argument should raise TypeError
+    with pytest.raises(TypeError):
+        dataset.add_tags("not a list")
+    with pytest.raises(TypeError):
+        dataset.remove_tags("not a list")
+
+
 def test_dataset_append_local(CLIENT, dataset):
     ds_items_local_error = [
         DatasetItem(
