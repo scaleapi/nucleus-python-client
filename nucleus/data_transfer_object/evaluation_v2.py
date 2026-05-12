@@ -129,7 +129,7 @@ class EvaluationV2MatchExample(DictCompatibleModel):
     gt_canonical_label: Optional[str] = None
     pred_raw_label: Optional[str] = None
     gt_raw_label: Optional[str] = None
-    iou: float
+    iou: Optional[float] = None
     confidence: Optional[float] = None
     true_positive: bool
     match_type: str
