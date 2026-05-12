@@ -77,7 +77,9 @@ class EvaluationV2:
                 if not isinstance(m, dict):
                     continue
                 gt = m.get("groundTruthLabel") or m.get("ground_truth_label")
-                mp = m.get("modelPredictionLabel") or m.get("model_prediction_label")
+                mp = m.get("modelPredictionLabel") or m.get(
+                    "model_prediction_label"
+                )
                 if gt is not None and mp is not None:
                     matches.append(
                         AllowedLabelMatch(
@@ -97,14 +99,18 @@ class EvaluationV2:
             created_at=payload.get("created_at"),
             allowed_label_matches_id=payload.get("allowed_label_matches_id"),
             allowed_label_matches=matches,
-            allowed_label_matches_name=payload.get("allowed_label_matches_name"),
+            allowed_label_matches_name=payload.get(
+                "allowed_label_matches_name"
+            ),
             _client=client,
         )
 
     def refresh(self) -> "EvaluationV2":
         """Reload this evaluation from ``GET /nucleus/evaluationsV2/:id``."""
         if self._client is None:
-            raise RuntimeError("EvaluationV2 has no client; use NucleusClient.get_evaluation_v2.")
+            raise RuntimeError(
+                "EvaluationV2 has no client; use NucleusClient.get_evaluation_v2."
+            )
         data = self._client.get(f"evaluationsV2/{self.id}")
         updated = EvaluationV2.from_json(data, self._client)
         self.__dict__.update(updated.__dict__)
@@ -156,7 +162,9 @@ class EvaluationV2:
     def charts(
         self,
         iou_threshold: float = 0.5,
-        filters: Optional[Union[EvaluationV2FilterArgs, Dict[str, Any]]] = None,
+        filters: Optional[
+            Union[EvaluationV2FilterArgs, Dict[str, Any]]
+        ] = None,
         query: Optional[str] = None,
     ) -> EvaluationV2Charts:
         """Aggregate metrics (mAP, confusion matrix, PR curve, TIDE, …)."""
@@ -184,7 +192,9 @@ class EvaluationV2:
         offset: int = 0,
         sort_by: Optional[str] = None,
         sort_order: Optional[str] = None,
-        filters: Optional[Union[EvaluationV2FilterArgs, Dict[str, Any]]] = None,
+        filters: Optional[
+            Union[EvaluationV2FilterArgs, Dict[str, Any]]
+        ] = None,
         query: Optional[str] = None,
     ) -> EvaluationV2ExamplesPage:
         """Paginated TP / FP / FN match rows with prediction and annotation blobs."""

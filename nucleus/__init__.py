@@ -151,7 +151,6 @@ from .deduplication import (
     DeduplicationStats,
 )
 from .deprecation_warning import deprecated
-from .evaluation_v2 import AllowedLabelMatch, EvaluationV2, EvaluationV2Status
 from .errors import (
     DatasetItemRetrievalError,
     ModelCreationError,
@@ -160,6 +159,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .evaluation_v2 import AllowedLabelMatch, EvaluationV2, EvaluationV2Status
 from .job import CustomerJobTypes
 from .model import Model
 from .model_run import ModelRun
@@ -917,9 +917,9 @@ class NucleusClient:
         if name is not None:
             payload["name"] = name
         if allowed_label_matches:
-            payload[
-                "allowed_label_matches"
-            ] = [m.to_api_dict() for m in allowed_label_matches]
+            payload["allowed_label_matches"] = [
+                m.to_api_dict() for m in allowed_label_matches
+            ]
         if allowed_label_matches_id is not None:
             payload["allowed_label_matches_id"] = allowed_label_matches_id
         result = self.make_request(
@@ -927,7 +927,9 @@ class NucleusClient:
         )
         eval_id = result.get("evaluation_id")
         if not eval_id:
-            raise RuntimeError(f"Unexpected create evaluation V2 response: {result}")
+            raise RuntimeError(
+                f"Unexpected create evaluation V2 response: {result}"
+            )
         return self.get_evaluation_v2(str(eval_id))
 
     def get_evaluation_v2(self, evaluation_id: str) -> EvaluationV2:
