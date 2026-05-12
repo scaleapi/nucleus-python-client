@@ -134,8 +134,8 @@ class EvaluationV2MatchExample(DictCompatibleModel):
     true_positive: bool
     match_type: str
     gt_area: Optional[float] = None
-    item_metadata: Dict[str, Any]
-    prediction_metadata: Dict[str, Any]
+    item_metadata: Optional[Dict[str, Any]] = None
+    prediction_metadata: Optional[Dict[str, Any]] = None
     prediction_row: Optional[Dict[str, Any]] = None
     annotation_row: Optional[Dict[str, Any]] = None
 
