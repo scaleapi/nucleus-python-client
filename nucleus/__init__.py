@@ -1,4 +1,4 @@
-"""Nucleus Python SDK. """
+"""Nucleus Python SDK."""
 
 __all__ = [
     "AsyncJob",
@@ -916,7 +916,7 @@ class NucleusClient:
         payload: Dict[str, Any] = {}
         if name is not None:
             payload["name"] = name
-        if allowed_label_matches:
+        if allowed_label_matches is not None:
             payload["allowed_label_matches"] = [
                 m.to_api_dict() for m in allowed_label_matches
             ]
