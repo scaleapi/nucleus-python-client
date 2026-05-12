@@ -76,10 +76,12 @@ class EvaluationV2:
             for m in raw_matches:
                 if not isinstance(m, dict):
                     continue
-                gt = m.get("groundTruthLabel") or m.get("ground_truth_label")
-                mp = m.get("modelPredictionLabel") or m.get(
-                    "model_prediction_label"
-                )
+                gt = m.get("groundTruthLabel")
+                if gt is None:
+                    gt = m.get("ground_truth_label")
+                mp = m.get("modelPredictionLabel")
+                if mp is None:
+                    mp = m.get("model_prediction_label")
                 if gt is not None and mp is not None:
                     matches.append(
                         AllowedLabelMatch(
