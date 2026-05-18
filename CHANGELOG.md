@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-18
+
+### Added
+- `DatasetItem.phash` field exposing the 64-character "0/1" perceptual-hash string when populated by the Nucleus backend. Available on every SDK method that yields a `DatasetItem` (e.g. `items_and_annotation_generator`, `items_generator`, `query_items`, `dataset.items`, `iloc`/`refloc`/`loc`).
+
 ## [0.18.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.2) - 2026-05-08
 
 ### Added
