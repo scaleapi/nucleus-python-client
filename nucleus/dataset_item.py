@@ -125,8 +125,7 @@ class DatasetItem:  # pylint: disable=R0902
     width: Optional[int] = None
     height: Optional[int] = None
     # Perceptual hash of the underlying image as a 64-character "0/1" binary
-    # string. Populated by the Nucleus backend on items that have been pHash
-    # backfilled; None for pointcloud items or items without a backfilled hash.
+    # string. Populated by the Nucleus backend on items that have a pHash field.
     phash: Optional[str] = None
 
     def __post_init__(self):
