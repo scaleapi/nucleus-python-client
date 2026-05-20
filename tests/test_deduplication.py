@@ -169,7 +169,11 @@ def test_deduplicate_image_async_by_ids(dataset_image_async):
         )
     )
     assert result.stats.original_count == len(item_ids)
-    assert result.unique_item_ids == initial_result.unique_item_ids
+    # Set comparison: re-running dedup over the surviving set must return the
+    # same kept items, but the backend doesn't guarantee a stable order across
+    # runs (the algorithm's "kept" list depends on iteration order, which can
+    # drift between the whole-dataset and by-ids code paths).
+    assert set(result.unique_item_ids) == set(initial_result.unique_item_ids)
 
 
 @pytest.fixture(scope="module")
@@ -246,7 +250,11 @@ def test_deduplicate_video_scene_async_by_ids(dataset_video_scene_async):
         )
     )
     assert result.stats.original_count == len(item_ids)
-    assert result.unique_item_ids == initial_result.unique_item_ids
+    # Set comparison: re-running dedup over the surviving set must return the
+    # same kept items, but the backend doesn't guarantee a stable order across
+    # runs (the algorithm's "kept" list depends on iteration order, which can
+    # drift between the whole-dataset and by-ids code paths).
+    assert set(result.unique_item_ids) == set(initial_result.unique_item_ids)
 
 
 @pytest.fixture(scope="module")
@@ -301,7 +309,11 @@ def test_deduplicate_video_url_async_by_ids(dataset_video_url_async):
         )
     )
     assert result.stats.original_count == len(item_ids)
-    assert result.unique_item_ids == initial_result.unique_item_ids
+    # Set comparison: re-running dedup over the surviving set must return the
+    # same kept items, but the backend doesn't guarantee a stable order across
+    # runs (the algorithm's "kept" list depends on iteration order, which can
+    # drift between the whole-dataset and by-ids code paths).
+    assert set(result.unique_item_ids) == set(initial_result.unique_item_ids)
 
 
 # Edge case tests
@@ -585,7 +597,11 @@ def test_deduplicate_by_ids_returns_job(dataset_image_async):
     result = job.result()
     assert isinstance(result, DeduplicationResult)
     assert result.stats.original_count == len(item_ids)
-    assert result.unique_item_ids == initial_result.unique_item_ids
+    # Set comparison: re-running dedup over the surviving set must return the
+    # same kept items, but the backend doesn't guarantee a stable order across
+    # runs (the algorithm's "kept" list depends on iteration order, which can
+    # drift between the whole-dataset and by-ids code paths).
+    assert set(result.unique_item_ids) == set(initial_result.unique_item_ids)
 
 
 @pytest.mark.integration
