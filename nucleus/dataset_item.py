@@ -1,7 +1,7 @@
 import json
 import os
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, Sequence
 
@@ -126,7 +126,11 @@ class DatasetItem:  # pylint: disable=R0902
     height: Optional[int] = None
     # Perceptual hash of the underlying image as a 64-character "0/1" binary
     # string. Populated by the Nucleus backend on items that have a pHash field.
-    phash: Optional[str] = None
+    # Excluded from auto-generated __eq__ because it's a derived value (computed
+    # from image_location), and not every SDK endpoint populates it on the
+    # returned object — so locally-constructed items would otherwise spuriously
+    # differ from round-tripped ones.
+    phash: Optional[str] = field(default=None, compare=False)
 
     def __post_init__(self):
         assert self.reference_id is not None, "reference_id is required."
