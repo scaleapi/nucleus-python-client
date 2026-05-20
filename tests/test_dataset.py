@@ -2,6 +2,7 @@ import copy
 import glob
 import math
 import os
+import time
 
 import pytest
 
@@ -277,13 +278,16 @@ def test_dataset_tags(CLIENT, dataset):
     assert "v2" in updated2
 
     # Remove tags
-    remaining = dataset.remove_tags(["production"])
+    dataset.remove_tags(["production"])
+    time.sleep(2)
+    remaining = dataset.get_tags()
     assert "production" not in remaining
     assert "Labeled by: Scale" in remaining
 
     # Removing non-existent tags is idempotent
-    remaining2 = dataset.remove_tags(["nonexistent"])
-    assert remaining2 == remaining
+    dataset.remove_tags(["nonexistent"])
+    time.sleep(2)
+    assert sorted(dataset.get_tags()) == sorted(remaining)
 
     # String argument should raise TypeError
     with pytest.raises(TypeError):
