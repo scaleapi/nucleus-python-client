@@ -1,8 +1,28 @@
-"""Pydantic models for Nucleus Evaluations V2 REST payloads."""
+"""Response and filter models for Evaluation V2."""
 
 from typing import Any, Dict, List, Literal, Optional
 
 from nucleus.pydantic_base import DictCompatibleModel
+
+
+def _snake_to_camel(name: str) -> str:
+    parts = name.split("_")
+    if len(parts) == 1:
+        return name
+    return parts[0] + "".join(part.capitalize() for part in parts[1:])
+
+
+def _camelize_filter_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            _snake_to_camel(key): (
+                val if key == "value" else _camelize_filter_value(val)
+            )
+            for key, val in value.items()
+        }
+    if isinstance(value, list):
+        return [_camelize_filter_value(item) for item in value]
+    return value
 
 
 class RangeNum(DictCompatibleModel):
@@ -16,8 +36,21 @@ class MetadataPredicate(DictCompatibleModel):
     value: Optional[Any] = None
 
 
+_FILTER_API_KEYS = {
+    "confidence_range": "confidenceRange",
+    "iou_range": "iouRange",
+    "pred_labels": "predLabels",
+    "gt_labels": "gtLabels",
+    "item_metadata": "itemMetadata",
+    "prediction_metadata": "predictionMetadata",
+    "label_equality": "labelEquality",
+    "has_ground_truth": "hasGroundTruth",
+    "tide_background": "tideBackground",
+}
+
+
 class EvaluationV2FilterArgs(DictCompatibleModel):
-    """Filter object for charts/examples calls (mirrors server evaluation_v2 SQL filters)."""
+    """Optional filters for :meth:`nucleus.evaluation_v2.EvaluationV2.charts` and :meth:`nucleus.evaluation_v2.EvaluationV2.examples`."""
 
     confidence_range: Optional[RangeNum] = None
     iou_range: Optional[RangeNum] = None
@@ -30,29 +63,13 @@ class EvaluationV2FilterArgs(DictCompatibleModel):
     tide_background: Optional[bool] = None
 
     def to_api_filters(self) -> Dict[str, Any]:
-        """Serialize to camelCase keys expected by the GraphQL / REST layer."""
+        """Return filters as a dict ready for API requests."""
         d = self.dict(exclude_none=True)
-        # pydantic v1 uses snake_case fields; server expects camelCase in JSON filters
-        out: Dict[str, Any] = {}
-        if "confidence_range" in d:
-            out["confidenceRange"] = d["confidence_range"]
-        if "iou_range" in d:
-            out["iouRange"] = d["iou_range"]
-        if "pred_labels" in d:
-            out["predLabels"] = d["pred_labels"]
-        if "gt_labels" in d:
-            out["gtLabels"] = d["gt_labels"]
-        if "item_metadata" in d:
-            out["itemMetadata"] = d["item_metadata"]
-        if "prediction_metadata" in d:
-            out["predictionMetadata"] = d["prediction_metadata"]
-        if "label_equality" in d:
-            out["labelEquality"] = d["label_equality"]
-        if "has_ground_truth" in d:
-            out["hasGroundTruth"] = d["has_ground_truth"]
-        if "tide_background" in d:
-            out["tideBackground"] = d["tide_background"]
-        return out
+        return {
+            api_key: _camelize_filter_value(d[snake_key])
+            for snake_key, api_key in _FILTER_API_KEYS.items()
+            if snake_key in d
+        }
 
 
 class MapSummary(DictCompatibleModel):

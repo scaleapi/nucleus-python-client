@@ -1,4 +1,4 @@
-"""Nucleus Evaluation V2 — COCO-style metrics computed off ``evaluation_match_v2``."""
+"""Evaluation V2 — metrics and examples for a model run."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import json
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from urllib.parse import urlencode
 
 import requests
@@ -16,14 +16,12 @@ from nucleus.data_transfer_object.evaluation_v2 import (
     EvaluationV2ExamplesPage,
     EvaluationV2FilterArgs,
 )
-from nucleus.errors import NucleusAPIError
-
 if TYPE_CHECKING:
     from nucleus import NucleusClient
 
 
 class EvaluationV2Status(str, Enum):
-    """Lifecycle states for ``nucleus.evaluation_v2.status``."""
+    """Status of an Evaluation V2 run."""
 
     PENDING = "pending"
     COMPUTING = "computing"
@@ -32,9 +30,15 @@ class EvaluationV2Status(str, Enum):
     CANCELLED = "cancelled"
 
 
+_TERMINAL_OK: Set[EvaluationV2Status] = {
+    EvaluationV2Status.SUCCEEDED,
+    EvaluationV2Status.CANCELLED,
+}
+
+
 @dataclass
 class AllowedLabelMatch:
-    """Pair of labels that may match for IoU evaluation (snake_case JSON for the API)."""
+    """Ground-truth and prediction label pair that counts as a match."""
 
     ground_truth_label: str
     model_prediction_label: str
@@ -48,7 +52,7 @@ class AllowedLabelMatch:
 
 @dataclass
 class EvaluationV2:
-    """A single Evaluation V2 run for a model run (``evalv2_*``)."""
+    """An Evaluation V2 run for a model run."""
 
     id: str
     model_run_id: str
@@ -61,7 +65,7 @@ class EvaluationV2:
     allowed_label_matches_id: Optional[str] = None
     allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
     allowed_label_matches_name: Optional[str] = None
-    _client: Any = field(repr=False, default=None)
+    _client: Optional["NucleusClient"] = field(repr=False, default=None)
 
     @classmethod
     def from_json(
@@ -108,7 +112,11 @@ class EvaluationV2:
         )
 
     def refresh(self) -> "EvaluationV2":
-        """Reload this evaluation from ``GET /nucleus/evaluationsV2/:id``."""
+        """Reload this evaluation from Nucleus.
+
+        Returns:
+            self, with updated fields.
+        """
         if self._client is None:
             raise RuntimeError(
                 "EvaluationV2 has no client; use NucleusClient.get_evaluation_v2."
@@ -123,20 +131,26 @@ class EvaluationV2:
         timeout_sec: float = 600,
         poll_interval: float = 5,
     ) -> "EvaluationV2":
-        """Poll until status is terminal or ``timeout_sec`` elapses.
+        """Wait until the evaluation finishes or is cancelled.
+
+        Parameters:
+            timeout_sec: Maximum seconds to wait.
+            poll_interval: Seconds between status checks.
+
+        Returns:
+            self, after a terminal status is reached.
 
         Raises:
-            RuntimeError: on ``failed`` status or timeout.
+            RuntimeError: If the evaluation fails or times out.
         """
         deadline = time.monotonic() + timeout_sec
-        terminal_ok = {"succeeded", "cancelled"}
         while time.monotonic() < deadline:
             self.refresh()
-            if self.status == "failed":
+            if self.status == EvaluationV2Status.FAILED:
                 raise RuntimeError(
                     f"Evaluation {self.id} failed: {self.error_message or 'unknown'}"
                 )
-            if self.status in terminal_ok:
+            if self.status in _TERMINAL_OK:
                 return self
             time.sleep(poll_interval)
         raise RuntimeError(
@@ -145,21 +159,15 @@ class EvaluationV2:
         )
 
     def delete(self) -> None:
-        """Cancel workflow (best effort) and soft-delete (``204 No Content``)."""
+        """Delete this evaluation."""
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
-        resp = self._client.make_request(
+        self._client.make_request(
             {},
             f"evaluationsV2/{self.id}",
             requests_command=requests.delete,
             return_raw_response=True,
         )
-        if resp.status_code != 204:
-            raise NucleusAPIError(
-                f"{self._client.endpoint}/evaluationsV2/{self.id}",
-                requests.delete,
-                resp,
-            )
 
     def charts(
         self,
@@ -169,7 +177,16 @@ class EvaluationV2:
         ] = None,
         query: Optional[str] = None,
     ) -> EvaluationV2Charts:
-        """Aggregate metrics (mAP, confusion matrix, PR curve, TIDE, …)."""
+        """Return aggregate metrics for this evaluation.
+
+        Parameters:
+            iou_threshold: IoU threshold for matching (default 0.5).
+            filters: Optional filters (:class:`EvaluationV2FilterArgs` or dict).
+            query: Optional query string to narrow results.
+
+        Returns:
+            :class:`EvaluationV2Charts`: Summary metrics (mAP, confusion matrix, PR curve, etc.).
+        """
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
         params: Dict[str, str] = {}
@@ -199,7 +216,20 @@ class EvaluationV2:
         ] = None,
         query: Optional[str] = None,
     ) -> EvaluationV2ExamplesPage:
-        """Paginated TP / FP / FN match rows with prediction and annotation blobs."""
+        """Return paginated true-positive, false-positive, or false-negative examples.
+
+        Parameters:
+            match_type: ``"TP"``, ``"FP"``, or ``"FN"``.
+            limit: Page size (default 50).
+            offset: Row offset for pagination.
+            sort_by: Optional field to sort by.
+            sort_order: Optional sort direction (e.g. ``"asc"`` or ``"desc"``).
+            filters: Optional filters (:class:`EvaluationV2FilterArgs` or dict).
+            query: Optional query string to narrow results.
+
+        Returns:
+            :class:`EvaluationV2ExamplesPage`: Matching rows and total count.
+        """
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
         payload: Dict[str, Any] = {

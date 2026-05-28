@@ -897,21 +897,20 @@ class NucleusClient:
         allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
         allowed_label_matches_id: Optional[str] = None,
     ) -> EvaluationV2:
-        """Create an Evaluation V2 job for a model run.
+        """Create an evaluation for a model run.
 
-        Starts a Temporal workflow that fills ``evaluation_match_v2``. Use
-        :meth:`EvaluationV2.wait_for_completion` then :meth:`EvaluationV2.charts`
-        or :meth:`EvaluationV2.examples` for results.
+        The evaluation runs in the background. Call
+        :meth:`EvaluationV2.wait_for_completion`, then
+        :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples` for results.
 
         Parameters:
-            model_run_id: Nucleus model run id (``run_*``).
-            name: Optional human-readable name.
-            allowed_label_matches: Optional explicit allowed label pairs; omit to use
-                the model run's default configuration.
-            allowed_label_matches_id: Optional existing allowed-label-matches config id.
+            model_run_id: Model run id (``run_*``).
+            name: Optional display name.
+            allowed_label_matches: Optional label pairs to treat as matches.
+            allowed_label_matches_id: Optional id of a saved label-match configuration.
 
         Returns:
-            :class:`EvaluationV2` loaded via ``GET /nucleus/evaluationsV2/:id``.
+            :class:`EvaluationV2`: The created evaluation.
         """
         payload: Dict[str, Any] = {}
         if name is not None:
@@ -933,15 +932,31 @@ class NucleusClient:
         return self.get_evaluation_v2(str(eval_id))
 
     def get_evaluation_v2(self, evaluation_id: str) -> EvaluationV2:
-        """Fetch a single Evaluation V2 row."""
+        """Get an evaluation by id.
+
+        Parameters:
+            evaluation_id: Evaluation id (``evalv2_*``).
+
+        Returns:
+            :class:`EvaluationV2`.
+        """
         data = self.get(f"evaluationsV2/{evaluation_id}")
         return EvaluationV2.from_json(data, self)
 
     def list_evaluations_v2(self, model_run_id: str) -> List[EvaluationV2]:
-        """List Evaluation V2 rows for a model run (newest first)."""
+        """List evaluations for a model run (newest first).
+
+        Parameters:
+            model_run_id: Model run id (``run_*``).
+
+        Returns:
+            List of :class:`EvaluationV2`.
+        """
         rows = self.get(f"modelRun/{model_run_id}/evaluationsV2")
         if not isinstance(rows, list):
-            return []
+            raise RuntimeError(
+                f"Unexpected list evaluations V2 response: {rows!r}"
+            )
         return [EvaluationV2.from_json(r, self) for r in rows]
 
     @deprecated(msg="Prefer calling Dataset.info() directly.")

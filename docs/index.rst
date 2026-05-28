@@ -17,10 +17,10 @@ Nucleus is a new way—the right way—to develop ML models, helping us move awa
 Evaluations V2
 --------------
 
-Evaluation V2 runs COCO-style metrics against stored matches (``evaluation_match_v2``) for a **model run**.
-Create an evaluation with :meth:`NucleusClient.create_evaluation_v2`; poll with
-:meth:`nucleus.evaluation_v2.EvaluationV2.wait_for_completion`; then fetch aggregates via
-:meth:`nucleus.evaluation_v2.EvaluationV2.charts` or per-row examples via
+Evaluation V2 measures how well a **model run** matches ground-truth annotations.
+Create a run with :meth:`NucleusClient.create_evaluation_v2`, wait with
+:meth:`nucleus.evaluation_v2.EvaluationV2.wait_for_completion`, then read summary metrics with
+:meth:`nucleus.evaluation_v2.EvaluationV2.charts` or individual matches with
 :meth:`nucleus.evaluation_v2.EvaluationV2.examples`.
 
 .. code-block:: python
@@ -41,10 +41,6 @@ Create an evaluation with :meth:`NucleusClient.create_evaluation_v2`; poll with
    evaluation.wait_for_completion()
    charts = evaluation.charts(iou_threshold=0.5)
    fps = evaluation.examples(match_type="FP", limit=20)
-
-The API uses REST endpoints ``/nucleus/modelRun/:id/evaluationsV2``,
-``/nucleus/evaluationsV2/:id``, ``/nucleus/evaluationsV2/:id/charts``, and
-``POST /nucleus/evaluationsV2/:id/examples``.
 
 .. _installation:
 

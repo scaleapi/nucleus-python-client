@@ -2,10 +2,45 @@
 
 from unittest.mock import MagicMock
 
+import pytest
 import requests
 
 from nucleus import AllowedLabelMatch, EvaluationV2, NucleusClient
-from nucleus.data_transfer_object.evaluation_v2 import EvaluationV2Charts
+from nucleus.data_transfer_object.evaluation_v2 import (
+    EvaluationV2Charts,
+    EvaluationV2FilterArgs,
+    MetadataPredicate,
+    RangeNum,
+    _camelize_filter_value,
+)
+
+
+def test_evaluation_v2_filter_args_to_api_filters():
+    filters = EvaluationV2FilterArgs(
+        confidence_range=RangeNum(min=0.1, max=0.9),
+        pred_labels=["cat"],
+        item_metadata=[MetadataPredicate(key="tier", op="EQ", value="gold")],
+        has_ground_truth=True,
+    )
+    assert filters.to_api_filters() == {
+        "confidenceRange": {"min": 0.1, "max": 0.9},
+        "predLabels": ["cat"],
+        "itemMetadata": [{"key": "tier", "op": "EQ", "value": "gold"}],
+        "hasGroundTruth": True,
+    }
+
+
+def test_camelize_filter_value_nested_keys():
+    assert _camelize_filter_value({"bucket_min": 1.0, "bucket_max": 2.0}) == {
+        "bucketMin": 1.0,
+        "bucketMax": 2.0,
+    }
+
+
+def test_camelize_filter_value_preserves_predicate_value():
+    assert _camelize_filter_value(
+        {"key": "k", "op": "EQ", "value": {"keep_snake": 1}}
+    ) == {"key": "k", "op": "EQ", "value": {"keep_snake": 1}}
 
 
 def test_allowed_label_match_to_api_dict():
@@ -32,6 +67,41 @@ def test_evaluation_v2_from_json_with_matches():
     assert ev.allowed_label_matches is not None
     assert len(ev.allowed_label_matches) == 1
     assert ev.allowed_label_matches[0].ground_truth_label == "x"
+
+
+def test_list_evaluations_v2_empty():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(return_value=[])
+    result = client.list_evaluations_v2("run_1")
+    assert result == []
+    client.connection.get.assert_called_once_with(
+        "modelRun/run_1/evaluationsV2"
+    )
+
+
+def test_list_evaluations_v2_returns_rows():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        return_value=[
+            {
+                "id": "evalv2_1",
+                "model_run_id": "run_1",
+                "dataset_id": "ds_1",
+                "status": "succeeded",
+            },
+        ]
+    )
+    result = client.list_evaluations_v2("run_1")
+    assert len(result) == 1
+    assert result[0].id == "evalv2_1"
+    assert result[0]._client is client
+
+
+def test_list_evaluations_v2_invalid_response():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(return_value={"evaluations": []})
+    with pytest.raises(RuntimeError, match="Unexpected list evaluations V2"):
+        client.list_evaluations_v2("run_1")
 
 
 def test_create_evaluation_v2_then_get():
@@ -120,6 +190,30 @@ def test_examples_post_body():
     assert payload["offset"] == 5
 
 
+def test_examples_with_filter_args():
+    client = MagicMock(spec=NucleusClient)
+    client.post.return_value = {"rows": [], "total": 0}
+    ev = EvaluationV2(
+        id="evalv2_1",
+        model_run_id="run_1",
+        dataset_id="ds_1",
+        status="succeeded",
+        _client=client,
+    )
+    filters = EvaluationV2FilterArgs(
+        confidence_range=RangeNum(min=0.1, max=0.9),
+        pred_labels=["cat"],
+        has_ground_truth=True,
+    )
+    ev.examples("FP", limit=10, filters=filters)
+    payload = client.post.call_args[0][0]
+    assert payload["filters"] == {
+        "confidenceRange": {"min": 0.1, "max": 0.9},
+        "predLabels": ["cat"],
+        "hasGroundTruth": True,
+    }
+
+
 def test_wait_for_completion():
     client = NucleusClient(api_key="test")
     client.connection.get = MagicMock(
@@ -149,10 +243,11 @@ def test_wait_for_completion():
     assert ev.status == "succeeded"
 
 
-def test_delete_204():
+@pytest.mark.parametrize("status_code", [200, 204])
+def test_delete_success(status_code):
     client = NucleusClient(api_key="test")
     resp = MagicMock()
-    resp.status_code = 204
+    resp.status_code = status_code
     client.connection.make_request = MagicMock(return_value=resp)
     ev = EvaluationV2(
         id="evalv2_1",
