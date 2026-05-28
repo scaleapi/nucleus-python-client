@@ -5,10 +5,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-28
+## [0.18.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-28
 
 ### Added
 - **Evaluations V2** client support for COCO-style metrics on model runs via stored `evaluation_match_v2` rows. `NucleusClient` exposes `create_evaluation_v2()`, `get_evaluation_v2()`, and `list_evaluations_v2()`. The `EvaluationV2` resource supports `wait_for_completion()`, `charts()` (mAP, confusion matrix, PR curve, TIDE, and related aggregates), `examples()` (paginated TP/FP/FN rows), `delete()`, and `refresh()`. `AllowedLabelMatch` configures allowed ground-truth / prediction label pairs; filter and response types include `EvaluationV2FilterArgs`, `EvaluationV2Charts`, `EvaluationV2ExamplesPage`, and `EvaluationV2MatchExample`. Sphinx docs cover the workflow under Evaluations V2.
+
+## [0.18.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-18
+
+### Added
+- `DatasetItem.phash` field exposing the 64-character "0/1" perceptual-hash string when populated by the Nucleus backend. Available on every SDK method that yields a `DatasetItem` (e.g. `items_and_annotation_generator`, `items_generator`, `query_items`, `dataset.items`, `iloc`/`refloc`/`loc`).
 
 ## [0.18.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.2) - 2026-05-08
 

@@ -1,7 +1,7 @@
 import json
 import os
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, Sequence
 
@@ -17,6 +17,7 @@ from .constants import (
     INDEX_ID_KEY,
     METADATA_KEY,
     ORIGINAL_IMAGE_URL_KEY,
+    PHASH_KEY,
     POINTCLOUD_URL_KEY,
     PROCESSED_URL_KEY,
     REFERENCE_ID_KEY,
@@ -123,6 +124,13 @@ class DatasetItem:  # pylint: disable=R0902
     embedding_info: Optional[DatasetItemEmbeddingInfo] = None
     width: Optional[int] = None
     height: Optional[int] = None
+    # Perceptual hash of the underlying image as a 64-character "0/1" binary
+    # string. Populated by the Nucleus backend on items that have a pHash field.
+    # Excluded from auto-generated __eq__ because it's a derived value (computed
+    # from image_location), and not every SDK endpoint populates it on the
+    # returned object — so locally-constructed items would otherwise spuriously
+    # differ from round-tripped ones.
+    phash: Optional[str] = field(default=None, compare=False)
 
     def __post_init__(self):
         assert self.reference_id is not None, "reference_id is required."
@@ -178,6 +186,7 @@ class DatasetItem:  # pylint: disable=R0902
             pointcloud_location=pointcloud_url,
             reference_id=payload.get(REFERENCE_ID_KEY),
             metadata=payload.get(METADATA_KEY, {}),
+            phash=payload.get(PHASH_KEY),
         )
 
     def local_file_exists(self):

@@ -2,6 +2,7 @@ import copy
 import glob
 import math
 import os
+import time
 
 import pytest
 
@@ -277,13 +278,16 @@ def test_dataset_tags(CLIENT, dataset):
     assert "v2" in updated2
 
     # Remove tags
-    remaining = dataset.remove_tags(["production"])
+    dataset.remove_tags(["production"])
+    time.sleep(2)
+    remaining = dataset.get_tags()
     assert "production" not in remaining
     assert "Labeled by: Scale" in remaining
 
     # Removing non-existent tags is idempotent
-    remaining2 = dataset.remove_tags(["nonexistent"])
-    assert remaining2 == remaining
+    dataset.remove_tags(["nonexistent"])
+    time.sleep(2)
+    assert sorted(dataset.get_tags()) == sorted(remaining)
 
     # String argument should raise TypeError
     with pytest.raises(TypeError):
@@ -332,14 +336,17 @@ def test_dataset_append_async(dataset: Dataset):
     job = dataset.append(make_dataset_items(), asynchronous=True)
     job.sleep_until_complete()
     status = job.status()
+    # Pinning specific step counts couples this test to the backend pipeline
+    # shape (the upload job is planned with N steps, then dynamically
+    # collapses to fewer once it knows how to short-circuit). Only check the
+    # outcomes that the SDK contract guarantees.
     expected = {
         "job_id": job.job_id,
         "status": "Completed",
         "job_progress": "1.00",
-        "completed_steps": 5,
-        "total_steps": 5,
     }
     assert_partial_equality(expected, status)
+    assert status["completed_steps"] == status["total_steps"]
 
 
 def test_dataset_append_async_with_local_path(dataset: Dataset):
