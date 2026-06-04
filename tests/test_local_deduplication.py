@@ -20,6 +20,13 @@ def _row(reference_id, phash):
     }
 
 
+def _item_without_reference_id(phash):
+    item = DatasetItem.__new__(DatasetItem)
+    item.reference_id = None
+    item.phash = phash
+    return item
+
+
 def _flip_bits(phash, indexes):
     bits = list(phash)
     for index in indexes:
@@ -78,7 +85,7 @@ def test_deduplicate_by_phash_threshold_ten_uses_hamming_distance():
     assert result.stats.deduplicated_count == 2
 
 
-@pytest.mark.parametrize("threshold", [1, 5, 10])
+@pytest.mark.parametrize("threshold", [1, 5, 10, 11, 20])
 def test_deduplicate_by_phash_matches_linear_baseline(threshold):
     random.seed(123)
     rows = [
@@ -171,3 +178,47 @@ def test_deduplicate_by_phash_uses_custom_sort_key():
 
     assert result.unique == [row_b]
     assert result.unique_reference_ids == ["b"]
+
+
+def test_deduplicate_by_phash_sorts_integer_sort_key_numerically():
+    row_a = _row("a", "0" * 64)
+    row_b = _row("b", "0" * 64)
+
+    result = deduplicate_by_phash(
+        [row_a, row_b],
+        threshold=0,
+        sort_key=lambda row: 10 if row["item"].reference_id == "a" else 9,
+    )
+
+    assert result.unique == [row_b]
+    assert result.unique_reference_ids == ["b"]
+
+
+def test_deduplicate_by_phash_preserves_ordinal_fallback_order():
+    rows = [
+        _row(
+            f"item_{index}", "1" * 64 if index in (2, 10) else f"{index:064b}"
+        )
+        for index in range(11)
+    ]
+
+    result = deduplicate_by_phash(
+        rows,
+        threshold=0,
+        sort_key=lambda row: None,
+    )
+
+    assert "item_2" in result.unique_reference_ids
+    assert "item_10" not in result.unique_reference_ids
+
+
+def test_deduplicate_by_phash_preserves_missing_reference_ids():
+    item_without_reference_id = _item_without_reference_id("0" * 64)
+    item_with_reference_id = _item("b", "1" * 64)
+
+    result = deduplicate_by_phash(
+        [item_with_reference_id, item_without_reference_id],
+        threshold=0,
+    )
+
+    assert result.unique_reference_ids == [None, "b"]

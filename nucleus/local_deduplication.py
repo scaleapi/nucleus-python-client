@@ -13,6 +13,7 @@ from .dataset_item import DatasetItem
 from .deduplication import DeduplicationStats
 
 InputT = TypeVar("InputT")
+_TieBreakKey = tuple[int, Union[int, str]]
 
 PHASH_REGEX = re.compile(r"^[01]{64}$")
 DEDUP_THRESHOLD_MIN = 0
@@ -36,18 +37,19 @@ class LocalDeduplicationResult(Generic[InputT]):
             ``DatasetItem`` objects.
         unique_dataset_items: The DatasetItem for each object in ``unique``.
         unique_reference_ids: Reference IDs for the DatasetItems in ``unique``.
+            Entries can be ``None`` if a DatasetItem has no reference ID.
         stats: Summary statistics for the run.
     """
 
     unique: List[InputT]
     unique_dataset_items: List[DatasetItem]
-    unique_reference_ids: List[str]
+    unique_reference_ids: List[Optional[str]]
     stats: DeduplicationStats
 
 
 @dataclass(slots=True)
 class _DeduplicationRecord(Generic[InputT]):
-    stable_id: str
+    stable_id: _TieBreakKey
     phash_value: int
     obj: InputT
     dataset_item: DatasetItem
@@ -194,7 +196,7 @@ def deduplicate_by_phash(
             record.dataset_item for record in unique_records
         ],
         unique_reference_ids=[
-            record.dataset_item.reference_id or "" for record in unique_records
+            record.dataset_item.reference_id for record in unique_records
         ],
         stats=DeduplicationStats(
             threshold=threshold,
@@ -238,9 +240,7 @@ def _normalize_records(
             if sort_key is not None
             else dataset_item.reference_id
         )
-        stable_id = (
-            str(tie_breaker) if tie_breaker is not None else str(ordinal)
-        )
+        stable_id = _tie_break_key(tie_breaker, ordinal)
         records.append(
             _DeduplicationRecord(
                 stable_id=stable_id,
@@ -250,6 +250,16 @@ def _normalize_records(
             )
         )
     return records
+
+
+def _tie_break_key(
+    tie_breaker: Optional[Union[str, int]], ordinal: int
+) -> _TieBreakKey:
+    if tie_breaker is None:
+        return (2, ordinal)
+    if isinstance(tie_breaker, int):
+        return (0, tie_breaker)
+    return (1, tie_breaker)
 
 
 def _extract_dataset_item(obj: InputT) -> DatasetItem:
