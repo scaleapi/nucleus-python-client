@@ -76,7 +76,7 @@ class _HammingIndex:
         self._hashes: List[int] = []
         self._candidate_marks = bytearray()
         self._indexes = [
-            [dict() for _ in range(INDEX_CHUNK_COUNT)]
+            [{} for _ in range(INDEX_CHUNK_COUNT)]
             for _ in range(PARTITION_COUNT)
         ]
 
@@ -94,9 +94,19 @@ class _HammingIndex:
         if not self._hashes:
             return None
 
+        touched_indexes = self._mark_partition_zero_candidates(phash_value)
+        if not touched_indexes:
+            return None
+
+        duplicate_index = self._find_marked_partition_one_duplicate(
+            phash_value
+        )
+        _clear_candidate_marks(self._candidate_marks, touched_indexes)
+        return duplicate_index
+
+    def _mark_partition_zero_candidates(self, phash_value: int) -> List[int]:
         touched_indexes: List[int] = []
         marks = self._candidate_marks
-
         partition_zero_chunks = _partition_chunks(phash_value, 0)
         for chunk_index, chunk_value in enumerate(partition_zero_chunks):
             index = self._indexes[0][chunk_index]
@@ -108,10 +118,12 @@ class _HammingIndex:
                     if marks[kept_index] == 0:
                         marks[kept_index] = 1
                         touched_indexes.append(kept_index)
+        return touched_indexes
 
-        if not touched_indexes:
-            return None
-
+    def _find_marked_partition_one_duplicate(
+        self, phash_value: int
+    ) -> Optional[int]:
+        marks = self._candidate_marks
         partition_one_chunks = _partition_chunks(phash_value, 1)
         for chunk_index, chunk_value in enumerate(partition_one_chunks):
             index = self._indexes[1][chunk_index]
@@ -125,11 +137,8 @@ class _HammingIndex:
                     if (
                         phash_value ^ self._hashes[kept_index]
                     ).bit_count() <= self._threshold:
-                        _clear_candidate_marks(marks, touched_indexes)
                         return kept_index
                     marks[kept_index] = 2
-
-        _clear_candidate_marks(marks, touched_indexes)
         return None
 
 
