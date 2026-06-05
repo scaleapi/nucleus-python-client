@@ -64,6 +64,13 @@ class _HammingIndex:
     at least one chunk within ``floor(t / 6)``. Querying both partitions and
     intersecting the candidates keeps the result exact while avoiding a full
     scan for the intended ``t <= 10`` case.
+
+    The chunk tolerance and the rotation are separate mechanisms. For
+    threshold 10, ``floor(10 / 6) == 1``, so a query chunk ``x`` probes the
+    exact bucket ``x`` plus the one-bit-away buckets ``x ^ (1 << bit_offset)``
+    inside that chunk. The eight-bit rotation does not implement that
+    tolerance; it gives a second chunk-boundary alignment so fewer false
+    candidates survive to the exact full-hash check.
     """
 
     def __init__(self, threshold: int):
