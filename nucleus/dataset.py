@@ -454,7 +454,9 @@ class Dataset:
             Updated list of all tags on the dataset.
         """
         if isinstance(tags, str):
-            raise TypeError("tags must be a list of strings, not a single string")
+            raise TypeError(
+                "tags must be a list of strings, not a single string"
+            )
         response = self._client.make_request(
             {"tags": tags}, f"dataset/{self.id}/tags", requests.post
         )
@@ -470,7 +472,9 @@ class Dataset:
             Updated list of remaining tags on the dataset.
         """
         if isinstance(tags, str):
-            raise TypeError("tags must be a list of strings, not a single string")
+            raise TypeError(
+                "tags must be a list of strings, not a single string"
+            )
         response = self._client.make_request(
             {"tags": tags}, f"dataset/{self.id}/tags", requests.delete
         )

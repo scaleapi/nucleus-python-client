@@ -1,5 +1,6 @@
-import pytest
 import random
+
+import pytest
 
 from nucleus import DatasetItem, deduplicate_by_phash
 from nucleus.local_deduplication import LocalDeduplicationResult
