@@ -35,6 +35,8 @@ class DatasetInfo(DictCompatibleModel):
     item_metadata_schema: Optional[Dict[str, Any]] = None
     tags: List[str] = []
 
-    @validator("tags", pre=True, always=True)  # pylint: disable=used-before-assignment
+    @validator(
+        "tags", pre=True, always=True
+    )  # pylint: disable=used-before-assignment
     def coerce_null_tags(cls, v):  # pylint: disable=no-self-argument
         return v if v is not None else []

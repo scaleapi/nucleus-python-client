@@ -7,6 +7,7 @@ __all__ = [
     "DeduplicationJob",
     "DeduplicationResult",
     "DeduplicationStats",
+    "LocalDeduplicationResult",
     "BoxPrediction",
     "CameraParams",
     "CategoryAnnotation",
@@ -43,6 +44,7 @@ __all__ = [
     "SegmentationPrediction",
     "Slice",
     "VideoScene",
+    "deduplicate_by_phash",
 ]
 
 import datetime
@@ -147,6 +149,10 @@ from .errors import (
     NucleusAPIError,
 )
 from .job import CustomerJobTypes
+from .local_deduplication import (
+    LocalDeduplicationResult,
+    deduplicate_by_phash,
+)
 from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (
