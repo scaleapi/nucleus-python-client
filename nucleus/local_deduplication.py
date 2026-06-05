@@ -75,12 +75,12 @@ class _HammingIndex:
         ]
         self._hashes: List[int] = []
         self._candidate_marks = bytearray()
-        self._indexes = [
+        self._indexes: List[List[dict[int, List[int]]]] = [
             [{} for _ in range(INDEX_CHUNK_COUNT)]
             for _ in range(PARTITION_COUNT)
         ]
 
-    def add(self, phash_value: int) -> None:
+    def _add(self, phash_value: int) -> None:
         kept_index = len(self._hashes)
         self._hashes.append(phash_value)
         self._candidate_marks.append(0)
@@ -90,7 +90,13 @@ class _HammingIndex:
                 index = self._indexes[partition_index][chunk_index]
                 index.setdefault(chunk_value, []).append(kept_index)
 
-    def find_duplicate_index(self, phash_value: int) -> Optional[int]:
+    def add_if_unique(self, phash_value: int) -> bool:
+        if self._find_duplicate_index(phash_value) is not None:
+            return False
+        self._add(phash_value)
+        return True
+
+    def _find_duplicate_index(self, phash_value: int) -> Optional[int]:
         if not self._hashes:
             return None
 
@@ -176,8 +182,6 @@ def deduplicate_by_phash(
 
     _validate_threshold(threshold)
     records = _normalize_records(objects, sort_key=sort_key)
-    records.sort(key=lambda record: (record.phash_value, record.stable_id))
-
     if not records:
         return LocalDeduplicationResult(
             unique=[],
@@ -189,6 +193,8 @@ def deduplicate_by_phash(
                 deduplicated_count=0,
             ),
         )
+
+    records.sort(key=lambda record: (record.phash_value, record.stable_id))
 
     if threshold == 0:
         unique_records = _deduplicate_exact(records)
@@ -305,17 +311,15 @@ def _deduplicate_with_index(
     index = _HammingIndex(threshold)
     unique_records = []
     for record in records:
-        if index.find_duplicate_index(record.phash_value) is not None:
-            continue
-        index.add(record.phash_value)
-        unique_records.append(record)
+        if index.add_if_unique(record.phash_value):
+            unique_records.append(record)
     return unique_records
 
 
 def _deduplicate_with_linear_scan(
     records: Sequence[_DeduplicationRecord[InputT]], threshold: int
 ) -> List[_DeduplicationRecord[InputT]]:
-    kept_hashes = []
+    kept_hashes: List[int] = []
     unique_records = []
     for record in records:
         is_duplicate = any(
