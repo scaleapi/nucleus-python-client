@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import importlib
 import itertools
 import re
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import Generic, List, Optional, Sequence, TypeVar, Union
+from typing import Any, Generic, List, Optional, Sequence, TypeVar, Union
 
 from .constants import ITEM_KEY
 from .dataset_item import DatasetItem
 from .deduplication import DeduplicationStats
+
+_NATIVE_DEDUP: Optional[Any]
+try:
+    _NATIVE_DEDUP = importlib.import_module("nucleus._native_dedup")
+except ImportError:
+    _NATIVE_DEDUP = None
 
 InputT = TypeVar("InputT")
 _TieBreakKey = tuple[int, Union[int, str]]
@@ -18,7 +25,7 @@ _TieBreakKey = tuple[int, Union[int, str]]
 PHASH_REGEX = re.compile(r"^[01]{64}$")
 DEDUP_THRESHOLD_MIN = 0
 DEDUP_THRESHOLD_MAX = 64
-LOCAL_INDEX_MAX_THRESHOLD = 10
+LOCAL_INDEX_MAX_THRESHOLD = 11
 PARTITION_COUNT = 2
 INDEX_CHUNK_BITS = (11, 11, 11, 11, 10, 10)
 INDEX_CHUNK_COUNT = len(INDEX_CHUNK_BITS)
@@ -63,7 +70,7 @@ class _HammingIndex:
     chunking. If two hashes are within threshold ``t``, then each partition has
     at least one chunk within ``floor(t / 6)``. Querying both partitions and
     intersecting the candidates keeps the result exact while avoiding a full
-    scan for the intended ``t <= 10`` case.
+    scan for the intended ``t <= 11`` case.
 
     The chunk tolerance and the rotation are separate mechanisms. For
     threshold 10, ``floor(10 / 6) == 1``, so a query chunk ``x`` probes the
@@ -203,7 +210,10 @@ def deduplicate_by_phash(
 
     records.sort(key=lambda record: (record.phash_value, record.stable_id))
 
-    if threshold == 0:
+    native_unique_records = _deduplicate_with_native(records, threshold)
+    if native_unique_records is not None:
+        unique_records = native_unique_records
+    elif threshold == 0:
         unique_records = _deduplicate_exact(records)
     elif threshold == DEDUP_THRESHOLD_MAX:
         unique_records = [records[0]]
@@ -321,6 +331,17 @@ def _deduplicate_with_index(
         if index.add_if_unique(record.phash_value):
             unique_records.append(record)
     return unique_records
+
+
+def _deduplicate_with_native(
+    records: Sequence[_DeduplicationRecord[InputT]], threshold: int
+) -> Optional[List[_DeduplicationRecord[InputT]]]:
+    if _NATIVE_DEDUP is None:
+        return None
+
+    phash_values = [record.phash_value for record in records]
+    kept_indexes = _NATIVE_DEDUP.deduplicate_phashes(phash_values, threshold)
+    return [records[index] for index in kept_indexes]
 
 
 def _deduplicate_with_linear_scan(
