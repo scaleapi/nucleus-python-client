@@ -2,8 +2,14 @@ import random
 
 import pytest
 
+import nucleus.local_deduplication as local_deduplication
 from nucleus import DatasetItem, deduplicate_by_phash
 from nucleus.local_deduplication import LocalDeduplicationResult
+
+try:
+    from nucleus import _native_dedup
+except ImportError:
+    _native_dedup = None
 
 
 def _item(reference_id, phash):
@@ -223,3 +229,54 @@ def test_deduplicate_by_phash_preserves_missing_reference_ids():
     )
 
     assert result.unique_reference_ids == [None, "b"]
+
+
+@pytest.mark.parametrize("threshold", [0, 10, 12, 64])
+def test_deduplicate_by_phash_uses_native_when_available(
+    monkeypatch, threshold
+):
+    row_a = _row("a", "0" * 64)
+    row_b = _row("b", "1" * 64)
+
+    class FakeNativeDedup:
+        @staticmethod
+        def deduplicate_phashes(phashes, actual_threshold):
+            assert phashes == [0, (1 << 64) - 1]
+            assert actual_threshold == threshold
+            return [1]
+
+    monkeypatch.setattr(local_deduplication, "_NATIVE_DEDUP", FakeNativeDedup)
+
+    result = deduplicate_by_phash([row_a, row_b], threshold=threshold)
+
+    assert result.unique == [row_b]
+
+
+@pytest.mark.skipif(
+    _native_dedup is None,
+    reason="native deduplication extension is not built in this environment",
+)
+def test_native_deduplication_matches_python_index():
+    phashes = [
+        int("0" * 64, 2),
+        int(_flip_bits("0" * 64, range(10)), 2),
+        int(_flip_bits("0" * 64, range(11)), 2),
+        int("1" * 64, 2),
+    ]
+
+    assert _native_dedup.deduplicate_phashes(phashes, 10) == [0, 2, 3]
+
+
+@pytest.mark.skipif(
+    _native_dedup is None,
+    reason="native deduplication extension is not built in this environment",
+)
+def test_native_deduplication_handles_linear_scan_threshold():
+    phashes = [
+        int("0" * 64, 2),
+        int(_flip_bits("0" * 64, range(12)), 2),
+        int(_flip_bits("0" * 64, range(13)), 2),
+        int("1" * 64, 2),
+    ]
+
+    assert _native_dedup.deduplicate_phashes(phashes, 12) == [0, 2, 3]

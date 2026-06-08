@@ -4,6 +4,7 @@ version: 2.1
 orbs:
   slack: circleci/slack@4.4.2
   python: circleci/python@2.1.0
+  win: circleci/windows@5.0
 
 jobs:
   build_test:
@@ -75,11 +76,16 @@ jobs:
           event: fail
           template: basic_fail_1
 
-  pypi_publish:
+  build_sdist:
     docker:
       - image: cimg/python:3.10
     steps:
       - checkout # checkout source code to working directory
+      - run:
+          name: Install Build Tools
+          command: |
+            pip install --upgrade pip
+            pip install poetry
       - run:
           name: Validate Tag Version # Check if the tag name matches the package version
           command: |
@@ -99,9 +105,121 @@ jobs:
                 exit 1;
             fi
       - run:
-          name: Build
+          name: Build sdist
           command: | # install env dependencies
-            poetry build
+            rm -rf dist
+            poetry build --format sdist
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+
+  build_linux_wheels:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout # checkout source code to working directory
+      - setup_remote_docker
+      - run:
+          name: Build Linux wheels
+          command: |
+            pip install --upgrade pip
+            pip install cibuildwheel
+
+            export CIBW_ARCHS_LINUX="x86_64"
+            export CIBW_BUILD="cp310-manylinux_x86_64 cp311-manylinux_x86_64 cp312-manylinux_x86_64 cp313-manylinux_x86_64 cp314-manylinux_x86_64"
+            export CIBW_SKIP="pp* *-musllinux_*"
+            export CIBW_TEST_COMMAND='python -c "import nucleus._native_dedup as native; assert native.deduplicate_phashes([0, 1023, 2047], 10) == [0, 2]"'
+            python -m cibuildwheel --platform linux --output-dir dist
+
+            ls -lh dist
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+
+  build_macos_wheels:
+    macos:
+      xcode: 16.4.0
+    resource_class: m4pro.medium
+    steps:
+      - checkout # checkout source code to working directory
+      - run:
+          name: Build macOS wheels
+          command: |
+            python3 -m pip install --upgrade pip
+            python3 -m pip install cibuildwheel
+            softwareupdate --install-rosetta --agree-to-license || true
+
+            export CIBW_ARCHS_MACOS="universal2"
+            export CIBW_BUILD="cp310-macosx_* cp311-macosx_* cp312-macosx_* cp313-macosx_* cp314-macosx_*"
+            export CIBW_SKIP="pp*"
+            export CIBW_TEST_COMMAND='python -c "import nucleus._native_dedup as native; assert native.deduplicate_phashes([0, 1023, 2047], 10) == [0, 2]"'
+            python3 -m cibuildwheel --platform macos --output-dir dist
+
+            ls -lh dist
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+
+  build_windows_wheels:
+    executor:
+      name: win/default
+      size: medium
+    steps:
+      - checkout # checkout source code to working directory
+      - run:
+          name: Build Windows wheels
+          command: |
+            python -m pip install --upgrade pip
+            python -m pip install cibuildwheel
+
+            $env:CIBW_BUILD = "cp310-win_amd64 cp311-win_amd64 cp312-win_amd64 cp313-win_amd64 cp314-win_amd64"
+            $env:CIBW_SKIP = "pp*"
+            $env:CIBW_TEST_COMMAND = 'python -c "import nucleus._native_dedup as native; assert native.deduplicate_phashes([0, 1023, 2047], 10) == [0, 2]"'
+            python -m cibuildwheel --platform windows --output-dir dist
+
+            Get-ChildItem dist
+      - persist_to_workspace:
+          root: .
+          paths:
+            - dist
+
+  pypi_publish:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout # checkout source code to working directory
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install Publish Tools
+          command: |
+            pip install --upgrade pip
+            pip install poetry
+      - run:
+          name: Validate Tag Version # Check if the tag name matches the package version
+          command: |
+            PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
+            if [[ "$CIRCLE_TAG" != "v${PKG_VERSION}" ]]; then
+                echo "ERROR: Tag name ($CIRCLE_TAG) must match package version (v${PKG_VERSION})."
+                exit 1;
+            fi
+      - run:
+          name: Validate SDK Version Increment # Check if the version is already on PyPI
+          command: |
+            PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
+            if pip install "scale-nucleus>=${PKG_VERSION}" > /dev/null 2>&1;
+            then
+                echo "ERROR: You need to increment to a new version before publishing!"
+                echo "Version (${PKG_VERSION}) already exists on PyPI."
+                exit 1;
+            fi
+      - run:
+          name: List artifacts to publish
+          command: |
+            ls -lh dist
       - run:
           name: Publish to PyPI
           command: |
@@ -165,7 +283,8 @@ workflows:
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
-      - pypi_publish:
+      - build_sdist:
+          context: Nucleus
           requires:
             - build_test
           filters:
@@ -173,4 +292,42 @@ workflows:
               ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
-
+      - build_linux_wheels:
+          context: Nucleus
+          requires:
+            - build_test
+          filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
+            tags:
+              only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
+      - build_macos_wheels:
+          context: Nucleus
+          requires:
+            - build_test
+          filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
+            tags:
+              only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
+      - build_windows_wheels:
+          context: Nucleus
+          requires:
+            - build_test
+          filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
+            tags:
+              only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
+      - pypi_publish:
+          context: Nucleus
+          requires:
+            - build_sdist
+            - build_linux_wheels
+            - build_macos_wheels
+            - build_windows_wheels
+          filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
+            tags:
+              only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
