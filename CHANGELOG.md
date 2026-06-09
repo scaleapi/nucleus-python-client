@@ -5,6 +5,14 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.5) - 2026-06-08
+
+### Added
+- Native C acceleration for `deduplicate_by_phash`. When the compiled extension is available, all threshold values are handled in native code: thresholds `0` through `11` use the chunked Hamming index, thresholds `12` through `63` use a native linear scan, and threshold `64` uses the keep-first fast path. The public Python API is unchanged and falls back to the pure-Python implementation when the native extension is unavailable.
+
+### Tooling / CI
+- Publish Linux `x86_64`, macOS `universal2`, and Windows `amd64` wheels for Python 3.10 through 3.14 using `cibuildwheel`, alongside the source distribution.
+
 ## [0.18.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-06-08
 
 ### Added
