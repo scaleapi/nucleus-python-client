@@ -17,6 +17,12 @@
 
 static const int CHUNK_BITS[CHUNK_COUNT] = {11, 11, 11, 11, 10, 10};
 
+typedef enum {
+    CANDIDATE_MARK_UNMARKED = 0,   /* default; not involved in this query */
+    CANDIDATE_MARK_CANDIDATE = 1,  /* partition 0 hit; check in partition 1 */
+    CANDIDATE_MARK_REJECTED = 2,   /* partition 1 checked; not within threshold */
+} CandidateMark;
+
 typedef struct {
     Py_ssize_t *values;
     Py_ssize_t size;
@@ -128,7 +134,8 @@ static void clear_candidate_marks(HammingIndex *index) {
     Py_ssize_t i;
 
     for (i = 0; i < index->touched_count; i++) {
-        index->candidate_marks[index->touched_indexes[i]] = 0;
+        index->candidate_marks[index->touched_indexes[i]] =
+            CANDIDATE_MARK_UNMARKED;
     }
     index->touched_count = 0;
 }
@@ -206,8 +213,8 @@ static int mark_bucket_candidates(HammingIndex *index, Bucket *bucket) {
 
     for (i = 0; i < bucket->size; i++) {
         kept_index = bucket->values[i];
-        if (index->candidate_marks[kept_index] == 0) {
-            index->candidate_marks[kept_index] = 1;
+        if (index->candidate_marks[kept_index] == CANDIDATE_MARK_UNMARKED) {
+            index->candidate_marks[kept_index] = CANDIDATE_MARK_CANDIDATE;
             if (touched_append(index, kept_index) < 0) {
                 return -1;
             }
@@ -286,14 +293,15 @@ static int find_partition_one_duplicate(
             for (bucket_offset = 0; bucket_offset < bucket->size;
                  bucket_offset++) {
                 kept_index = bucket->values[bucket_offset];
-                if (index->candidate_marks[kept_index] != 1) {
+                if (index->candidate_marks[kept_index] !=
+                    CANDIDATE_MARK_CANDIDATE) {
                     continue;
                 }
                 if (popcount64(phash_value ^ index->hashes[kept_index]) <=
                     index->threshold) {
                     return 1;
                 }
-                index->candidate_marks[kept_index] = 2;
+                index->candidate_marks[kept_index] = CANDIDATE_MARK_REJECTED;
             }
         }
     }
@@ -337,7 +345,7 @@ static int hamming_index_add(HammingIndex *index, uint64_t phash_value) {
     }
 
     index->hashes[kept_index] = phash_value;
-    index->candidate_marks[kept_index] = 0;
+    index->candidate_marks[kept_index] = CANDIDATE_MARK_UNMARKED;
     for (partition_index = 0; partition_index < PARTITION_COUNT;
          partition_index++) {
         partition_chunks(phash_value, partition_index, chunks);
