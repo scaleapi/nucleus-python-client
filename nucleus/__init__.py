@@ -8,6 +8,7 @@ __all__ = [
     "DeduplicationJob",
     "DeduplicationResult",
     "DeduplicationStats",
+    "LocalDeduplicationResult",
     "BoxPrediction",
     "CameraParams",
     "CategoryAnnotation",
@@ -50,6 +51,7 @@ __all__ = [
     "SegmentationPrediction",
     "Slice",
     "VideoScene",
+    "deduplicate_by_phash",
 ]
 
 import datetime
@@ -161,6 +163,10 @@ from .errors import (
 )
 from .evaluation_v2 import AllowedLabelMatch, EvaluationV2, EvaluationV2Status
 from .job import CustomerJobTypes
+from .local_deduplication import (
+    LocalDeduplicationResult,
+    deduplicate_by_phash,
+)
 from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (

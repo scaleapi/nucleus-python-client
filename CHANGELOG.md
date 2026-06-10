@@ -5,11 +5,17 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.18.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-05-28
+## [0.18.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-05-28
 
 ### Added
 
 - **Evaluations V2** client support for COCO-style metrics on model runs via stored `evaluation_match_v2` rows. `NucleusClient` exposes `create_evaluation_v2()`, `get_evaluation_v2()`, and `list_evaluations_v2()`. The `EvaluationV2` resource supports `wait_for_completion()`, `charts()` (mAP, confusion matrix, PR curve, TIDE, and related aggregates), `examples()` (paginated TP/FP/FN rows), `delete()`, and `refresh()`. `AllowedLabelMatch` configures allowed ground-truth / prediction label pairs; filter and response types include `EvaluationV2FilterArgs`, `EvaluationV2Charts`, `EvaluationV2ExamplesPage`, and `EvaluationV2MatchExample`. Sphinx docs cover the workflow under Evaluations V2.
+
+
+## [0.18.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-06-08
+
+### Added
+- `deduplicate_by_phash` local utility for deduplicating `DatasetItem` objects or `items_and_annotation_generator()` rows by `DatasetItem.phash` without making API calls. The utility supports Hamming-distance thresholds from 0 to 64 and returns the surviving input objects, their `DatasetItem`s, reference IDs, and `DeduplicationStats`.
 
 ## [0.18.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-18
 
