@@ -1,7 +1,8 @@
-"""Nucleus Python SDK. """
+"""Nucleus Python SDK."""
 
 __all__ = [
     "AsyncJob",
+    "AllowedLabelMatch",
     "EmbeddingsExportJob",
     "BoxAnnotation",
     "DeduplicationJob",
@@ -18,6 +19,12 @@ __all__ = [
     "DatasetInfo",
     "DatasetItem",
     "DatasetItemRetrievalError",
+    "EvaluationV2",
+    "EvaluationV2Charts",
+    "EvaluationV2ExamplesPage",
+    "EvaluationV2FilterArgs",
+    "EvaluationV2MatchExample",
+    "EvaluationV2Status",
     "Frame",
     "Keypoint",
     "KeypointsAnnotation",
@@ -131,6 +138,12 @@ from .constants import (
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
+from .data_transfer_object.evaluation_v2 import (
+    EvaluationV2Charts,
+    EvaluationV2ExamplesPage,
+    EvaluationV2FilterArgs,
+    EvaluationV2MatchExample,
+)
 from .data_transfer_object.job_status import JobInfoRequestPayload
 from .dataset import Dataset
 from .dataset_item import DatasetItem
@@ -148,6 +161,7 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
+from .evaluation_v2 import AllowedLabelMatch, EvaluationV2, EvaluationV2Status
 from .job import CustomerJobTypes
 from .local_deduplication import (
     LocalDeduplicationResult,
@@ -880,6 +894,76 @@ class NucleusClient:
         if payload is None:
             payload = {}
         return self.make_request(payload, f"modelRun/{model_run_id}/commit")
+
+    def create_evaluation_v2(
+        self,
+        model_run_id: str,
+        *,
+        name: Optional[str] = None,
+        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
+        allowed_label_matches_id: Optional[str] = None,
+    ) -> EvaluationV2:
+        """Create an evaluation for a model run.
+
+        The evaluation runs in the background. Call
+        :meth:`EvaluationV2.wait_for_completion`, then
+        :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples` for results.
+
+        Parameters:
+            model_run_id: Model run id (``run_*``).
+            name: Optional display name.
+            allowed_label_matches: Optional label pairs to treat as matches.
+            allowed_label_matches_id: Optional id of a saved label-match configuration.
+
+        Returns:
+            :class:`EvaluationV2`: The created evaluation.
+        """
+        payload: Dict[str, Any] = {}
+        if name is not None:
+            payload["name"] = name
+        if allowed_label_matches is not None:
+            payload["allowed_label_matches"] = [
+                m.to_api_dict() for m in allowed_label_matches
+            ]
+        if allowed_label_matches_id is not None:
+            payload["allowed_label_matches_id"] = allowed_label_matches_id
+        result = self.make_request(
+            payload, f"modelRun/{model_run_id}/evaluationsV2"
+        )
+        eval_id = result.get("evaluation_id")
+        if not eval_id:
+            raise RuntimeError(
+                f"Unexpected create evaluation V2 response: {result}"
+            )
+        return self.get_evaluation_v2(str(eval_id))
+
+    def get_evaluation_v2(self, evaluation_id: str) -> EvaluationV2:
+        """Get an evaluation by id.
+
+        Parameters:
+            evaluation_id: Evaluation id (``evalv2_*``).
+
+        Returns:
+            :class:`EvaluationV2`.
+        """
+        data = self.get(f"evaluationsV2/{evaluation_id}")
+        return EvaluationV2.from_json(data, self)
+
+    def list_evaluations_v2(self, model_run_id: str) -> List[EvaluationV2]:
+        """List evaluations for a model run (newest first).
+
+        Parameters:
+            model_run_id: Model run id (``run_*``).
+
+        Returns:
+            List of :class:`EvaluationV2`.
+        """
+        rows = self.get(f"modelRun/{model_run_id}/evaluationsV2")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected list evaluations V2 response: {rows!r}"
+            )
+        return [EvaluationV2.from_json(r, self) for r in rows]
 
     @deprecated(msg="Prefer calling Dataset.info() directly.")
     def dataset_info(self, dataset_id: str):

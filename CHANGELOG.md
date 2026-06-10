@@ -5,6 +5,13 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-05-28
+
+### Added
+
+- **Evaluations V2** client support for COCO-style metrics on model runs via stored `evaluation_match_v2` rows. `NucleusClient` exposes `create_evaluation_v2()`, `get_evaluation_v2()`, and `list_evaluations_v2()`. The `EvaluationV2` resource supports `wait_for_completion()`, `charts()` (mAP, confusion matrix, PR curve, TIDE, and related aggregates), `examples()` (paginated TP/FP/FN rows), `delete()`, and `refresh()`. `AllowedLabelMatch` configures allowed ground-truth / prediction label pairs; filter and response types include `EvaluationV2FilterArgs`, `EvaluationV2Charts`, `EvaluationV2ExamplesPage`, and `EvaluationV2MatchExample`. Sphinx docs cover the workflow under Evaluations V2.
+
+
 ## [0.18.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-06-08
 
 ### Added
@@ -13,32 +20,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-18
 
 ### Added
+
 - `DatasetItem.phash` field exposing the 64-character "0/1" perceptual-hash string when populated by the Nucleus backend. Available on every SDK method that yields a `DatasetItem` (e.g. `items_and_annotation_generator`, `items_generator`, `query_items`, `dataset.items`, `iloc`/`refloc`/`loc`).
 
 ## [0.18.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.2) - 2026-05-08
 
 ### Added
+
 - Dataset tags are now exposed through the SDK so customers can identify datasets labeled by Scale vs other vendors. `Dataset.info()` now returns a `tags` field, and `Dataset` exposes `get_tags()`, `add_tags()`, and `remove_tags()` methods.
 
 ## [0.18.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.1) - 2026-05-05
 
 ### Changed
+
 - `Dataset.deduplicate()` and `Dataset.deduplicate_by_ids()` now run asynchronously and return a `DeduplicationJob` instead of returning a `DeduplicationResult` directly. Call `job.result()` to wait for completion and retrieve the result.
 
 ### Removed
+
 - Sync deduplication support for `Dataset.deduplicate()` and `Dataset.deduplicate_by_ids()`.
 
 ## [0.18.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.0) - 2026-04-29
 
 ### Removed
+
 - Dropped support for Python 3.7, 3.8, and 3.9. The minimum supported Python version is now **3.10**, and the SDK now supports Python **3.10, 3.11, 3.12, 3.13, and 3.14**.
 
 ### Changed
+
 - `DatasetItem.reference_id` is now typed `Optional[str]` (defaulting to `None`) instead of `str` with a `"DUMMY_VALUE"` sentinel. The field is still required at runtime: `__post_init__` now asserts `reference_id is not None`. This matches the existing docstring (already documented as `Optional[str]`) and removes the magic sentinel.
 - `nucleus/async_utils.py` now passes `aiohttp.ClientTimeout(total=DEFAULT_NETWORK_TIMEOUT_SEC)` to `session.post`/`session.get` instead of a bare integer (no behavioral change; aligns with the typed `aiohttp` API).
 - `NucleusClient.list_autotags` now always returns a `list` (`List[dict]`) regardless of the response shape, matching its declared return type.
 
 ### Fixed
+
 - All `mypy --ignore-missing-imports nucleus` errors and notes resolved (zero issues across all source files):
   - `nucleus/evaluation_match.py`: widen `infer_confusion_category` parameters to `Optional[str]`.
   - `nucleus/annotation.py`: default `TYPE_KEY` lookup to `""`; make `Segment.index` `Optional[int]`; type `Segment.to_payload`'s `payload` as `Dict[str, Any]`.
@@ -50,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `nucleus/scene.py`: annotate `Frame.__init__` and `VideoScene.info` so their bodies are type-checked.
 
 ### Tooling / CI
+
 - Expanded CircleCI installation matrix from `[3.10, 3.11]` to `[3.10, 3.11, 3.12, 3.13, 3.14]`, so every supported Python version is exercised on every PR (build sdist, install with each extras combination, smoke-test `import nucleus`).
 - Fixed pytest 9 fixture-mark errors across the test suite (`tests/cli/conftest.py`, `tests/validate/conftest.py`, `tests/test_scene.py`, `tests/test_video_scene.py`); pytest 9 turns `@pytest.mark.*` on a fixture into a hard error.
 - Cleaned up several pylint findings across the codebase (`E0606`, `W3101`, `R1737`, `R1728`, `C3001`, `C3002`, `W0719`).
@@ -60,21 +75,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.14) - 2026-04-14
 
 ### Changed
+
 - `api_key` and `limited_access_key` are now mutually exclusive in `NucleusClient`. Passing both (or setting `NUCLEUS_API_KEY` while also passing `limited_access_key`) raises a `ValueError`.
 
 ### Fixed
+
 - Docstring improvements across `NucleusClient`: fixed copy-paste errors (`get_job`, `get_slice`, `delete_slice`), removed phantom `stats_only` parameter from `list_jobs`, corrected `make_request` parameter name, and restructured `create_launch_model`/`create_launch_model_from_dir` docs for proper rendering.
 - Suppressed Sphinx warnings from inherited pydantic `BaseModel` methods by removing `inherited-members` from autoapi options.
 
 ## [0.17.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.13) - 2026-03-06
 
 ### Fixed
+
 - Removed the deprecated `pkg_resources` package and replaced it with `importlib-metadata`
 - Resolved ~79 errors/warnings in sphinx auto doc build errors
 
 ## [0.17.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.12) - 2026-02-23
 
 ### Added
+
 - `Dataset.deduplicate()` method to deduplicate images using perceptual hashing. Accepts optional `reference_ids` to deduplicate specific items, or deduplicates the entire dataset when only `threshold` is provided. Required `threshold` parameter (0-64) controls similarity matching (lower = stricter, 0 = exact matches only).
 - `Dataset.deduplicate_by_ids()` method for deduplication using internal `dataset_item_ids` directly, avoiding the reference ID to item ID mapping for improved efficiency.
 - `DeduplicationResult` and `DeduplicationStats` dataclasses for structured deduplication results.
@@ -102,6 +121,7 @@ print(result.unique_reference_ids)
 ## [0.17.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.11) - 2025-11-03
 
 ### Added
+
 - Support passing a limited access key via `NucleusClient(limited_access_key=...)`. When provided, the client sends the `x-limited-access-key` header on all requests (sync and async).
 - Allow using the SDK without a standard API key when a `limited_access_key` is supplied. In this mode, Basic Auth is omitted and only the limited access header is used.
 
@@ -113,6 +133,7 @@ client = nucleus.NucleusClient(limited_access_key="<LIMITED_ACCESS_KEY>")
 ```
 
 ### Changed
+
 - `Connection` accepts `extra_headers` and only includes Basic Auth when `api_key` is provided. This enables header-only auth with limited access keys.
 - Header propagation applies across all request paths, including Validate endpoints and concurrent async helpers.
 - Tests updated to be tolerant of limited-access-only runs.
@@ -121,22 +142,26 @@ client = nucleus.NucleusClient(limited_access_key="<LIMITED_ACCESS_KEY>")
 ## [0.17.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.10) - 2025-03-19
 
 ### Added
+
 - Adding page size variable to `items_and_annotation_generator()` to reduce timeout errors for customers with large datasets
 
 ## [0.17.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.9) - 2025-03-11
 
 ### Added
+
 - Adding `export_class_labels` methods to datasets and slices to extract unique class labels of the annotations in the dataset/slice.
 
 ## [0.17.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.8) - 2025-01-02
 
 ### Added
+
 - Adding `only_most_recent_tasks` parameter for `dataset.scene_and_annotation_generator()` and `dataset.items_and_annotation_generator()` to accommodate for multiple sets of ground truth caused by relabeled tasks. Also returns the task_id in the annotation results.
 
 ## [0.17.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.7) - 2024-11-05
 
 ### Added
-- Adding `slice_id` parameter for `dataset.scene_and_annotation_generator()`. 
+
+- Adding `slice_id` parameter for `dataset.scene_and_annotation_generator()`.
 
 Example usage:
 
@@ -149,7 +174,8 @@ for scene in dataset.scene_and_annotation_generator(slice_id="slc_..."):
 ## [0.17.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.6) - 2024-07-03
 
 ### Added
-- Method for downloading all annotations grouped by `scene` and `track_reference_id`. 
+
+- Method for downloading all annotations grouped by `scene` and `track_reference_id`.
 
 Example usage:
 
@@ -162,6 +188,7 @@ for scene in dataset.scene_and_annotation_generator():
 ## [0.17.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.5) - 2024-04-15
 
 ### Added
+
 - Method for uploading lidar semantic segmentation predictions, via `dataset.upload_lidar_semseg_predictions`
 
 Example usage:
@@ -177,76 +204,89 @@ dataset.upload_lidar_semseg_predictions(model, pointcloud_ref_id, predictions_s3
 
 For the expected format of the s3 predictions, refer to the [documentation here](https://docs.nucleus.scale.com/en/latest/api/nucleus/index.html#nucleus.Dataset.upload_lidar_semseg_predictions)
 
-
 ## [0.17.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.4) - 2024-03-25
 
 ### Modified
-- In `Model.run`, added the `model_run_name` parameter. This allows the creation of multiple model runs for datasets.
 
+- In `Model.run`, added the `model_run_name` parameter. This allows the creation of multiple model runs for datasets.
 
 ## [0.17.3] - 2024-02-29
 
 ### Added
+
 - Added the environment variable `S3_ENDPOINT` to accomodate for nonstandard S3 Endpoint URLs when asking for presigned URLs
 
 ## [0.17.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.2) - 2024-02-28
 
 ### Modified
+
 - In `Dataset.create_slice`, the `reference_ids` parameter is now optional. If left unspecified, it will create an empty slice
 
 ## [0.17.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.1) - 2024-02-22
 
 ### Added
+
 - Environment variable `NUCLEUS_SKIP_SSL_VERIFY` to skip SSL verification on requests
 
 ## [0.17.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.17.0) - 2024-02-06
 
 ### Added
+
 - Added `dataset.add_items_from_dir`
 - Added pytest-xdist for test parallelization
 
 ### Fixes
+
 - Fix test `test_models.test_remove_invalid_tag_from_model`
 
 ## [0.16.18](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.18) - 2024-02-06
 
 ### Added
+
 - Add the ability to add and remove `trained_slice_id` to a model
 
 ## [0.16.17](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.17) - 2024-01-29
 
 ### Fixes
+
 - Update documentation
 
 ## [0.16.16](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.16) - 2024-01-25
 
 ### Fixes
+
 - Minor fixes to docstring
 
 ## [0.16.15](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.15) - 2024-01-11
 
 ### Fixes
-- Fix lidar concurrent lidar pointcloud to also return intensity in case it exists in the response. 
+
+- Fix lidar concurrent lidar pointcloud to also return intensity in case it exists in the response.
 
 ## [0.16.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.14) - 2024-01-03
 
 ### Fixes
+
 - Open up Pydantic version requirements as was fixed in 0.16.11
 
 ## [0.16.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.13) - 2023-12-13
 
 ### Added
+
 - Added `trained_slice_id` parameter to `dataset.upload_predictions()` to specify the slice ID used to train the model.
 
 ### Fixes
+
 - Fix offset generation for image chips in `dataset.items_and_annotation_chip_generator()`
 
 ## [0.16.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.12) - 2023-11-29
 
 ### Added
-- Added tag support for slices. 
+
+- Added tag support for slices.
 
 Example:
+
 ```python
 >>> slc = client.get_slice('slc_id')
 >>> tags = slc.tags
@@ -256,10 +296,12 @@ Example:
 ## [0.16.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.11) - 2023-11-22
 
 ### Added
+
 - Added `num_processes` parameter to `dataset.items_and_annotation_chip_generator()` to specify parallel processing.
 - Method to allow for concurrent task fetches for pointcloud data
 
 Example:
+
 ```python
 >>> task_ids = ['task_1', 'task_2']
 >>> resp = client.download_pointcloud_tasks(task_ids=task_ids, frame_num=1)
@@ -271,6 +313,7 @@ Example:
 ```
 
 ### Fixes
+
 - Support environments using pydantic>=2
 
 ## [0.16.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.10) - 2023-11-22
@@ -278,6 +321,7 @@ Example:
 Allow creating a dataset by crawling all images in a directory, recursively. Also supports privacy mode datasets.
 
 #### Example structure:
+
 ```
 ~/Documents/
     data/
@@ -300,7 +344,7 @@ client.create_dataset_from_dir(data_dir)
 
 #### Example Privacy Mode:
 
-This requires that a proxy (or file server) is setup  and can serve files _relative_ to the data_dir
+This requires that a proxy (or file server) is setup and can serve files _relative_ to the data_dir
 
 ```python
 data_dir = "~/Documents/data"
@@ -315,7 +359,6 @@ client.create_dataset_from_dir(
 This would create a dataset `my-dataset`, and when opened in Nucleus, the images would be requested to the path:
 `<privacy_mode_proxy>/<img ref id>`, for example: `http://localhost:5000/assets/2022/img01.png`
 
-
 ## [0.16.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.9) - 2023-11-17
 
 ### Fixes
@@ -327,108 +370,121 @@ This would create a dataset `my-dataset`, and when opened in Nucleus, the images
 ### Added
 
 #### Dataset Item width and height
+
 - Allow passing width and height to `DatasetItem`
 - This is _required_ when using privacy mode
 
 #### Dataset Item Fetch
+
 - Added `dataset.items_and_annotation_chip_generator()` functionality to generate chips of images in s3 or locally.
 - Added `query` parameter for `dataset.items_and_annotation_generator()` to filter dataset items.
 
 ### Removed
-- `upload_to_scale` is no longer a property in `DatasetItem`, users should instead specify `use_privacy_mode` on the dataset during creation
 
+- `upload_to_scale` is no longer a property in `DatasetItem`, users should instead specify `use_privacy_mode` on the dataset during creation
 
 ## [0.16.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.7) - 2023-11-03
 
 ### Added
-- Allow direct embedding vector upload together with dataset items. `DatasetItem` now has an additional parameter called `embedding_info` which can be used to directly upload embeddings when a dataset is uploaded.
-- Added `dataset.embedding_indexes` property, which exposes information about every embedding index which belongs to the dataset.   
 
+- Allow direct embedding vector upload together with dataset items. `DatasetItem` now has an additional parameter called `embedding_info` which can be used to directly upload embeddings when a dataset is uploaded.
+- Added `dataset.embedding_indexes` property, which exposes information about every embedding index which belongs to the dataset.
 
 ## [0.16.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.6) - 2023-11-01
 
 ### Added
+
 - Allow datasets to be created in "privacy mode". For example, `client.create_dataset('name', use_privacy_mode=True)`.
 - Privacy Mode lets customers use Nucleus without sensitive raw data ever leaving their servers.
 - When set to `True`, you can submit URLs to Nucleus that link to raw data assets like images or point clouds, instead of transferring that data to Scale. Access control is then completely in the hands of users: URLs may optionally be protected behind your corporate VPN or an IP whitelist. When you load a Nucleus web page, your browser will directly fetch the raw data from your servers without it ever being accessible to Scale.
 
-
 ## [0.16.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.5) - 2023-10-30
 
 ### Added
-- Added a `description` to the slice info. 
+
+- Added a `description` to the slice info.
 
 ### Changed
-- Made `skeleton` key optional on `KeypointsAnnotation`. 
 
+- Made `skeleton` key optional on `KeypointsAnnotation`.
 
 ## [0.16.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.4) - 2023-10-23
 
 ### Added
+
 - Added a `query_objects` method on the Dataset class.
 - Example
+
 ```shell
 >>> ds = client.get_dataset('ds_id')
 >>> objects = ds.query_objects('annotations.metadata.distance_to_device > 150', ObjectQueryType.GROUND_TRUTH_ONLY)
 [CuboidAnnotation(label="", dimensions={}, ...), ...]
 ```
-- Added `EvaluationMatch` class to represent IOU Matches, False Positives and False Negatives retrieved through the `query_objects` method 
 
+- Added `EvaluationMatch` class to represent IOU Matches, False Positives and False Negatives retrieved through the `query_objects` method
 
 ## [0.16.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.3) - 2023-10-10
 
 ### Added
+
 - Added a `query_scenes` method on the Dataset class.
 - Example
+
 ```shell
 >>> ds = client.get_dataset('ds_id')
 >>> scenes = ds.query_scenes('scene.metadata.foo = "baz"')
 [Scene(reference_id="", metadata={}, ...), ...]
 ```
 
-
 ## [0.16.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.2) - 2023-10-03
 
 ### Fixed
-- Raise error on all error states for AsyncJob.sleep_until_complete(). Before it only handled the deprecated "Errored"
 
+- Raise error on all error states for AsyncJob.sleep_until_complete(). Before it only handled the deprecated "Errored"
 
 ## [0.16.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.1) - 2023-09-18
 
 ### Added
+
 - Added `asynchronous` parameter for `slice.export_embeddings()` and `dataset.export_embeddings()` to allow embeddings to be exported asynchronously.
 
 ### Changed
+
 - Changed `slice.export_embeddings()` and `dataset.export_embeddings()` to be asynchronous by deafult.
 
 ## [0.16.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.16.0) - 2023-09-18
 
 ### Removed
+
 - Support for Python 3.6 - it is end of life for more than a year
 
 ### Fixed
+
 - Development environment for Python 3.11
-- 
+-
 
 ## [0.15.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.11) - 2023-09-15
 
 ### Added
-- Added `slice.export_raw_json()` functionality to support raw export of object slices (annotations, predictions, item and scene level data). Currently does not support image slices. 
 
+- Added `slice.export_raw_json()` functionality to support raw export of object slices (annotations, predictions, item and scene level data). Currently does not support image slices.
 
 ## [0.15.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.10) - 2023-07-20
 
 ### Added
+
 - Fix `slice.export_predictions(args)` and `slice.export_predictions_generator(args)` methods to return `Predictions` instead of `Annotations`
 
 ## [0.15.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.9) - 2023-06-26
 
 ### Added
+
 - Support for Scale Launch client v1.0.0 and higher for the Nucleus + Launch integration
 
 ## [0.15.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.7) - 2023-06-09
 
 ### Added
+
 - Allow for downloading pointcloud data for a give task and frame number, example:
 
 ```python
@@ -442,39 +498,45 @@ np_pts = np.array([pt.to_list() for pt in pts])
 ## [0.15.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.6) - 2023-06-03
 
 ### Changed
+
 - Document new restrictions to slice create/append.
 - `Dataset.create_slice` and `Slice.append` methods cannot exceed 10,000 items per request.
 
 ## [0.15.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.5) - 2023-05-8
 
 ### Fixed
-- Give default annotation_id to `KeypointAnnotations` when not specified
 
+- Give default annotation_id to `KeypointAnnotations` when not specified
 
 ## [0.15.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.4) - 2023-03-21
 
 ### Changed
-- Added `create_slice_by_ids` to create slices from dataset item, scene, and object IDs
 
+- Added `create_slice_by_ids` to create slices from dataset item, scene, and object IDs
 
 ## [0.15.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.3) - 2023-03-02
 
 ### Changed
+
 - Allow denormalized scores in `EvaluationResult`s
 
 ## [0.15.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.2) - 2023-02-10
 
 ### Changed
+
 - Fix `client.create_launch_model_from_dir(args)` method
 
 ## [0.15.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.1) - 2023-01-16
 
 ### Changed
+
 - Better filter tuning of `client.list_jobs(args)` method
 
 ### Added
+
 - Dataset method to filter jobs, and statistics on running jobs
-Example:
+  Example:
+
 ```python
 >>> client = nucleus.NucleusClient(API_KEY)
 >>> ds = client.get_dataset(ds_id)
@@ -485,6 +547,7 @@ Example:
 ```
 
 Detailed Example
+
 ```python
 >>> from nucleus.job import CustomerJobTypes
 >>> client = nucleus.NucleusClient(API_KEY)
@@ -501,15 +564,18 @@ Detailed Example
 # ... returns list of AsyncJob objects
 ```
 
-
 ## [0.15.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.15.0) - 2022-12-19
 
 ### Changed
+
 - `dataset.slices` now returns a list of `Slice` objects instead of a list of IDs
 
 ### Added
+
 Retrieve a slice from a dataset by its name, or all slices of a particular type from a dataset. Where type is one of `["dataset_item", "object", "scene"]`.
+
 - `dataset.get_slices(name, slice_type): List[Slice]`
+
 ```python
 from nucleus.slice import SliceType
 dataset.get_slices(name="My Slice")
@@ -519,55 +585,58 @@ dataset.get_slices(slice_type=SliceType.DATASET_ITEM)
 ## [0.14.30](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.30) - 2022-11-29
 
 ### Added
+
 - Support for uploading track-level metrics to external evaluation functions using track_ref_ids
 
 ## [0.14.29](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.29) - 2022-11-22
 
 ### Added
+
 - Support for `Track`s, enabling ground truth annotations and model predictions to be grouped across dataset items and scenes
 - Helpers to update track metadata, as well as to create and delete tracks at the dataset level
-
 
 ## [0.14.28](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.28) - 2022-11-17
 
 ### Added
+
 - Support for appending to slice with scene reference IDs
 - Better error handling when appending to a slice with non-existent reference IDs
-
 
 ## [0.14.27](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.27) - 2022-11-04
 
 ### Added
+
 - Support for scene-level external evaluation functions
 - Support for uploading custom scene-level metrics
-
 
 ## [0.14.26](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.26) - 2022-11-01
 
 ### Added
+
 - Support for fetching scene from a `DatasetItem.reference_id`
-Example:
+  Example:
+
 ```python
 dataset = client.get_dataset("<dataset_id>")
 assert dataset.is_scene  # only works on scene datasets
 some_item = dataset.iloc(0)
-dataset.get_scene_from_item_ref_id(some_item['item'].reference_id) 
+dataset.get_scene_from_item_ref_id(some_item['item'].reference_id)
 ```
-
 
 ## [0.14.25](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.25) - 2022-10-20
 
 ### Updated
+
 - Items of a slice can be retrieved by Slice property `.item`
 - The type of items returned from `.items` is based on the slice `type`:
   - `slice.type == 'dataset_item'` => list of `DatasetItem` objects
   - `slice.type == 'object'` => list of `Annotation`/`Prediction` objects
   - `slice.type == 'scene'` => list of `Scene` objects
 
-
 ## [0.14.24](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.24) - 2022-10-19
 
 ### Fixed
+
 - Late imports for seldomly used heavy libraries. Sped up CLI invocation and autocomplation.
   If you had shell completions installed before we recommend removeing them from your .(bash|zsh)rc
   file and reinstalling with nu install-completions
@@ -575,39 +644,43 @@ dataset.get_scene_from_item_ref_id(some_item['item'].reference_id)
 ## [0.14.23](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.23) - 2022-10-17
 
 ### Added
-- Support for building slices via Nucleus' Smart Sample
 
+- Support for building slices via Nucleus' Smart Sample
 
 ## [0.14.22](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.22) - 2022-10-14
 
 ### Added
-- Trigger for calculating Validate metrics for a model. This allows underperforming slice discovery and more model analysis
 
+- Trigger for calculating Validate metrics for a model. This allows underperforming slice discovery and more model analysis
 
 ## [0.14.21](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.21) - 2022-09-28
 
 ### Added
-- Support for `context_attachment` metadata values. See [upload metadata](https://nucleus.scale.com/docs/upload-metadata) for more information.
 
+- Support for `context_attachment` metadata values. See [upload metadata](https://nucleus.scale.com/docs/upload-metadata) for more information.
 
 ## [0.14.20](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.20) - 2022-09-23
 
 ### Fixed
+
 - Local uploads are correctly batched and prevents flooding the network with requests
 
 ## [0.14.19](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.19) - 2022-08-26
 
 ### Added
+
 - Support for Coordinate metadata values. See [upload metadata](https://nucleus.scale.com/docs/upload-metadata) for more information.
 
 ## [0.14.18](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.18) - 2022-08-16
 
 ### Added
+
 - Metadata and confidence support for scene categories
 
 ## [0.14.17](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.17) - 2022-08-15
 
 ### Fixed
+
 - Fix `AsyncJob` status payload keys causing test failures
 - Fix `AsyncJob` export test
 - Fix `page_size` for `{Dataset,Slice}.items_and_annotatation_generator()`
@@ -616,105 +689,120 @@ dataset.get_scene_from_item_ref_id(some_item['item'].reference_id)
 ## [0.14.16](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.16) - 2022-08-12
 
 ### Added
+
 - Scene categorization support
 
 ## [0.14.15](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.15) - 2022-08-11
 
 ### Removed
+
 - Removed s3fs, fsspec dependencies for simpler installation in various environments
 
 ## [0.14.14](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.14) - 2022-08-11
 
 ### Added
+
 - client.slices to list all of users slices independent of dataset
-- Added optional parameter `asynchronous: bool` to `Dataset.update_item_metadata` and  `Dataset.update_scene_metadata`,
-allowing the update to run as a background job when set to `True`
+- Added optional parameter `asynchronous: bool` to `Dataset.update_item_metadata` and `Dataset.update_scene_metadata`,
+  allowing the update to run as a background job when set to `True`
 
 ### Fixed
-- Validate unit test listing and evaluation history listing. Now uses new bulk fetch endpoints for faster listing.
 
+- Validate unit test listing and evaluation history listing. Now uses new bulk fetch endpoints for faster listing.
 
 ## [0.14.13](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.13) - 2022-08-10
 
 ### Fixed
-- Fix payload parsing for scene export
 
+- Fix payload parsing for scene export
 
 ## [0.14.12](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.12) - 2022-08-05
 
 ### Added
+
 - Added auto-paginated `Slice.export_predictions_generator`
 
 ### Fixed
-- Change `{Dataset,Slice}.items_and_annotation_generator` to work with improved paginate endpoint
 
+- Change `{Dataset,Slice}.items_and_annotation_generator` to work with improved paginate endpoint
 
 ## [0.14.11](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.11) - 2022-07-20
 
 ### Fixed
+
 - Various docstring and typing updates
 
 ## [0.14.10](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.10) - 2022-07-20
 
 ### Added
+
 - `Dataset.items_and_annotation_generator()`
 
 ### Fixed
+
 - `Slice.items_and_annotation_generator()` bug
 
 ## [0.14.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.9) - 2022-07-14
 
 ### Fixed
+
 - NoneType errors in Validate
 
 ## [0.14.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.8) - 2022-07-14
 
 ### Fixed
+
 - Segmentation metrics filtering. Prior version artificially boosted performance when filtering was applied.
 
 ## [0.14.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.7) - 2022-07-07
 
 ### Added
+
 - Support running structured queries and retrieving item results via API
 
 ## [0.14.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.6) - 2022-07-07
 
 ### Fixed
+
 - `Dataset.delete_annotations` now defaults `reference_ids` to an empty list and `keep_history` to true
 
 ## [0.14.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.5) - 2022-07-05
 
 ### Fixed
+
 - Averaging of rich semantic segmentation taxonomies not taking into account missing classes
 
 ## [0.14.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.4) - 2022-06-21
 
 ### Fixed
+
 - Regression that caused Validate filter statements to not work
 
 ## [0.14.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.3) - 2022-06-21
 
 ### Fixed
-- CLI installation without GEOS errored out. Now handled by importer.
 
+- CLI installation without GEOS errored out. Now handled by importer.
 
 ## [0.14.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.2) - 2022-06-21
 
 ### Fixed
+
 - Better error reporting when everything is filtered out by a filter statement in a Validate evaluation function
 
 ## [0.14.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.1) - 2022-06-20
 
 ### Fixed
-- Adapt Segmentation metrics to better support instance segmentation
-- Change Segmentation/Polygon metrics to use new segmentation metrics 
 
+- Adapt Segmentation metrics to better support instance segmentation
+- Change Segmentation/Polygon metrics to use new segmentation metrics
 
 ## [0.14.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.14.0) - 2022-06-16
 
 ### Added
 
 - Allow creation/deletion of model tags on new and existing models, eg:
+
 ```python
 # on model creation
 model = client.create_model(name="foo_model", reference_id="foo-model-ref", tags=["some tag"])
@@ -730,17 +818,19 @@ existing_model.remove_tags(['tag a'])
 ## [0.13.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-15
 
 ### Fixed
-- Guard against invalid skeleton indexes in KeypointsAnnotation
 
+- Guard against invalid skeleton indexes in KeypointsAnnotation
 
 ## [0.13.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.4) - 2022-06-09
 
 ### Fixed
-- Guard against extras imports 
+
+- Guard against extras imports
 
 ## [0.13.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.3) - 2022-06-09
 
 ### Fixed
+
 - Make installation of scale-launch optional (again!).
 
 ## [0.13.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.2) - 2022-06-08
@@ -748,7 +838,7 @@ existing_model.remove_tags(['tag a'])
 ### Fixed
 
 - Open up requirements for easier installation in more environments. Add more optional installs under `metrics`
- 
+
 ## [0.13.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.13.1) - 2022-06-08
 
 ### Fixed
@@ -767,7 +857,6 @@ existing_model.remove_tags(['tag a'])
 
 - Poetry dependency list
 
-
 ## [0.12.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.3) - 2022-06-02
 
 ### Added
@@ -776,13 +865,11 @@ existing_model.remove_tags(['tag a'])
 - `Dataset.export_scale_task_info`
 - `Slice.export_scale_task_info`
 
-
 ## [0.12.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.2) - 2022-06-02
 
 ### Added
 
 - Allow users to upload external evaluation results calculated on the client side.
-
 
 ## [0.12.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.12.1) - 2022-06-02
 
@@ -795,7 +882,6 @@ existing_model.remove_tags(['tag a'])
 ### Added
 
 - Allow users to create external evaluation functions for Scenario Tests in Validate.
-
 
 ## [0.11.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.11.2) - 2022-05-20
 
