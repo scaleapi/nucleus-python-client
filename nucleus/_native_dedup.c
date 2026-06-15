@@ -55,6 +55,7 @@ static int popcount64(uint64_t value) {
 #else
     int count = 0;
     while (value != 0) {
+        /* Kernighan's algorithm drops one set bit per iteration. */
         value &= value - 1;
         count++;
     }
@@ -392,7 +393,7 @@ static PyObject *build_kept_index_list(
 }
 
 static PyObject *native_deduplicate_phashes(
-    PyObject *self, PyObject *args
+    PyObject *Py_UNUSED(self), PyObject *args
 );
 
 static PyObject *deduplicate_with_index(
@@ -404,8 +405,6 @@ static PyObject *deduplicate_with_index(
     Py_ssize_t kept_count = 0;
     int is_duplicate;
     PyObject *result = NULL;
-
-    memset(&index, 0, sizeof(index));
 
     if (input_count > 0) {
         kept_indexes = (Py_ssize_t *)malloc(
@@ -517,7 +516,7 @@ static PyObject *deduplicate_keep_first(Py_ssize_t input_count) {
 }
 
 static PyObject *native_deduplicate_phashes(
-    PyObject *self, PyObject *args
+    PyObject *Py_UNUSED(self), PyObject *args
 ) {
     PyObject *phashes_obj;
     PyObject *phashes_sequence;
@@ -527,8 +526,6 @@ static PyObject *native_deduplicate_phashes(
     Py_ssize_t input_count;
     Py_ssize_t i;
     int threshold;
-
-    (void)self;
 
     if (!PyArg_ParseTuple(args, "Oi", &phashes_obj, &threshold)) {
         return NULL;

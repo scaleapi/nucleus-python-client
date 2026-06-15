@@ -231,7 +231,7 @@ def test_deduplicate_by_phash_preserves_missing_reference_ids():
     assert result.unique_reference_ids == [None, "b"]
 
 
-@pytest.mark.parametrize("threshold", [0, 10, 12, 64])
+@pytest.mark.parametrize("threshold", [0, 10, 11, 12, 64])
 def test_deduplicate_by_phash_uses_native_when_available(
     monkeypatch, threshold
 ):
@@ -256,7 +256,12 @@ def test_deduplicate_by_phash_uses_native_when_available(
     _native_dedup is None,
     reason="native deduplication extension is not built in this environment",
 )
-def test_native_deduplication_matches_python_index():
+@pytest.mark.parametrize(
+    ("threshold", "expected_indexes"), [(10, [0, 2, 3]), (11, [0, 3])]
+)
+def test_native_deduplication_matches_python_index(
+    threshold, expected_indexes
+):
     phashes = [
         int("0" * 64, 2),
         int(_flip_bits("0" * 64, range(10)), 2),
@@ -264,7 +269,10 @@ def test_native_deduplication_matches_python_index():
         int("1" * 64, 2),
     ]
 
-    assert _native_dedup.deduplicate_phashes(phashes, 10) == [0, 2, 3]
+    assert (
+        _native_dedup.deduplicate_phashes(phashes, threshold)
+        == expected_indexes
+    )
 
 
 @pytest.mark.skipif(
