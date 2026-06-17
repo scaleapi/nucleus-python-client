@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build macOS wheels as native `arm64` wheels on the CircleCI Apple Silicon runner instead of requesting `universal2`, which produced an `arm64` wheel that cibuildwheel then tried to test under `x86_64`.
 
 ### Tooling / CI
-- Pin `cibuildwheel` in release wheel jobs and run the Linux wheel builder from a compatible Python host so the Python 3.10 through 3.14 wheel matrix is deterministic.
+- Pin `cibuildwheel` in release wheel jobs, run the Linux wheel builder from a compatible Python host, and select a Python 3.11+ Windows host interpreter so the Python 3.10 through 3.14 wheel matrix is deterministic.
 
 ## [0.18.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.7) - 2026-06-17
 
