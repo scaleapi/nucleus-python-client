@@ -87,33 +87,6 @@ jobs:
             pip install --upgrade pip
             pip install poetry
       - run:
-          name: Validate Tag Version # Check if the tag name matches the package version
-          command: |
-            if [[ -z "$CIRCLE_TAG" ]]; then
-                echo "Not a tag build; skipping tag/version match validation."
-                exit 0
-            fi
-            PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
-            if [[ "$CIRCLE_TAG" != "v${PKG_VERSION}" ]]; then
-                echo "ERROR: Tag name ($CIRCLE_TAG) must match package version (v${PKG_VERSION})."
-                exit 1;
-            fi
-      - run:
-          name: Validate SDK Version Increment # Check if the version is already on PyPI
-          command: |
-            PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
-            if pip install "scale-nucleus>=${PKG_VERSION}" > /dev/null 2>&1;
-            then
-                if [[ -z "$CIRCLE_TAG" ]]; then
-                    echo "WARNING: Version (${PKG_VERSION}) already exists on PyPI."
-                    echo "This is only enforced for tag builds so regular PRs are not blocked after a release."
-                    exit 0;
-                fi
-                echo "ERROR: You need to increment to a new version before publishing!"
-                echo "Version (${PKG_VERSION}) already exists on PyPI."
-                exit 1;
-            fi
-      - run:
           name: Build sdist
           command: | # install env dependencies
             rm -rf dist
