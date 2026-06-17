@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Build macOS wheels as native `arm64` wheels on the CircleCI Apple Silicon runner instead of requesting `universal2`, which produced an `arm64` wheel that cibuildwheel then tried to test under `x86_64`.
 
+### Tooling / CI
+- Run the full source distribution, Linux wheel, macOS wheel, Windows wheel, release artifact validation, and `poetry publish --dry-run` checks on PRs so release packaging failures are caught before tagging and publishing.
+
 ## [0.18.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.7) - 2026-06-17
 
 ### Fixed

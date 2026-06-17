@@ -89,6 +89,10 @@ jobs:
       - run:
           name: Validate Tag Version # Check if the tag name matches the package version
           command: |
+            if [[ -z "$CIRCLE_TAG" ]]; then
+                echo "Not a tag build; skipping tag/version match validation."
+                exit 0
+            fi
             PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
             if [[ "$CIRCLE_TAG" != "v${PKG_VERSION}" ]]; then
                 echo "ERROR: Tag name ($CIRCLE_TAG) must match package version (v${PKG_VERSION})."
@@ -100,6 +104,11 @@ jobs:
             PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
             if pip install "scale-nucleus>=${PKG_VERSION}" > /dev/null 2>&1;
             then
+                if [[ -z "$CIRCLE_TAG" ]]; then
+                    echo "WARNING: Version (${PKG_VERSION}) already exists on PyPI."
+                    echo "This is only enforced for tag builds so regular PRs are not blocked after a release."
+                    exit 0;
+                fi
                 echo "ERROR: You need to increment to a new version before publishing!"
                 echo "Version (${PKG_VERSION}) already exists on PyPI."
                 exit 1;
@@ -149,7 +158,6 @@ jobs:
           command: |
             python3 -m pip install --upgrade pip
             python3 -m pip install cibuildwheel
-            softwareupdate --install-rosetta --agree-to-license || true
 
             export CIBW_ARCHS_MACOS="arm64"
             export CIBW_BUILD="cp310-macosx_* cp311-macosx_* cp312-macosx_* cp313-macosx_* cp314-macosx_*"
@@ -185,6 +193,27 @@ jobs:
           root: .
           paths:
             - dist
+
+  validate_release_artifacts:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout # checkout source code to working directory
+      - attach_workspace:
+          at: .
+      - run:
+          name: Install Publish Tools
+          command: |
+            pip install --upgrade pip
+            pip install poetry
+      - run:
+          name: Validate Release Artifact Bundle
+          command: |
+            python scripts/validate_release_artifacts.py
+      - run:
+          name: Poetry Publish Dry Run
+          command: |
+            poetry publish --dry-run --no-interaction --username dry-run --password dry-run
 
   pypi_publish:
     docker:
@@ -227,7 +256,7 @@ jobs:
                 echo "ERROR: Please assign PYPI_USERNAME and PYPI_PASSWORD as environment variables"
                 exit 1
             fi
-            poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
+            poetry publish --no-interaction --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
   test_client_installation:
     parameters:
       python_version:
@@ -288,8 +317,6 @@ workflows:
           requires:
             - build_test
           filters:
-            branches:
-              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - build_linux_wheels:
@@ -297,8 +324,6 @@ workflows:
           requires:
             - build_test
           filters:
-            branches:
-              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - build_macos_wheels:
@@ -306,8 +331,6 @@ workflows:
           requires:
             - build_test
           filters:
-            branches:
-              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - build_windows_wheels:
@@ -315,8 +338,16 @@ workflows:
           requires:
             - build_test
           filters:
-            branches:
-              ignore: /.*/ # Runs for none of the branches
+            tags:
+              only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
+      - validate_release_artifacts:
+          context: Nucleus
+          requires:
+            - build_sdist
+            - build_linux_wheels
+            - build_macos_wheels
+            - build_windows_wheels
+          filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - pypi_publish:
@@ -326,6 +357,7 @@ workflows:
             - build_linux_wheels
             - build_macos_wheels
             - build_windows_wheels
+            - validate_release_artifacts
           filters:
             branches:
               ignore: /.*/ # Runs for none of the branches
