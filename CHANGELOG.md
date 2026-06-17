@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tooling / CI
 - Run the full source distribution, Linux wheel, macOS wheel, Windows wheel, release artifact validation, and `poetry publish --dry-run` checks on PRs so release packaging failures are caught before tagging and publishing.
+- Pin `cibuildwheel` in release wheel jobs so the Python 3.10 through 3.14 wheel matrix is deterministic across CI host images.
 
 ## [0.18.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.7) - 2026-06-17
 
