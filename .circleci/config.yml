@@ -151,7 +151,7 @@ jobs:
             python3 -m pip install cibuildwheel
             softwareupdate --install-rosetta --agree-to-license || true
 
-            export CIBW_ARCHS_MACOS="universal2"
+            export CIBW_ARCHS_MACOS="arm64"
             export CIBW_BUILD="cp310-macosx_* cp311-macosx_* cp312-macosx_* cp313-macosx_* cp314-macosx_*"
             export CIBW_SKIP="pp*"
             export CIBW_TEST_COMMAND='python -c "import nucleus._native_dedup as native; assert native.deduplicate_phashes([0, 1023, 2047], 10) == [0, 2]"'
