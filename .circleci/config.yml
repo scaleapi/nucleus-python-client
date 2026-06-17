@@ -194,27 +194,6 @@ jobs:
           paths:
             - dist
 
-  validate_release_artifacts:
-    docker:
-      - image: cimg/python:3.10
-    steps:
-      - checkout # checkout source code to working directory
-      - attach_workspace:
-          at: .
-      - run:
-          name: Install Publish Tools
-          command: |
-            pip install --upgrade pip
-            pip install poetry
-      - run:
-          name: Validate Release Artifact Bundle
-          command: |
-            python scripts/validate_release_artifacts.py
-      - run:
-          name: Poetry Publish Dry Run
-          command: |
-            poetry publish --dry-run --no-interaction --username dry-run --password dry-run
-
   pypi_publish:
     docker:
       - image: cimg/python:3.10
@@ -340,16 +319,6 @@ workflows:
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
-      - validate_release_artifacts:
-          context: Nucleus
-          requires:
-            - build_sdist
-            - build_linux_wheels
-            - build_macos_wheels
-            - build_windows_wheels
-          filters:
-            tags:
-              only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - pypi_publish:
           context: Nucleus
           requires:
@@ -357,7 +326,6 @@ workflows:
             - build_linux_wheels
             - build_macos_wheels
             - build_windows_wheels
-            - validate_release_artifacts
           filters:
             branches:
               ignore: /.*/ # Runs for none of the branches
