@@ -11,8 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build macOS wheels as native `arm64` wheels on the CircleCI Apple Silicon runner instead of requesting `universal2`, which produced an `arm64` wheel that cibuildwheel then tried to test under `x86_64`.
 
 ### Tooling / CI
-- Run the source distribution, Linux wheel, macOS wheel, and Windows wheel checks on PRs so platform packaging failures are caught before tagging and publishing.
-- Pin `cibuildwheel` in release wheel jobs so the Python 3.10 through 3.14 wheel matrix is deterministic across CI host images.
+- Pin `cibuildwheel` in release wheel jobs and run the Linux wheel builder from a compatible Python host so the Python 3.10 through 3.14 wheel matrix is deterministic.
 
 ## [0.18.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.7) - 2026-06-17
 
@@ -25,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Native C acceleration for `deduplicate_by_phash`. When the compiled extension is available, all threshold values are handled in native code: thresholds `0` through `11` use the chunked Hamming index, thresholds `12` through `63` use a native linear scan, and threshold `64` uses the keep-first fast path. The public Python API is unchanged and falls back to the pure-Python implementation when the native extension is unavailable.
 
 ### Tooling / CI
-- Publish Linux `x86_64`, macOS `arm64`, and Windows `amd64` wheels for Python 3.10 through 3.14 using `cibuildwheel`, alongside the source distribution.
+- Publish Linux `x86_64`, macOS `universal2`, and Windows `amd64` wheels for Python 3.10 through 3.14 using `cibuildwheel`, alongside the source distribution.
 
 ## [0.18.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.5) - 2026-05-28
 

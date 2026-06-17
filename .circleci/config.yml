@@ -87,6 +87,24 @@ jobs:
             pip install --upgrade pip
             pip install poetry
       - run:
+          name: Validate Tag Version # Check if the tag name matches the package version
+          command: |
+            PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
+            if [[ "$CIRCLE_TAG" != "v${PKG_VERSION}" ]]; then
+                echo "ERROR: Tag name ($CIRCLE_TAG) must match package version (v${PKG_VERSION})."
+                exit 1;
+            fi
+      - run:
+          name: Validate SDK Version Increment # Check if the version is already on PyPI
+          command: |
+            PKG_VERSION=$(sed -n 's/^version = //p' pyproject.toml | sed -e 's/^"//' -e 's/"$//')
+            if pip install "scale-nucleus>=${PKG_VERSION}" > /dev/null 2>&1;
+            then
+                echo "ERROR: You need to increment to a new version before publishing!"
+                echo "Version (${PKG_VERSION}) already exists on PyPI."
+                exit 1;
+            fi
+      - run:
           name: Build sdist
           command: | # install env dependencies
             rm -rf dist
@@ -208,7 +226,7 @@ jobs:
                 echo "ERROR: Please assign PYPI_USERNAME and PYPI_PASSWORD as environment variables"
                 exit 1
             fi
-            poetry publish --no-interaction --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
+            poetry publish --username=$PYPI_USERNAME --password=$PYPI_PASSWORD
   test_client_installation:
     parameters:
       python_version:
@@ -269,6 +287,8 @@ workflows:
           requires:
             - build_test
           filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - build_linux_wheels:
@@ -276,6 +296,8 @@ workflows:
           requires:
             - build_test
           filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - build_macos_wheels:
@@ -283,6 +305,8 @@ workflows:
           requires:
             - build_test
           filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - build_windows_wheels:
@@ -290,6 +314,8 @@ workflows:
           requires:
             - build_test
           filters:
+            branches:
+              ignore: /.*/ # Runs for none of the branches
             tags:
               only: /^v\d+\.\d+\.\d+$/ # Runs only for tags with the format [v1.2.3]
       - pypi_publish:
