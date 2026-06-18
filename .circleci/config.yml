@@ -116,7 +116,7 @@ jobs:
 
   build_linux_wheels:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/python:3.12
     steps:
       - checkout # checkout source code to working directory
       - setup_remote_docker
@@ -124,7 +124,7 @@ jobs:
           name: Build Linux wheels
           command: |
             pip install --upgrade pip
-            pip install cibuildwheel
+            pip install "cibuildwheel==4.1.0"
 
             export CIBW_ARCHS_LINUX="x86_64"
             export CIBW_BUILD="cp310-manylinux_x86_64 cp311-manylinux_x86_64 cp312-manylinux_x86_64 cp313-manylinux_x86_64 cp314-manylinux_x86_64"
@@ -148,10 +148,9 @@ jobs:
           name: Build macOS wheels
           command: |
             python3 -m pip install --upgrade pip
-            python3 -m pip install cibuildwheel
-            softwareupdate --install-rosetta --agree-to-license || true
+            python3 -m pip install "cibuildwheel==4.1.0"
 
-            export CIBW_ARCHS_MACOS="universal2"
+            export CIBW_ARCHS_MACOS="arm64"
             export CIBW_BUILD="cp310-macosx_* cp311-macosx_* cp312-macosx_* cp313-macosx_* cp314-macosx_*"
             export CIBW_SKIP="pp*"
             export CIBW_TEST_COMMAND='python -c "import nucleus._native_dedup as native; assert native.deduplicate_phashes([0, 1023, 2047], 10) == [0, 2]"'
@@ -172,13 +171,24 @@ jobs:
       - run:
           name: Build Windows wheels
           command: |
-            python -m pip install --upgrade pip
-            python -m pip install cibuildwheel
+            $PythonHost = Get-ChildItem -Path "C:\Python3*\python.exe" |
+                Where-Object {
+                    & $_.FullName -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+                    $LASTEXITCODE -eq 0
+                } |
+                Sort-Object FullName -Descending |
+                Select-Object -First 1 -ExpandProperty FullName
+            if (-not $PythonHost) {
+                throw "No Python 3.11+ host interpreter found for cibuildwheel"
+            }
+            & $PythonHost --version
+            & $PythonHost -m pip install --upgrade pip
+            & $PythonHost -m pip install "cibuildwheel==4.1.0"
 
             $env:CIBW_BUILD = "cp310-win_amd64 cp311-win_amd64 cp312-win_amd64 cp313-win_amd64 cp314-win_amd64"
             $env:CIBW_SKIP = "pp*"
             $env:CIBW_TEST_COMMAND = 'python -c "import nucleus._native_dedup as native; assert native.deduplicate_phashes([0, 1023, 2047], 10) == [0, 2]"'
-            python -m cibuildwheel --platform windows --output-dir dist
+            & $PythonHost -m cibuildwheel --platform windows --output-dir dist
 
             Get-ChildItem dist
       - persist_to_workspace:

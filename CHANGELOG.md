@@ -5,6 +5,14 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.8) - 2026-06-17
+
+### Fixed
+- Build macOS wheels as native `arm64` wheels on the CircleCI Apple Silicon runner instead of requesting `universal2`, which produced an `arm64` wheel that cibuildwheel then tried to test under `x86_64`.
+
+### Tooling / CI
+- Pin `cibuildwheel` in release wheel jobs, run the Linux wheel builder from a compatible Python host, and select a Python 3.11+ Windows host interpreter so the Python 3.10 through 3.14 wheel matrix is deterministic.
+
 ## [0.18.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.7) - 2026-06-17
 
 ### Fixed
