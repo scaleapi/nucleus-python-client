@@ -4,6 +4,7 @@ import requests
 
 from .async_job import AsyncJob
 from .constants import (
+    ANNOTATIONS_KEY
     METADATA_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
@@ -18,6 +19,7 @@ from .prediction import (
     PolygonPrediction,
     SegmentationPrediction,
 )
+from nucleus.utils import format_prediction_response
 
 
 class Model:
@@ -343,3 +345,10 @@ class Model:
             )
 
         return response.json()
+    def ungrouped_export(self, model_run_id):
+        json_response = self._client.make_request(
+            payload={},
+            route=f"modelRun/{model_run_id}/ungrouped",
+            requests_command=requests.get,
+        )
+        return format_prediction_response({ANNOTATIONS_KEY: json_response})
