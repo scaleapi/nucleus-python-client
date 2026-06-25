@@ -50,6 +50,11 @@ class Connection:
     def get(self, route: str):
         return self.make_request({}, route, requests_command=requests.get)
 
+    def patch(self, payload: dict, route: str):
+        return self.make_request(
+            payload, route, requests_command=requests.patch
+        )
+
     def post(self, payload: dict, route: str):
         return self.make_request(
             payload, route, requests_command=requests.post

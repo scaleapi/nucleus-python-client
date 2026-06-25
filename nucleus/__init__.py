@@ -3,6 +3,7 @@
 __all__ = [
     "AsyncJob",
     "AllowedLabelMatch",
+    "BatchEvaluationResult",
     "EmbeddingsExportJob",
     "BoxAnnotation",
     "DeduplicationJob",
@@ -24,7 +25,11 @@ __all__ = [
     "EvaluationV2ExamplesPage",
     "EvaluationV2FilterArgs",
     "EvaluationV2MatchExample",
+    "EvaluationV2Preset",
     "EvaluationV2Status",
+    "MetadataExclusionRule",
+    "LabelExclusionRule",
+    "BoxAreaExclusionRule",
     "Frame",
     "Keypoint",
     "KeypointsAnnotation",
@@ -57,6 +62,7 @@ __all__ = [
 import datetime
 import os
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import requests
@@ -161,7 +167,19 @@ from .errors import (
     NotFoundError,
     NucleusAPIError,
 )
-from .evaluation_v2 import AllowedLabelMatch, EvaluationV2, EvaluationV2Status
+from .evaluation_v2 import (
+    AllowedLabelMatch,
+    BatchEvaluationResult,
+    EvaluationV2,
+    EvaluationV2Status,
+)
+from .evaluation_v2_exclusions import (
+    BoxAreaExclusionRule,
+    EvaluationV2ExclusionRule,
+    LabelExclusionRule,
+    MetadataExclusionRule,
+)
+from .evaluation_v2_preset import _UNSET, EvaluationV2Preset
 from .job import CustomerJobTypes
 from .local_deduplication import (
     LocalDeduplicationResult,
@@ -902,6 +920,12 @@ class NucleusClient:
         name: Optional[str] = None,
         allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
         allowed_label_matches_id: Optional[str] = None,
+        slice_id: Optional[str] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
+        only_items_with_predictions: bool = False,
+        preset: Optional[EvaluationV2Preset] = None,
     ) -> EvaluationV2:
         """Create an evaluation for a model run.
 
@@ -914,10 +938,30 @@ class NucleusClient:
             name: Optional display name.
             allowed_label_matches: Optional label pairs to treat as matches.
             allowed_label_matches_id: Optional id of a saved label-match configuration.
+            slice_id: Optional slice id (``slc_*``) to scope the evaluation to the
+                items in that slice. Must belong to the model run's dataset.
+            exclusion_rules: Optional rules that drop items/annotations before metrics
+                are computed. Each entry is a
+                :class:`~nucleus.evaluation_v2_exclusions.MetadataExclusionRule`,
+                :class:`~nucleus.evaluation_v2_exclusions.LabelExclusionRule`, or
+                :class:`~nucleus.evaluation_v2_exclusions.BoxAreaExclusionRule`
+                (or an equivalent plain dict). Per-rule validation happens server-side;
+                a malformed rule rejects the whole request with a descriptive error.
+            only_items_with_predictions: If ``True``, restrict the evaluation to
+                items that have at least one model prediction.
+            preset: Optional :class:`EvaluationV2Preset` whose
+                ``allowed_label_matches`` and ``exclusion_rules`` seed this
+                evaluation. Explicit ``allowed_label_matches`` / ``exclusion_rules``
+                arguments take precedence over the preset's values.
 
         Returns:
             :class:`EvaluationV2`: The created evaluation.
         """
+        if preset is not None:
+            if allowed_label_matches is None and allowed_label_matches_id is None:
+                allowed_label_matches = preset.allowed_label_matches
+            if exclusion_rules is None and preset.exclusion_rules is not None:
+                exclusion_rules = list(preset.exclusion_rules)
         payload: Dict[str, Any] = {}
         if name is not None:
             payload["name"] = name
@@ -927,6 +971,15 @@ class NucleusClient:
             ]
         if allowed_label_matches_id is not None:
             payload["allowed_label_matches_id"] = allowed_label_matches_id
+        if slice_id is not None:
+            payload["sliceId"] = slice_id
+        if exclusion_rules is not None:
+            payload["exclusionRules"] = [
+                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+                for rule in exclusion_rules
+            ]
+        if only_items_with_predictions:
+            payload["onlyItemsWithPredictions"] = True
         result = self.make_request(
             payload, f"modelRun/{model_run_id}/evaluationsV2"
         )
@@ -936,6 +989,96 @@ class NucleusClient:
                 f"Unexpected create evaluation V2 response: {result}"
             )
         return self.get_evaluation_v2(str(eval_id))
+
+    def create_evaluations_v2_batch(
+        self,
+        model_run_ids: List[str],
+        *,
+        slice_ids: Optional[List[Optional[str]]] = None,
+        name_prefix: Optional[str] = None,
+        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
+        allowed_label_matches_id: Optional[str] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
+        only_items_with_predictions: bool = False,
+        preset: Optional[EvaluationV2Preset] = None,
+        max_workers: int = 4,
+    ) -> List[BatchEvaluationResult]:
+        """Create many evaluations at once, sharing one configuration.
+
+        One evaluation is created for
+        every ``(model_run_id, slice_id)`` pair (the cross-product of
+        ``model_run_ids`` and ``slice_ids``), all sharing the same matches,
+        exclusion rules, and options. Jobs run concurrently and failures are
+        captured per job rather than aborting the batch.
+
+        Parameters:
+            model_run_ids: Model run ids (``run_*``) to evaluate.
+            slice_ids: Slice ids (``slc_*``) to scope each evaluation to. Use
+                ``None`` within the list for a whole-dataset evaluation. Defaults
+                to ``[None]`` (whole dataset for every run).
+            name_prefix: Optional name prefix; the run id and/or slice id are
+                appended to keep batch names unique.
+            allowed_label_matches: Shared label-match pairs (see
+                :meth:`create_evaluation_v2`).
+            allowed_label_matches_id: Shared saved label-match config id.
+            exclusion_rules: Shared exclusion rules.
+            only_items_with_predictions: Shared "only items with predictions" flag.
+            preset: Optional preset seeding matches/rules for every job.
+            max_workers: Maximum concurrent create requests (default 4).
+
+        Returns:
+            List of :class:`BatchEvaluationResult`, in input order — each holds
+            the created :class:`EvaluationV2` or the error for that job.
+        """
+        if not model_run_ids:
+            return []
+        targets: List[Optional[str]] = (
+            list(slice_ids) if slice_ids is not None else [None]
+        )
+        jobs: List[Tuple[str, Optional[str]]] = [
+            (run, sl) for run in model_run_ids for sl in targets
+        ]
+
+        def _name(run: str, sl: Optional[str]) -> Optional[str]:
+            if name_prefix is None:
+                return None
+            parts = [name_prefix]
+            if len(model_run_ids) > 1:
+                parts.append(run)
+            if sl is not None:
+                parts.append(sl)
+            return " — ".join(parts)
+
+        results: List[Optional[BatchEvaluationResult]] = [None] * len(jobs)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_idx = {
+                executor.submit(
+                    self.create_evaluation_v2,
+                    run,
+                    name=_name(run, sl),
+                    allowed_label_matches=allowed_label_matches,
+                    allowed_label_matches_id=allowed_label_matches_id,
+                    slice_id=sl,
+                    exclusion_rules=exclusion_rules,
+                    only_items_with_predictions=only_items_with_predictions,
+                    preset=preset,
+                ): idx
+                for idx, (run, sl) in enumerate(jobs)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                run, sl = jobs[idx]
+                result = BatchEvaluationResult(
+                    model_run_id=run, slice_id=sl, name=_name(run, sl)
+                )
+                try:
+                    result.evaluation = future.result()
+                except Exception as exc:  # noqa: BLE001 - reported per job
+                    result.error = str(exc)
+                results[idx] = result
+        return [r for r in results if r is not None]
 
     def get_evaluation_v2(self, evaluation_id: str) -> EvaluationV2:
         """Get an evaluation by id.
@@ -964,6 +1107,111 @@ class NucleusClient:
                 f"Unexpected list evaluations V2 response: {rows!r}"
             )
         return [EvaluationV2.from_json(r, self) for r in rows]
+
+    def list_evaluation_v2_presets(self) -> List[EvaluationV2Preset]:
+        """List the current user's saved Evaluation V2 presets.
+
+        Returns:
+            List of :class:`EvaluationV2Preset` (presets are private per user).
+        """
+        rows = self.get("evaluationV2Presets")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected list evaluation V2 presets response: {rows!r}"
+            )
+        return [EvaluationV2Preset.from_json(r, self) for r in rows]
+
+    def create_evaluation_v2_preset(
+        self,
+        name: str,
+        *,
+        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
+    ) -> EvaluationV2Preset:
+        """Create a saved Evaluation V2 preset.
+
+        Parameters:
+            name: Preset name. Must be non-empty and unique among the user's
+                presets.
+            allowed_label_matches: Optional label pairs to treat as matches.
+            exclusion_rules: Optional rules that drop items/annotations (same
+                types accepted by :meth:`create_evaluation_v2`).
+
+        Returns:
+            :class:`EvaluationV2Preset`: The created preset.
+        """
+        payload: Dict[str, Any] = {"name": name}
+        if allowed_label_matches is not None:
+            payload["allowedLabelMatches"] = [
+                m.to_api_dict() for m in allowed_label_matches
+            ]
+        if exclusion_rules is not None:
+            payload["exclusionRules"] = [
+                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+                for rule in exclusion_rules
+            ]
+        data = self.post(payload, "evaluationV2Presets")
+        return EvaluationV2Preset.from_json(data, self)
+
+    def update_evaluation_v2_preset(
+        self,
+        preset_id: str,
+        *,
+        name: Any = _UNSET,
+        allowed_label_matches: Any = _UNSET,
+        exclusion_rules: Any = _UNSET,
+    ) -> EvaluationV2Preset:
+        """Update a saved Evaluation V2 preset.
+
+        Only the fields you pass are changed. Passing ``exclusion_rules=None``
+        clears the rules; omitting an argument leaves that field unchanged.
+
+        Parameters:
+            preset_id: Preset id (``prev_*``). Must be owned by the caller.
+            name: Optional new name.
+            allowed_label_matches: Optional new label-match list.
+            exclusion_rules: Optional new exclusion rules, or ``None`` to clear.
+
+        Returns:
+            :class:`EvaluationV2Preset`: The updated preset.
+        """
+        payload: Dict[str, Any] = {}
+        if name is not _UNSET:
+            payload["name"] = name
+        if allowed_label_matches is not _UNSET:
+            payload["allowedLabelMatches"] = (
+                None
+                if allowed_label_matches is None
+                else [m.to_api_dict() for m in allowed_label_matches]
+            )
+        if exclusion_rules is not _UNSET:
+            payload["exclusionRules"] = (
+                None
+                if exclusion_rules is None
+                else [
+                    rule.to_api_dict()
+                    if hasattr(rule, "to_api_dict")
+                    else rule
+                    for rule in exclusion_rules
+                ]
+            )
+        data = self.patch(payload, f"evaluationV2Presets/{preset_id}")
+        return EvaluationV2Preset.from_json(data, self)
+
+    def delete_evaluation_v2_preset(self, preset_id: str) -> None:
+        """Delete a saved Evaluation V2 preset.
+
+        Parameters:
+            preset_id: Preset id (``prev_*``). Must be owned by the caller.
+        """
+        self.make_request(
+            {},
+            f"evaluationV2Presets/{preset_id}",
+            requests_command=requests.delete,
+            return_raw_response=True,
+        )
 
     @deprecated(msg="Prefer calling Dataset.info() directly.")
     def dataset_info(self, dataset_id: str):
@@ -1315,6 +1563,9 @@ class NucleusClient:
 
     def get(self, route: str):
         return self.connection.get(route)
+
+    def patch(self, payload: dict, route: str):
+        return self.connection.patch(payload, route)
 
     def post(self, payload: dict, route: str):
         return self.connection.post(payload, route)

@@ -7,7 +7,6 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
-from urllib.parse import urlencode
 
 import requests
 
@@ -37,6 +36,23 @@ _TERMINAL_OK: Set[EvaluationV2Status] = {
 }
 
 
+def _parse_json_field(value: Any) -> Optional[Any]:
+    """Normalize a JSONB column that may arrive as a string or already parsed.
+
+    The REST ``GET``/``LIST`` evaluation endpoints return raw DB rows, so the
+    ``exclusion_rules`` / ``exclusion_stats`` jsonb columns can come back either
+    already decoded (dict/list) or as a JSON string depending on the driver.
+    """
+    if value is None or isinstance(value, (dict, list)):
+        return value
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            return None
+    return value
+
+
 @dataclass
 class AllowedLabelMatch:
     """Ground-truth and prediction label pair that counts as a match."""
@@ -49,6 +65,56 @@ class AllowedLabelMatch:
             "ground_truth_label": self.ground_truth_label,
             "model_prediction_label": self.model_prediction_label,
         }
+
+
+def parse_allowed_label_matches(
+    raw_matches: Any,
+) -> Optional[List[AllowedLabelMatch]]:
+    """Parse an ``allowed_label_matches`` array from an API payload.
+
+    Accepts both the camelCase (``groundTruthLabel`` / ``modelPredictionLabel``)
+    and snake_case shapes the backend may return, and drops malformed entries.
+    """
+    if not isinstance(raw_matches, list):
+        return None
+    matches: List[AllowedLabelMatch] = []
+    for m in raw_matches:
+        if not isinstance(m, dict):
+            continue
+        gt = m.get("groundTruthLabel")
+        if gt is None:
+            gt = m.get("ground_truth_label")
+        mp = m.get("modelPredictionLabel")
+        if mp is None:
+            mp = m.get("model_prediction_label")
+        if gt is not None and mp is not None:
+            matches.append(
+                AllowedLabelMatch(
+                    ground_truth_label=str(gt),
+                    model_prediction_label=str(mp),
+                )
+            )
+    return matches
+
+
+@dataclass
+class BatchEvaluationResult:
+    """Outcome of one job in a batch create call.
+
+    ``evaluation`` is set on success; ``error`` holds the error message on
+    failure. Use :attr:`succeeded` to filter, and re-run the failed jobs by
+    feeding their ``model_run_id`` / ``slice_id`` back into a new batch call.
+    """
+
+    model_run_id: str
+    slice_id: Optional[str] = None
+    name: Optional[str] = None
+    evaluation: Optional["EvaluationV2"] = None
+    error: Optional[str] = None
+
+    @property
+    def succeeded(self) -> bool:
+        return self.evaluation is not None
 
 
 @dataclass
@@ -66,6 +132,9 @@ class EvaluationV2:
     allowed_label_matches_id: Optional[str] = None
     allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
     allowed_label_matches_name: Optional[str] = None
+    slice_id: Optional[str] = None
+    exclusion_rules: Optional[List[Dict[str, Any]]] = None
+    exclusion_stats: Optional[Dict[str, Any]] = None
     _client: Optional["NucleusClient"] = field(repr=False, default=None)
 
     @classmethod
@@ -74,26 +143,9 @@ class EvaluationV2:
         payload: Dict[str, Any],
         client: Optional["NucleusClient"] = None,
     ) -> "EvaluationV2":
-        raw_matches = payload.get("allowed_label_matches")
-        matches: Optional[List[AllowedLabelMatch]] = None
-        if isinstance(raw_matches, list):
-            matches = []
-            for m in raw_matches:
-                if not isinstance(m, dict):
-                    continue
-                gt = m.get("groundTruthLabel")
-                if gt is None:
-                    gt = m.get("ground_truth_label")
-                mp = m.get("modelPredictionLabel")
-                if mp is None:
-                    mp = m.get("model_prediction_label")
-                if gt is not None and mp is not None:
-                    matches.append(
-                        AllowedLabelMatch(
-                            ground_truth_label=str(gt),
-                            model_prediction_label=str(mp),
-                        )
-                    )
+        matches = parse_allowed_label_matches(
+            payload.get("allowed_label_matches")
+        )
 
         return cls(
             id=str(payload["id"]),
@@ -109,6 +161,9 @@ class EvaluationV2:
             allowed_label_matches_name=payload.get(
                 "allowed_label_matches_name"
             ),
+            slice_id=payload.get("slice_id"),
+            exclusion_rules=_parse_json_field(payload.get("exclusion_rules")),
+            exclusion_stats=_parse_json_field(payload.get("exclusion_stats")),
             _client=client,
         )
 
@@ -170,6 +225,45 @@ class EvaluationV2:
             return_raw_response=True,
         )
 
+    def cancel(self) -> "EvaluationV2":
+        """Cancel this evaluation if it is still running.
+
+        Stops the evaluation and sets its status to ``cancelled``. Finished
+        evaluations cannot be cancelled (use :meth:`delete` to archive them).
+
+        Returns:
+            self, refreshed with the post-cancel status.
+        """
+        if self._client is None:
+            raise RuntimeError("EvaluationV2 has no client.")
+        self._client.make_request(
+            {},
+            f"evaluationsV2/{self.id}/cancel",
+            requests_command=requests.post,
+            return_raw_response=True,
+        )
+        return self.refresh()
+
+    def retry(self) -> "EvaluationV2":
+        """Retry this evaluation if it failed.
+
+        Creates a new evaluation for the same model run, reusing this
+        evaluation's slice, allowed-label-matches, and exclusion rules. Only
+        ``failed`` evaluations can be retried.
+
+        Returns:
+            :class:`EvaluationV2`: The newly created (retry) evaluation.
+        """
+        if self._client is None:
+            raise RuntimeError("EvaluationV2 has no client.")
+        result = self._client.post({}, f"evaluationsV2/{self.id}/retry")
+        eval_id = result.get("evaluation_id")
+        if not eval_id:
+            raise RuntimeError(
+                f"Unexpected retry evaluation V2 response: {result}"
+            )
+        return self._client.get_evaluation_v2(str(eval_id))
+
     def charts(
         self,
         iou_threshold: float = 0.5,
@@ -190,24 +284,20 @@ class EvaluationV2:
         """
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
-        params: Dict[str, str] = {}
-        params["iouThreshold"] = str(iou_threshold)
+        payload: Dict[str, Any] = {"iouThreshold": iou_threshold}
         if filters is not None:
             if isinstance(filters, EvaluationV2FilterArgs):
-                filt_dict = filters.to_api_filters()
+                payload["filters"] = filters.to_api_filters()
             else:
-                filt_dict = filters
-            params["filters"] = json.dumps(filt_dict)
+                payload["filters"] = filters
         if query:
-            params["query"] = query
-        qs = urlencode(params)
-        route = f"evaluationsV2/{self.id}/charts?{qs}"
-        data = self._client.get(route)
+            payload["query"] = query
+        data = self._client.post(payload, f"evaluationsV2/{self.id}/charts")
         return EvaluationV2Charts.parse_obj(data)
 
     def examples(
         self,
-        match_type: str,
+        match_type: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
         sort_by: Optional[str] = None,
@@ -217,14 +307,16 @@ class EvaluationV2:
         ] = None,
         query: Optional[str] = None,
     ) -> EvaluationV2ExamplesPage:
-        """Return paginated true-positive, false-positive, or false-negative examples.
+        """Return paginated match examples, optionally filtered by match type.
 
         Parameters:
-            match_type: ``"TP"``, ``"FP"``, or ``"FN"``.
-            limit: Page size (default 50).
+            match_type: ``"TP"``, ``"FP"``, or ``"FN"``. Omit (or ``None``) to
+                return examples of all match types.
+            limit: Page size (default 50, max 100).
             offset: Row offset for pagination.
-            sort_by: Optional field to sort by.
-            sort_order: Optional sort direction (e.g. ``"asc"`` or ``"desc"``).
+            sort_by: Optional field to sort by — one of ``"confidence"``,
+                ``"iou"``, ``"dataset_item_id"``, ``"gt_area"``.
+            sort_order: Optional sort direction (``"ASC"`` or ``"DESC"``).
             filters: Optional filters (:class:`EvaluationV2FilterArgs` or dict).
             query: Optional query string to narrow results.
 
@@ -234,10 +326,11 @@ class EvaluationV2:
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
         payload: Dict[str, Any] = {
-            "match_type": match_type,
             "limit": limit,
             "offset": offset,
         }
+        if match_type is not None:
+            payload["match_type"] = match_type
         if sort_by is not None:
             payload["sort_by"] = sort_by
         if sort_order is not None:

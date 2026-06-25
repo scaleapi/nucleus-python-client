@@ -43,9 +43,11 @@ _FILTER_API_KEYS = {
     "gt_labels": "gtLabels",
     "item_metadata": "itemMetadata",
     "prediction_metadata": "predictionMetadata",
+    "gt_area_range": "gtAreaRange",
     "label_equality": "labelEquality",
     "has_ground_truth": "hasGroundTruth",
     "tide_background": "tideBackground",
+    "slice_ids": "sliceIds",
 }
 
 
@@ -58,9 +60,11 @@ class EvaluationV2FilterArgs(DictCompatibleModel):
     gt_labels: Optional[List[str]] = None
     item_metadata: Optional[List[MetadataPredicate]] = None
     prediction_metadata: Optional[List[MetadataPredicate]] = None
+    gt_area_range: Optional[RangeNum] = None
     label_equality: Optional[Literal["EQ", "NEQ"]] = None
     has_ground_truth: Optional[bool] = None
     tide_background: Optional[bool] = None
+    slice_ids: Optional[List[str]] = None
 
     def to_api_filters(self) -> Dict[str, Any]:
         """Return filters as a dict ready for API requests."""

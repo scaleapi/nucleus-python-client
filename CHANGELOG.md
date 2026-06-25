@@ -5,6 +5,22 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.9) - 2026-06-25
+
+### Added
+- **Evaluations V2 slice scoping and exclusion rules.** `create_evaluation_v2()` accepts `slice_id` (restrict the evaluation to a slice's items) and `exclusion_rules` (drop items/annotations before metrics are computed) via the new `MetadataExclusionRule`, `LabelExclusionRule`, and `BoxAreaExclusionRule` types (or equivalent dicts). The `EvaluationV2` resource exposes `slice_id`, `exclusion_rules`, and `exclusion_stats`. `EvaluationV2FilterArgs` gains `gt_area_range` (filter by ground-truth box area, e.g. COCO small/medium/large bands) and `slice_ids`, applied by both `charts()` and `examples()`.
+- **Evaluation V2 presets.** Save and reuse evaluation configurations (`name` + `allowed_label_matches` + `exclusion_rules`) via `NucleusClient.list_evaluation_v2_presets()`, `create_evaluation_v2_preset()`, `update_evaluation_v2_preset()`, and `delete_evaluation_v2_preset()`, plus the new `EvaluationV2Preset` resource (with `update()` / `delete()`). Apply a preset directly when creating an evaluation: `create_evaluation_v2(model_run_id, preset=preset)` seeds the matches and rules (explicit arguments override the preset).
+- `create_evaluation_v2()` accepts `only_items_with_predictions` to restrict the evaluation to items that have at least one prediction.
+- **Batch create.** `create_evaluations_v2_batch()` creates one evaluation per `(model_run_id, slice_id)` pair with a shared configuration, running concurrently and returning a `BatchEvaluationResult` per job (capturing the created evaluation or the per-job error).
+- **Cancel & retry.** `EvaluationV2.cancel()` stops a running evaluation; `EvaluationV2.retry()` re-runs a failed one, reusing its slice/matches/exclusion rules.
+- `Dataset.evaluation_label_schema()` returns the dataset's ground-truth and prediction label vocabularies (`gt_labels` / `prediction_labels`) for building label matches and label exclusion rules.
+
+### Changed
+- `EvaluationV2.examples()` now treats `match_type` as optional — omit it to return examples of all match types.
+
+### Fixed
+- `EvaluationV2.charts()` issues a `POST` (matching the backend route) instead of a `GET` with a query string, which did not reach the server.
+
 ## [0.18.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.8) - 2026-06-17
 
 ### Fixed
