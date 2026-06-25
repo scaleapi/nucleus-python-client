@@ -12,36 +12,6 @@ Scale Nucleus helps you:
 
 Nucleus is a new way—the right way—to develop ML models, helping us move away from the concept of one dataset and towards a paradigm of collections of scenarios.
 
-.. _evaluations-v2:
-
-Evaluations V2
---------------
-
-Evaluation V2 measures how well a **model run** matches ground-truth annotations.
-Create a run with :meth:`NucleusClient.create_evaluation_v2`, wait with
-:meth:`nucleus.evaluation_v2.EvaluationV2.wait_for_completion`, then read summary metrics with
-:meth:`nucleus.evaluation_v2.EvaluationV2.charts` or individual matches with
-:meth:`nucleus.evaluation_v2.EvaluationV2.examples`.
-
-.. code-block:: python
-
-   import nucleus
-
-   client = nucleus.NucleusClient(api_key="YOUR_API_KEY")
-   evaluation = client.create_evaluation_v2(
-       model_run_id="run_xxx",
-       name="my-eval",
-       allowed_label_matches=[
-           nucleus.AllowedLabelMatch(
-               ground_truth_label="car",
-               model_prediction_label="vehicle",
-           ),
-       ],
-   )
-   evaluation.wait_for_completion()
-   charts = evaluation.charts(iou_threshold=0.5)
-   fps = evaluation.examples(match_type="FP", limit=20)
-
 .. _installation:
 
 Installation
@@ -56,8 +26,8 @@ To use Nucleus, first install it using `pip`:
 
 .. _api:
 
-Sections
---------
+API Reference
+-------------
 
 .. toctree::
    :maxdepth: 4
