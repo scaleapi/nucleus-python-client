@@ -4,7 +4,6 @@ A preset bundles a ``name`` with ``allowed_label_matches`` and ``exclusion_rules
 so the same configuration can be applied across many evaluations. Presets are
 private to the creating user.
 
-Mirrors the ``/v1/nucleus/evaluationV2Presets`` REST endpoints on the backend.
 Create and manage presets via :class:`~nucleus.NucleusClient`::
 
     preset = client.create_evaluation_v2_preset(

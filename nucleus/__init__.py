@@ -1007,7 +1007,7 @@ class NucleusClient:
     ) -> List[BatchEvaluationResult]:
         """Create many evaluations at once, sharing one configuration.
 
-        Mirrors the batch-create flow in the UI: one evaluation is created for
+        One evaluation is created for
         every ``(model_run_id, slice_id)`` pair (the cross-product of
         ``model_run_ids`` and ``slice_ids``), all sharing the same matches,
         exclusion rules, and options. Jobs run concurrently and failures are

@@ -233,7 +233,7 @@ class Dataset:
 
         Useful for building :meth:`NucleusClient.create_evaluation_v2`
         ``allowed_label_matches`` and label exclusion rules without guessing
-        label names. Mirrors the label lists shown in the Create Evaluation UI.
+        label names.
 
         Returns:
             A dict with ``"gt_labels"`` (ground-truth annotation labels) and

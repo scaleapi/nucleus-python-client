@@ -1,6 +1,5 @@
 """Exclusion rules for Evaluation V2 creation.
 
-Mirrors ``packages/shared/src/nucleus/evaluationV2Exclusions.ts`` on the backend.
 These rules drop items/annotations from an evaluation before metrics are computed.
 
 The per-rule shape is validated server-side at create time
