@@ -958,7 +958,7 @@ class NucleusClient:
             :class:`EvaluationV2`: The created evaluation.
         """
         if preset is not None:
-            if allowed_label_matches is None:
+            if allowed_label_matches is None and allowed_label_matches_id is None:
                 allowed_label_matches = preset.allowed_label_matches
             if exclusion_rules is None and preset.exclusion_rules is not None:
                 exclusion_rules = list(preset.exclusion_rules)
