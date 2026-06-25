@@ -5,7 +5,14 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from nucleus import AllowedLabelMatch, EvaluationV2, NucleusClient
+from nucleus import (
+    AllowedLabelMatch,
+    BoxAreaExclusionRule,
+    EvaluationV2,
+    LabelExclusionRule,
+    MetadataExclusionRule,
+    NucleusClient,
+)
 from nucleus.data_transfer_object.evaluation_v2 import (
     EvaluationV2Charts,
     EvaluationV2FilterArgs,
@@ -13,6 +20,28 @@ from nucleus.data_transfer_object.evaluation_v2 import (
     RangeNum,
     _camelize_filter_value,
 )
+
+
+def _charts_response():
+    return {
+        "mapSummary": {"mapAt50": 0.1, "mapAt75": 0.2, "mapAt5095": 0.15},
+        "perClassAp": [],
+        "confusionMatrix": [],
+        "scoreHistogram": [],
+        "computedIouRanges": [],
+        "totalCounts": {"tp": 0, "fp": 0, "fn": 0, "predsWithConfidence": 0},
+        "apBySize": {"small": None, "medium": None, "large": None},
+        "prCurve": [],
+        "tideAttribution": {
+            "truePositive": 0,
+            "localization": 0,
+            "classification": 0,
+            "both": 0,
+            "duplicate": 0,
+            "background": 0,
+            "missed": 0,
+        },
+    }
 
 
 def test_evaluation_v2_filter_args_to_api_filters():
@@ -134,27 +163,122 @@ def test_create_evaluation_v2_then_get():
     client.connection.get.assert_called_once_with("evaluationsV2/evalv2_new")
 
 
-def test_charts_get_query_string():
-    client = MagicMock(spec=NucleusClient)
-    client.get.return_value = {
-        "mapSummary": {"mapAt50": 0.1, "mapAt75": 0.2, "mapAt5095": 0.15},
-        "perClassAp": [],
-        "confusionMatrix": [],
-        "scoreHistogram": [],
-        "computedIouRanges": [],
-        "totalCounts": {"tp": 0, "fp": 0, "fn": 0, "predsWithConfidence": 0},
-        "apBySize": {"small": None, "medium": None, "large": None},
-        "prCurve": [],
-        "tideAttribution": {
-            "truePositive": 0,
-            "localization": 0,
-            "classification": 0,
-            "both": 0,
-            "duplicate": 0,
-            "background": 0,
-            "missed": 0,
+def test_create_evaluation_v2_with_slice_and_exclusion_rules():
+    client = NucleusClient(api_key="test")
+    client.connection.make_request = MagicMock(
+        return_value={"evaluation_id": "evalv2_new", "status": "pending"}
+    )
+    client.connection.get = MagicMock(
+        return_value={
+            "id": "evalv2_new",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "pending",
+        }
+    )
+    client.create_evaluation_v2(
+        "run_1",
+        slice_id="slc_x",
+        exclusion_rules=[
+            BoxAreaExclusionRule(
+                scope="annotation", target="groundTruth", min=1024
+            ),
+            LabelExclusionRule(
+                scope="item", target="prediction", labels=["ignore"]
+            ),
+            MetadataExclusionRule(key="is_dark", op="EQ", value=True),
+            {
+                "type": "labels",
+                "scope": "item",
+                "target": "groundTruth",
+                "labels": ["x"],
+            },
+        ],
+    )
+    payload = client.connection.make_request.call_args[0][0]
+    assert payload["sliceId"] == "slc_x"
+    assert payload["exclusionRules"] == [
+        {
+            "type": "boxArea",
+            "scope": "annotation",
+            "target": "groundTruth",
+            "min": 1024,
         },
+        {
+            "type": "labels",
+            "scope": "item",
+            "target": "prediction",
+            "labels": ["ignore"],
+        },
+        {
+            "type": "metadata",
+            "scope": "item",
+            "key": "is_dark",
+            "op": "EQ",
+            "value": True,
+        },
+        {
+            "type": "labels",
+            "scope": "item",
+            "target": "groundTruth",
+            "labels": ["x"],
+        },
+    ]
+
+
+def test_evaluation_v2_filter_args_gt_area_and_slices():
+    filters = EvaluationV2FilterArgs(
+        gt_area_range=RangeNum(min=1024, max=9216),
+        slice_ids=["slc_a"],
+    )
+    assert filters.to_api_filters() == {
+        "gtAreaRange": {"min": 1024.0, "max": 9216.0},
+        "sliceIds": ["slc_a"],
     }
+
+
+def test_evaluation_v2_from_json_slice_and_exclusions():
+    # exclusion_rules as a JSON string (raw jsonb), exclusion_stats as a dict.
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "succeeded",
+            "slice_id": "slc_x",
+            "exclusion_rules": '[{"type":"labels","scope":"item","target":"prediction","labels":["ignore"]}]',
+            "exclusion_stats": {"totals": {"itemsDropped": 3}},
+        }
+    )
+    assert ev.slice_id == "slc_x"
+    assert ev.exclusion_rules == [
+        {
+            "type": "labels",
+            "scope": "item",
+            "target": "prediction",
+            "labels": ["ignore"],
+        }
+    ]
+    assert ev.exclusion_stats == {"totals": {"itemsDropped": 3}}
+
+
+def test_evaluation_v2_from_json_exclusions_absent():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "succeeded",
+        }
+    )
+    assert ev.slice_id is None
+    assert ev.exclusion_rules is None
+    assert ev.exclusion_stats is None
+
+
+def test_charts_post_body():
+    client = MagicMock(spec=NucleusClient)
+    client.post.return_value = _charts_response()
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
@@ -164,9 +288,35 @@ def test_charts_get_query_string():
     )
     charts = ev.charts(iou_threshold=0.5)
     assert isinstance(charts, EvaluationV2Charts)
-    call_route = client.get.call_args[0][0]
-    assert "evaluationsV2/evalv2_1/charts" in call_route
-    assert "iouThreshold=0.5" in call_route
+    client.post.assert_called_once()
+    payload, route = client.post.call_args[0]
+    assert route == "evaluationsV2/evalv2_1/charts"
+    assert payload == {"iouThreshold": 0.5}
+
+
+def test_charts_with_filter_args():
+    client = MagicMock(spec=NucleusClient)
+    client.post.return_value = _charts_response()
+    ev = EvaluationV2(
+        id="evalv2_1",
+        model_run_id="run_1",
+        dataset_id="ds_1",
+        status="succeeded",
+        _client=client,
+    )
+    filters = EvaluationV2FilterArgs(
+        gt_area_range=RangeNum(min=1024),
+        slice_ids=["slc_a", "slc_b"],
+    )
+    ev.charts(iou_threshold=0.75, filters=filters, query="dog")
+    payload, route = client.post.call_args[0]
+    assert route == "evaluationsV2/evalv2_1/charts"
+    assert payload["iouThreshold"] == 0.75
+    assert payload["query"] == "dog"
+    assert payload["filters"] == {
+        "gtAreaRange": {"min": 1024.0},
+        "sliceIds": ["slc_a", "slc_b"],
+    }
 
 
 def test_examples_post_body():

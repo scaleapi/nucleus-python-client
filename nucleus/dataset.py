@@ -228,6 +228,21 @@ class Dataset:
         )
         return [Slice.from_request(info, self._client) for info in response]
 
+    def evaluation_label_schema(self) -> Dict[str, List[str]]:
+        """Ground-truth and prediction label vocabularies for this dataset.
+
+        Useful for building :meth:`NucleusClient.create_evaluation_v2`
+        ``allowed_label_matches`` and label exclusion rules without guessing
+        label names. Mirrors the label lists shown in the Create Evaluation UI.
+
+        Returns:
+            A dict with ``"gt_labels"`` (ground-truth annotation labels) and
+            ``"prediction_labels"`` (model prediction labels).
+        """
+        return self._client.make_request(
+            {}, f"dataset/{self.id}/labelSchema", requests.get
+        )
+
     @property
     def embedding_indexes(self) -> List[EmbeddingIndex]:
         """Gets all the embedding indexes belonging to this Dataset."""
