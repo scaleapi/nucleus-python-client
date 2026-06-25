@@ -64,8 +64,13 @@ class EvaluationV2Preset:
             name=str(payload["name"]),
             allowed_label_matches=parse_allowed_label_matches(
                 payload.get("allowed_label_matches")
+                or payload.get("allowedLabelMatches")
             ),
-            exclusion_rules=_parse_json_field(payload.get("exclusion_rules")),
+            exclusion_rules=_parse_json_field(
+                payload.get("exclusion_rules")
+                if payload.get("exclusion_rules") is not None
+                else payload.get("exclusionRules")
+            ),
             created_by_user_id=payload.get("created_by_user_id"),
             created_at=payload.get("created_at"),
             updated_at=payload.get("updated_at"),
