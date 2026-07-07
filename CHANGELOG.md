@@ -5,6 +5,19 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.0) - 2026-07-07
+
+### Changed
+- **Breaking:** `dataset.append()` now always uses the async pipeline and returns an `AsyncJob`. The `asynchronous` and `batch_size` parameters are deprecated and ignored. All uploads (local and remote) go through the async Step Function pipeline, which handles phash computation, image optimization, and NLS search indexing.
+
+### Removed
+- Synchronous upload paths for images and videos. All uploads now use the async pipeline. Use `job.sleep_until_complete()` to block until processing finishes.
+- `UploadResponse` class — `append()` now returns `AsyncJob`.
+- `construct_append_payload()` and `construct_append_scenes_payload()` functions.
+- `check_all_paths_remote()` function.
+- The already deprecated `dataset.append_scenes()` method — use `dataset.append()` instead.
+- Synchronous branches from `_append_scenes()` and `_append_video_scenes()`.
+
 ## [0.18.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.8) - 2026-06-17
 
 ### Fixed

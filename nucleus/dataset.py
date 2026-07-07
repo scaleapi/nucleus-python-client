@@ -79,7 +79,6 @@ from .data_transfer_object.dataset_size import DatasetSize
 from .data_transfer_object.scenes_list import ScenesList, ScenesListEntry
 from .dataset_item import (
     DatasetItem,
-    check_all_paths_remote,
     check_for_duplicate_reference_ids,
     check_items_have_dimensions,
 )
@@ -90,7 +89,6 @@ from .errors import NotFoundError, NucleusAPIError
 from .job import CustomerJobTypes, jobs_status_overview
 from .metadata_manager import ExportMetadataType, MetadataManager
 from .payload_constructor import (
-    construct_append_scenes_payload,
     construct_model_run_creation_payload,
     construct_taxonomy_payload,
 )
@@ -103,7 +101,6 @@ from .slice import (
     SliceType,
     create_slice_builder_payload,
 )
-from .upload_response import UploadResponse
 
 if TYPE_CHECKING:
     from . import Model, NucleusClient
@@ -112,7 +109,6 @@ if TYPE_CHECKING:
 # pylint: disable=C0302
 
 
-WARN_FOR_LARGE_UPLOAD = 10000
 WARN_FOR_LARGE_SCENES_UPLOAD = 5
 
 
@@ -617,11 +613,14 @@ class Dataset:
             Sequence[DatasetItem], Sequence[LidarScene], Sequence[VideoScene]
         ],
         update: bool = False,
-        batch_size: int = 20,
-        asynchronous: bool = False,
         local_files_per_upload_request: int = 10,
-    ) -> Union[Dict[Any, Any], AsyncJob, UploadResponse]:
+        asynchronous: Optional[bool] = None,
+        batch_size: Optional[int] = None,
+    ) -> AsyncJob:
         """Appends items or scenes to a dataset.
+
+        All uploads are processed asynchronously via the async pipeline, which
+        handles phash computation, image optimization, and NLS search indexing.
 
         .. note::
             Datasets can only accept one of DatasetItems or Scenes, never both.
@@ -647,41 +646,12 @@ class Dataset:
               metadata={"key": "value"}
             )
 
-            # default is synchronous upload
-            sync_response = dataset.append(items=[local_item])
+            # Upload local or remote items
+            job = dataset.append(items=[local_item])
+            job.sleep_until_complete()
 
-            # async jobs have higher throughput but can be more difficult to debug
-            async_job = dataset.append(
-              items=[remote_item], # all items must be remote for async
-              asynchronous=True
-            )
-            print(async_job.status())
-
-        A :class:`Dataset` can be populated with labeled and unlabeled
-        data. Using Nucleus, you can filter down the data inside your dataset
-        using custom metadata about your images.
-
-        For instance, your local dataset may contain ``Sunny``, ``Foggy``, and
-        ``Rainy`` folders of images. All of these images can be uploaded into a
-        single Nucleus ``Dataset``, with (queryable) metadata like ``{"weather":
-        "Sunny"}``.
-
-        To update an item's metadata, you can re-ingest the same items with the
-        ``update`` argument set to true. Existing metadata will be overwritten
-        for ``DatasetItems`` in the payload that share a ``reference_id`` with a
-        previously uploaded ``DatasetItem``. To retrieve your existing
-        ``reference_ids``, use :meth:`Dataset.items`.
-
-        ::
-
-            # overwrite metadata by reuploading the item
-            remote_item.metadata["weather"] = "Sunny"
-
-            async_job_2 = dataset.append(
-              items=[remote_item],
-              update=True,
-              asynchronous=True
-            )
+            # Mixed local and remote
+            job = dataset.append(items=[local_item, remote_item])
 
         Parameters:
             items: (\
@@ -691,38 +661,31 @@ class Dataset:
                     Sequence[:class:`VideoScene`]\
                 ]\
             ): List of items or scenes to upload.
-            batch_size: Size of the batch for larger uploads. Default is 20. This is
-                for items that have a remote URL and do not require a local upload.
-                If you get timeouts for uploading remote urls, try decreasing this.
             update: Whether or not to overwrite metadata on reference ID collision.
               Default is False.
-            asynchronous: Whether or not to process the upload asynchronously (and
-              return an :class:`AsyncJob` object). This is required when uploading
-              scenes. Default is False.
-            files_per_upload_request: Optional; default is 10. We recommend lowering
-                this if you encounter timeouts.
             local_files_per_upload_request: Optional; default is 10. We recommend
-                lowering this if you encounter timeouts.
+                lowering this if you encounter timeouts when uploading local files.
+            asynchronous: Deprecated, ignored. All uploads are now async.
+            batch_size: Deprecated, ignored.
         Returns:
-            For scenes
-                If synchronous, returns a payload describing the upload result::
-
-                    {
-                        "dataset_id: str,
-                        "new_items": int,
-                        "updated_items": int,
-                        "ignored_items": int,
-                        "upload_errors": int
-                    }
-
-                Otherwise, returns an :class:`AsyncJob` object.
-            For images
-                If synchronous returns :class:`nucleus.upload_response.UploadResponse`
-                otherwise :class:`AsyncJob`
+            :class:`AsyncJob`
         """
-        assert (
-            batch_size is None or batch_size < 30
-        ), "Please specify a batch size smaller than 30 to avoid timeouts."
+        import warnings
+
+        if asynchronous is not None:
+            warnings.warn(
+                "The 'asynchronous' parameter is deprecated and ignored. "
+                "append() now always uses the async pipeline.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if batch_size is not None:
+            warnings.warn(
+                "The 'batch_size' parameter is deprecated and ignored.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         dataset_items = [
             item for item in items if isinstance(item, DatasetItem)
         ]
@@ -739,62 +702,53 @@ class Dataset:
                 "You must append either DatasetItems or Scenes to the dataset."
             )
         if lidar_scenes:
-            assert (
-                asynchronous
-            ), "In order to avoid timeouts, you must set asynchronous=True when uploading 3D scenes."
-
-            return self._append_scenes(lidar_scenes, update, asynchronous)
+            return self._append_scenes(lidar_scenes, update)
         if video_scenes:
-            assert (
-                asynchronous
-            ), "In order to avoid timeouts, you must set asynchronous=True when uploading videos."
+            return self._append_video_scenes(video_scenes, update)
 
-            return self._append_video_scenes(
-                video_scenes, update, asynchronous
+        if not dataset_items:
+            raise ValueError("Must provide at least one item to append.")
+
+        local_items = [item for item in dataset_items if item.local]
+        remote_items = [item for item in dataset_items if not item.local]
+
+        if not local_items and not remote_items:
+            raise ValueError(
+                "No uploadable items found. Each item must have a valid "
+                "image_location that is either a local path or a remote URL."
             )
 
-        if len(dataset_items) > WARN_FOR_LARGE_UPLOAD and not asynchronous:
-            print(
-                "Tip: for large uploads, get faster performance by importing your data "
-                "into Nucleus directly from a cloud storage provider. See "
-                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
-                " for details."
+        # Upload local files as multipart to async endpoint
+        local_job = None
+        if local_items:
+            local_job = self._upload_local_items_async(
+                local_items,
+                update=update,
+                local_files_per_upload_request=local_files_per_upload_request,
             )
 
-        if asynchronous:
-            check_all_paths_remote(dataset_items)
+        # Upload remote items as NDJSON to async endpoint
+        if remote_items:
             request_id = serialize_and_write_to_presigned_url(
-                dataset_items, self.id, self._client
+                remote_items, self.id, self._client
             )
             response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+                payload={
+                    REQUEST_ID_KEY: request_id,
+                    UPDATE_KEY: update,
+                },
                 route=f"dataset/{self.id}/append?async=1",
             )
             return AsyncJob.from_json(response, self._client)
 
-        return self._upload_items(
-            dataset_items,
-            update=update,
-            batch_size=batch_size,
-            local_files_per_upload_request=local_files_per_upload_request,
-        )
-
-    @deprecated("Prefer using Dataset.append instead.")
-    def append_scenes(
-        self,
-        scenes: List[LidarScene],
-        update: Optional[bool] = False,
-        asynchronous: Optional[bool] = False,
-    ) -> Union[dict, AsyncJob]:
-        return self._append_scenes(scenes, update, asynchronous)
+        assert local_job is not None  # guaranteed by the guard above
+        return local_job
 
     def _append_scenes(
         self,
         scenes: List[LidarScene],
         update: Optional[bool] = False,
-        asynchronous: Optional[bool] = False,
-    ) -> Union[dict, AsyncJob]:
-        # TODO: make private in favor of Dataset.append invocation
+    ) -> AsyncJob:
         if not self.is_scene:
             raise ValueError(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
@@ -806,39 +760,21 @@ class Dataset:
         for scene in scenes:
             scene.validate()
 
-        if not asynchronous:
-            print(
-                "WARNING: Processing lidar pointclouds usually takes several seconds. As a result, sychronous scene upload"
-                "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
-                "to avoid HTTP timeouts. Please see"
-                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
-                " for details."
-            )
-
-        if asynchronous:
-            check_all_scene_paths_remote(scenes)
-            request_id = serialize_and_write_to_presigned_url(
-                scenes, self.id, self._client
-            )
-            response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
-                route=f"{self.id}/upload_scenes?async=1",
-            )
-            return AsyncJob.from_json(response, self._client)
-
-        payload = construct_append_scenes_payload(scenes, update)
-        response = self._client.make_request(
-            payload=payload,
-            route=f"{self.id}/upload_scenes",
+        check_all_scene_paths_remote(scenes)
+        request_id = serialize_and_write_to_presigned_url(
+            scenes, self.id, self._client
         )
-        return response
+        response = self._client.make_request(
+            payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+            route=f"{self.id}/upload_scenes?async=1",
+        )
+        return AsyncJob.from_json(response, self._client)
 
     def _append_video_scenes(
         self,
         scenes: List[VideoScene],
         update: Optional[bool] = False,
-        asynchronous: Optional[bool] = False,
-    ) -> Union[dict, AsyncJob]:
+    ) -> AsyncJob:
         if not self.is_scene:
             raise ValueError(
                 "Your dataset is not a scene dataset but only supports single dataset items. "
@@ -851,32 +787,15 @@ class Dataset:
             scene.use_privacy_mode = self.use_privacy_mode
             scene.validate()
 
-        if not asynchronous:
-            print(
-                "WARNING: Processing videos usually takes several seconds. As a result, synchronous video scene upload"
-                "requests are likely to timeout. For large uploads, we recommend using the flag asynchronous=True "
-                "to avoid HTTP timeouts. Please see"
-                "https://dashboard.scale.com/nucleus/docs/api?language=python#guide-for-large-ingestions"
-                " for details."
-            )
-
-        if asynchronous:
-            check_all_scene_paths_remote(scenes)
-            request_id = serialize_and_write_to_presigned_url(
-                scenes, self.id, self._client
-            )
-            response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
-                route=f"{self.id}/upload_video_scenes?async=1",
-            )
-            return AsyncJob.from_json(response, self._client)
-
-        payload = construct_append_scenes_payload(scenes, update)
-        response = self._client.make_request(
-            payload=payload,
-            route=f"{self.id}/upload_video_scenes",
+        check_all_scene_paths_remote(scenes)
+        request_id = serialize_and_write_to_presigned_url(
+            scenes, self.id, self._client
         )
-        return response
+        response = self._client.make_request(
+            payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
+            route=f"{self.id}/upload_video_scenes?async=1",
+        )
+        return AsyncJob.from_json(response, self._client)
 
     def iloc(self, i: int) -> dict:
         """Fetches dataset item and associated annotations by absolute numerical index.
@@ -2234,43 +2153,27 @@ class Dataset:
             )
         )
 
-    def _upload_items(
+    def _upload_local_items_async(
         self,
         dataset_items: List[DatasetItem],
-        batch_size: int = 20,
         update: bool = False,
         local_files_per_upload_request: int = 10,
-    ) -> UploadResponse:
-        """
-        Appends images to a dataset with given dataset_id.
-        Overwrites images on collision if updated.
+    ) -> AsyncJob:
+        """Uploads local image files to the async pipeline via multipart/form-data.
 
-        Args:
-            dataset_items: Items to Upload
-            batch_size: how many items with remote urls to include in each request.
-                If you get timeouts for uploading remote urls, try decreasing this.
-            update: Update records on conflict otherwise overwrite
-            local_files_per_upload_request: How large to make each upload request when your
-                files are local. If you get timeouts, you may need to lower this from
-                its default of 10. The maximum is 10.
+        Sends files as multipart to /append?async=1. The backend uploads them
+        to S3 and triggers the async Step Function pipeline.
 
-        Returns:
-            UploadResponse
+        Returns an AsyncJob for tracking progress.
         """
-        if self.is_scene:
-            raise ValueError(
-                "Your dataset is a scene dataset and does not support the upload of single dataset items. "
-                "In order to be able to add dataset items, please create another dataset with "
-                "client.create_dataset(<dataset_name>, is_scene=False) or add the dataset items to "
-                "an existing dataset supporting dataset items."
-            )
         uploader = DatasetItemUploader(self.id, self._client)
-        return uploader.upload(
+        responses = uploader.upload_local_async(
             dataset_items=dataset_items,
-            batch_size=batch_size,
             update=update,
             local_files_per_upload_request=local_files_per_upload_request,
         )
+        # Return the last job — all batches feed into the same dataset
+        return AsyncJob.from_json(responses[-1], self._client)
 
     def update_scene_metadata(
         self, mapping: Dict[str, dict], asynchronous: bool = False
@@ -2525,7 +2428,7 @@ class Dataset:
                     f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
                     f" set skip_size_warning=True when calling this function."
                 )
-            self.append(items, asynchronous=False, update=update_items)
+            self.append(items, update=update_items)
 
         else:
             print(f"Did not find any items in {dirname}.")
