@@ -362,6 +362,22 @@ def test_dataset_append_async_local(dataset: Dataset):
     assert_partial_equality(expected, status)
 
 
+def test_dataset_append_rejects_mixed_local_and_remote(dataset: Dataset):
+    """append() raises ValueError when mixing local and remote items."""
+    items = [
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            reference_id="local_item",
+        ),
+        DatasetItem(
+            image_location=TEST_IMG_URLS[0],
+            reference_id="remote_item",
+        ),
+    ]
+    with pytest.raises(ValueError, match="Cannot mix local and remote"):
+        dataset.append(items)
+
+
 # TODO(Jean): Fix and remove skip, this is a flaky test
 @pytest.mark.skip(reason="Flaky test")
 def test_dataset_append_async_with_1_bad_url(dataset: Dataset):

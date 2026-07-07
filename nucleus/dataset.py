@@ -718,31 +718,32 @@ class Dataset:
                 "image_location that is either a local path or a remote URL."
             )
 
+        if local_items and remote_items:
+            raise ValueError(
+                "Cannot mix local and remote items in a single append() call. "
+                "Please call append() separately for local and remote items."
+            )
+
         # Upload local files as multipart to async endpoint
-        local_job = None
         if local_items:
-            local_job = self._upload_local_items_async(
+            return self._upload_local_items_async(
                 local_items,
                 update=update,
                 local_files_per_upload_request=local_files_per_upload_request,
             )
 
         # Upload remote items as NDJSON to async endpoint
-        if remote_items:
-            request_id = serialize_and_write_to_presigned_url(
-                remote_items, self.id, self._client
-            )
-            response = self._client.make_request(
-                payload={
-                    REQUEST_ID_KEY: request_id,
-                    UPDATE_KEY: update,
-                },
-                route=f"dataset/{self.id}/append?async=1",
-            )
-            return AsyncJob.from_json(response, self._client)
-
-        assert local_job is not None  # guaranteed by the guard above
-        return local_job
+        request_id = serialize_and_write_to_presigned_url(
+            remote_items, self.id, self._client
+        )
+        response = self._client.make_request(
+            payload={
+                REQUEST_ID_KEY: request_id,
+                UPDATE_KEY: update,
+            },
+            route=f"dataset/{self.id}/append?async=1",
+        )
+        return AsyncJob.from_json(response, self._client)
 
     def _append_scenes(
         self,
