@@ -646,12 +646,13 @@ class Dataset:
               metadata={"key": "value"}
             )
 
-            # Upload local or remote items
+            # Upload local items
             job = dataset.append(items=[local_item])
             job.sleep_until_complete()
 
-            # Mixed local and remote
-            job = dataset.append(items=[local_item, remote_item])
+            # Upload remote items
+            job = dataset.append(items=[remote_item])
+            job.sleep_until_complete()
 
         Parameters:
             items: (\
@@ -2162,10 +2163,11 @@ class Dataset:
     ) -> AsyncJob:
         """Uploads local image files to the async pipeline via multipart/form-data.
 
-        Sends files as multipart to /append?async=1. The backend uploads them
-        to S3 and triggers the async Step Function pipeline.
+        Sends files as multipart to /append. The backend uploads them to S3
+        and triggers the async Step Function pipeline for processing.
 
-        Returns an AsyncJob for tracking progress.
+        Waits for all batch jobs to complete except the last, which is
+        returned for the caller to track.
         """
         uploader = DatasetItemUploader(self.id, self._client)
         responses = uploader.upload_local_async(
@@ -2173,8 +2175,11 @@ class Dataset:
             update=update,
             local_files_per_upload_request=local_files_per_upload_request,
         )
-        # Return the last job — all batches feed into the same dataset
-        return AsyncJob.from_json(responses[-1], self._client)
+        # Wait for all batch jobs except the last, then return the last
+        jobs = [AsyncJob.from_json(r, self._client) for r in responses]
+        for job in jobs[:-1]:
+            job.sleep_until_complete()
+        return jobs[-1]
 
     def update_scene_metadata(
         self, mapping: Dict[str, dict], asynchronous: bool = False
