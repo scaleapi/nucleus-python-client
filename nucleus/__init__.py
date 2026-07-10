@@ -1090,6 +1090,7 @@ class NucleusClient:
                 )
                 try:
                     result.evaluation = future.result()
+                # pylint: disable-next=broad-exception-caught
                 except Exception as exc:  # noqa: BLE001 - reported per job
                     result.error = str(exc)
                 results[idx] = result
