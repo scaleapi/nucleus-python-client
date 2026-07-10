@@ -164,3 +164,68 @@ class EvaluationV2MatchExample(DictCompatibleModel):
 class EvaluationV2ExamplesPage(DictCompatibleModel):
     rows: List[EvaluationV2MatchExample]
     total: int
+
+
+class EvaluationV2FilterMetadataField(DictCompatibleModel):
+    key: str
+    value_type: str
+    values: List[str]
+
+
+class EvaluationV2FilterSchema(DictCompatibleModel):
+    """Filter vocabulary for one evaluation's match rows.
+
+    The valid label values and item-metadata predicates accepted by
+    :class:`EvaluationV2FilterArgs` for that evaluation.
+    """
+
+    gt_labels: List[str]
+    pred_labels: List[str]
+    metadata_fields: List[EvaluationV2FilterMetadataField]
+
+
+class LeaderboardRankingEntry(DictCompatibleModel):
+    """One row of a benchmark leaderboard ranking."""
+
+    evaluation_id: str
+    evaluation_name: Optional[str] = None
+    model_run_id: str
+    model_run_name: Optional[str] = None
+    model_id: Optional[str] = None
+    model_name: Optional[str] = None
+    model_version_major: Optional[int] = None
+    model_version_minor: Optional[int] = None
+    model_version_label: Optional[str] = None
+    parent_model_project_id: Optional[str] = None
+    dataset_id: Optional[str] = None
+    dataset_name: Optional[str] = None
+    score: float
+    rank: int
+
+
+class LeaderboardF1CurvePoint(DictCompatibleModel):
+    confidence_threshold: float
+    score: float
+
+
+class LeaderboardF1CurveEntry(DictCompatibleModel):
+    """F1-vs-confidence curve for one evaluation on a benchmark leaderboard."""
+
+    evaluation_id: str
+    evaluation_name: Optional[str] = None
+    model_run_id: str
+    model_run_name: Optional[str] = None
+    model_id: Optional[str] = None
+    model_name: Optional[str] = None
+    dataset_id: Optional[str] = None
+    dataset_name: Optional[str] = None
+    best_f1: Optional[float] = None
+    points: List[LeaderboardF1CurvePoint]
+    rank: int
+
+
+class BenchmarkItemsPage(DictCompatibleModel):
+    """One page of benchmark member item ids."""
+
+    item_ids: List[str]
+    total: int

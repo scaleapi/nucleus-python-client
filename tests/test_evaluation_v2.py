@@ -413,3 +413,65 @@ def test_delete_success(status_code):
     assert cargs[0][1] == "evaluationsV2/evalv2_1"
     assert cargs[0][2] is requests.delete
     assert cargs[0][3] is True
+
+
+# --------------------------------------------------------------------------- #
+# Rollup groups and benchmark_id
+# --------------------------------------------------------------------------- #
+def test_rollup_group_to_api_dict():
+    from nucleus import RollupGroup
+
+    g = RollupGroup(class_name="vehicle", labels=["car", "truck"])
+    assert g.to_api_dict() == {
+        "class_name": "vehicle",
+        "labels": ["car", "truck"],
+    }
+
+
+def test_parse_rollup_groups_both_casings_and_malformed():
+    from nucleus.evaluation_v2 import parse_rollup_groups
+
+    groups = parse_rollup_groups(
+        [
+            {"className": "vehicle", "labels": ["car"]},
+            {"class_name": "person", "labels": ["ped"]},
+            {"labels": ["orphan"]},  # missing class name → dropped
+            "not-a-dict",  # malformed → dropped
+        ]
+    )
+    assert groups is not None
+    assert [(g.class_name, g.labels) for g in groups] == [
+        ("vehicle", ["car"]),
+        ("person", ["ped"]),
+    ]
+    assert parse_rollup_groups(None) is None
+    assert parse_rollup_groups("nope") is None
+
+
+def test_evaluation_v2_from_json_benchmark_id_and_rollup_groups():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "pending",
+            "benchmark_id": "bm_1",
+            "rollup_groups": [{"className": "vehicle", "labels": ["car"]}],
+        }
+    )
+    assert ev.benchmark_id == "bm_1"
+    assert ev.rollup_groups is not None
+    assert ev.rollup_groups[0].class_name == "vehicle"
+
+
+def test_evaluation_v2_from_json_benchmark_fields_absent():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "pending",
+        }
+    )
+    assert ev.benchmark_id is None
+    assert ev.rollup_groups is None

@@ -26,7 +26,10 @@ def test_list_evaluation_v2_presets():
                 "id": "prev_1",
                 "name": "vehicles",
                 "allowed_label_matches": [
-                    {"groundTruthLabel": "car", "modelPredictionLabel": "vehicle"}
+                    {
+                        "groundTruthLabel": "car",
+                        "modelPredictionLabel": "vehicle",
+                    }
                 ],
                 "exclusion_rules": None,
                 "created_by_user_id": "u_1",
@@ -325,3 +328,79 @@ def test_dataset_evaluation_label_schema():
     args = client.connection.make_request.call_args[0]
     assert args[1] == "dataset/ds_1/labelSchema"
     assert args[2] is requests.get
+
+
+# --------------------------------------------------------------------------- #
+# Preset rollup groups
+# --------------------------------------------------------------------------- #
+def test_create_evaluation_v2_preset_with_rollup_groups():
+    from nucleus import RollupGroup
+
+    client = NucleusClient(api_key="test")
+    client.connection.post = MagicMock(
+        return_value={
+            "id": "prev_1",
+            "name": "vehicles",
+            "rollup_groups": [{"className": "vehicle", "labels": ["car"]}],
+        }
+    )
+    preset = client.create_evaluation_v2_preset(
+        "vehicles",
+        rollup_groups=[RollupGroup("vehicle", ["car"])],
+    )
+    payload, route = client.connection.post.call_args[0]
+    assert route == "evaluationV2Presets"
+    assert payload["rollupGroups"] == [
+        {"class_name": "vehicle", "labels": ["car"]}
+    ]
+    assert preset.rollup_groups is not None
+    assert preset.rollup_groups[0].class_name == "vehicle"
+
+
+def test_create_evaluation_v2_preset_rollup_and_matches_mutually_exclusive():
+    from nucleus import RollupGroup
+
+    client = NucleusClient(api_key="test")
+    try:
+        client.create_evaluation_v2_preset(
+            "p",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+        )
+        raise AssertionError("expected ValueError")
+    except ValueError as e:
+        assert "cannot both be set" in str(e)
+
+
+def test_update_evaluation_v2_preset_rollup_groups_and_clear():
+    from nucleus import RollupGroup
+
+    client = NucleusClient(api_key="test")
+    client.connection.patch = MagicMock(
+        return_value={"id": "prev_1", "name": "p"}
+    )
+    client.update_evaluation_v2_preset(
+        "prev_1", rollup_groups=[RollupGroup("vehicle", ["car"])]
+    )
+    payload = client.connection.patch.call_args[0][0]
+    assert payload == {
+        "rollupGroups": [{"class_name": "vehicle", "labels": ["car"]}]
+    }
+
+    client.update_evaluation_v2_preset("prev_1", rollup_groups=None)
+    payload2 = client.connection.patch.call_args[0][0]
+    # Explicit None clears the rollup groups (distinct from "leave unchanged").
+    assert payload2 == {"rollupGroups": None}
+
+
+def test_preset_from_json_parses_rollup_groups_both_casings():
+    for key in ("rollup_groups", "rollupGroups"):
+        preset = EvaluationV2Preset.from_json(
+            {
+                "id": "prev_1",
+                "name": "p",
+                key: [{"className": "vehicle", "labels": ["car", "truck"]}],
+            }
+        )
+        assert preset.rollup_groups is not None
+        assert preset.rollup_groups[0].labels == ["car", "truck"]

@@ -14,6 +14,7 @@ from nucleus.data_transfer_object.evaluation_v2 import (
     EvaluationV2Charts,
     EvaluationV2ExamplesPage,
     EvaluationV2FilterArgs,
+    EvaluationV2FilterSchema,
 )
 
 if TYPE_CHECKING:
@@ -98,6 +99,49 @@ def parse_allowed_label_matches(
 
 
 @dataclass
+class RollupGroup:
+    """A rollup class: raw labels evaluated together under one class name.
+
+    Rollup groups are the primary label configuration for benchmark
+    evaluations — each group maps a set of raw ground-truth/prediction
+    labels onto a single canonical ``class_name``. A label may appear in
+    at most one group across the configuration.
+    """
+
+    class_name: str
+    labels: List[str]
+
+    def to_api_dict(self) -> Dict[str, Any]:
+        return {"class_name": self.class_name, "labels": list(self.labels)}
+
+
+def parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
+    """Parse a ``rollup_groups`` array from an API payload.
+
+    Accepts both the camelCase (``className``) and snake_case shapes the
+    backend may return, and drops malformed entries.
+    """
+    if not isinstance(raw_groups, list):
+        return None
+    groups: List[RollupGroup] = []
+    for g in raw_groups:
+        if not isinstance(g, dict):
+            continue
+        class_name = g.get("className")
+        if class_name is None:
+            class_name = g.get("class_name")
+        labels = g.get("labels")
+        if class_name is not None and isinstance(labels, list):
+            groups.append(
+                RollupGroup(
+                    class_name=str(class_name),
+                    labels=[str(label) for label in labels],
+                )
+            )
+    return groups
+
+
+@dataclass
 class BatchEvaluationResult:
     """Outcome of one job in a batch create call.
 
@@ -132,6 +176,8 @@ class EvaluationV2:
     allowed_label_matches_id: Optional[str] = None
     allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
     allowed_label_matches_name: Optional[str] = None
+    rollup_groups: Optional[List[RollupGroup]] = None
+    benchmark_id: Optional[str] = None
     slice_id: Optional[str] = None
     exclusion_rules: Optional[List[Dict[str, Any]]] = None
     exclusion_stats: Optional[Dict[str, Any]] = None
@@ -161,6 +207,10 @@ class EvaluationV2:
             allowed_label_matches_name=payload.get(
                 "allowed_label_matches_name"
             ),
+            rollup_groups=parse_rollup_groups(
+                _parse_json_field(payload.get("rollup_groups"))
+            ),
+            benchmark_id=payload.get("benchmark_id"),
             slice_id=payload.get("slice_id"),
             exclusion_rules=_parse_json_field(payload.get("exclusion_rules")),
             exclusion_stats=_parse_json_field(payload.get("exclusion_stats")),
@@ -294,6 +344,23 @@ class EvaluationV2:
             payload["query"] = query
         data = self._client.post(payload, f"evaluationsV2/{self.id}/charts")
         return EvaluationV2Charts.parse_obj(data)
+
+    def filter_schema(self) -> EvaluationV2FilterSchema:
+        """Return the filter vocabulary for this evaluation.
+
+        Lists the ground-truth labels, prediction labels, and item-metadata
+        fields (with inferred value types and distinct values) present in this
+        evaluation's match rows — the valid inputs for
+        :class:`~nucleus.data_transfer_object.evaluation_v2.EvaluationV2FilterArgs`
+        when calling :meth:`charts` or :meth:`examples`.
+
+        Returns:
+            :class:`~nucleus.data_transfer_object.evaluation_v2.EvaluationV2FilterSchema`.
+        """
+        if self._client is None:
+            raise RuntimeError("EvaluationV2 has no client.")
+        data = self._client.get(f"evaluationsV2/{self.id}/filterSchema")
+        return EvaluationV2FilterSchema.parse_obj(data)
 
     def examples(
         self,

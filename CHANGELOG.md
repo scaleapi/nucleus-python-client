@@ -5,6 +5,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.0) - 2026-07-10
+
+### Added
+- **Benchmarks.** Full support for benchmark-paradigm evaluation: `NucleusClient.create_benchmark()` (members from `item_ids`, `(dataset_id, ref_id)` `items` pairs, a `slice_id`, or a `dataset_id`; membership frozen at creation), `list_benchmarks()`, `get_benchmark()`, `update_benchmark()`, `delete_benchmark()`, and `list_benchmark_items()`, plus the new `Benchmark` resource with `refresh()` / `update()` / `delete()` / `items()` / `create_evaluation_v2()`.
+- **Benchmark evaluations.** `create_benchmark_evaluation_v2(benchmark_id, model_run_id, ...)` evaluates a model run against every benchmark item (uncovered items score as false negatives, keeping leaderboard scores comparable). Accepts `rollup_groups`, legacy `allowed_label_matches` / `allowed_label_matches_id`, `exclusion_rules`, and `preset`. `EvaluationV2` responses now expose `benchmark_id` and `rollup_groups`.
+- **Rollup groups.** The new `RollupGroup` type (`class_name` + `labels`) is the primary label configuration: each group evaluates a set of raw labels as one class. Presets support it end to end — `create_evaluation_v2_preset()` / `update_evaluation_v2_preset()` accept `rollup_groups` (mutually exclusive with `allowed_label_matches`), and `EvaluationV2Preset` exposes the field.
+- **Benchmark leaderboards.** `leaderboard_ranking(metric_type, benchmark_ids, ...)` ranks model runs on one or more benchmarks (metrics: `MAP_50`, `MAP_50_95`, `AP_SMALL`, `AP_MEDIUM`, `AP_LARGE`, `PRECISION`, `RECALL`, `F1`; `scope` / `collapse` controls), and `leaderboard_f1_curve(benchmark_ids, ...)` returns F1-vs-confidence curves for the top runs. Requires a scaleapi server with the REST leaderboard endpoints deployed.
+- **Filter schema discovery.** `EvaluationV2.filter_schema()` / `NucleusClient.get_evaluation_v2_filter_schema()` return the evaluation's filter vocabulary (`gt_labels`, `pred_labels`, and item-metadata fields with inferred value types) — the valid inputs for `EvaluationV2FilterArgs`. Requires the same server deployment as the leaderboard endpoints.
+
 ## [0.18.9](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.9) - 2026-06-25
 
 ### Added

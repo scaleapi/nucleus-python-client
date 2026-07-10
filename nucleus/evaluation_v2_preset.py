@@ -1,17 +1,18 @@
 """Evaluation V2 presets — saved, reusable evaluation configurations.
 
-A preset bundles a ``name`` with ``allowed_label_matches`` and ``exclusion_rules``
-so the same configuration can be applied across many evaluations. Presets are
-private to the creating user.
+A preset bundles a ``name`` with a label configuration (``rollup_groups``,
+or legacy ``allowed_label_matches``) and ``exclusion_rules`` so the same
+configuration can be applied across many evaluations. Presets are private to
+the creating user.
 
 Create and manage presets via :class:`~nucleus.NucleusClient`::
 
     preset = client.create_evaluation_v2_preset(
         "vehicles",
-        allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+        rollup_groups=[RollupGroup("vehicle", ["car", "truck"])],
         exclusion_rules=[LabelExclusionRule(scope="item", target="prediction", labels=["ignore"])],
     )
-    client.create_evaluation_v2(model_run_id, preset=preset)
+    client.create_benchmark_evaluation_v2(benchmark_id, model_run_id, preset=preset)
 """
 
 from __future__ import annotations
@@ -21,8 +22,10 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from nucleus.evaluation_v2 import (
     AllowedLabelMatch,
+    RollupGroup,
     _parse_json_field,
     parse_allowed_label_matches,
+    parse_rollup_groups,
 )
 
 if TYPE_CHECKING:
@@ -45,6 +48,7 @@ class EvaluationV2Preset:
 
     id: str
     name: str
+    rollup_groups: Optional[List[RollupGroup]] = None
     allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
     exclusion_rules: Optional[List[Dict[str, Any]]] = None
     created_by_user_id: Optional[str] = None
@@ -62,6 +66,13 @@ class EvaluationV2Preset:
         return cls(
             id=str(payload["id"]),
             name=str(payload["name"]),
+            rollup_groups=parse_rollup_groups(
+                _parse_json_field(
+                    payload.get("rollup_groups")
+                    if payload.get("rollup_groups") is not None
+                    else payload.get("rollupGroups")
+                )
+            ),
             allowed_label_matches=parse_allowed_label_matches(
                 payload.get("allowed_label_matches")
                 or payload.get("allowedLabelMatches")
@@ -82,14 +93,15 @@ class EvaluationV2Preset:
         self,
         *,
         name: Any = _UNSET,
+        rollup_groups: Any = _UNSET,
         allowed_label_matches: Any = _UNSET,
         exclusion_rules: Any = _UNSET,
     ) -> "EvaluationV2Preset":
         """Update this preset in place.
 
         Only the arguments you pass are changed. Passing
-        ``exclusion_rules=None`` clears the rules; omitting it leaves them
-        unchanged.
+        ``rollup_groups=None`` / ``exclusion_rules=None`` clears that field;
+        omitting an argument leaves it unchanged.
 
         Returns:
             self, with updated fields.
@@ -102,6 +114,7 @@ class EvaluationV2Preset:
         updated = self._client.update_evaluation_v2_preset(
             self.id,
             name=name,
+            rollup_groups=rollup_groups,
             allowed_label_matches=allowed_label_matches,
             exclusion_rules=exclusion_rules,
         )

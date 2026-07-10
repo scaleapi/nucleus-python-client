@@ -4,6 +4,8 @@ __all__ = [
     "AsyncJob",
     "AllowedLabelMatch",
     "BatchEvaluationResult",
+    "Benchmark",
+    "BenchmarkItemsPage",
     "EmbeddingsExportJob",
     "BoxAnnotation",
     "DeduplicationJob",
@@ -24,12 +26,16 @@ __all__ = [
     "EvaluationV2Charts",
     "EvaluationV2ExamplesPage",
     "EvaluationV2FilterArgs",
+    "EvaluationV2FilterSchema",
     "EvaluationV2MatchExample",
     "EvaluationV2Preset",
     "EvaluationV2Status",
+    "LeaderboardF1CurveEntry",
+    "LeaderboardRankingEntry",
     "MetadataExclusionRule",
     "LabelExclusionRule",
     "BoxAreaExclusionRule",
+    "RollupGroup",
     "Frame",
     "Keypoint",
     "KeypointsAnnotation",
@@ -144,11 +150,16 @@ from .constants import (
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
+from .benchmark import Benchmark
 from .data_transfer_object.evaluation_v2 import (
+    BenchmarkItemsPage,
     EvaluationV2Charts,
     EvaluationV2ExamplesPage,
     EvaluationV2FilterArgs,
+    EvaluationV2FilterSchema,
     EvaluationV2MatchExample,
+    LeaderboardF1CurveEntry,
+    LeaderboardRankingEntry,
 )
 from .data_transfer_object.job_status import JobInfoRequestPayload
 from .dataset import Dataset
@@ -172,6 +183,7 @@ from .evaluation_v2 import (
     BatchEvaluationResult,
     EvaluationV2,
     EvaluationV2Status,
+    RollupGroup,
 )
 from .evaluation_v2_exclusions import (
     BoxAreaExclusionRule,
@@ -958,7 +970,10 @@ class NucleusClient:
             :class:`EvaluationV2`: The created evaluation.
         """
         if preset is not None:
-            if allowed_label_matches is None and allowed_label_matches_id is None:
+            if (
+                allowed_label_matches is None
+                and allowed_label_matches_id is None
+            ):
                 allowed_label_matches = preset.allowed_label_matches
             if exclusion_rules is None and preset.exclusion_rules is not None:
                 exclusion_rules = list(preset.exclusion_rules)
@@ -1125,6 +1140,7 @@ class NucleusClient:
         self,
         name: str,
         *,
+        rollup_groups: Optional[List[RollupGroup]] = None,
         allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
         exclusion_rules: Optional[
             List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
@@ -1135,14 +1151,25 @@ class NucleusClient:
         Parameters:
             name: Preset name. Must be non-empty and unique among the user's
                 presets.
-            allowed_label_matches: Optional label pairs to treat as matches.
+            rollup_groups: Optional rollup classes (the primary label
+                configuration); each :class:`RollupGroup` maps raw labels onto
+                one class name. Mutually exclusive with
+                ``allowed_label_matches``.
+            allowed_label_matches: Optional legacy label pairs to treat as
+                matches. Prefer ``rollup_groups``.
             exclusion_rules: Optional rules that drop items/annotations (same
-                types accepted by :meth:`create_evaluation_v2`).
+                types accepted by :meth:`create_benchmark_evaluation_v2`).
 
         Returns:
             :class:`EvaluationV2Preset`: The created preset.
         """
+        if rollup_groups is not None and allowed_label_matches is not None:
+            raise ValueError(
+                "rollup_groups and allowed_label_matches cannot both be set"
+            )
         payload: Dict[str, Any] = {"name": name}
+        if rollup_groups is not None:
+            payload["rollupGroups"] = [g.to_api_dict() for g in rollup_groups]
         if allowed_label_matches is not None:
             payload["allowedLabelMatches"] = [
                 m.to_api_dict() for m in allowed_label_matches
@@ -1160,26 +1187,45 @@ class NucleusClient:
         preset_id: str,
         *,
         name: Any = _UNSET,
+        rollup_groups: Any = _UNSET,
         allowed_label_matches: Any = _UNSET,
         exclusion_rules: Any = _UNSET,
     ) -> EvaluationV2Preset:
         """Update a saved Evaluation V2 preset.
 
-        Only the fields you pass are changed. Passing ``exclusion_rules=None``
-        clears the rules; omitting an argument leaves that field unchanged.
+        Only the fields you pass are changed. Passing ``rollup_groups=None``
+        or ``exclusion_rules=None`` clears that field; omitting an argument
+        leaves it unchanged.
 
         Parameters:
             preset_id: Preset id (``prev_*``). Must be owned by the caller.
             name: Optional new name.
-            allowed_label_matches: Optional new label-match list.
+            rollup_groups: Optional new rollup classes, or ``None`` to clear.
+                Mutually exclusive with ``allowed_label_matches``.
+            allowed_label_matches: Optional new legacy label-match list.
             exclusion_rules: Optional new exclusion rules, or ``None`` to clear.
 
         Returns:
             :class:`EvaluationV2Preset`: The updated preset.
         """
+        if (
+            rollup_groups is not _UNSET
+            and rollup_groups is not None
+            and allowed_label_matches is not _UNSET
+            and allowed_label_matches is not None
+        ):
+            raise ValueError(
+                "rollup_groups and allowed_label_matches cannot both be set"
+            )
         payload: Dict[str, Any] = {}
         if name is not _UNSET:
             payload["name"] = name
+        if rollup_groups is not _UNSET:
+            payload["rollupGroups"] = (
+                None
+                if rollup_groups is None
+                else [g.to_api_dict() for g in rollup_groups]
+            )
         if allowed_label_matches is not _UNSET:
             payload["allowedLabelMatches"] = (
                 None
@@ -1212,6 +1258,349 @@ class NucleusClient:
             requests_command=requests.delete,
             return_raw_response=True,
         )
+
+    def create_benchmark(
+        self,
+        name: str,
+        *,
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        item_ids: Optional[List[str]] = None,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+    ) -> Benchmark:
+        """Create a benchmark from ground-truth items.
+
+        Provide the members through exactly one source: explicit ``item_ids``,
+        ``(dataset_id, ref_id)`` pairs via ``items``, all items in a slice via
+        ``slice_id``, or all items in a dataset via ``dataset_id``. Items
+        without ground truth are skipped (reported on the returned benchmark
+        as ``skipped_items_without_ground_truth``). Membership is frozen at
+        creation.
+
+        Parameters:
+            name: Benchmark display name.
+            description: Optional description.
+            metadata: Optional arbitrary metadata dict.
+            item_ids: Global dataset item ids (``di_*``).
+            items: ``{"dataset_id": ..., "ref_id": ...}`` pairs.
+            slice_id: Slice id (``slc_*``) whose items become members.
+            dataset_id: Dataset id (``ds_*``) whose items become members.
+
+        Returns:
+            :class:`Benchmark`: The created benchmark.
+        """
+        sources = [
+            source
+            for source in (item_ids, items, slice_id, dataset_id)
+            if source is not None
+        ]
+        if len(sources) != 1:
+            raise ValueError(
+                "Provide exactly one of item_ids, items, slice_id, or "
+                "dataset_id to define benchmark membership"
+            )
+        payload: Dict[str, Any] = {"name": name}
+        if description is not None:
+            payload["description"] = description
+        if metadata is not None:
+            payload["metadata"] = metadata
+        if item_ids is not None:
+            payload["item_ids"] = item_ids
+        if items is not None:
+            payload["items"] = items
+        if slice_id is not None:
+            payload["slice_id"] = slice_id
+        if dataset_id is not None:
+            payload["dataset_id"] = dataset_id
+        data = self.post(payload, "benchmarks")
+        return Benchmark.from_json(data, self)
+
+    def list_benchmarks(self) -> List[Benchmark]:
+        """List benchmarks visible to the current user.
+
+        Returns:
+            List of :class:`Benchmark`.
+        """
+        rows = self.get("benchmarks")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected list benchmarks response: {rows!r}"
+            )
+        return [Benchmark.from_json(r, self) for r in rows]
+
+    def get_benchmark(self, benchmark_id: str) -> Benchmark:
+        """Get a benchmark by id.
+
+        Parameters:
+            benchmark_id: Benchmark id (``bm_*``).
+
+        Returns:
+            :class:`Benchmark`.
+        """
+        data = self.get(f"benchmarks/{benchmark_id}")
+        return Benchmark.from_json(data, self)
+
+    def update_benchmark(
+        self,
+        benchmark_id: str,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Benchmark:
+        """Update a benchmark's name, description, or metadata.
+
+        Only the arguments you pass are changed. Benchmark membership is
+        frozen at creation and cannot be updated.
+
+        Parameters:
+            benchmark_id: Benchmark id (``bm_*``).
+            name: Optional new display name.
+            description: Optional new description.
+            metadata: Optional new metadata dict.
+
+        Returns:
+            :class:`Benchmark`: The updated benchmark.
+        """
+        payload: Dict[str, Any] = {}
+        if name is not None:
+            payload["name"] = name
+        if description is not None:
+            payload["description"] = description
+        if metadata is not None:
+            payload["metadata"] = metadata
+        data = self.patch(payload, f"benchmarks/{benchmark_id}")
+        return Benchmark.from_json(data, self)
+
+    def delete_benchmark(self, benchmark_id: str) -> None:
+        """Delete a benchmark.
+
+        Parameters:
+            benchmark_id: Benchmark id (``bm_*``).
+        """
+        self.make_request(
+            {},
+            f"benchmarks/{benchmark_id}",
+            requests_command=requests.delete,
+            return_raw_response=True,
+        )
+
+    def list_benchmark_items(
+        self,
+        benchmark_id: str,
+        *,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> BenchmarkItemsPage:
+        """Return one page of a benchmark's member item ids.
+
+        Parameters:
+            benchmark_id: Benchmark id (``bm_*``).
+            limit: Optional page size.
+            offset: Optional row offset for pagination.
+
+        Returns:
+            :class:`~nucleus.data_transfer_object.evaluation_v2.BenchmarkItemsPage`.
+        """
+        route = f"benchmarks/{benchmark_id}/items"
+        params = []
+        if limit is not None:
+            params.append(f"limit={limit}")
+        if offset is not None:
+            params.append(f"offset={offset}")
+        if params:
+            route = f"{route}?{'&'.join(params)}"
+        data = self.get(route)
+        return BenchmarkItemsPage.parse_obj(data)
+
+    def create_benchmark_evaluation_v2(
+        self,
+        benchmark_id: str,
+        model_run_id: str,
+        *,
+        name: Optional[str] = None,
+        rollup_groups: Optional[List[RollupGroup]] = None,
+        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
+        allowed_label_matches_id: Optional[str] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
+        preset: Optional[EvaluationV2Preset] = None,
+    ) -> EvaluationV2:
+        """Evaluate a model run against a benchmark.
+
+        Every benchmark item is scored: items the model run has no
+        predictions for count as false negatives, keeping scores comparable
+        across runs with different coverage. The evaluation runs in the
+        background — call :meth:`EvaluationV2.wait_for_completion`, then
+        :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples`.
+
+        Parameters:
+            benchmark_id: Benchmark id (``bm_*``).
+            model_run_id: Model run id (``run_*``). Its predictions must
+                cover items from the benchmark's datasets.
+            name: Optional display name.
+            rollup_groups: Optional rollup classes (the primary label
+                configuration); each :class:`RollupGroup` maps raw labels
+                onto one class name. Mutually exclusive with the
+                ``allowed_label_matches*`` arguments.
+            allowed_label_matches: Optional legacy label pairs to treat as
+                matches. Prefer ``rollup_groups``.
+            allowed_label_matches_id: Optional id of a saved label-match
+                configuration.
+            exclusion_rules: Optional rules that drop items/annotations
+                before metrics are computed (see
+                :mod:`nucleus.evaluation_v2_exclusions`).
+            preset: Optional :class:`EvaluationV2Preset` whose label
+                configuration and ``exclusion_rules`` seed this evaluation.
+                Explicit arguments take precedence over the preset's values.
+
+        Returns:
+            :class:`EvaluationV2`: The created evaluation.
+        """
+        if preset is not None:
+            if (
+                rollup_groups is None
+                and allowed_label_matches is None
+                and allowed_label_matches_id is None
+            ):
+                rollup_groups = preset.rollup_groups
+                if rollup_groups is None:
+                    allowed_label_matches = preset.allowed_label_matches
+            if exclusion_rules is None and preset.exclusion_rules is not None:
+                exclusion_rules = list(preset.exclusion_rules)
+        label_configs = [
+            config
+            for config in (
+                rollup_groups,
+                allowed_label_matches,
+                allowed_label_matches_id,
+            )
+            if config is not None
+        ]
+        if len(label_configs) > 1:
+            raise ValueError(
+                "Set at most one of rollup_groups, allowed_label_matches, "
+                "or allowed_label_matches_id"
+            )
+        payload: Dict[str, Any] = {"model_run_id": model_run_id}
+        if name is not None:
+            payload["name"] = name
+        if rollup_groups is not None:
+            payload["rollupGroups"] = [g.to_api_dict() for g in rollup_groups]
+        if allowed_label_matches is not None:
+            payload["allowed_label_matches"] = [
+                m.to_api_dict() for m in allowed_label_matches
+            ]
+        if allowed_label_matches_id is not None:
+            payload["allowed_label_matches_id"] = allowed_label_matches_id
+        if exclusion_rules is not None:
+            payload["exclusionRules"] = [
+                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+                for rule in exclusion_rules
+            ]
+        result = self.make_request(
+            payload, f"benchmarks/{benchmark_id}/evaluationsV2"
+        )
+        eval_id = result.get("evaluation_id")
+        if not eval_id:
+            raise RuntimeError(
+                f"Unexpected create benchmark evaluation V2 response: {result}"
+            )
+        return self.get_evaluation_v2(str(eval_id))
+
+    def leaderboard_ranking(
+        self,
+        metric_type: str,
+        benchmark_ids: List[str],
+        *,
+        confidence_threshold: Optional[float] = None,
+        model_ids: Optional[List[str]] = None,
+        scope: Optional[str] = None,
+        collapse: Optional[str] = None,
+    ) -> List[LeaderboardRankingEntry]:
+        """Rank model runs on one or more benchmarks by a metric.
+
+        Parameters:
+            metric_type: Metric to rank by — one of ``"MAP_50"``,
+                ``"MAP_50_95"``, ``"AP_SMALL"``, ``"AP_MEDIUM"``,
+                ``"AP_LARGE"``, ``"PRECISION"``, ``"RECALL"``, ``"F1"``.
+            benchmark_ids: Benchmark ids (``bm_*``) to rank across.
+            confidence_threshold: Confidence operating point for
+                ``PRECISION`` / ``RECALL`` / ``F1``.
+            model_ids: Optional model ids to restrict the ranking to.
+            scope: ``"mine"`` (only the caller's evaluations) or ``"all"``
+                (default).
+            collapse: ``"bestPerModel"`` (default), ``"allRuns"``, or
+                ``"allEvaluations"``.
+
+        Returns:
+            List of :class:`LeaderboardRankingEntry`, best score first.
+        """
+        payload: Dict[str, Any] = {
+            "metric_type": metric_type,
+            "benchmark_ids": benchmark_ids,
+        }
+        if confidence_threshold is not None:
+            payload["confidence_threshold"] = confidence_threshold
+        if model_ids is not None:
+            payload["model_ids"] = model_ids
+        if scope is not None:
+            payload["scope"] = scope
+        if collapse is not None:
+            payload["collapse"] = collapse
+        rows = self.post(payload, "leaderboard/ranking")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected leaderboard ranking response: {rows!r}"
+            )
+        return [LeaderboardRankingEntry.parse_obj(r) for r in rows]
+
+    def leaderboard_f1_curve(
+        self,
+        benchmark_ids: List[str],
+        *,
+        model_ids: Optional[List[str]] = None,
+        top_n: int = 5,
+    ) -> List[LeaderboardF1CurveEntry]:
+        """Return F1-vs-confidence curves for the top runs on benchmarks.
+
+        Parameters:
+            benchmark_ids: Benchmark ids (``bm_*``).
+            model_ids: Optional model ids to restrict the curves to.
+            top_n: Number of top-ranked runs to return curves for (default 5).
+
+        Returns:
+            List of :class:`LeaderboardF1CurveEntry`, best F1 first.
+        """
+        payload: Dict[str, Any] = {
+            "benchmark_ids": benchmark_ids,
+            "top_n": top_n,
+        }
+        if model_ids is not None:
+            payload["model_ids"] = model_ids
+        rows = self.post(payload, "leaderboard/f1Curve")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected leaderboard F1 curve response: {rows!r}"
+            )
+        return [LeaderboardF1CurveEntry.parse_obj(r) for r in rows]
+
+    def get_evaluation_v2_filter_schema(
+        self, evaluation_id: str
+    ) -> EvaluationV2FilterSchema:
+        """Return the filter vocabulary for an evaluation.
+
+        Parameters:
+            evaluation_id: Evaluation id (``evalv2_*``).
+
+        Returns:
+            :class:`~nucleus.data_transfer_object.evaluation_v2.EvaluationV2FilterSchema`.
+        """
+        data = self.get(f"evaluationsV2/{evaluation_id}/filterSchema")
+        return EvaluationV2FilterSchema.parse_obj(data)
 
     @deprecated(msg="Prefer calling Dataset.info() directly.")
     def dataset_info(self, dataset_id: str):
