@@ -7,9 +7,10 @@ The per-rule shape is validated server-side at create time
 rules were rejected and why — so these classes only need to serialize correctly.
 
 Pass instances (or equivalent plain dicts) to
-:meth:`nucleus.NucleusClient.create_evaluation_v2` via ``exclusion_rules``::
+:meth:`nucleus.NucleusClient.create_benchmark_evaluation_v2` via ``exclusion_rules``::
 
-    client.create_evaluation_v2(
+    client.create_benchmark_evaluation_v2(
+        benchmark_id,
         model_run_id,
         exclusion_rules=[
             BoxAreaExclusionRule(scope="annotation", target="groundTruth", min=1024),

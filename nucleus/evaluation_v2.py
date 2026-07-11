@@ -142,26 +142,6 @@ def parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
 
 
 @dataclass
-class BatchEvaluationResult:
-    """Outcome of one job in a batch create call.
-
-    ``evaluation`` is set on success; ``error`` holds the error message on
-    failure. Use :attr:`succeeded` to filter, and re-run the failed jobs by
-    feeding their ``model_run_id`` / ``slice_id`` back into a new batch call.
-    """
-
-    model_run_id: str
-    slice_id: Optional[str] = None
-    name: Optional[str] = None
-    evaluation: Optional["EvaluationV2"] = None
-    error: Optional[str] = None
-
-    @property
-    def succeeded(self) -> bool:
-        return self.evaluation is not None
-
-
-@dataclass
 class EvaluationV2:
     """An Evaluation V2 run for a model run."""
 

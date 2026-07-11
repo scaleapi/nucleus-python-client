@@ -231,9 +231,9 @@ class Dataset:
     def evaluation_label_schema(self) -> Dict[str, List[str]]:
         """Ground-truth and prediction label vocabularies for this dataset.
 
-        Useful for building :meth:`NucleusClient.create_evaluation_v2`
-        ``allowed_label_matches`` and label exclusion rules without guessing
-        label names.
+        Useful for building :meth:`NucleusClient.create_benchmark_evaluation_v2`
+        rollup groups / label matches and label exclusion rules without
+        guessing label names.
 
         Returns:
             A dict with ``"gt_labels"`` (ground-truth annotation labels) and

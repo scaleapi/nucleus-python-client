@@ -3,7 +3,6 @@
 __all__ = [
     "AsyncJob",
     "AllowedLabelMatch",
-    "BatchEvaluationResult",
     "Benchmark",
     "BenchmarkItemsPage",
     "EmbeddingsExportJob",
@@ -68,7 +67,6 @@ __all__ = [
 import datetime
 import os
 import warnings
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import requests
@@ -105,6 +103,7 @@ from .annotation import (
 )
 from .async_job import AsyncJob, EmbeddingsExportJob
 from .async_utils import make_multiple_requests_concurrently
+from .benchmark import Benchmark
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
@@ -150,7 +149,6 @@ from .constants import (
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
-from .benchmark import Benchmark
 from .data_transfer_object.evaluation_v2 import (
     BenchmarkItemsPage,
     EvaluationV2Charts,
@@ -180,7 +178,6 @@ from .errors import (
 )
 from .evaluation_v2 import (
     AllowedLabelMatch,
-    BatchEvaluationResult,
     EvaluationV2,
     EvaluationV2Status,
     RollupGroup,
@@ -924,177 +921,6 @@ class NucleusClient:
         if payload is None:
             payload = {}
         return self.make_request(payload, f"modelRun/{model_run_id}/commit")
-
-    def create_evaluation_v2(
-        self,
-        model_run_id: str,
-        *,
-        name: Optional[str] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
-        allowed_label_matches_id: Optional[str] = None,
-        slice_id: Optional[str] = None,
-        exclusion_rules: Optional[
-            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
-        ] = None,
-        only_items_with_predictions: bool = False,
-        preset: Optional[EvaluationV2Preset] = None,
-    ) -> EvaluationV2:
-        """Create an evaluation for a model run.
-
-        The evaluation runs in the background. Call
-        :meth:`EvaluationV2.wait_for_completion`, then
-        :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples` for results.
-
-        Parameters:
-            model_run_id: Model run id (``run_*``).
-            name: Optional display name.
-            allowed_label_matches: Optional label pairs to treat as matches.
-            allowed_label_matches_id: Optional id of a saved label-match configuration.
-            slice_id: Optional slice id (``slc_*``) to scope the evaluation to the
-                items in that slice. Must belong to the model run's dataset.
-            exclusion_rules: Optional rules that drop items/annotations before metrics
-                are computed. Each entry is a
-                :class:`~nucleus.evaluation_v2_exclusions.MetadataExclusionRule`,
-                :class:`~nucleus.evaluation_v2_exclusions.LabelExclusionRule`, or
-                :class:`~nucleus.evaluation_v2_exclusions.BoxAreaExclusionRule`
-                (or an equivalent plain dict). Per-rule validation happens server-side;
-                a malformed rule rejects the whole request with a descriptive error.
-            only_items_with_predictions: If ``True``, restrict the evaluation to
-                items that have at least one model prediction.
-            preset: Optional :class:`EvaluationV2Preset` whose
-                ``allowed_label_matches`` and ``exclusion_rules`` seed this
-                evaluation. Explicit ``allowed_label_matches`` / ``exclusion_rules``
-                arguments take precedence over the preset's values.
-
-        Returns:
-            :class:`EvaluationV2`: The created evaluation.
-        """
-        if preset is not None:
-            if (
-                allowed_label_matches is None
-                and allowed_label_matches_id is None
-            ):
-                allowed_label_matches = preset.allowed_label_matches
-            if exclusion_rules is None and preset.exclusion_rules is not None:
-                exclusion_rules = list(preset.exclusion_rules)
-        payload: Dict[str, Any] = {}
-        if name is not None:
-            payload["name"] = name
-        if allowed_label_matches is not None:
-            payload["allowed_label_matches"] = [
-                m.to_api_dict() for m in allowed_label_matches
-            ]
-        if allowed_label_matches_id is not None:
-            payload["allowed_label_matches_id"] = allowed_label_matches_id
-        if slice_id is not None:
-            payload["sliceId"] = slice_id
-        if exclusion_rules is not None:
-            payload["exclusionRules"] = [
-                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
-                for rule in exclusion_rules
-            ]
-        if only_items_with_predictions:
-            payload["onlyItemsWithPredictions"] = True
-        result = self.make_request(
-            payload, f"modelRun/{model_run_id}/evaluationsV2"
-        )
-        eval_id = result.get("evaluation_id")
-        if not eval_id:
-            raise RuntimeError(
-                f"Unexpected create evaluation V2 response: {result}"
-            )
-        return self.get_evaluation_v2(str(eval_id))
-
-    def create_evaluations_v2_batch(
-        self,
-        model_run_ids: List[str],
-        *,
-        slice_ids: Optional[List[Optional[str]]] = None,
-        name_prefix: Optional[str] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
-        allowed_label_matches_id: Optional[str] = None,
-        exclusion_rules: Optional[
-            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
-        ] = None,
-        only_items_with_predictions: bool = False,
-        preset: Optional[EvaluationV2Preset] = None,
-        max_workers: int = 4,
-    ) -> List[BatchEvaluationResult]:
-        """Create many evaluations at once, sharing one configuration.
-
-        One evaluation is created for
-        every ``(model_run_id, slice_id)`` pair (the cross-product of
-        ``model_run_ids`` and ``slice_ids``), all sharing the same matches,
-        exclusion rules, and options. Jobs run concurrently and failures are
-        captured per job rather than aborting the batch.
-
-        Parameters:
-            model_run_ids: Model run ids (``run_*``) to evaluate.
-            slice_ids: Slice ids (``slc_*``) to scope each evaluation to. Use
-                ``None`` within the list for a whole-dataset evaluation. Defaults
-                to ``[None]`` (whole dataset for every run).
-            name_prefix: Optional name prefix; the run id and/or slice id are
-                appended to keep batch names unique.
-            allowed_label_matches: Shared label-match pairs (see
-                :meth:`create_evaluation_v2`).
-            allowed_label_matches_id: Shared saved label-match config id.
-            exclusion_rules: Shared exclusion rules.
-            only_items_with_predictions: Shared "only items with predictions" flag.
-            preset: Optional preset seeding matches/rules for every job.
-            max_workers: Maximum concurrent create requests (default 4).
-
-        Returns:
-            List of :class:`BatchEvaluationResult`, in input order — each holds
-            the created :class:`EvaluationV2` or the error for that job.
-        """
-        if not model_run_ids:
-            return []
-        targets: List[Optional[str]] = (
-            list(slice_ids) if slice_ids is not None else [None]
-        )
-        jobs: List[Tuple[str, Optional[str]]] = [
-            (run, sl) for run in model_run_ids for sl in targets
-        ]
-
-        def _name(run: str, sl: Optional[str]) -> Optional[str]:
-            if name_prefix is None:
-                return None
-            parts = [name_prefix]
-            if len(model_run_ids) > 1:
-                parts.append(run)
-            if sl is not None:
-                parts.append(sl)
-            return " — ".join(parts)
-
-        results: List[Optional[BatchEvaluationResult]] = [None] * len(jobs)
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_idx = {
-                executor.submit(
-                    self.create_evaluation_v2,
-                    run,
-                    name=_name(run, sl),
-                    allowed_label_matches=allowed_label_matches,
-                    allowed_label_matches_id=allowed_label_matches_id,
-                    slice_id=sl,
-                    exclusion_rules=exclusion_rules,
-                    only_items_with_predictions=only_items_with_predictions,
-                    preset=preset,
-                ): idx
-                for idx, (run, sl) in enumerate(jobs)
-            }
-            for future in as_completed(future_to_idx):
-                idx = future_to_idx[future]
-                run, sl = jobs[idx]
-                result = BatchEvaluationResult(
-                    model_run_id=run, slice_id=sl, name=_name(run, sl)
-                )
-                try:
-                    result.evaluation = future.result()
-                # pylint: disable-next=broad-exception-caught
-                except Exception as exc:  # noqa: BLE001 - reported per job
-                    result.error = str(exc)
-                results[idx] = result
-        return [r for r in results if r is not None]
 
     def get_evaluation_v2(self, evaluation_id: str) -> EvaluationV2:
         """Get an evaluation by id.
