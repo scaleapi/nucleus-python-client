@@ -13,7 +13,6 @@ from .constants import (
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATION_UPDATE_KEY,
     ANNOTATIONS_KEY,
-    ITEMS_KEY,
     LABELS_KEY,
     METADATA_KEY,
     MODEL_BUNDLE_NAME_KEY,
@@ -22,14 +21,12 @@ from .constants import (
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
-    SCENES_KEY,
     SEGMENTATIONS_KEY,
     TAXONOMY_NAME_KEY,
     TRAINED_SLICE_ID_KEY,
     TYPE_KEY,
     UPDATE_KEY,
 )
-from .dataset_item import DatasetItem
 from .prediction import (
     BoxPrediction,
     CategoryPrediction,
@@ -38,31 +35,6 @@ from .prediction import (
     SceneCategoryPrediction,
     SegmentationPrediction,
 )
-from .scene import LidarScene, VideoScene
-
-
-def construct_append_payload(
-    dataset_items: List[DatasetItem], force: bool = False
-) -> dict:
-    items = []
-    for item in dataset_items:
-        items.append(item.to_payload())
-
-    return (
-        {ITEMS_KEY: items}
-        if not force
-        else {ITEMS_KEY: items, UPDATE_KEY: True}
-    )
-
-
-def construct_append_scenes_payload(
-    scene_list: Union[List[LidarScene], List[VideoScene]],
-    update: Optional[bool] = False,
-) -> dict:
-    scenes = []
-    for scene in scene_list:
-        scenes.append(scene.to_payload())
-    return {SCENES_KEY: scenes, UPDATE_KEY: update}
 
 
 def construct_annotation_payload(

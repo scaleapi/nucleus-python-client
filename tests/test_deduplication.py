@@ -120,7 +120,7 @@ def dataset_image_async(CLIENT):
         TEST_DATASET_NAME + " dedup async", is_scene=False
     )
     try:
-        job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
+        job = ds.append(TEST_DATASET_ITEMS)
         job.sleep_until_complete()
         yield ds
     finally:
@@ -185,7 +185,7 @@ def dataset_video_scene_async(CLIENT):
     try:
         scene_1 = TEST_VIDEO_SCENES["scenes"][0]
         scenes = [VideoScene.from_json(scene_1)]
-        job = ds.append(scenes, asynchronous=True)
+        job = ds.append(scenes)
         job.sleep_until_complete()
         yield ds
     finally:
@@ -271,7 +271,7 @@ def dataset_video_url_async(CLIENT):
                 "metadata": {"test": "video_url_dedup_async"},
             }
         )
-        job = ds.append([scene], asynchronous=True)
+        job = ds.append([scene])
         job.sleep_until_complete()
         yield ds
     finally:
@@ -494,7 +494,8 @@ def dataset_with_duplicates(CLIENT):
             DatasetItem(TEST_IMG_URLS[0], reference_id="img_duplicate"),
             DatasetItem(TEST_IMG_URLS[1], reference_id="img_different"),
         ]
-        ds.append(items)
+        job = ds.append(items)
+        job.sleep_until_complete()
         yield ds
     finally:
         CLIENT.delete_dataset(ds.id)

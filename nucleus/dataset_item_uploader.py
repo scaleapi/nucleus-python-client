@@ -17,11 +17,9 @@ from nucleus.async_utils import (
     make_multiple_requests_concurrently,
 )
 
-from .constants import DATASET_ID_KEY, IMAGE_KEY, ITEMS_KEY, UPDATE_KEY
+from .constants import IMAGE_KEY, ITEMS_KEY, UPDATE_KEY
 from .dataset_item import DatasetItem
 from .errors import NotFoundError
-from .payload_constructor import construct_append_payload
-from .upload_response import UploadResponse
 
 if TYPE_CHECKING:
     from . import NucleusClient
@@ -32,139 +30,54 @@ class DatasetItemUploader:
         self.dataset_id = dataset_id
         self._client = client
 
-    def upload(
+    def upload_local_async(
         self,
         dataset_items: List[DatasetItem],
-        batch_size: int = 5000,
         update: bool = False,
         local_files_per_upload_request: int = 10,
-    ) -> UploadResponse:
-        """
+    ) -> List[Any]:
+        """Uploads local files as multipart to the async append endpoint.
 
-        Args:
-            dataset_items: Items to Upload
-            batch_size: How many items to pool together for a single request for items
-             without files to upload
-            local_files_per_upload_request: How many items to pool together for a single
-                request for items with files to upload
-            update: Update records instead of overwriting
-
+        Returns a list of job responses (one per batch).
         """
-        local_items = []
-        remote_items = []
         if local_files_per_upload_request > 10:
             raise ValueError("local_files_per_upload_request should be <= 10")
 
-        # Check local files exist before sending requests
         for item in dataset_items:
-            if item.local:
-                if not item.local_file_exists():
-                    raise NotFoundError()
-                local_items.append(item)
-            else:
-                remote_items.append(item)
+            if item.local and not item.local_file_exists():
+                raise NotFoundError()
 
-        agg_response = UploadResponse(json={DATASET_ID_KEY: self.dataset_id})
-
-        async_responses: List[Any] = []
-
-        if local_items:
-            async_responses.extend(
-                self._process_append_requests_local(
-                    self.dataset_id,
-                    items=local_items,
-                    update=update,
-                    local_files_per_upload_request=local_files_per_upload_request,
-                )
-            )
-
-        remote_batches = [
-            remote_items[i : i + batch_size]
-            for i in range(0, len(remote_items), batch_size)
-        ]
-
-        if remote_batches:
-            tqdm_remote_batches = self._client.tqdm_bar(
-                remote_batches, desc="Remote file batches"
-            )
-            for batch in tqdm_remote_batches:
-                responses = self._process_append_requests(
-                    dataset_id=self.dataset_id,
-                    payload=construct_append_payload(batch, update),
-                    update=update,
-                    batch_size=batch_size,
-                )
-                async_responses.extend(responses)
-
-        for response in async_responses:
-            agg_response.update_response(response)
-
-        return agg_response
-
-    def _process_append_requests_local(
-        self,
-        dataset_id: str,
-        items: Sequence[DatasetItem],
-        update: bool,
-        local_files_per_upload_request: int,
-    ):
-        # Batch into requests
         requests = []
         batch_size = local_files_per_upload_request
-        for i in range(0, len(items), batch_size):
-            batch = items[i : i + batch_size]
+        for i in range(0, len(dataset_items), batch_size):
+            batch = dataset_items[i : i + batch_size]
             request = FormDataContextHandler(
-                self.get_form_data_and_file_pointers_fn(batch, update)
+                self._build_form_data_fn(batch, update)
             )
             requests.append(request)
 
         progressbar = self._client.tqdm_bar(
             total=len(requests),
-            desc=f"Uploading {len(items)} items in {len(requests)} batches",
+            desc=f"Uploading {len(dataset_items)} items in {len(requests)} batches",
         )
 
         return make_multiple_requests_concurrently(
             self._client,
             requests,
-            f"dataset/{dataset_id}/append",
+            f"dataset/{self.dataset_id}/append?async=1",
             progressbar=progressbar,
         )
 
-    def _process_append_requests(
-        self,
-        dataset_id: str,
-        payload: dict,
-        update: bool,
-        batch_size: int = 20,
-    ):
-        items = payload[ITEMS_KEY]
-        payloads = [
-            {ITEMS_KEY: items[i : i + batch_size], UPDATE_KEY: update}
-            for i in range(0, len(items), batch_size)
-        ]
-        return [
-            self._client.make_request(
-                payload,
-                f"dataset/{dataset_id}/append",
-            )
-            for payload in payloads
-        ]
-
-    def get_form_data_and_file_pointers_fn(
+    def _build_form_data_fn(
         self, items: Sequence[DatasetItem], update: bool
     ) -> Callable[..., Tuple[FileFormData, Sequence[BinaryIO]]]:
-        """Defines a function to be called on each retry.
+        """Returns a function that builds form data and opens file pointers.
 
-        File pointers are also returned so whoever calls this function can
-        appropriately close the files. This is intended for use with a
-        FormDataContextHandler in order to make form data requests.
+        Called on each retry attempt by FormDataContextHandler to ensure
+        file pointers are fresh.
         """
 
         def fn():
-            # For some reason, our backend only accepts this reformatting of items when
-            # doing local upload.
-            # TODO: make it just accept the same exact format as a normal append request
-            # i.e. the output of construct_append_payload(items, update)
             json_data = []
             for item in items:
                 item_payload = item.to_payload()
@@ -182,8 +95,6 @@ class DatasetItemUploader:
 
             file_pointers = []
             for item in items:
-                # I don't know of a way to use with, since all files in the request
-                # need to be opened at the same time.
                 # pylint: disable=consider-using-with
                 image_fp = open(item.image_location, "rb")
                 # pylint: enable=consider-using-with

@@ -47,7 +47,7 @@ def video_scenes(dataset_video_module):
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_video_module.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_module.append(scenes, update=update)
     job.sleep_until_complete()
     yield scenes
 
@@ -132,7 +132,7 @@ def test_video_scene_upload_async(dataset_video_scene):
     ]
 
     update = payload[UPDATE_KEY]
-    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update)
     job.sleep_until_complete()
     status = job.status()
 
@@ -164,7 +164,7 @@ def test_repeat_refid_video_scene_upload_async(dataset_video_scene):
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update)
 
     with pytest.raises(JobError):
         job.sleep_until_complete()
@@ -180,16 +180,14 @@ def test_invalid_url_video_scene_upload_async(dataset_video_scene):
         VideoScene.from_json(scene_json) for scene_json in payload[SCENES_KEY]
     ]
     update = payload[UPDATE_KEY]
-    job = dataset_video_scene.append(scenes, update=update, asynchronous=True)
+    job = dataset_video_scene.append(scenes, update=update)
     with pytest.raises(JobError):
         job.sleep_until_complete()
 
 
 @pytest.mark.integration
 def test_video_scene_upload_and_update(dataset_video_module, video_scenes):
-    job2 = dataset_video_module.append(
-        video_scenes, update=True, asynchronous=True
-    )
+    job2 = dataset_video_module.append(video_scenes, update=True)
     job2.sleep_until_complete()
     status2 = job2.status()
 

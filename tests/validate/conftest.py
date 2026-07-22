@@ -22,7 +22,8 @@ def validate_dataset(CLIENT):
 @pytest.fixture(scope="module")
 def dataset_items(validate_dataset):
     items = make_dataset_items()
-    validate_dataset.append(items)
+    job = validate_dataset.append(items)
+    job.sleep_until_complete()
     yield items
 
 
@@ -75,7 +76,7 @@ def slice_scenes():
 
 @pytest.fixture(scope="module")
 def scenes(populated_scene_dataset, slice_scenes):
-    job = populated_scene_dataset.append(slice_scenes, asynchronous=True)
+    job = populated_scene_dataset.append(slice_scenes)
     job.sleep_until_complete()
     yield slice_scenes
 

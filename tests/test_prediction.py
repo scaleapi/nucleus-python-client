@@ -16,7 +16,6 @@ from nucleus import (
     SegmentationPrediction,
 )
 from nucleus.async_job import AsyncJob, JobError
-from nucleus.constants import ERROR_PAYLOAD
 from nucleus.errors import DuplicateIDError
 from nucleus.scene import VideoScene
 
@@ -90,11 +89,10 @@ def model_run(CLIENT):
             )
         )
 
-    response = ds.append(ds_items)
+    job = ds.append(ds_items)
+    job.sleep_until_complete()
 
-    assert ERROR_PAYLOAD not in response.json()
-
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] Category Taxonomy 1",
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
@@ -124,7 +122,6 @@ def scene_category_model_run(CLIENT):
 
     job = ds.append(
         scenes,
-        asynchronous=True,
         update=TEST_VIDEO_SCENES_FOR_ANNOTATION["update"],
     )
     job.sleep_until_complete()

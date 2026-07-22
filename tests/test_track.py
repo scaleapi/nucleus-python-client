@@ -24,7 +24,6 @@ def dataset_scene(CLIENT):
         scenes.append(VideoScene.from_json(scene, CLIENT))
     job = ds.append(
         scenes,
-        asynchronous=True,
         update=TEST_VIDEO_SCENES["update"],
     )
     job.sleep_until_complete()
