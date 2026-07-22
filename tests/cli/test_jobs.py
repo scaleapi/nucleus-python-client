@@ -14,7 +14,7 @@ def test_invoke_jobs(runner):
 def test_list_jobs(CLIENT, runner, function_scope_dataset):
     dataset = function_scope_dataset
     items = make_dataset_items()
-    dataset.append(items, asynchronous=True)
+    dataset.append(items)
     result = runner.invoke(list_jobs)
     time.sleep(0.5)
     assert result.exception is None

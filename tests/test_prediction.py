@@ -122,7 +122,6 @@ def scene_category_model_run(CLIENT):
 
     job = ds.append(
         scenes,
-        asynchronous=True,
         update=TEST_VIDEO_SCENES_FOR_ANNOTATION["update"],
     )
     job.sleep_until_complete()

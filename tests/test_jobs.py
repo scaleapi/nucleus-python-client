@@ -27,7 +27,7 @@ def job_from_dataset_upload(CLIENT):
     """Create a job by doing an async dataset upload."""
     ds = CLIENT.create_dataset(TEST_DATASET_NAME + " job test", is_scene=False)
     try:
-        job = ds.append(TEST_DATASET_ITEMS, asynchronous=True)
+        job = ds.append(TEST_DATASET_ITEMS)
         job.sleep_until_complete()
         yield job
     finally:
