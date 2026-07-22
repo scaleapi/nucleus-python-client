@@ -1392,10 +1392,12 @@ class NucleusClient:
         dataset = self.create_dataset(
             name=dataset_name, use_privacy_mode=use_privacy_mode
         )
-        dataset.add_items_from_dir(
+        job = dataset.add_items_from_dir(
             existing_dirname=existing_dirname,
             privacy_mode_proxy=privacy_mode_proxy,
             allowed_file_types=allowed_file_types,
             skip_size_warning=skip_size_warning,
         )
+        if job is not None:
+            job.sleep_until_complete()
         return dataset

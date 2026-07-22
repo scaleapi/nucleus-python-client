@@ -667,7 +667,7 @@ def test_create_update_dataset_from_dir(CLIENT):
     dataset.add_items_from_dir(
         dirname=TEST_LOCAL_TESTDIR,
         allowed_file_types=tuple(["png", "jpeg"]),
-    )
+    ).sleep_until_complete()
     dataset_items = dataset.items
     assert len(dataset_items) == 2
     for dataset_item in dataset_items:
