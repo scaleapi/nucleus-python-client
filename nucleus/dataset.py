@@ -2394,7 +2394,7 @@ class Dataset:
         allowed_file_types: Tuple[str, ...] = ("png", "jpg", "jpeg"),
         skip_size_warning: bool = False,
         update_items: bool = False,
-    ):
+    ) -> Optional[AsyncJob]:
         """
         Update dataset by recursively crawling through a directory.
         A DatasetItem will be created for each unique image found.
@@ -2408,6 +2408,12 @@ class Dataset:
             allowed_file_types: Which file type extensions to search for, ie: ('jpg', 'png')
             skip_size_warning: If False, it will throw an error if the script globs more than 500 images. This is a safety check in case the dirname has a typo, and grabs too much data.
             update_items: Whether to update items in existing dataset
+
+        Returns:
+            An :class:`AsyncJob` tracking the upload, or ``None`` if no items were
+            found. The upload is processed asynchronously; call
+            ``job.sleep_until_complete()`` to block until items are queryable and
+            to surface any upload errors.
         """
 
         # fetch dataset use_privacy_mode for existence check
@@ -2434,10 +2440,11 @@ class Dataset:
                     f"Found over {GLOB_SIZE_THRESHOLD_CHECK} items in {dirname}. If this is intended,"
                     f" set skip_size_warning=True when calling this function."
                 )
-            self.append(items, update=update_items)
+            return self.append(items, update=update_items)
 
         else:
             print(f"Did not find any items in {dirname}.")
+            return None
 
     def upload_lidar_semseg_predictions(
         self,
