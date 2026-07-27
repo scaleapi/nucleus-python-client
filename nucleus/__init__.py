@@ -218,10 +218,10 @@ from .model_weights import (
     MODEL_WEIGHTS_MAX_BYTES,
     ModelWeights,
     ProgressCallback,
-    finalize_payload,
-    presign_payload,
-    stream_weights_to_file,
-    transfer_weights_to_storage,
+    _finalize_payload,
+    _presign_payload,
+    _stream_weights_to_file,
+    _transfer_weights_to_storage,
 )
 from .payload_constructor import (
     construct_annotation_payload,
@@ -1665,10 +1665,7 @@ class NucleusClient:
         """Attach a weights artifact to a model.
 
         Any binary is accepted — there are no format constraints — up to 10 GB.
-        Requires edit access on the model (its owner, or an ``edit`` grant under
-        Admin Plane RBAC). The bytes go straight to storage via a presigned URL
-        and never transit the Nucleus API, so large artifacts aren't subject to
-        API request-size limits.
+        Requires edit access on the model.
 
         ::
 
@@ -1681,16 +1678,16 @@ class NucleusClient:
         Parameters:
             model: A :class:`Model` or a model id (``prj_*``).
             path: Local path of the artifact to upload.
-            content_type: Opaque content type. Defaults to
-              ``application/octet-stream`` server-side.
-            original_filename: Filename stored for display. Defaults to the
-              basename of ``path``.
-            checksum_sha256: Optional client-declared SHA-256 of the artifact.
-            on_progress: Called with ``(bytes_sent, total_bytes)`` as the
+            content_type: Content type to record for the artifact. Defaults to
+              ``application/octet-stream``.
+            original_filename: Filename to show for the artifact. Defaults to
+              the name of the file at ``path``.
+            checksum_sha256: Optional SHA-256 of the artifact.
+            on_progress: Called with ``(bytes_uploaded, total_bytes)`` as the
               upload proceeds.
 
         Returns:
-            :class:`ModelWeights`: Metadata for the stored artifact.
+            :class:`ModelWeights`: Metadata for the uploaded artifact.
         """
         model_id = model.id if isinstance(model, Model) else model
         total_bytes = os.path.getsize(path)
@@ -1701,7 +1698,7 @@ class NucleusClient:
             )
 
         presign = self.make_request(
-            presign_payload(
+            _presign_payload(
                 total_bytes,
                 content_type,
                 original_filename
@@ -1711,11 +1708,11 @@ class NucleusClient:
             ),
             f"model/{model_id}/weights/presign",
         )
-        parts = transfer_weights_to_storage(
+        parts = _transfer_weights_to_storage(
             path, presign, total_bytes, on_progress
         )
         finalized = self.make_request(
-            finalize_payload(presign[UPLOAD_ID_KEY], parts),
+            _finalize_payload(presign[UPLOAD_ID_KEY], parts),
             f"model/{model_id}/weights/finalize",
         )
         return ModelWeights.from_json(finalized, self)
@@ -1743,19 +1740,19 @@ class NucleusClient:
             model: A :class:`Model` or a model id (``prj_*``).
             path: Local path to write the artifact to. Parent directories are
               created if needed.
-            on_progress: Called with ``(bytes_written, total_bytes)`` as the
-              download proceeds. ``total_bytes`` is ``0`` if storage doesn't
-              report a content length.
+            on_progress: Called with ``(bytes_downloaded, total_bytes)`` as the
+              download proceeds. ``total_bytes`` is ``0`` when the size isn't
+              known ahead of time.
 
         Returns:
             str: The path written.
 
         Raises:
-            ValueError: If the model has no weights artifact ready.
+            ValueError: If the model has no weights artifact to download.
         """
         model_id = model.id if isinstance(model, Model) else model
-        # `?json=1` returns the signed URL instead of a 302 to it, so the
-        # streaming GET below isn't carrying the API's auth headers to storage.
+        # Ask for the URL as JSON rather than following the redirect, so the
+        # API credentials aren't replayed to the download host.
         signed = self.make_request(
             {},
             f"model/{model_id}/weights/download?json=1",
@@ -1766,7 +1763,7 @@ class NucleusClient:
             raise ValueError(
                 f"Model {model_id} has no downloadable weights artifact"
             )
-        return stream_weights_to_file(url, path, on_progress)
+        return _stream_weights_to_file(url, path, on_progress)
 
     def get_model_weights(self, model: Union[Model, str]) -> ModelWeights:
         """Fetch metadata for a model's weights artifact.
@@ -1775,8 +1772,8 @@ class NucleusClient:
             model: A :class:`Model` or a model id (``prj_*``).
 
         Returns:
-            :class:`ModelWeights`: Metadata. ``present`` is ``False`` when no
-            ready artifact exists.
+            :class:`ModelWeights`: Metadata. ``present`` is ``False`` when the
+            model has no weights artifact available.
         """
         model_id = model.id if isinstance(model, Model) else model
         return ModelWeights.from_json(

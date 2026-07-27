@@ -9,10 +9,10 @@ import requests
 from nucleus import Model, ModelWeights, NucleusClient
 from nucleus.model_weights import (
     MODEL_WEIGHTS_MAX_BYTES,
-    finalize_payload,
-    presign_payload,
-    stream_weights_to_file,
-    transfer_weights_to_storage,
+    _finalize_payload,
+    _presign_payload,
+    _stream_weights_to_file,
+    _transfer_weights_to_storage,
 )
 
 _WEIGHTS_DTO = {
@@ -61,11 +61,11 @@ def test_model_weights_from_json_absent_artifact():
 # Payload builders
 # --------------------------------------------------------------------------- #
 def test_presign_payload_omits_unset_optionals():
-    assert presign_payload(10, None, None, None) == {"declaredSizeBytes": 10}
+    assert _presign_payload(10, None, None, None) == {"declaredSizeBytes": 10}
 
 
 def test_presign_payload_includes_provided_optionals():
-    assert presign_payload(10, "application/zip", "w.bin", "abc123") == {
+    assert _presign_payload(10, "application/zip", "w.bin", "abc123") == {
         "declaredSizeBytes": 10,
         "contentType": "application/zip",
         "originalFilename": "w.bin",
@@ -74,13 +74,13 @@ def test_presign_payload_includes_provided_optionals():
 
 
 def test_finalize_payload_omits_empty_parts():
-    assert finalize_payload("up_1", None) == {"uploadId": "up_1"}
-    assert finalize_payload("up_1", []) == {"uploadId": "up_1"}
+    assert _finalize_payload("up_1", None) == {"uploadId": "up_1"}
+    assert _finalize_payload("up_1", []) == {"uploadId": "up_1"}
 
 
 def test_finalize_payload_includes_parts():
     parts = [{"partNumber": 1, "eTag": "aaa"}]
-    assert finalize_payload("up_1", parts) == {
+    assert _finalize_payload("up_1", parts) == {
         "uploadId": "up_1",
         "parts": parts,
     }
@@ -108,7 +108,7 @@ def test_transfer_single_put_sends_required_headers(tmp_path):
     }
     with patch("nucleus.model_weights.requests.put") as mock_put:
         mock_put.return_value = _ok_put()
-        parts = transfer_weights_to_storage(str(path), presign, 32)
+        parts = _transfer_weights_to_storage(str(path), presign, 32)
 
     assert parts is None
     assert mock_put.call_count == 1
@@ -131,7 +131,7 @@ def test_transfer_multipart_uploads_each_part_without_headers(tmp_path):
     }
     with patch("nucleus.model_weights.requests.put") as mock_put:
         mock_put.return_value = _ok_put('"etag-x"')
-        parts = transfer_weights_to_storage(str(path), presign, 32)
+        parts = _transfer_weights_to_storage(str(path), presign, 32)
 
     assert parts == [
         {"partNumber": 1, "eTag": "etag-x"},
@@ -158,14 +158,14 @@ def test_transfer_multipart_raises_without_etag(tmp_path):
         pytest.raises(RuntimeError, match="did not return an ETag"),
     ):
         mock_put.return_value = _ok_put(etag="")
-        transfer_weights_to_storage(str(path), presign, 16)
+        _transfer_weights_to_storage(str(path), presign, 16)
 
 
 def test_transfer_raises_when_presign_has_no_targets(tmp_path):
     path = tmp_path / "w.bin"
     path.write_bytes(b"a")
     with pytest.raises(ValueError, match="neither an uploadUrl"):
-        transfer_weights_to_storage(
+        _transfer_weights_to_storage(
             str(path), {"uploadId": "up_1", "uploadUrl": None}, 1
         )
 
@@ -180,7 +180,7 @@ def test_transfer_raises_on_failed_put(tmp_path):
     with patch("nucleus.model_weights.requests.put") as mock_put:
         mock_put.return_value = response
         with pytest.raises(RuntimeError, match="403"):
-            transfer_weights_to_storage(
+            _transfer_weights_to_storage(
                 str(path),
                 {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
                 1,
@@ -193,7 +193,7 @@ def test_transfer_reports_progress(tmp_path):
     seen = []
     with patch("nucleus.model_weights.requests.put") as mock_put:
         mock_put.return_value = _ok_put()
-        transfer_weights_to_storage(
+        _transfer_weights_to_storage(
             str(path),
             {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
             32,
@@ -215,7 +215,7 @@ def test_stream_weights_to_file_writes_chunks(tmp_path):
     response.__exit__ = lambda *args: False
 
     with patch("nucleus.model_weights.requests.get", return_value=response):
-        written = stream_weights_to_file(
+        written = _stream_weights_to_file(
             "https://s3.example/signed-get", str(target)
         )
 
@@ -230,11 +230,13 @@ def test_stream_weights_to_file_raises_on_error(tmp_path):
     response.__enter__ = lambda self: self
     response.__exit__ = lambda *args: False
 
-    with patch("nucleus.model_weights.requests.get", return_value=response):
-        with pytest.raises(RuntimeError, match="404"):
-            stream_weights_to_file(
-                "https://s3.example/gone", str(tmp_path / "out.bin")
-            )
+    with (
+        patch("nucleus.model_weights.requests.get", return_value=response),
+        pytest.raises(RuntimeError, match="404"),
+    ):
+        _stream_weights_to_file(
+            "https://s3.example/gone", str(tmp_path / "out.bin")
+        )
 
 
 # --------------------------------------------------------------------------- #
@@ -318,7 +320,7 @@ def test_download_model_weights_resolves_signed_url(tmp_path):
         return_value={"url": "https://s3.example/signed-get"}
     )
     with patch(
-        "nucleus.stream_weights_to_file", return_value=str(target)
+        "nucleus._stream_weights_to_file", return_value=str(target)
     ) as mock_stream:
         written = client.download_model_weights("prj_1", str(target))
 

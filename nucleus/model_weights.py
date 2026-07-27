@@ -1,10 +1,8 @@
-"""Model weights artifacts: metadata plus the direct-to-S3 transfer helpers.
+"""The weights artifact attached to a model.
 
-Bytes never transit the Nucleus API. Upload is a three-step flow — presign
-against the API, ``PUT`` straight to the returned S3 URL(s), then finalize —
-and download resolves a short-lived signed URL and streams from it. The
-``NucleusClient`` methods (:meth:`NucleusClient.upload_model_weights`,
-:meth:`NucleusClient.download_model_weights`) drive the helpers here.
+:class:`ModelWeights` is the metadata users see; the rest of this module is
+internal machinery for :meth:`NucleusClient.upload_model_weights` and
+:meth:`NucleusClient.download_model_weights`.
 """
 
 import os
@@ -37,19 +35,18 @@ from .constants import (
 if TYPE_CHECKING:
     from . import NucleusClient
 
-#: Hard cap the server enforces on a single artifact; checked client-side so a
-#: multi-GB read isn't started just to be rejected by presign.
+#: Largest weights artifact that can be attached to a model.
 MODEL_WEIGHTS_MAX_BYTES = 10 * 1024 * 1024 * 1024  # 10 GB
 
-#: Parts in flight at once. A single S3 PUT is connection-throughput-bound, so a
-#: small pool is several times faster on multi-GB artifacts.
+# Chunks of a large upload sent at once. Each transfer is
+# connection-throughput-bound, so a small pool is several times faster.
 CONCURRENT_PART_UPLOADS = 4
 
-#: Chunk size for streaming a download to disk.
+# Chunk size for streaming a download to disk.
 DOWNLOAD_CHUNK_BYTES = 8 * 1024 * 1024
 
-#: Upload/download PUTs and GETs go straight to S3 and can take far longer than
-#: an API call, so they don't use the API's network timeout.
+# Transfers can run far longer than an API call, so they don't share the API's
+# network timeout.
 TRANSFER_TIMEOUT_SEC = 60 * 60
 
 #: Called with ``(bytes_transferred, total_bytes)`` as a transfer progresses.
@@ -62,13 +59,16 @@ class ModelWeights:
 
     Attributes:
         model_project_id: Id of the model the artifact belongs to (``prj_*``).
-        present: Whether a *ready* artifact exists. ``False`` while an upload is
-            still pending or if none was ever uploaded.
-        status: Raw server-side status, or ``None`` when no artifact exists.
-        size_bytes: Size of the stored artifact.
-        original_filename: Filename supplied at upload time.
-        content_type: Content type supplied at upload time.
-        download_url: Short-lived signed URL, populated only when ``present``.
+        present: Whether the artifact is available to download. ``False`` while
+            an upload is still in progress, or if nothing was ever uploaded.
+        status: Current state of the artifact, or ``None`` if there isn't one.
+        size_bytes: Size of the artifact.
+        original_filename: Filename recorded when the artifact was uploaded.
+        content_type: Content type recorded when the artifact was uploaded.
+        download_url: Temporary URL the artifact can be fetched from. Only set
+            when ``present``; prefer
+            :meth:`NucleusClient.download_model_weights`, which handles this
+            for you.
     """
 
     model_project_id: Optional[str] = None
@@ -84,7 +84,7 @@ class ModelWeights:
     def from_json(
         cls, payload: dict, client: Optional["NucleusClient"] = None
     ) -> "ModelWeights":
-        """Instantiate from the server's weights DTO."""
+        """Instantiate from an API weights payload."""
         return cls(
             model_project_id=payload.get(MODEL_PROJECT_ID_KEY),
             present=bool(payload.get(PRESENT_KEY, False)),
@@ -175,7 +175,7 @@ def _upload_multipart(
     return sorted(finalized, key=lambda p: p[PART_NUMBER_KEY])
 
 
-def transfer_weights_to_storage(
+def _transfer_weights_to_storage(
     path: str,
     presign: dict,
     total_bytes: int,
@@ -209,7 +209,7 @@ def transfer_weights_to_storage(
     )
 
 
-def stream_weights_to_file(
+def _stream_weights_to_file(
     url: str,
     path: str,
     on_progress: Optional[ProgressCallback] = None,
@@ -241,7 +241,7 @@ def stream_weights_to_file(
     return path
 
 
-def presign_payload(
+def _presign_payload(
     declared_size_bytes: int,
     content_type: Optional[str],
     original_filename: Optional[str],
@@ -260,7 +260,7 @@ def presign_payload(
     return payload
 
 
-def finalize_payload(
+def _finalize_payload(
     upload_id: str, parts: Optional[List[Dict[str, Any]]]
 ) -> Dict[str, Any]:
     """Build the finalize request body."""
