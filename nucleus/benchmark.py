@@ -125,7 +125,7 @@ class Benchmark:
 
         Parameters:
             limit: Optional page size.
-            offset: Optional row offset for pagination.
+            offset: Optional offset for pagination.
 
         Returns:
             :class:`~nucleus.data_transfer_object.evaluation_v2.BenchmarkItemsPage`:

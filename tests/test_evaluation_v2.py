@@ -336,9 +336,9 @@ def test_rollup_group_to_api_dict():
 
 
 def test_parse_rollup_groups_both_casings_and_malformed():
-    from nucleus.evaluation_v2 import parse_rollup_groups
+    from nucleus.evaluation_v2 import _parse_rollup_groups
 
-    groups = parse_rollup_groups(
+    groups = _parse_rollup_groups(
         [
             {"className": "vehicle", "labels": ["car"]},
             {"class_name": "person", "labels": ["ped"]},
@@ -351,8 +351,8 @@ def test_parse_rollup_groups_both_casings_and_malformed():
         ("vehicle", ["car"]),
         ("person", ["ped"]),
     ]
-    assert parse_rollup_groups(None) is None
-    assert parse_rollup_groups("nope") is None
+    assert _parse_rollup_groups(None) is None
+    assert _parse_rollup_groups("nope") is None
 
 
 def test_evaluation_v2_from_json_benchmark_id_and_rollup_groups():

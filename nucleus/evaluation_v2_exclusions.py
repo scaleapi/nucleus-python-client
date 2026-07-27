@@ -2,9 +2,9 @@
 
 These rules drop items/annotations from an evaluation before metrics are computed.
 
-The per-rule shape is validated server-side at create time
-(``parseEvaluationV2ExclusionRulesWithDiagnostics``), which reports exactly which
-rules were rejected and why — so these classes only need to serialize correctly.
+Each rule is validated when the evaluation is created; anything rejected is
+reported back with the reason, so a malformed rule fails loudly rather than
+silently excluding nothing.
 
 Pass instances (or equivalent plain dicts) to
 :meth:`nucleus.NucleusClient.create_benchmark_evaluation_v2` via ``exclusion_rules``::

@@ -173,7 +173,7 @@ class EvaluationV2FilterMetadataField(DictCompatibleModel):
 
 
 class EvaluationV2FilterSchema(DictCompatibleModel):
-    """Filter vocabulary for one evaluation's match rows.
+    """Filter vocabulary for one evaluation's results.
 
     The valid label values and item-metadata predicates accepted by
     :class:`EvaluationV2FilterArgs` for that evaluation.
@@ -185,7 +185,7 @@ class EvaluationV2FilterSchema(DictCompatibleModel):
 
 
 class LeaderboardRankingEntry(DictCompatibleModel):
-    """One row of a benchmark leaderboard ranking."""
+    """One entry in a benchmark leaderboard ranking."""
 
     evaluation_id: str
     evaluation_name: Optional[str] = None

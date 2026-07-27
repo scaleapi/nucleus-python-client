@@ -38,12 +38,7 @@ _TERMINAL_OK: Set[EvaluationV2Status] = {
 
 
 def _parse_json_field(value: Any) -> Optional[Any]:
-    """Normalize a JSONB column that may arrive as a string or already parsed.
-
-    The REST ``GET``/``LIST`` evaluation endpoints return raw DB rows, so the
-    ``exclusion_rules`` / ``exclusion_stats`` jsonb columns can come back either
-    already decoded (dict/list) or as a JSON string depending on the driver.
-    """
+    """Normalize a field that may arrive already decoded or as a JSON string."""
     if value is None or isinstance(value, (dict, list)):
         return value
     if isinstance(value, str):
@@ -68,13 +63,12 @@ class AllowedLabelMatch:
         }
 
 
-def parse_allowed_label_matches(
+def _parse_allowed_label_matches(
     raw_matches: Any,
 ) -> Optional[List[AllowedLabelMatch]]:
     """Parse an ``allowed_label_matches`` array from an API payload.
 
-    Accepts both the camelCase (``groundTruthLabel`` / ``modelPredictionLabel``)
-    and snake_case shapes the backend may return, and drops malformed entries.
+    Tolerates either key casing and drops malformed entries.
     """
     if not isinstance(raw_matches, list):
         return None
@@ -115,11 +109,10 @@ class RollupGroup:
         return {"class_name": self.class_name, "labels": list(self.labels)}
 
 
-def parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
+def _parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
     """Parse a ``rollup_groups`` array from an API payload.
 
-    Accepts both the camelCase (``className``) and snake_case shapes the
-    backend may return, and drops malformed entries.
+    Tolerates either key casing and drops malformed entries.
     """
     if not isinstance(raw_groups, list):
         return None
@@ -169,7 +162,7 @@ class EvaluationV2:
         payload: Dict[str, Any],
         client: Optional["NucleusClient"] = None,
     ) -> "EvaluationV2":
-        matches = parse_allowed_label_matches(
+        matches = _parse_allowed_label_matches(
             payload.get("allowed_label_matches")
         )
 
@@ -187,7 +180,7 @@ class EvaluationV2:
             allowed_label_matches_name=payload.get(
                 "allowed_label_matches_name"
             ),
-            rollup_groups=parse_rollup_groups(
+            rollup_groups=_parse_rollup_groups(
                 _parse_json_field(payload.get("rollup_groups"))
             ),
             benchmark_id=payload.get("benchmark_id"),
@@ -330,7 +323,7 @@ class EvaluationV2:
 
         Lists the ground-truth labels, prediction labels, and item-metadata
         fields (with inferred value types and distinct values) present in this
-        evaluation's match rows — the valid inputs for
+        evaluation's results — the valid inputs for
         :class:`~nucleus.data_transfer_object.evaluation_v2.EvaluationV2FilterArgs`
         when calling :meth:`charts` or :meth:`examples`.
 
@@ -360,7 +353,7 @@ class EvaluationV2:
             match_type: ``"TP"``, ``"FP"``, or ``"FN"``. Omit (or ``None``) to
                 return examples of all match types.
             limit: Page size (default 50, max 100).
-            offset: Row offset for pagination.
+            offset: Offset for pagination.
             sort_by: Optional field to sort by — one of ``"confidence"``,
                 ``"iou"``, ``"dataset_item_id"``, ``"gt_area"``.
             sort_order: Optional sort direction (``"ASC"`` or ``"DESC"``).

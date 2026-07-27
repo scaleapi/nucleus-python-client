@@ -23,9 +23,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from nucleus.evaluation_v2 import (
     AllowedLabelMatch,
     RollupGroup,
+    _parse_allowed_label_matches,
     _parse_json_field,
-    parse_allowed_label_matches,
-    parse_rollup_groups,
+    _parse_rollup_groups,
 )
 
 if TYPE_CHECKING:
@@ -66,14 +66,14 @@ class EvaluationV2Preset:
         return cls(
             id=str(payload["id"]),
             name=str(payload["name"]),
-            rollup_groups=parse_rollup_groups(
+            rollup_groups=_parse_rollup_groups(
                 _parse_json_field(
                     payload.get("rollup_groups")
                     if payload.get("rollup_groups") is not None
                     else payload.get("rollupGroups")
                 )
             ),
-            allowed_label_matches=parse_allowed_label_matches(
+            allowed_label_matches=_parse_allowed_label_matches(
                 payload.get("allowed_label_matches")
                 or payload.get("allowedLabelMatches")
             ),
