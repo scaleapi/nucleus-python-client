@@ -45,6 +45,7 @@ __all__ = [
     "LinePrediction",
     "Model",
     "ModelCreationError",
+    "ModelWeights",
     # "MultiCategoryAnnotation", # coming soon!
     "NotFoundError",
     "NucleusAPIError",
@@ -119,6 +120,7 @@ from .constants import (
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
+    DELETED_KEY,
     DESCRIPTION_KEY,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -160,6 +162,8 @@ from .constants import (
     STATUS_CODE_KEY,
     TOP_N_KEY,
     UPDATE_KEY,
+    UPLOAD_ID_KEY,
+    URL_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -210,6 +214,15 @@ from .local_deduplication import (
 )
 from .model import Model
 from .model_run import ModelRun
+from .model_weights import (
+    MODEL_WEIGHTS_MAX_BYTES,
+    ModelWeights,
+    ProgressCallback,
+    finalize_payload,
+    presign_payload,
+    stream_weights_to_file,
+    transfer_weights_to_storage,
+)
 from .payload_constructor import (
     construct_annotation_payload,
     construct_box_predictions_payload,
@@ -1638,6 +1651,159 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def upload_model_weights(
+        self,
+        model: Union[Model, str],
+        path: str,
+        *,
+        content_type: Optional[str] = None,
+        original_filename: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> ModelWeights:
+        """Attach a weights artifact to a model.
+
+        Any binary is accepted — there are no format constraints — up to 10 GB.
+        Requires edit access on the model (its owner, or an ``edit`` grant under
+        Admin Plane RBAC). The bytes go straight to storage via a presigned URL
+        and never transit the Nucleus API, so large artifacts aren't subject to
+        API request-size limits.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            model = client.get_model(reference_id="My-CNN")
+            client.upload_model_weights(model, "/path/to/weights.bin")
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+            path: Local path of the artifact to upload.
+            content_type: Opaque content type. Defaults to
+              ``application/octet-stream`` server-side.
+            original_filename: Filename stored for display. Defaults to the
+              basename of ``path``.
+            checksum_sha256: Optional client-declared SHA-256 of the artifact.
+            on_progress: Called with ``(bytes_sent, total_bytes)`` as the
+              upload proceeds.
+
+        Returns:
+            :class:`ModelWeights`: Metadata for the stored artifact.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        total_bytes = os.path.getsize(path)
+        if total_bytes > MODEL_WEIGHTS_MAX_BYTES:
+            raise ValueError(
+                f"{path} is {total_bytes} bytes, which exceeds the "
+                f"{MODEL_WEIGHTS_MAX_BYTES // 1024 ** 3} GB model weights limit"
+            )
+
+        presign = self.make_request(
+            presign_payload(
+                total_bytes,
+                content_type,
+                original_filename
+                if original_filename is not None
+                else os.path.basename(path),
+                checksum_sha256,
+            ),
+            f"model/{model_id}/weights/presign",
+        )
+        parts = transfer_weights_to_storage(
+            path, presign, total_bytes, on_progress
+        )
+        finalized = self.make_request(
+            finalize_payload(presign[UPLOAD_ID_KEY], parts),
+            f"model/{model_id}/weights/finalize",
+        )
+        return ModelWeights.from_json(finalized, self)
+
+    def download_model_weights(
+        self,
+        model: Union[Model, str],
+        path: str,
+        *,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> str:
+        """Download a model's weights artifact to a local path.
+
+        Available to anyone who can see the model.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            model = client.get_model(reference_id="My-CNN")
+            client.download_model_weights(model, "/path/to/save/weights.bin")
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+            path: Local path to write the artifact to. Parent directories are
+              created if needed.
+            on_progress: Called with ``(bytes_written, total_bytes)`` as the
+              download proceeds. ``total_bytes`` is ``0`` if storage doesn't
+              report a content length.
+
+        Returns:
+            str: The path written.
+
+        Raises:
+            ValueError: If the model has no weights artifact ready.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        # `?json=1` returns the signed URL instead of a 302 to it, so the
+        # streaming GET below isn't carrying the API's auth headers to storage.
+        signed = self.make_request(
+            {},
+            f"model/{model_id}/weights/download?json=1",
+            requests_command=requests.get,
+        )
+        url = signed.get(URL_KEY)
+        if not url:
+            raise ValueError(
+                f"Model {model_id} has no downloadable weights artifact"
+            )
+        return stream_weights_to_file(url, path, on_progress)
+
+    def get_model_weights(self, model: Union[Model, str]) -> ModelWeights:
+        """Fetch metadata for a model's weights artifact.
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+
+        Returns:
+            :class:`ModelWeights`: Metadata. ``present`` is ``False`` when no
+            ready artifact exists.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        return ModelWeights.from_json(
+            self.make_request(
+                {}, f"model/{model_id}/weights", requests_command=requests.get
+            ),
+            self,
+        )
+
+    def delete_model_weights(self, model: Union[Model, str]) -> bool:
+        """Delete a model's weights artifact.
+
+        Requires edit access on the model.
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+
+        Returns:
+            bool: Whether an artifact was deleted.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        response = self.make_request(
+            {},
+            f"model/{model_id}/weights",
+            requests_command=requests.delete,
+        )
+        return bool(response.get(DELETED_KEY, False))
 
     def download_pointcloud_task(
         self, task_id: str, frame_num: int
