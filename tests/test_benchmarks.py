@@ -116,12 +116,26 @@ def test_create_benchmark_no_wait_returns_building_without_polling():
     assert benchmark.status == "building"
 
 
-def test_create_benchmark_requires_exactly_one_member_source():
+def test_create_benchmark_requires_at_least_one_member_source():
     client = NucleusClient(api_key="test")
-    with pytest.raises(ValueError, match="exactly one"):
+    with pytest.raises(ValueError, match="at least one"):
         client.create_benchmark("b")
-    with pytest.raises(ValueError, match="exactly one"):
-        client.create_benchmark("b", slice_id="slc_1", dataset_id="ds_1")
+    with pytest.raises(ValueError, match="at least one"):
+        client.create_benchmark("b", slice_ids=[], dataset_ids=[])
+
+
+def test_create_benchmark_combines_multiple_sources():
+    client = _mock_async_create(NucleusClient(api_key="test"))
+    client.create_benchmark(
+        "multi",
+        item_ids=["di_3"],
+        slice_ids=["slc_1", "slc_2"],
+        dataset_ids=["ds_1", "ds_2"],
+    )
+    payload = client.connection.post.call_args[0][0]
+    assert payload["item_ids"] == ["di_3"]
+    assert payload["slice_ids"] == ["slc_1", "slc_2"]
+    assert payload["dataset_ids"] == ["ds_1", "ds_2"]
 
 
 def test_list_benchmarks():

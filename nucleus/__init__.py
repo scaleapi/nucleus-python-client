@@ -1097,15 +1097,19 @@ class NucleusClient:
         items: Optional[List[Dict[str, str]]] = None,
         slice_id: Optional[str] = None,
         dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
         wait_for_completion: bool = True,
         verbose: bool = True,
     ) -> Benchmark:
         """Create a benchmark from ground-truth items.
 
-        Provide the members through exactly one source: explicit ``item_ids``,
-        ``(dataset_id, ref_id)`` pairs via ``items``, all items in a slice via
-        ``slice_id``, or all items in a dataset via ``dataset_id``. Items
-        without ground truth are skipped. Membership is frozen at creation.
+        Provide members through any combination of sources: explicit
+        ``item_ids``, ``(dataset_id, ref_id)`` pairs via ``items``, one or more
+        slices via ``slice_id`` / ``slice_ids``, and one or more datasets via
+        ``dataset_id`` / ``dataset_ids``. Members are unioned and de-duplicated
+        across all sources; at least one source is required. Items without
+        ground truth are skipped. Membership is frozen at creation.
 
         Creation is **asynchronous**: the server creates the benchmark in a
         ``"building"`` state and streams its members in via a background job.
@@ -1122,6 +1126,8 @@ class NucleusClient:
             items: ``{"dataset_id": ..., "ref_id": ...}`` pairs.
             slice_id: Slice id (``slc_*``) whose items become members.
             dataset_id: Dataset id (``ds_*``) whose items become members.
+            slice_ids: Multiple slice ids whose items become members.
+            dataset_ids: Multiple dataset ids whose items become members.
             wait_for_completion: Block until the build job finishes and return
                 the ready benchmark (default). If ``False``, return the
                 ``"building"`` benchmark immediately.
@@ -1131,15 +1137,21 @@ class NucleusClient:
             :class:`Benchmark`: The created benchmark — ``"ready"`` when
             ``wait_for_completion`` is ``True``, otherwise ``"building"``.
         """
-        sources = [
+        has_source = any(
             source
-            for source in (item_ids, items, slice_id, dataset_id)
-            if source is not None
-        ]
-        if len(sources) != 1:
+            for source in (
+                item_ids,
+                items,
+                slice_id,
+                dataset_id,
+                slice_ids,
+                dataset_ids,
+            )
+        )
+        if not has_source:
             raise ValueError(
-                "Provide exactly one of item_ids, items, slice_id, or "
-                "dataset_id to define benchmark membership"
+                "Provide at least one of item_ids, items, slice_id(s), or "
+                "dataset_id(s) to define benchmark membership"
             )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if description is not None:
@@ -1154,6 +1166,10 @@ class NucleusClient:
             payload[SLICE_ID_KEY] = slice_id
         if dataset_id is not None:
             payload[DATASET_ID_KEY] = dataset_id
+        if slice_ids is not None:
+            payload["slice_ids"] = slice_ids
+        if dataset_ids is not None:
+            payload["dataset_ids"] = dataset_ids
 
         # Async: the server responds 202 with {benchmark_id, job_id}. The
         # benchmark row already exists (in 'building' state); the build job
