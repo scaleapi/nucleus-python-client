@@ -1176,9 +1176,13 @@ class NucleusClient:
         # streams members in and flips it to 'ready' (or 'failed').
         response = self.post(payload, "benchmarks")
         benchmark_id = response["benchmark_id"]
-        job_id = response.get("job_id")
-
-        if wait_for_completion and job_id is not None:
+        if wait_for_completion:
+            if job_id is None:
+                raise ValueError(
+                    "Server did not return a job_id in the create-benchmark "
+                    "response; cannot poll for completion. Pass "
+                    "wait_for_completion=False to suppress this error."
+                )
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
 
         return self.get_benchmark(benchmark_id)
