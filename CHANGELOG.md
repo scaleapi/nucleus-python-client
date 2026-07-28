@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
+
+### Changed
+- **`create_benchmark()` is now asynchronous.** The server creates the benchmark in a `"building"` state and streams its members in via a background job (removing the previous item-count ceiling on slice/dataset-sourced benchmarks). `create_benchmark()` blocks on that job by default and returns the completed `"ready"` benchmark — the return type is unchanged, so existing blocking callers are unaffected. Pass `wait_for_completion=False` to return the `"building"` benchmark immediately and poll it yourself via `Benchmark.refresh()` (checking the new `Benchmark.status` field). A failed build job raises `JobError`. `Benchmark` now exposes `status` (`"building"` / `"ready"` / `"failed"`).
+
 ## [0.19.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.1) - 2026-08-07
 
 ### Added

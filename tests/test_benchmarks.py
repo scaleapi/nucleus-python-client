@@ -48,9 +48,31 @@ def test_benchmark_from_json_maps_benchmark_id():
     assert b.skipped_items_without_ground_truth == 3
 
 
-def test_create_benchmark_from_slice():
-    client = NucleusClient(api_key="test")
-    client.connection.post = MagicMock(return_value=dict(_BENCHMARK_ROW))
+def test_benchmark_from_json_parses_status():
+    assert Benchmark.from_json(_BENCHMARK_ROW).status is None
+    assert (
+        Benchmark.from_json({**_BENCHMARK_ROW, "status": "building"}).status
+        == "building"
+    )
+
+
+def _mock_async_create(client, *, benchmark_row=None):
+    """Wire up the async create_benchmark flow: 202 {benchmark_id, job_id} ->
+    poll the build job -> re-fetch the ready benchmark."""
+    client.connection.post = MagicMock(
+        return_value={"benchmark_id": "bm_1", "job_id": "job_1"}
+    )
+    client.get_job = MagicMock()  # .sleep_until_complete() is a no-op MagicMock
+    client.get_benchmark = MagicMock(
+        return_value=Benchmark.from_json(
+            benchmark_row or {**_BENCHMARK_ROW, "status": "ready"}, client
+        )
+    )
+    return client
+
+
+def test_create_benchmark_from_slice_polls_then_returns_ready():
+    client = _mock_async_create(NucleusClient(api_key="test"))
     benchmark = client.create_benchmark(
         "city-streets", description="desc", slice_id="slc_1"
     )
@@ -61,12 +83,16 @@ def test_create_benchmark_from_slice():
         "description": "desc",
         "slice_id": "slc_1",
     }
+    # Blocks on the build job by default, then fetches the ready benchmark.
+    client.get_job.assert_called_once_with("job_1")
+    client.get_job.return_value.sleep_until_complete.assert_called_once()
+    client.get_benchmark.assert_called_once_with("bm_1")
     assert benchmark.id == "bm_1"
+    assert benchmark.status == "ready"
 
 
 def test_create_benchmark_from_item_ids_and_metadata():
-    client = NucleusClient(api_key="test")
-    client.connection.post = MagicMock(return_value=dict(_BENCHMARK_ROW))
+    client = _mock_async_create(NucleusClient(api_key="test"))
     client.create_benchmark(
         "city-streets",
         metadata={"team": "av"},
@@ -75,6 +101,19 @@ def test_create_benchmark_from_item_ids_and_metadata():
     payload = client.connection.post.call_args[0][0]
     assert payload["item_ids"] == ["di_1", "di_2"]
     assert payload["metadata"] == {"team": "av"}
+
+
+def test_create_benchmark_no_wait_returns_building_without_polling():
+    client = _mock_async_create(
+        NucleusClient(api_key="test"),
+        benchmark_row={**_BENCHMARK_ROW, "status": "building", "item_count": 0},
+    )
+    benchmark = client.create_benchmark(
+        "city-streets", slice_id="slc_1", wait_for_completion=False
+    )
+    client.get_job.assert_not_called()
+    client.get_benchmark.assert_called_once_with("bm_1")
+    assert benchmark.status == "building"
 
 
 def test_create_benchmark_requires_exactly_one_member_source():

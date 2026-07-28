@@ -1097,15 +1097,22 @@ class NucleusClient:
         items: Optional[List[Dict[str, str]]] = None,
         slice_id: Optional[str] = None,
         dataset_id: Optional[str] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
     ) -> Benchmark:
         """Create a benchmark from ground-truth items.
 
         Provide the members through exactly one source: explicit ``item_ids``,
         ``(dataset_id, ref_id)`` pairs via ``items``, all items in a slice via
         ``slice_id``, or all items in a dataset via ``dataset_id``. Items
-        without ground truth are skipped (reported on the returned benchmark
-        as ``skipped_items_without_ground_truth``). Membership is frozen at
-        creation.
+        without ground truth are skipped. Membership is frozen at creation.
+
+        Creation is **asynchronous**: the server creates the benchmark in a
+        ``"building"`` state and streams its members in via a background job.
+        By default this method blocks until that job finishes and returns the
+        completed (``"ready"``) benchmark. Pass ``wait_for_completion=False``
+        to return immediately with a ``"building"`` benchmark you can poll via
+        :meth:`Benchmark.refresh` (checking ``benchmark.status``).
 
         Parameters:
             name: Benchmark display name.
@@ -1115,9 +1122,14 @@ class NucleusClient:
             items: ``{"dataset_id": ..., "ref_id": ...}`` pairs.
             slice_id: Slice id (``slc_*``) whose items become members.
             dataset_id: Dataset id (``ds_*``) whose items become members.
+            wait_for_completion: Block until the build job finishes and return
+                the ready benchmark (default). If ``False``, return the
+                ``"building"`` benchmark immediately.
+            verbose: Log build-job polling progress while waiting.
 
         Returns:
-            :class:`Benchmark`: The created benchmark.
+            :class:`Benchmark`: The created benchmark — ``"ready"`` when
+            ``wait_for_completion`` is ``True``, otherwise ``"building"``.
         """
         sources = [
             source
@@ -1142,8 +1154,18 @@ class NucleusClient:
             payload[SLICE_ID_KEY] = slice_id
         if dataset_id is not None:
             payload[DATASET_ID_KEY] = dataset_id
-        data = self.post(payload, "benchmarks")
-        return Benchmark.from_json(data, self)
+
+        # Async: the server responds 202 with {benchmark_id, job_id}. The
+        # benchmark row already exists (in 'building' state); the build job
+        # streams members in and flips it to 'ready' (or 'failed').
+        response = self.post(payload, "benchmarks")
+        benchmark_id = response["benchmark_id"]
+        job_id = response.get("job_id")
+
+        if wait_for_completion and job_id is not None:
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+
+        return self.get_benchmark(benchmark_id)
 
     def list_benchmarks(self) -> List[Benchmark]:
         """List benchmarks visible to the current user.
