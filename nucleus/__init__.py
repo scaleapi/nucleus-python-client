@@ -1265,10 +1265,16 @@ class NucleusClient:
         background — call :meth:`EvaluationV2.wait_for_completion`, then
         :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples`.
 
+        The benchmark may span datasets the model run has no predictions in at
+        all. Those members are scored as false negatives like any other
+        uncovered item, so a partial run still ranks comparably rather than
+        being rejected. To give a run predictions across several datasets, use
+        :meth:`Dataset.upload_predictions_for_model_run`.
+
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
-            model_run_id: Model run id (``run_*``). Its predictions must
-                cover items from the benchmark's datasets.
+            model_run_id: Model run id (``run_*``). It need not cover the
+                benchmark's datasets — coverage may be partial, or empty.
             name: Optional display name.
             rollup_groups: Optional rollup classes (the primary label
                 configuration); each :class:`RollupGroup` maps raw labels

@@ -5,6 +5,23 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
+
+### Added
+- **Multi-dataset model runs.** `Dataset.upload_predictions_for_model_run(model_run_id, predictions, ...)` uploads predictions for an existing run against *this* dataset, adding the dataset to the run's set if it isn't there already. This is what lets a single model run be scored against a benchmark whose items span several datasets. Supports the same `update` / `asynchronous` / `batch_size` / file-batching / `trained_slice_id` arguments as `upload_predictions`.
+  - A run's dataset set only ever grows — a later upload never removes a dataset, so it cannot widen who can read the run.
+  - Access: write on this dataset **and** on every dataset the run already covers. Runs are visible only to users who can read all of their datasets, so adding one can remove the run from a collaborator's view.
+  - `Dataset.upload_predictions` is unchanged and still cannot widen a run: it identifies the run by `(dataset, model)`, so it finds the run already on this dataset or creates a new one.
+
+### Changed
+- **Benchmark evaluations no longer require the run to cover the benchmark's datasets.** `create_benchmark_evaluation_v2` previously failed when the benchmark contained items outside the model run's dataset. Those members are now scored as false negatives like any other uncovered item, so a partial run ranks comparably instead of being rejected. Docstrings on `create_benchmark_evaluation_v2` and `Benchmark.create_evaluation_v2` updated accordingly.
+- `PredictionUploader` accepts `dataset_id` together with `model_run_id` to select the new endpoint. Previously that combination was rejected by an assertion. The other two forms — `(dataset_id, model_id)` and `model_run_id` alone — route exactly as before.
+
+### Deprecated
+- `ModelRun.predict()` (already deprecated with the rest of `ModelRun`) infers its target dataset from the run, so it fails for a run spanning several datasets. Use `Dataset.upload_predictions_for_model_run` instead.
+
+> **Server dependency:** requires the `POST /nucleus/dataset/:datasetId/modelRun/:modelRunId/uploadPredictions` route and the multi-dataset model-run work in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
 ## [0.19.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.1) - 2026-08-07
 
 ### Added

@@ -236,6 +236,29 @@ class AnnotationUploader:
 
 
 class PredictionUploader(AnnotationUploader):
+    """Routes a prediction upload to one of three endpoints.
+
+    Which one depends on the identifiers supplied:
+
+    ``dataset_id`` + ``model_run_id``
+        ``dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions``. The
+        only route that lets a run span more than one dataset — uploading here
+        adds ``dataset_id`` to the run's dataset set. Requires write access to
+        every dataset the run already covers, not just this one, because a run
+        is only visible to users who can read all of its datasets.
+
+    ``dataset_id`` + ``model_id``
+        ``dataset/{dataset_id}/model/{model_id}/uploadPredictions``. Resolves
+        (or creates) the run for that model on that dataset. Cannot widen an
+        existing run: passing a ``model_run_id`` belonging to a different
+        dataset is rejected server-side.
+
+    ``model_run_id`` alone
+        ``modelRun/{model_run_id}/predict``. Deprecated — the target dataset is
+        inferred from the run, so the server rejects it for a run spanning
+        several datasets. Prefer the first form.
+    """
+
     def __init__(
         self,
         client: "NucleusClient",
@@ -247,8 +270,13 @@ class PredictionUploader(AnnotationUploader):
         super().__init__(dataset_id, client)
         self._client = client
         self.trained_slice_id = trained_slice_id
-        if model_run_id is not None:
-            assert model_id is None and dataset_id is None
+        if model_run_id is not None and dataset_id is not None:
+            assert (
+                model_id is None
+            ), "Pass either model_id or model_run_id, not both."
+            self._route = f"dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions"
+        elif model_run_id is not None:
+            assert model_id is None
             self._route = f"modelRun/{model_run_id}/predict"
         else:
             assert (

@@ -137,6 +137,12 @@ class ModelRun:
     ) -> Union[dict, AsyncJob]:
         """Uploads model outputs as predictions for a model_run.
 
+        Deprecated along with the rest of this class. The target dataset is
+        inferred from the run rather than named, so this fails for a run that
+        spans more than one dataset — there is no single dataset to infer. Use
+        :meth:`Dataset.upload_predictions_for_model_run` instead, which takes
+        both ids explicitly.
+
         Args:
             annotations: Predictions to upload for this model run.
             update: If True, existing predictions for the same (reference_id, annotation_id)
