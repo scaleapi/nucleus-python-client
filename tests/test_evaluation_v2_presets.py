@@ -223,9 +223,11 @@ def test_dataset_evaluation_label_schema():
     dataset = Dataset("ds_1", client)
     out = dataset.evaluation_label_schema()
     assert out == {"gt_labels": ["car"], "prediction_labels": ["vehicle"]}
-    args = client.connection.make_request.call_args[0]
-    assert args[1] == "dataset/ds_1/labelSchema"
-    assert args[2] is requests.get
+    # Routed through Connection.get, which passes requests.get by keyword.
+    call = client.connection.make_request.call_args
+    assert call.args[0] == {}
+    assert call.args[1] == "dataset/ds_1/labelSchema"
+    assert call.kwargs["requests_command"] is requests.get
 
 
 # --------------------------------------------------------------------------- #
