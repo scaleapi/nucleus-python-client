@@ -188,7 +188,7 @@ def test_benchmark_without_client_raises():
 # Benchmark evaluation create
 # --------------------------------------------------------------------------- #
 def _mock_create_eval(client):
-    client.connection.make_request = MagicMock(
+    client.connection.post = MagicMock(
         return_value={"evaluation_id": "evalv2_1"}
     )
     client.connection.get = MagicMock(return_value=dict(_EVAL_ROW))
@@ -208,8 +208,7 @@ def test_create_benchmark_evaluation_v2_with_rollup_groups():
             )
         ],
     )
-    args = client.connection.make_request.call_args[0]
-    payload, route = args[0], args[1]
+    payload, route = client.connection.post.call_args[0]
     assert route == "benchmarks/bm_1/evaluationsV2"
     assert payload["model_run_id"] == "run_1"
     assert payload["name"] == "eval"
@@ -250,7 +249,7 @@ def test_create_benchmark_evaluation_v2_preset_seeds_rollup_groups():
         exclusion_rules=[{"type": "labels", "scope": "item"}],
     )
     client.create_benchmark_evaluation_v2("bm_1", "run_1", preset=preset)
-    payload = client.connection.make_request.call_args[0][0]
+    payload = client.connection.post.call_args[0][0]
     assert payload["rollupGroups"] == [
         {"class_name": "vehicle", "labels": ["car"]}
     ]
@@ -267,7 +266,7 @@ def test_create_benchmark_evaluation_v2_preset_seeds_legacy_matches():
         allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
     )
     client.create_benchmark_evaluation_v2("bm_1", "run_1", preset=preset)
-    payload = client.connection.make_request.call_args[0][0]
+    payload = client.connection.post.call_args[0][0]
     assert payload["allowed_label_matches"] == [
         {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
     ]
@@ -288,7 +287,7 @@ def test_create_benchmark_evaluation_v2_explicit_args_override_preset():
         rollup_groups=[RollupGroup("person", ["ped"])],
         preset=preset,
     )
-    payload = client.connection.make_request.call_args[0][0]
+    payload = client.connection.post.call_args[0][0]
     assert payload["rollupGroups"] == [
         {"class_name": "person", "labels": ["ped"]}
     ]

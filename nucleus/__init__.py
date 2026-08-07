@@ -125,6 +125,7 @@ from .constants import (
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    EVALUATION_ID_KEY,
     EXCLUSION_RULES_CAMEL_KEY,
     GLOB_SIZE_THRESHOLD_CHECK,
     I_KEY,
@@ -1330,10 +1331,8 @@ class NucleusClient:
                 rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
                 for rule in exclusion_rules
             ]
-        result = self.make_request(
-            payload, f"benchmarks/{benchmark_id}/evaluationsV2"
-        )
-        eval_id = result.get("evaluation_id")
+        result = self.post(payload, f"benchmarks/{benchmark_id}/evaluationsV2")
+        eval_id = result.get(EVALUATION_ID_KEY)
         if not eval_id:
             raise RuntimeError(
                 f"Unexpected create benchmark evaluation V2 response: {result}"

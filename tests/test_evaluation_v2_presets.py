@@ -1,5 +1,5 @@
-"""Unit tests for Evaluation V2 presets, batch create, cancel/retry, and
-label-schema discovery (no live API)."""
+"""Unit tests for Evaluation V2 presets, cancel/retry, and label-schema
+discovery (no live API)."""
 
 from unittest.mock import MagicMock
 
@@ -129,26 +129,6 @@ def test_preset_instance_update_and_delete_delegate_to_client():
 
 
 # --------------------------------------------------------------------------- #
-# Apply preset + only_items_with_predictions on create
-# --------------------------------------------------------------------------- #
-def _stub_create(client):
-    client.connection.make_request = MagicMock(
-        return_value={"evaluation_id": "evalv2_new"}
-    )
-    client.connection.get = MagicMock(
-        return_value={
-            "id": "evalv2_new",
-            "model_run_id": "run_1",
-            "dataset_id": "ds_1",
-            "status": "pending",
-        }
-    )
-
-
-# --------------------------------------------------------------------------- #
-# Batch create
-# --------------------------------------------------------------------------- #
-# --------------------------------------------------------------------------- #
 # Cancel / retry
 # --------------------------------------------------------------------------- #
 def _eval(client, status="computing"):
@@ -217,17 +197,13 @@ def test_examples_match_type_optional():
 # --------------------------------------------------------------------------- #
 def test_dataset_evaluation_label_schema():
     client = NucleusClient(api_key="test")
-    client.connection.make_request = MagicMock(
+    client.connection.get = MagicMock(
         return_value={"gt_labels": ["car"], "prediction_labels": ["vehicle"]}
     )
     dataset = Dataset("ds_1", client)
     out = dataset.evaluation_label_schema()
     assert out == {"gt_labels": ["car"], "prediction_labels": ["vehicle"]}
-    # Routed through Connection.get, which passes requests.get by keyword.
-    call = client.connection.make_request.call_args
-    assert call.args[0] == {}
-    assert call.args[1] == "dataset/ds_1/labelSchema"
-    assert call.kwargs["requests_command"] is requests.get
+    client.connection.get.assert_called_once_with("dataset/ds_1/labelSchema")
 
 
 # --------------------------------------------------------------------------- #
