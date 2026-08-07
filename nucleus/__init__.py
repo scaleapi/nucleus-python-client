@@ -198,7 +198,6 @@ from .model import Model
 from .model_run import ModelRun
 from .payload_constructor import (
     construct_annotation_payload,
-    construct_append_payload,
     construct_box_predictions_payload,
     construct_model_creation_payload,
     construct_segmentation_payload,
@@ -217,7 +216,6 @@ from .quaternion import Quaternion
 from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
-from .upload_response import UploadResponse
 from .utils import create_items_from_folder_crawl
 from .validate import Validate
 
@@ -631,19 +629,6 @@ class NucleusClient:
     def delete_dataset_item(self, dataset_id: str, reference_id) -> dict:
         dataset = self.get_dataset(dataset_id)
         return dataset.delete_item(reference_id)
-
-    @deprecated("Use Dataset.append instead.")
-    def populate_dataset(
-        self,
-        dataset_id: str,
-        dataset_items: List[DatasetItem],
-        batch_size: int = 20,
-        update: bool = False,
-    ):
-        dataset = self.get_dataset(dataset_id)
-        return dataset.append(
-            dataset_items, batch_size=batch_size, update=update
-        )
 
     @deprecated(msg="Use Dataset.ingest_tasks instead")
     def ingest_tasks(self, dataset_id: str, payload: dict):
@@ -1874,10 +1859,12 @@ class NucleusClient:
         dataset = self.create_dataset(
             name=dataset_name, use_privacy_mode=use_privacy_mode
         )
-        dataset.add_items_from_dir(
+        job = dataset.add_items_from_dir(
             existing_dirname=existing_dirname,
             privacy_mode_proxy=privacy_mode_proxy,
             allowed_file_types=allowed_file_types,
             skip_size_warning=skip_size_warning,
         )
+        if job is not None:
+            job.sleep_until_complete()
         return dataset

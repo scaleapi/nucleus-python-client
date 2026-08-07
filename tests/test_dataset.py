@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from nucleus import Dataset, DatasetItem, NucleusClient, UploadResponse
+from nucleus import Dataset, DatasetItem, NucleusClient
 from nucleus.annotation import (
     BoxAnnotation,
     CategoryAnnotation,
@@ -19,16 +19,10 @@ from nucleus.constants import (
     ANNOTATIONS_KEY,
     BOX_TYPE,
     CATEGORY_TYPE,
-    DATASET_ID_KEY,
-    ERROR_ITEMS,
-    ERROR_PAYLOAD,
-    IGNORED_ITEMS,
     ITEM_KEY,
     MULTICATEGORY_TYPE,
-    NEW_ITEMS,
     POLYGON_TYPE,
     SEGMENTATION_TYPE,
-    UPDATED_ITEMS,
 )
 from nucleus.errors import NucleusAPIError
 from nucleus.scene import LidarScene, VideoScene
@@ -138,7 +132,7 @@ def test_dataset_create_and_delete_scene(CLIENT):
 
 
 def test_dataset_update_metadata_local(dataset):
-    dataset.append(
+    job = dataset.append(
         [
             DatasetItem(
                 image_location=LOCAL_FILENAME,
@@ -147,7 +141,8 @@ def test_dataset_update_metadata_local(dataset):
             )
         ]
     )
-    dataset.append(
+    job.sleep_until_complete()
+    job = dataset.append(
         [
             DatasetItem(
                 image_location=LOCAL_FILENAME,
@@ -157,13 +152,14 @@ def test_dataset_update_metadata_local(dataset):
         ],
         update=True,
     )
+    job.sleep_until_complete()
     resulting_item = dataset.iloc(0)["item"]
     print(resulting_item)
     assert resulting_item.metadata["snake_field"] == 1
 
 
 def test_dataset_update_metadata(dataset):
-    dataset.append(
+    job = dataset.append(
         [
             DatasetItem(
                 image_location=TEST_IMG_URLS[0],
@@ -172,7 +168,8 @@ def test_dataset_update_metadata(dataset):
             )
         ]
     )
-    dataset.append(
+    job.sleep_until_complete()
+    job = dataset.append(
         [
             DatasetItem(
                 image_location=TEST_IMG_URLS[0],
@@ -182,22 +179,13 @@ def test_dataset_update_metadata(dataset):
         ],
         update=True,
     )
+    job.sleep_until_complete()
     resulting_item = dataset.iloc(0)["item"]
     print(resulting_item)
     assert resulting_item.metadata["snake_field"] == 1
 
 
 def test_dataset_append(dataset):
-    def check_is_expected_response(response):
-        assert isinstance(response, UploadResponse)
-        resp_json = response.json()
-        assert resp_json[DATASET_ID_KEY] == dataset.id
-        assert resp_json[NEW_ITEMS] == len(TEST_IMG_URLS)
-        assert resp_json[UPDATED_ITEMS] == 0
-        assert resp_json[IGNORED_ITEMS] == 0
-        assert resp_json[ERROR_ITEMS] == 0
-        assert ERROR_PAYLOAD not in resp_json
-
     # Plain image upload
     ds_items_plain = []
     for i, url in enumerate(TEST_IMG_URLS):
@@ -208,13 +196,17 @@ def test_dataset_append(dataset):
             )
         )
 
-    response = dataset.append(ds_items_plain)
-    check_is_expected_response(response)
+    job = dataset.append(ds_items_plain)
+    assert isinstance(job, AsyncJob)
+    job.sleep_until_complete()
+    status = job.status()
+    assert status["status"] == "Completed"
 
     # With reference ids and metadata:
-
-    response = dataset.append(make_dataset_items())
-    check_is_expected_response(response)
+    job = dataset.append(make_dataset_items())
+    assert isinstance(job, AsyncJob)
+    job.sleep_until_complete()
+    assert job.status()["status"] == "Completed"
 
 
 def test_scene_dataset_append(dataset_scene):
@@ -239,7 +231,8 @@ def test_dataset_name_access(CLIENT, dataset):
 def test_dataset_size_access(CLIENT, dataset):
     assert dataset.size == 0
     items = make_dataset_items()
-    dataset.append(items)
+    job = dataset.append(items)
+    job.sleep_until_complete()
     assert dataset.size == len(items)
 
 
@@ -251,7 +244,8 @@ def test_dataset_model_runs_access(CLIENT, dataset):
 def test_dataset_slices(CLIENT, dataset):
     assert len(dataset.slices) == 0
     items = make_dataset_items()
-    dataset.append(items)
+    job = dataset.append(items)
+    job.sleep_until_complete()
     dataset.create_slice("test_slice", [item.reference_id for item in items])
     slices = dataset.slices
     assert len(slices) == 1
@@ -304,12 +298,13 @@ def test_dataset_append_local(CLIENT, dataset):
             reference_id="bad",
         )
     ]
-    num_local_items_to_test = 10
     with pytest.raises(ValueError) as e:
         dataset.append(ds_items_local_error)
         assert "Out of range float values are not JSON compliant" in str(
             e.value
         )
+
+    num_local_items_to_test = 3
     ds_items_local = [
         DatasetItem(
             image_location=LOCAL_FILENAME,
@@ -319,21 +314,15 @@ def test_dataset_append_local(CLIENT, dataset):
         for i in range(num_local_items_to_test)
     ]
 
-    response = dataset.append(ds_items_local)
-
-    assert isinstance(response, UploadResponse)
-    resp_json = response.json()
-    assert resp_json[DATASET_ID_KEY] == dataset.id
-    assert resp_json[NEW_ITEMS] == num_local_items_to_test
-    assert resp_json[UPDATED_ITEMS] == 0
-    assert resp_json[IGNORED_ITEMS] == 0
-    assert resp_json[ERROR_ITEMS] == 0
-    assert ERROR_PAYLOAD not in resp_json
+    job = dataset.append(ds_items_local)
+    assert isinstance(job, AsyncJob)
+    job.sleep_until_complete()
+    assert job.status()["status"] == "Completed"
 
 
 @pytest.mark.integration
 def test_dataset_append_async(dataset: Dataset):
-    job = dataset.append(make_dataset_items(), asynchronous=True)
+    job = dataset.append(make_dataset_items())
     job.sleep_until_complete()
     status = job.status()
     # Pinning specific step counts couples this test to the backend pipeline
@@ -349,13 +338,44 @@ def test_dataset_append_async(dataset: Dataset):
     assert status["completed_steps"] == status["total_steps"]
 
 
-def test_dataset_append_async_with_local_path(dataset: Dataset):
-    ds_items = make_dataset_items()
-    ds_items[
-        0
-    ].image_location = "/a/fake/local/path/you/can/tell/is/local/but/is/fake"
-    with pytest.raises(ValueError):
-        dataset.append(ds_items, asynchronous=True)
+@pytest.mark.integration
+def test_dataset_append_async_local(dataset: Dataset):
+    """Async append with local files sends multipart to /append?async=1."""
+    num_items = 3
+    ds_items_local = [
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            metadata={"test": 0},
+            reference_id=f"async_local_{i}",
+        )
+        for i in range(num_items)
+    ]
+    job = dataset.append(ds_items_local)
+    assert isinstance(job, AsyncJob)
+    job.sleep_until_complete()
+    status = job.status()
+    expected = {
+        "job_id": job.job_id,
+        "status": "Completed",
+        "job_progress": "1.00",
+    }
+    assert_partial_equality(expected, status)
+
+
+def test_dataset_append_rejects_mixed_local_and_remote(dataset: Dataset):
+    """append() raises ValueError when mixing local and remote items."""
+    items = [
+        DatasetItem(
+            image_location=LOCAL_FILENAME,
+            reference_id="local_item",
+        ),
+        DatasetItem(
+            image_location=TEST_IMG_URLS[0],
+            reference_id="remote_item",
+        ),
+    ]
+    with pytest.raises(ValueError, match="Cannot mix local and remote"):
+        dataset.append(items)
 
 
 # TODO(Jean): Fix and remove skip, this is a flaky test
@@ -363,7 +383,7 @@ def test_dataset_append_async_with_local_path(dataset: Dataset):
 def test_dataset_append_async_with_1_bad_url(dataset: Dataset):
     ds_items = make_dataset_items()
     ds_items[0].image_location = "https://looks.ok.but.is.not.accessible"
-    job = dataset.append(ds_items, asynchronous=True)
+    job = dataset.append(ds_items)
     with pytest.raises(JobError):
         job.sleep_until_complete()
     status = job.status()
@@ -404,7 +424,7 @@ def test_raises_error_for_duplicate():
 
 @pytest.mark.integration
 def test_annotate_async(dataset: Dataset):
-    dataset.append(make_dataset_items())
+    dataset.append(make_dataset_items()).sleep_until_complete()
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     bbox = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
@@ -428,7 +448,7 @@ def test_annotate_async(dataset: Dataset):
 
 @pytest.mark.integration
 def test_annotate_async_with_error(dataset: Dataset):
-    dataset.append(make_dataset_items())
+    dataset.append(make_dataset_items()).sleep_until_complete()
     semseg = SegmentationAnnotation.from_json(TEST_SEGMENTATION_ANNOTATIONS[0])
     polygon = PolygonAnnotation.from_json(TEST_POLYGON_ANNOTATIONS[0])
     category = CategoryAnnotation.from_json(TEST_CATEGORY_ANNOTATIONS[0])
@@ -463,7 +483,7 @@ def test_append_with_special_chars(dataset):
             metadata={"test": "metadata"},
         ),
     ]
-    dataset.append(ds_items)
+    dataset.append(ds_items).sleep_until_complete()
     dataset.refloc(ref_id)
 
 
@@ -491,8 +511,10 @@ def test_append_and_export(dataset):
             metadata={"test": "metadata"},
         ),
     ]
-    response = dataset.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+    job = dataset.append(ds_items)
+    assert isinstance(job, AsyncJob)
+    job.sleep_until_complete()
+    assert job.status()["status"] == "Completed"
 
     dataset.annotate(
         annotations=[
@@ -555,7 +577,7 @@ def test_append_and_export(dataset):
 
 def test_dataset_item_metadata_update(dataset):
     items = make_dataset_items()
-    dataset.append(items)
+    dataset.append(items).sleep_until_complete()
 
     expected_metadata = {}
     new_metadata = {}
@@ -574,7 +596,7 @@ def test_dataset_item_metadata_update(dataset):
 
 def test_dataset_item_iterator(dataset):
     items = make_dataset_items()
-    dataset.append(items)
+    dataset.append(items).sleep_until_complete()
     expected_items = {item.reference_id: item for item in dataset.items}
     actual_items = {
         item.reference_id: item
@@ -645,7 +667,7 @@ def test_create_update_dataset_from_dir(CLIENT):
     dataset.add_items_from_dir(
         dirname=TEST_LOCAL_TESTDIR,
         allowed_file_types=tuple(["png", "jpeg"]),
-    )
+    ).sleep_until_complete()
     dataset_items = dataset.items
     assert len(dataset_items) == 2
     for dataset_item in dataset_items:
@@ -656,7 +678,7 @@ def test_create_update_dataset_from_dir(CLIENT):
 
 @pytest.mark.integration
 def test_dataset_export_class_labels(dataset):
-    dataset.append(make_dataset_items())
+    dataset.append(make_dataset_items()).sleep_until_complete()
     # Create box annotation from the test data
     box_annotation = BoxAnnotation(**TEST_BOX_ANNOTATIONS[0])
     dataset.annotate(annotations=[box_annotation])

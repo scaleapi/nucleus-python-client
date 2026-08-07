@@ -83,7 +83,8 @@ def model(module_scope_models):
 @pytest.fixture(scope="module")
 def dataset_items(populated_dataset):
     items = make_dataset_items()
-    populated_dataset.append(items)
+    job = populated_dataset.append(items)
+    job.sleep_until_complete()
     yield items
 
 
@@ -105,7 +106,8 @@ def test_slice(populated_dataset, slice_items):
 @pytest.fixture(scope="module")
 def scenes(populated_dataset):
     items = make_dataset_items()
-    populated_dataset.append(items)
+    job = populated_dataset.append(items)
+    job.sleep_until_complete()
     yield items
 
 

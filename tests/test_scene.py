@@ -61,7 +61,7 @@ def scenes_fixture(dataset_scene_module):
     ]
     update = payload[UPDATE_KEY]
 
-    job = dataset_scene_module.append(scenes, update=update, asynchronous=True)
+    job = dataset_scene_module.append(scenes, update=update)
     job.sleep_until_complete()
     status = job.status()
 
@@ -302,9 +302,7 @@ def test_scene_upload_and_update(dataset_scene_module, scenes_fixture):
     update_scenes = scenes_fixture
     for scene in update_scenes:
         scene.metadata.update({"new_key": "new_value"})
-    job = dataset_scene_module.append(
-        update_scenes, update=True, asynchronous=True
-    )
+    job = dataset_scene_module.append(update_scenes, update=True)
     job.sleep_until_complete()
     status = job.status()
 
@@ -325,7 +323,7 @@ def test_scene_upload_async_item_dataset(dataset_non_scene):
     update = payload[UPDATE_KEY]
 
     with pytest.raises(Exception):
-        dataset_non_scene.append(scenes, update=update, asynchronous=True)
+        dataset_non_scene.append(scenes, update=update)
 
 
 @pytest.mark.integration

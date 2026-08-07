@@ -3,7 +3,6 @@ import pytest
 from nucleus import DatasetItem
 from nucleus.constants import (
     BACKFILL_JOB_KEY,
-    ERROR_PAYLOAD,
     JOB_ID_KEY,
     MESSAGE_KEY,
     STATUS_KEY,
@@ -29,8 +28,8 @@ def dataset(CLIENT):
             )
         )
 
-    response = ds.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+    job = ds.append(ds_items)
+    job.sleep_until_complete()
     yield ds
 
 

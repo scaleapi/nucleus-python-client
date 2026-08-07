@@ -51,8 +51,8 @@ class AsyncJob:
         client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
         dataset = client.get_dataset("ds_bwkezj6g5c4g05gqp1eg")
 
-        # When kicking off an asynchronous job, store the return value as a variable
-        job = dataset.append(items=YOUR_DATASET_ITEMS, asynchronous=True)
+        # dataset.append() always returns an AsyncJob
+        job = dataset.append(items=YOUR_DATASET_ITEMS)
 
         # Poll for status or errors
         print(job.status())

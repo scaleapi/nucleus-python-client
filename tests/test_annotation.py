@@ -16,7 +16,6 @@ from nucleus import (
 )
 from nucleus.annotation import SceneCategoryAnnotation
 from nucleus.async_job import AsyncJob, JobError
-from nucleus.constants import ERROR_PAYLOAD
 from nucleus.errors import DuplicateIDError
 from nucleus.scene import VideoScene
 
@@ -80,16 +79,16 @@ def dataset(CLIENT):
             )
         )
 
-    response = ds.append(ds_items)
-    assert ERROR_PAYLOAD not in response.json()
+    job = ds.append(ds_items)
+    job.sleep_until_complete()
 
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] Category Taxonomy 1",
         "category",
         [f"[Pytest] Category Label ${i}" for i in range((len(TEST_IMG_URLS)))],
     )
 
-    response = ds.add_taxonomy(
+    ds.add_taxonomy(
         "[Pytest] MultiCategory Taxonomy 1",
         "multicategory",
         [

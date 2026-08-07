@@ -231,15 +231,6 @@ class DatasetItem:  # pylint: disable=R0902
         return json.dumps(self.to_payload(), allow_nan=False)
 
 
-def check_all_paths_remote(dataset_items: Sequence[DatasetItem]):
-    for item in dataset_items:
-        if item.image_location and is_local_path(item.image_location):
-            raise ValueError(
-                f"All paths must be remote, but {item.image_location} is either "
-                "local, or a remote URL type that is not supported."
-            )
-
-
 def check_for_duplicate_reference_ids(dataset_items: Sequence[DatasetItem]):
     ref_ids = []
     for dataset_item in dataset_items:

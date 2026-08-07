@@ -46,7 +46,8 @@ def CLIENT():
 @pytest.fixture()
 def dataset(CLIENT: "NucleusClient"):
     test_dataset = CLIENT.create_dataset(TEST_DATASET_NAME, is_scene=False)
-    test_dataset.append(TEST_DATASET_ITEMS)
+    job = test_dataset.append(TEST_DATASET_ITEMS)
+    job.sleep_until_complete()
     yield test_dataset
 
 

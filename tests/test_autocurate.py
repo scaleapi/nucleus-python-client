@@ -4,7 +4,6 @@ import pytest
 
 from nucleus import DatasetItem, autocurate
 from nucleus.async_job import AsyncJob
-from nucleus.constants import ERROR_PAYLOAD
 from nucleus.prediction import BoxPrediction
 from tests.helpers import (
     TEST_BOX_PREDICTIONS,
@@ -28,9 +27,8 @@ def model_run(CLIENT):
             )
         )
 
-    response = ds.append(ds_items)
-
-    assert ERROR_PAYLOAD not in response.json()
+    job = ds.append(ds_items)
+    job.sleep_until_complete()
 
     model = CLIENT.create_model(
         name=TEST_MODEL_NAME, reference_id="model_" + str(time.time())
