@@ -21,13 +21,28 @@ Pass instances (or equivalent plain dicts) to
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
+
+from .constants import (
+    EXCLUSION_KEY_KEY,
+    EXCLUSION_MAX_KEY,
+    EXCLUSION_MIN_KEY,
+    EXCLUSION_OP_KEY,
+    EXCLUSION_TARGET_KEY,
+    EXCLUSION_TYPE_BOX_AREA,
+    EXCLUSION_TYPE_LABELS,
+    EXCLUSION_TYPE_METADATA,
+    EXCLUSION_VALUE_KEY,
+    LABELS_KEY,
+    SCOPE_KEY,
+    TYPE_KEY,
+)
 
 # String literals are sent as values (not keys), so the server's request-body
 # camelcaser preserves them verbatim — emit them exactly as the backend expects.
-ExclusionScope = str  # "item" | "annotation"
-ExclusionTarget = str  # "groundTruth" | "prediction"
-MetadataOp = str  # "EQ" | "IN" | "GT" | "LT"
+ExclusionScope = Literal["item", "annotation"]
+ExclusionTarget = Literal["groundTruth", "prediction"]
+MetadataOp = Literal["EQ", "IN", "GT", "LT"]
 
 
 @dataclass
@@ -44,11 +59,11 @@ class MetadataExclusionRule:
 
     def to_api_dict(self) -> Dict[str, Any]:
         return {
-            "type": "metadata",
-            "scope": self.scope,
-            "key": self.key,
-            "op": self.op,
-            "value": self.value,
+            TYPE_KEY: EXCLUSION_TYPE_METADATA,
+            SCOPE_KEY: self.scope,
+            EXCLUSION_KEY_KEY: self.key,
+            EXCLUSION_OP_KEY: self.op,
+            EXCLUSION_VALUE_KEY: self.value,
         }
 
 
@@ -69,10 +84,10 @@ class LabelExclusionRule:
 
     def to_api_dict(self) -> Dict[str, Any]:
         return {
-            "type": "labels",
-            "scope": self.scope,
-            "target": self.target,
-            "labels": list(self.labels),
+            TYPE_KEY: EXCLUSION_TYPE_LABELS,
+            SCOPE_KEY: self.scope,
+            EXCLUSION_TARGET_KEY: self.target,
+            LABELS_KEY: list(self.labels),
         }
 
 
@@ -94,14 +109,14 @@ class BoxAreaExclusionRule:
 
     def to_api_dict(self) -> Dict[str, Any]:
         out: Dict[str, Any] = {
-            "type": "boxArea",
-            "scope": self.scope,
-            "target": self.target,
+            TYPE_KEY: EXCLUSION_TYPE_BOX_AREA,
+            SCOPE_KEY: self.scope,
+            EXCLUSION_TARGET_KEY: self.target,
         }
         if self.min is not None:
-            out["min"] = self.min
+            out[EXCLUSION_MIN_KEY] = self.min
         if self.max is not None:
-            out["max"] = self.max
+            out[EXCLUSION_MAX_KEY] = self.max
         return out
 
 

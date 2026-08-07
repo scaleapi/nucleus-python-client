@@ -10,6 +10,40 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 
 import requests
 
+from nucleus.constants import (
+    ALLOWED_LABEL_MATCHES_ID_KEY,
+    ALLOWED_LABEL_MATCHES_KEY,
+    ALLOWED_LABEL_MATCHES_NAME_KEY,
+    BENCHMARK_ID_KEY,
+    CLASS_NAME_CAMEL_KEY,
+    CLASS_NAME_KEY,
+    CREATED_AT_KEY,
+    DATASET_ID_KEY,
+    ERROR_MESSAGE_KEY,
+    EVALUATION_ID_KEY,
+    EXCLUSION_RULES_KEY,
+    EXCLUSION_STATS_KEY,
+    FILTERS_KEY,
+    GROUND_TRUTH_LABEL_CAMEL_KEY,
+    GROUND_TRUTH_LABEL_KEY,
+    ID_KEY,
+    IOU_THRESHOLD_KEY,
+    LABELS_KEY,
+    LIMIT_KEY,
+    MATCH_TYPE_KEY,
+    MODEL_PREDICTION_LABEL_CAMEL_KEY,
+    MODEL_PREDICTION_LABEL_KEY,
+    MODEL_RUN_ID_KEY,
+    NAME_KEY,
+    OFFSET_KEY,
+    QUERY_KEY,
+    ROLLUP_GROUPS_KEY,
+    SLICE_ID_KEY,
+    SORT_BY_KEY,
+    SORT_ORDER_KEY,
+    STATUS_KEY,
+    TEMPORAL_WORKFLOW_ID_KEY,
+)
 from nucleus.data_transfer_object.evaluation_v2 import (
     EvaluationV2Charts,
     EvaluationV2ExamplesPage,
@@ -58,8 +92,8 @@ class AllowedLabelMatch:
 
     def to_api_dict(self) -> Dict[str, str]:
         return {
-            "ground_truth_label": self.ground_truth_label,
-            "model_prediction_label": self.model_prediction_label,
+            GROUND_TRUTH_LABEL_KEY: self.ground_truth_label,
+            MODEL_PREDICTION_LABEL_KEY: self.model_prediction_label,
         }
 
 
@@ -76,12 +110,12 @@ def _parse_allowed_label_matches(
     for m in raw_matches:
         if not isinstance(m, dict):
             continue
-        gt = m.get("groundTruthLabel")
+        gt = m.get(GROUND_TRUTH_LABEL_CAMEL_KEY)
         if gt is None:
-            gt = m.get("ground_truth_label")
-        mp = m.get("modelPredictionLabel")
+            gt = m.get(GROUND_TRUTH_LABEL_KEY)
+        mp = m.get(MODEL_PREDICTION_LABEL_CAMEL_KEY)
         if mp is None:
-            mp = m.get("model_prediction_label")
+            mp = m.get(MODEL_PREDICTION_LABEL_KEY)
         if gt is not None and mp is not None:
             matches.append(
                 AllowedLabelMatch(
@@ -106,7 +140,7 @@ class RollupGroup:
     labels: List[str]
 
     def to_api_dict(self) -> Dict[str, Any]:
-        return {"class_name": self.class_name, "labels": list(self.labels)}
+        return {CLASS_NAME_KEY: self.class_name, LABELS_KEY: list(self.labels)}
 
 
 def _parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
@@ -120,10 +154,10 @@ def _parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
     for g in raw_groups:
         if not isinstance(g, dict):
             continue
-        class_name = g.get("className")
+        class_name = g.get(CLASS_NAME_CAMEL_KEY)
         if class_name is None:
-            class_name = g.get("class_name")
-        labels = g.get("labels")
+            class_name = g.get(CLASS_NAME_KEY)
+        labels = g.get(LABELS_KEY)
         if class_name is not None and isinstance(labels, list):
             groups.append(
                 RollupGroup(
@@ -163,30 +197,34 @@ class EvaluationV2:
         client: Optional["NucleusClient"] = None,
     ) -> "EvaluationV2":
         matches = _parse_allowed_label_matches(
-            payload.get("allowed_label_matches")
+            payload.get(ALLOWED_LABEL_MATCHES_KEY)
         )
 
         return cls(
-            id=str(payload["id"]),
-            model_run_id=str(payload["model_run_id"]),
-            dataset_id=str(payload["dataset_id"]),
-            status=str(payload["status"]),
-            name=payload.get("name"),
-            temporal_workflow_id=payload.get("temporal_workflow_id"),
-            error_message=payload.get("error_message"),
-            created_at=payload.get("created_at"),
-            allowed_label_matches_id=payload.get("allowed_label_matches_id"),
+            id=str(payload[ID_KEY]),
+            model_run_id=str(payload[MODEL_RUN_ID_KEY]),
+            dataset_id=str(payload[DATASET_ID_KEY]),
+            status=str(payload[STATUS_KEY]),
+            name=payload.get(NAME_KEY),
+            temporal_workflow_id=payload.get(TEMPORAL_WORKFLOW_ID_KEY),
+            error_message=payload.get(ERROR_MESSAGE_KEY),
+            created_at=payload.get(CREATED_AT_KEY),
+            allowed_label_matches_id=payload.get(ALLOWED_LABEL_MATCHES_ID_KEY),
             allowed_label_matches=matches,
             allowed_label_matches_name=payload.get(
-                "allowed_label_matches_name"
+                ALLOWED_LABEL_MATCHES_NAME_KEY
             ),
             rollup_groups=_parse_rollup_groups(
-                _parse_json_field(payload.get("rollup_groups"))
+                _parse_json_field(payload.get(ROLLUP_GROUPS_KEY))
             ),
-            benchmark_id=payload.get("benchmark_id"),
-            slice_id=payload.get("slice_id"),
-            exclusion_rules=_parse_json_field(payload.get("exclusion_rules")),
-            exclusion_stats=_parse_json_field(payload.get("exclusion_stats")),
+            benchmark_id=payload.get(BENCHMARK_ID_KEY),
+            slice_id=payload.get(SLICE_ID_KEY),
+            exclusion_rules=_parse_json_field(
+                payload.get(EXCLUSION_RULES_KEY)
+            ),
+            exclusion_stats=_parse_json_field(
+                payload.get(EXCLUSION_STATS_KEY)
+            ),
             _client=client,
         )
 
@@ -280,7 +318,7 @@ class EvaluationV2:
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
         result = self._client.post({}, f"evaluationsV2/{self.id}/retry")
-        eval_id = result.get("evaluation_id")
+        eval_id = result.get(EVALUATION_ID_KEY)
         if not eval_id:
             raise RuntimeError(
                 f"Unexpected retry evaluation V2 response: {result}"
@@ -307,14 +345,14 @@ class EvaluationV2:
         """
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
-        payload: Dict[str, Any] = {"iouThreshold": iou_threshold}
+        payload: Dict[str, Any] = {IOU_THRESHOLD_KEY: iou_threshold}
         if filters is not None:
             if isinstance(filters, EvaluationV2FilterArgs):
-                payload["filters"] = filters.to_api_filters()
+                payload[FILTERS_KEY] = filters.to_api_filters()
             else:
-                payload["filters"] = filters
+                payload[FILTERS_KEY] = filters
         if query:
-            payload["query"] = query
+            payload[QUERY_KEY] = query
         data = self._client.post(payload, f"evaluationsV2/{self.id}/charts")
         return EvaluationV2Charts.parse_obj(data)
 
@@ -366,21 +404,21 @@ class EvaluationV2:
         if self._client is None:
             raise RuntimeError("EvaluationV2 has no client.")
         payload: Dict[str, Any] = {
-            "limit": limit,
-            "offset": offset,
+            LIMIT_KEY: limit,
+            OFFSET_KEY: offset,
         }
         if match_type is not None:
-            payload["match_type"] = match_type
+            payload[MATCH_TYPE_KEY] = match_type
         if sort_by is not None:
-            payload["sort_by"] = sort_by
+            payload[SORT_BY_KEY] = sort_by
         if sort_order is not None:
-            payload["sort_order"] = sort_order
+            payload[SORT_ORDER_KEY] = sort_order
         if filters is not None:
             if isinstance(filters, EvaluationV2FilterArgs):
-                payload["filters"] = filters.to_api_filters()
+                payload[FILTERS_KEY] = filters.to_api_filters()
             else:
-                payload["filters"] = filters
+                payload[FILTERS_KEY] = filters
         if query:
-            payload["query"] = query
+            payload[QUERY_KEY] = query
         data = self._client.post(payload, f"evaluationsV2/{self.id}/examples")
         return EvaluationV2ExamplesPage.parse_obj(data)

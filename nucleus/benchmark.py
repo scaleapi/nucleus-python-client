@@ -20,6 +20,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
+from nucleus.constants import (
+    BENCHMARK_ID_KEY,
+    CREATED_AT_KEY,
+    CREATED_BY_USER_ID_KEY,
+    DATASET_COUNT_KEY,
+    DESCRIPTION_KEY,
+    ITEM_COUNT_KEY,
+    METADATA_KEY,
+    NAME_KEY,
+    SKIPPED_ITEMS_WITHOUT_GROUND_TRUTH_KEY,
+)
 from nucleus.data_transfer_object.evaluation_v2 import BenchmarkItemsPage
 from nucleus.evaluation_v2 import (
     AllowedLabelMatch,
@@ -55,16 +66,16 @@ class Benchmark:
         client: Optional["NucleusClient"] = None,
     ) -> "Benchmark":
         return cls(
-            id=str(payload["benchmark_id"]),
-            name=str(payload["name"]),
-            description=payload.get("description"),
-            metadata=payload.get("metadata"),
-            created_by_user_id=payload.get("created_by_user_id"),
-            created_at=payload.get("created_at"),
-            item_count=payload.get("item_count"),
-            dataset_count=payload.get("dataset_count"),
+            id=str(payload[BENCHMARK_ID_KEY]),
+            name=str(payload[NAME_KEY]),
+            description=payload.get(DESCRIPTION_KEY),
+            metadata=payload.get(METADATA_KEY),
+            created_by_user_id=payload.get(CREATED_BY_USER_ID_KEY),
+            created_at=payload.get(CREATED_AT_KEY),
+            item_count=payload.get(ITEM_COUNT_KEY),
+            dataset_count=payload.get(DATASET_COUNT_KEY),
             skipped_items_without_ground_truth=payload.get(
-                "skipped_items_without_ground_truth"
+                SKIPPED_ITEMS_WITHOUT_GROUND_TRUTH_KEY
             ),
             _client=client,
         )

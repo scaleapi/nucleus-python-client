@@ -107,24 +107,31 @@ from .benchmark import Benchmark
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
+    ALLOWED_LABEL_MATCHES_CAMEL_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
+    BENCHMARK_IDS_KEY,
+    COLLAPSE_KEY,
+    CONFIDENCE_THRESHOLD_KEY,
     DATASET_ID_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
+    DESCRIPTION_KEY,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     ERROR_ITEMS,
     ERROR_PAYLOAD,
     ERRORS_KEY,
+    EXCLUSION_RULES_CAMEL_KEY,
     GLOB_SIZE_THRESHOLD_CHECK,
     I_KEY,
     IMAGE_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
+    ITEM_IDS_KEY,
     ITEM_METADATA_SCHEMA_KEY,
     ITEMS_KEY,
     JOB_CREATION_TIME_KEY,
@@ -133,6 +140,9 @@ from .constants import (
     JOB_TYPE_KEY,
     KEEP_HISTORY_KEY,
     MESSAGE_KEY,
+    METADATA_KEY,
+    METRIC_TYPE_KEY,
+    MODEL_IDS_KEY,
     MODEL_RUN_ID_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
@@ -142,9 +152,12 @@ from .constants import (
     PREDICTIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
     REFERENCE_IDS_KEY,
+    ROLLUP_GROUPS_CAMEL_KEY,
+    SCOPE_KEY,
     SLICE_ID_KEY,
     SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
+    TOP_N_KEY,
     UPDATE_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
@@ -979,15 +992,17 @@ class NucleusClient:
             raise ValueError(
                 "rollup_groups and allowed_label_matches cannot both be set"
             )
-        payload: Dict[str, Any] = {"name": name}
+        payload: Dict[str, Any] = {NAME_KEY: name}
         if rollup_groups is not None:
-            payload["rollupGroups"] = [g.to_api_dict() for g in rollup_groups]
+            payload[ROLLUP_GROUPS_CAMEL_KEY] = [
+                g.to_api_dict() for g in rollup_groups
+            ]
         if allowed_label_matches is not None:
-            payload["allowedLabelMatches"] = [
+            payload[ALLOWED_LABEL_MATCHES_CAMEL_KEY] = [
                 m.to_api_dict() for m in allowed_label_matches
             ]
         if exclusion_rules is not None:
-            payload["exclusionRules"] = [
+            payload[EXCLUSION_RULES_CAMEL_KEY] = [
                 rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
                 for rule in exclusion_rules
             ]
@@ -1031,21 +1046,21 @@ class NucleusClient:
             )
         payload: Dict[str, Any] = {}
         if name is not _UNSET:
-            payload["name"] = name
+            payload[NAME_KEY] = name
         if rollup_groups is not _UNSET:
-            payload["rollupGroups"] = (
+            payload[ROLLUP_GROUPS_CAMEL_KEY] = (
                 None
                 if rollup_groups is None
                 else [g.to_api_dict() for g in rollup_groups]
             )
         if allowed_label_matches is not _UNSET:
-            payload["allowedLabelMatches"] = (
+            payload[ALLOWED_LABEL_MATCHES_CAMEL_KEY] = (
                 None
                 if allowed_label_matches is None
                 else [m.to_api_dict() for m in allowed_label_matches]
             )
         if exclusion_rules is not _UNSET:
-            payload["exclusionRules"] = (
+            payload[EXCLUSION_RULES_CAMEL_KEY] = (
                 None
                 if exclusion_rules is None
                 else [
@@ -1113,19 +1128,19 @@ class NucleusClient:
                 "Provide exactly one of item_ids, items, slice_id, or "
                 "dataset_id to define benchmark membership"
             )
-        payload: Dict[str, Any] = {"name": name}
+        payload: Dict[str, Any] = {NAME_KEY: name}
         if description is not None:
-            payload["description"] = description
+            payload[DESCRIPTION_KEY] = description
         if metadata is not None:
-            payload["metadata"] = metadata
+            payload[METADATA_KEY] = metadata
         if item_ids is not None:
-            payload["item_ids"] = item_ids
+            payload[ITEM_IDS_KEY] = item_ids
         if items is not None:
-            payload["items"] = items
+            payload[ITEMS_KEY] = items
         if slice_id is not None:
-            payload["slice_id"] = slice_id
+            payload[SLICE_ID_KEY] = slice_id
         if dataset_id is not None:
-            payload["dataset_id"] = dataset_id
+            payload[DATASET_ID_KEY] = dataset_id
         data = self.post(payload, "benchmarks")
         return Benchmark.from_json(data, self)
 
@@ -1178,11 +1193,11 @@ class NucleusClient:
         """
         payload: Dict[str, Any] = {}
         if name is not None:
-            payload["name"] = name
+            payload[NAME_KEY] = name
         if description is not None:
-            payload["description"] = description
+            payload[DESCRIPTION_KEY] = description
         if metadata is not None:
-            payload["metadata"] = metadata
+            payload[METADATA_KEY] = metadata
         data = self.patch(payload, f"benchmarks/{benchmark_id}")
         return Benchmark.from_json(data, self)
 
@@ -1297,11 +1312,13 @@ class NucleusClient:
                 "Set at most one of rollup_groups, allowed_label_matches, "
                 "or allowed_label_matches_id"
             )
-        payload: Dict[str, Any] = {"model_run_id": model_run_id}
+        payload: Dict[str, Any] = {MODEL_RUN_ID_KEY: model_run_id}
         if name is not None:
-            payload["name"] = name
+            payload[NAME_KEY] = name
         if rollup_groups is not None:
-            payload["rollupGroups"] = [g.to_api_dict() for g in rollup_groups]
+            payload[ROLLUP_GROUPS_CAMEL_KEY] = [
+                g.to_api_dict() for g in rollup_groups
+            ]
         if allowed_label_matches is not None:
             payload["allowed_label_matches"] = [
                 m.to_api_dict() for m in allowed_label_matches
@@ -1309,7 +1326,7 @@ class NucleusClient:
         if allowed_label_matches_id is not None:
             payload["allowed_label_matches_id"] = allowed_label_matches_id
         if exclusion_rules is not None:
-            payload["exclusionRules"] = [
+            payload[EXCLUSION_RULES_CAMEL_KEY] = [
                 rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
                 for rule in exclusion_rules
             ]
@@ -1352,17 +1369,17 @@ class NucleusClient:
             List of :class:`LeaderboardRankingEntry`, best score first.
         """
         payload: Dict[str, Any] = {
-            "metric_type": metric_type,
-            "benchmark_ids": benchmark_ids,
+            METRIC_TYPE_KEY: metric_type,
+            BENCHMARK_IDS_KEY: benchmark_ids,
         }
         if confidence_threshold is not None:
-            payload["confidence_threshold"] = confidence_threshold
+            payload[CONFIDENCE_THRESHOLD_KEY] = confidence_threshold
         if model_ids is not None:
-            payload["model_ids"] = model_ids
+            payload[MODEL_IDS_KEY] = model_ids
         if scope is not None:
-            payload["scope"] = scope
+            payload[SCOPE_KEY] = scope
         if collapse is not None:
-            payload["collapse"] = collapse
+            payload[COLLAPSE_KEY] = collapse
         rows = self.post(payload, "leaderboard/ranking")
         if not isinstance(rows, list):
             raise RuntimeError(
@@ -1388,11 +1405,11 @@ class NucleusClient:
             List of :class:`LeaderboardF1CurveEntry`, best F1 first.
         """
         payload: Dict[str, Any] = {
-            "benchmark_ids": benchmark_ids,
-            "top_n": top_n,
+            BENCHMARK_IDS_KEY: benchmark_ids,
+            TOP_N_KEY: top_n,
         }
         if model_ids is not None:
-            payload["model_ids"] = model_ids
+            payload[MODEL_IDS_KEY] = model_ids
         rows = self.post(payload, "leaderboard/f1Curve")
         if not isinstance(rows, list):
             raise RuntimeError(

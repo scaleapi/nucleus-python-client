@@ -20,6 +20,20 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from nucleus.constants import (
+    ALLOWED_LABEL_MATCHES_CAMEL_KEY,
+    ALLOWED_LABEL_MATCHES_KEY,
+    CREATED_AT_KEY,
+    CREATED_BY_USER_ID_KEY,
+    DELETED_AT_KEY,
+    EXCLUSION_RULES_CAMEL_KEY,
+    EXCLUSION_RULES_KEY,
+    ID_KEY,
+    NAME_KEY,
+    ROLLUP_GROUPS_CAMEL_KEY,
+    ROLLUP_GROUPS_KEY,
+    UPDATED_AT_KEY,
+)
 from nucleus.evaluation_v2 import (
     AllowedLabelMatch,
     RollupGroup,
@@ -64,28 +78,28 @@ class EvaluationV2Preset:
         client: Optional["NucleusClient"] = None,
     ) -> "EvaluationV2Preset":
         return cls(
-            id=str(payload["id"]),
-            name=str(payload["name"]),
+            id=str(payload[ID_KEY]),
+            name=str(payload[NAME_KEY]),
             rollup_groups=_parse_rollup_groups(
                 _parse_json_field(
-                    payload.get("rollup_groups")
-                    if payload.get("rollup_groups") is not None
-                    else payload.get("rollupGroups")
+                    payload.get(ROLLUP_GROUPS_KEY)
+                    if payload.get(ROLLUP_GROUPS_KEY) is not None
+                    else payload.get(ROLLUP_GROUPS_CAMEL_KEY)
                 )
             ),
             allowed_label_matches=_parse_allowed_label_matches(
-                payload.get("allowed_label_matches")
-                or payload.get("allowedLabelMatches")
+                payload.get(ALLOWED_LABEL_MATCHES_KEY)
+                or payload.get(ALLOWED_LABEL_MATCHES_CAMEL_KEY)
             ),
             exclusion_rules=_parse_json_field(
-                payload.get("exclusion_rules")
-                if payload.get("exclusion_rules") is not None
-                else payload.get("exclusionRules")
+                payload.get(EXCLUSION_RULES_KEY)
+                if payload.get(EXCLUSION_RULES_KEY) is not None
+                else payload.get(EXCLUSION_RULES_CAMEL_KEY)
             ),
-            created_by_user_id=payload.get("created_by_user_id"),
-            created_at=payload.get("created_at"),
-            updated_at=payload.get("updated_at"),
-            deleted_at=payload.get("deleted_at"),
+            created_by_user_id=payload.get(CREATED_BY_USER_ID_KEY),
+            created_at=payload.get(CREATED_AT_KEY),
+            updated_at=payload.get(UPDATED_AT_KEY),
+            deleted_at=payload.get(DELETED_AT_KEY),
             _client=client,
         )
 

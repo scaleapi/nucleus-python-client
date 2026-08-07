@@ -235,9 +235,7 @@ class Dataset:
             A dict with ``"gt_labels"`` (ground-truth annotation labels) and
             ``"prediction_labels"`` (model prediction labels).
         """
-        return self._client.make_request(
-            {}, f"dataset/{self.id}/labelSchema", requests.get
-        )
+        return self._client.get(f"dataset/{self.id}/labelSchema")
 
     @property
     def embedding_indexes(self) -> List[EmbeddingIndex]:
