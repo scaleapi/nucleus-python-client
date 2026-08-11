@@ -6,6 +6,7 @@ internal machinery for :meth:`NucleusClient.upload_model_weights` and
 """
 
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
@@ -125,6 +126,38 @@ def _put_bytes(
     return _strip_quotes(response.headers.get("ETag", ""))
 
 
+class _ProgressReader:
+    """File wrapper that reports progress as ``requests`` reads the body.
+
+    Everything except ``read`` is delegated to the wrapped handle, so
+    ``requests`` still sizes the body from ``fileno()``/``tell()`` and sends a
+    normal Content-Length request rather than a chunked one.
+    """
+
+    def __init__(
+        self,
+        handle: Any,
+        total_bytes: int,
+        on_progress: ProgressCallback,
+    ) -> None:
+        self._handle = handle
+        self._total_bytes = total_bytes
+        self._on_progress = on_progress
+        self._transferred = 0
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._handle, name)
+
+    def read(self, size: int = -1) -> bytes:
+        chunk = self._handle.read(size)
+        if chunk:
+            self._transferred += len(chunk)
+            self._on_progress(
+                min(self._transferred, self._total_bytes), self._total_bytes
+            )
+        return chunk
+
+
 def _upload_single(
     path: str,
     upload_url: str,
@@ -133,7 +166,15 @@ def _upload_single(
     on_progress: Optional[ProgressCallback],
 ) -> None:
     with open(path, "rb") as handle:
-        _put_bytes(upload_url, handle, headers)
+        # A single PUT is one request no matter its size, so progress has to come
+        # from the read side — otherwise a caller's progress bar sits at 0% for
+        # the whole transfer and then jumps to 100%.
+        body = (
+            handle
+            if on_progress is None
+            else _ProgressReader(handle, total_bytes, on_progress)
+        )
+        _put_bytes(upload_url, body, headers)
     if on_progress is not None:
         on_progress(total_bytes, total_bytes)
 
@@ -147,6 +188,10 @@ def _upload_multipart(
 ) -> List[Dict[str, Any]]:
     """Upload each part concurrently and return the finalize part list."""
     transferred = 0
+    # Parts upload concurrently, and `transferred += ...` is a read-modify-write
+    # the interpreter can interleave, so the counter and the value handed to
+    # on_progress are both taken under the lock.
+    progress_lock = threading.Lock()
     finalized: List[Dict[str, Any]] = []
 
     def upload_part(part: dict) -> Dict[str, Any]:
@@ -162,9 +207,11 @@ def _upload_multipart(
                 f"Storage did not return an ETag for part {part_number}; "
                 "cannot finalize the multipart upload"
             )
-        transferred += len(chunk)
+        with progress_lock:
+            transferred += len(chunk)
+            current = min(transferred, total_bytes)
         if on_progress is not None:
-            on_progress(min(transferred, total_bytes), total_bytes)
+            on_progress(current, total_bytes)
         return {PART_NUMBER_KEY: part_number, ETAG_KEY: etag}
 
     with ThreadPoolExecutor(

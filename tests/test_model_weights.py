@@ -202,6 +202,63 @@ def test_transfer_reports_progress(tmp_path):
     assert seen == [(32, 32)]
 
 
+def test_transfer_single_put_reports_progress_while_the_body_is_read(tmp_path):
+    """A single PUT is one request, so progress comes from the read side."""
+    path = tmp_path / "w.bin"
+    path.write_bytes(b"a" * 32)
+    seen = []
+    sized = []
+
+    def fake_put(url, data=None, headers=None, timeout=None):
+        # requests sizes a file body from fileno()/tell(), which the wrapper
+        # must keep delegating or the request goes out chunked.
+        sized.append(os.fstat(data.fileno()).st_size - data.tell())
+        while data.read(8):
+            pass
+        return _ok_put()
+
+    with patch("nucleus.model_weights.requests.put", side_effect=fake_put):
+        _transfer_weights_to_storage(
+            str(path),
+            {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
+            32,
+            on_progress=lambda sent, total: seen.append((sent, total)),
+        )
+
+    assert sized == [32]
+    # Four 8-byte reads, then the final completion call.
+    assert seen == [(8, 32), (16, 32), (24, 32), (32, 32), (32, 32)]
+
+
+def test_transfer_multipart_progress_totals_every_part(tmp_path):
+    path = tmp_path / "w.bin"
+    path.write_bytes(b"a" * 32)
+    seen = []
+    presign = {
+        "uploadId": "up_1",
+        "uploadUrl": None,
+        "partSizeBytes": 8,
+        "parts": [
+            {"partNumber": n, "url": f"https://s3.example/p{n}"}
+            for n in range(1, 5)
+        ],
+    }
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _ok_put('"etag-x"')
+        _transfer_weights_to_storage(
+            str(path),
+            presign,
+            32,
+            on_progress=lambda sent, total: seen.append((sent, total)),
+        )
+
+    # Parts upload concurrently, so the delivery order of the four callbacks is
+    # not fixed — but the counter behind them is locked, so each part is counted
+    # exactly once and the byte counts are the four distinct running totals.
+    assert sorted(sent for sent, _ in seen) == [8, 16, 24, 32]
+    assert all(total == 32 for _, total in seen)
+
+
 # --------------------------------------------------------------------------- #
 # Download streaming
 # --------------------------------------------------------------------------- #
