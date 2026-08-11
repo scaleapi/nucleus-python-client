@@ -112,10 +112,12 @@ from .constants import (
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
+    BENCHMARK_ID_KEY,
     BENCHMARK_IDS_KEY,
     COLLAPSE_KEY,
     CONFIDENCE_THRESHOLD_KEY,
     DATASET_ID_KEY,
+    DATASET_IDS_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
@@ -156,6 +158,7 @@ from .constants import (
     ROLLUP_GROUPS_CAMEL_KEY,
     SCOPE_KEY,
     SLICE_ID_KEY,
+    SLICE_IDS_KEY,
     SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
     TOP_N_KEY,
@@ -1167,16 +1170,16 @@ class NucleusClient:
         if dataset_id is not None:
             payload[DATASET_ID_KEY] = dataset_id
         if slice_ids is not None:
-            payload["slice_ids"] = slice_ids
+            payload[SLICE_IDS_KEY] = slice_ids
         if dataset_ids is not None:
-            payload["dataset_ids"] = dataset_ids
+            payload[DATASET_IDS_KEY] = dataset_ids
 
         # Async: the server responds 202 with {benchmark_id, job_id}. The
         # benchmark row already exists (in 'building' state); the build job
         # streams members in and flips it to 'ready' (or 'failed').
         response = self.post(payload, "benchmarks")
-        benchmark_id = response["benchmark_id"]
-        job_id = response.get("job_id")
+        benchmark_id = response[BENCHMARK_ID_KEY]
+        job_id = response.get(JOB_ID_KEY)
         if wait_for_completion:
             if job_id is None:
                 raise ValueError(
