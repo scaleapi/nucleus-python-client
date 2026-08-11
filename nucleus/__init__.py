@@ -1176,6 +1176,7 @@ class NucleusClient:
         # streams members in and flips it to 'ready' (or 'failed').
         response = self.post(payload, "benchmarks")
         benchmark_id = response["benchmark_id"]
+        job_id = response.get("job_id")
         if wait_for_completion:
             if job_id is None:
                 raise ValueError(
