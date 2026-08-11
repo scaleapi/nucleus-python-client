@@ -5,6 +5,22 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.1) - 2026-08-07
+
+### Added
+- **Benchmarks.** Full support for benchmark-paradigm evaluation: `NucleusClient.create_benchmark()` (members from `item_ids`, `(dataset_id, ref_id)` `items` pairs, a `slice_id`, or a `dataset_id`; membership frozen at creation), `list_benchmarks()`, `get_benchmark()`, `update_benchmark()`, `delete_benchmark()`, and `list_benchmark_items()`, plus the new `Benchmark` resource with `refresh()` / `update()` / `delete()` / `items()` / `create_evaluation_v2()`.
+- **Benchmark evaluations.** `create_benchmark_evaluation_v2(benchmark_id, model_run_id, ...)` evaluates a model run against every benchmark item (uncovered items score as false negatives, keeping leaderboard scores comparable). Accepts `rollup_groups`, legacy `allowed_label_matches` / `allowed_label_matches_id`, `exclusion_rules`, and `preset`. Benchmark evaluations are the only creation surface — dataset/slice-scoped evaluation creation is deprecated platform-wide and was never shipped in this SDK.
+- **Rollup groups.** The new `RollupGroup` type (`class_name` + `labels`) is the primary label configuration: each group evaluates a set of raw labels as one class. Presets support it end to end — `create_evaluation_v2_preset()` / `update_evaluation_v2_preset()` accept `rollup_groups` (mutually exclusive with `allowed_label_matches`), and `EvaluationV2Preset` exposes the field.
+- **Exclusion rules.** `MetadataExclusionRule`, `LabelExclusionRule`, and `BoxAreaExclusionRule` (or equivalent dicts) drop items/annotations before metrics are computed, passed via `exclusion_rules` on benchmark evaluation create and presets. `EvaluationV2` exposes `benchmark_id`, `rollup_groups`, `slice_id`, `exclusion_rules`, and `exclusion_stats`.
+- **Evaluation V2 presets.** Save and reuse evaluation configurations (`name` + label configuration + `exclusion_rules`) via `list_evaluation_v2_presets()`, `create_evaluation_v2_preset()`, `update_evaluation_v2_preset()`, and `delete_evaluation_v2_preset()`, plus the `EvaluationV2Preset` resource (with `update()` / `delete()`). Passing `preset=` to `create_benchmark_evaluation_v2` seeds the label configuration and rules (explicit arguments override the preset's values).
+- **Results.** `EvaluationV2.charts()` (mAP summary, per-class AP, confusion matrix, PR/F1 curves, TIDE attribution, AP by size) and `EvaluationV2.examples()` (paginated TP/FP/FN match rows; `match_type` optional) with `EvaluationV2FilterArgs` filtering (confidence/IoU ranges, labels, metadata predicates, `gt_area_range`, `slice_ids`).
+- **Cancel & retry.** `EvaluationV2.cancel()` stops a running evaluation; `EvaluationV2.retry()` re-runs a failed one, reusing its configuration.
+- **Benchmark leaderboards.** `leaderboard_ranking(metric_type, benchmark_ids, ...)` ranks model runs on one or more benchmarks (metrics: `MAP_50`, `MAP_50_95`, `AP_SMALL`, `AP_MEDIUM`, `AP_LARGE`, `PRECISION`, `RECALL`, `F1`; `scope` / `collapse` controls), and `leaderboard_f1_curve(benchmark_ids, ...)` returns F1-vs-confidence curves for the top runs. Requires a Nucleus deployment with leaderboard support.
+- **Filter schema discovery.** `EvaluationV2.filter_schema()` / `NucleusClient.get_evaluation_v2_filter_schema()` return the evaluation's filter vocabulary (`gt_labels`, `pred_labels`, and item-metadata fields with inferred value types) — the valid inputs for `EvaluationV2FilterArgs`. Requires the same Nucleus deployment as the leaderboard methods.
+- `Dataset.evaluation_label_schema()` returns the dataset's ground-truth and prediction label vocabularies (`gt_labels` / `prediction_labels`) for building rollup groups, label matches, and label exclusion rules.
+
+> Note: an unreleased 0.18.9 iteration of this branch carried dataset/slice-scoped creation (`create_evaluation_v2`, `create_evaluations_v2_batch`, `only_items_with_predictions`); that surface was removed before release as the platform moved to the benchmark paradigm.
+
 ## [0.19.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.0) - 2026-07-07
 
 ### Changed

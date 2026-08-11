@@ -43,9 +43,11 @@ _FILTER_API_KEYS = {
     "gt_labels": "gtLabels",
     "item_metadata": "itemMetadata",
     "prediction_metadata": "predictionMetadata",
+    "gt_area_range": "gtAreaRange",
     "label_equality": "labelEquality",
     "has_ground_truth": "hasGroundTruth",
     "tide_background": "tideBackground",
+    "slice_ids": "sliceIds",
 }
 
 
@@ -58,9 +60,11 @@ class EvaluationV2FilterArgs(DictCompatibleModel):
     gt_labels: Optional[List[str]] = None
     item_metadata: Optional[List[MetadataPredicate]] = None
     prediction_metadata: Optional[List[MetadataPredicate]] = None
+    gt_area_range: Optional[RangeNum] = None
     label_equality: Optional[Literal["EQ", "NEQ"]] = None
     has_ground_truth: Optional[bool] = None
     tide_background: Optional[bool] = None
+    slice_ids: Optional[List[str]] = None
 
     def to_api_filters(self) -> Dict[str, Any]:
         """Return filters as a dict ready for API requests."""
@@ -159,4 +163,69 @@ class EvaluationV2MatchExample(DictCompatibleModel):
 
 class EvaluationV2ExamplesPage(DictCompatibleModel):
     rows: List[EvaluationV2MatchExample]
+    total: int
+
+
+class EvaluationV2FilterMetadataField(DictCompatibleModel):
+    key: str
+    value_type: str
+    values: List[str]
+
+
+class EvaluationV2FilterSchema(DictCompatibleModel):
+    """Filter vocabulary for one evaluation's results.
+
+    The valid label values and item-metadata predicates accepted by
+    :class:`EvaluationV2FilterArgs` for that evaluation.
+    """
+
+    gt_labels: List[str]
+    pred_labels: List[str]
+    metadata_fields: List[EvaluationV2FilterMetadataField]
+
+
+class LeaderboardRankingEntry(DictCompatibleModel):
+    """One entry in a benchmark leaderboard ranking."""
+
+    evaluation_id: str
+    evaluation_name: Optional[str] = None
+    model_run_id: str
+    model_run_name: Optional[str] = None
+    model_id: Optional[str] = None
+    model_name: Optional[str] = None
+    model_version_major: Optional[int] = None
+    model_version_minor: Optional[int] = None
+    model_version_label: Optional[str] = None
+    parent_model_project_id: Optional[str] = None
+    dataset_id: Optional[str] = None
+    dataset_name: Optional[str] = None
+    score: float
+    rank: int
+
+
+class LeaderboardF1CurvePoint(DictCompatibleModel):
+    confidence_threshold: float
+    score: float
+
+
+class LeaderboardF1CurveEntry(DictCompatibleModel):
+    """F1-vs-confidence curve for one evaluation on a benchmark leaderboard."""
+
+    evaluation_id: str
+    evaluation_name: Optional[str] = None
+    model_run_id: str
+    model_run_name: Optional[str] = None
+    model_id: Optional[str] = None
+    model_name: Optional[str] = None
+    dataset_id: Optional[str] = None
+    dataset_name: Optional[str] = None
+    best_f1: Optional[float] = None
+    points: List[LeaderboardF1CurvePoint]
+    rank: int
+
+
+class BenchmarkItemsPage(DictCompatibleModel):
+    """One page of benchmark member item ids."""
+
+    item_ids: List[str]
     total: int

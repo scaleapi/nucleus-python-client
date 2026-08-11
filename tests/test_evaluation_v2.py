@@ -5,7 +5,14 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from nucleus import AllowedLabelMatch, EvaluationV2, NucleusClient
+from nucleus import (
+    AllowedLabelMatch,
+    BoxAreaExclusionRule,
+    EvaluationV2,
+    LabelExclusionRule,
+    MetadataExclusionRule,
+    NucleusClient,
+)
 from nucleus.data_transfer_object.evaluation_v2 import (
     EvaluationV2Charts,
     EvaluationV2FilterArgs,
@@ -13,6 +20,28 @@ from nucleus.data_transfer_object.evaluation_v2 import (
     RangeNum,
     _camelize_filter_value,
 )
+
+
+def _charts_response():
+    return {
+        "mapSummary": {"mapAt50": 0.1, "mapAt75": 0.2, "mapAt5095": 0.15},
+        "perClassAp": [],
+        "confusionMatrix": [],
+        "scoreHistogram": [],
+        "computedIouRanges": [],
+        "totalCounts": {"tp": 0, "fp": 0, "fn": 0, "predsWithConfidence": 0},
+        "apBySize": {"small": None, "medium": None, "large": None},
+        "prCurve": [],
+        "tideAttribution": {
+            "truePositive": 0,
+            "localization": 0,
+            "classification": 0,
+            "both": 0,
+            "duplicate": 0,
+            "background": 0,
+            "missed": 0,
+        },
+    }
 
 
 def test_evaluation_v2_filter_args_to_api_filters():
@@ -104,57 +133,59 @@ def test_list_evaluations_v2_invalid_response():
         client.list_evaluations_v2("run_1")
 
 
-def test_create_evaluation_v2_then_get():
-    client = NucleusClient(api_key="test")
-    client.connection.make_request = MagicMock(
-        return_value={
-            "evaluation_id": "evalv2_new",
-            "status": "pending",
-            "workflow_id": "w",
-        }
+def test_evaluation_v2_filter_args_gt_area_and_slices():
+    filters = EvaluationV2FilterArgs(
+        gt_area_range=RangeNum(min=1024, max=9216),
+        slice_ids=["slc_a"],
     )
-    client.connection.get = MagicMock(
-        return_value={
-            "id": "evalv2_new",
+    assert filters.to_api_filters() == {
+        "gtAreaRange": {"min": 1024.0, "max": 9216.0},
+        "sliceIds": ["slc_a"],
+    }
+
+
+def test_evaluation_v2_from_json_slice_and_exclusions():
+    # exclusion_rules as a JSON string (raw jsonb), exclusion_stats as a dict.
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
             "model_run_id": "run_1",
             "dataset_id": "ds_1",
-            "status": "pending",
+            "status": "succeeded",
+            "slice_id": "slc_x",
+            "exclusion_rules": '[{"type":"labels","scope":"item","target":"prediction","labels":["ignore"]}]',
+            "exclusion_stats": {"totals": {"itemsDropped": 3}},
         }
     )
+    assert ev.slice_id == "slc_x"
+    assert ev.exclusion_rules == [
+        {
+            "type": "labels",
+            "scope": "item",
+            "target": "prediction",
+            "labels": ["ignore"],
+        }
+    ]
+    assert ev.exclusion_stats == {"totals": {"itemsDropped": 3}}
 
-    ev = client.create_evaluation_v2(
-        "run_1",
-        name="n1",
-        allowed_label_matches=[
-            AllowedLabelMatch("gt", "pred"),
-        ],
+
+def test_evaluation_v2_from_json_exclusions_absent():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "succeeded",
+        }
     )
-    assert ev.id == "evalv2_new"
-    client.connection.make_request.assert_called_once()
-    client.connection.get.assert_called_once_with("evaluationsV2/evalv2_new")
+    assert ev.slice_id is None
+    assert ev.exclusion_rules is None
+    assert ev.exclusion_stats is None
 
 
-def test_charts_get_query_string():
+def test_charts_post_body():
     client = MagicMock(spec=NucleusClient)
-    client.get.return_value = {
-        "mapSummary": {"mapAt50": 0.1, "mapAt75": 0.2, "mapAt5095": 0.15},
-        "perClassAp": [],
-        "confusionMatrix": [],
-        "scoreHistogram": [],
-        "computedIouRanges": [],
-        "totalCounts": {"tp": 0, "fp": 0, "fn": 0, "predsWithConfidence": 0},
-        "apBySize": {"small": None, "medium": None, "large": None},
-        "prCurve": [],
-        "tideAttribution": {
-            "truePositive": 0,
-            "localization": 0,
-            "classification": 0,
-            "both": 0,
-            "duplicate": 0,
-            "background": 0,
-            "missed": 0,
-        },
-    }
+    client.post.return_value = _charts_response()
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
@@ -164,9 +195,35 @@ def test_charts_get_query_string():
     )
     charts = ev.charts(iou_threshold=0.5)
     assert isinstance(charts, EvaluationV2Charts)
-    call_route = client.get.call_args[0][0]
-    assert "evaluationsV2/evalv2_1/charts" in call_route
-    assert "iouThreshold=0.5" in call_route
+    client.post.assert_called_once()
+    payload, route = client.post.call_args[0]
+    assert route == "evaluationsV2/evalv2_1/charts"
+    assert payload == {"iouThreshold": 0.5}
+
+
+def test_charts_with_filter_args():
+    client = MagicMock(spec=NucleusClient)
+    client.post.return_value = _charts_response()
+    ev = EvaluationV2(
+        id="evalv2_1",
+        model_run_id="run_1",
+        dataset_id="ds_1",
+        status="succeeded",
+        _client=client,
+    )
+    filters = EvaluationV2FilterArgs(
+        gt_area_range=RangeNum(min=1024),
+        slice_ids=["slc_a", "slc_b"],
+    )
+    ev.charts(iou_threshold=0.75, filters=filters, query="dog")
+    payload, route = client.post.call_args[0]
+    assert route == "evaluationsV2/evalv2_1/charts"
+    assert payload["iouThreshold"] == 0.75
+    assert payload["query"] == "dog"
+    assert payload["filters"] == {
+        "gtAreaRange": {"min": 1024.0},
+        "sliceIds": ["slc_a", "slc_b"],
+    }
 
 
 def test_examples_post_body():
@@ -263,3 +320,65 @@ def test_delete_success(status_code):
     assert cargs[0][1] == "evaluationsV2/evalv2_1"
     assert cargs[0][2] is requests.delete
     assert cargs[0][3] is True
+
+
+# --------------------------------------------------------------------------- #
+# Rollup groups and benchmark_id
+# --------------------------------------------------------------------------- #
+def test_rollup_group_to_api_dict():
+    from nucleus import RollupGroup
+
+    g = RollupGroup(class_name="vehicle", labels=["car", "truck"])
+    assert g.to_api_dict() == {
+        "class_name": "vehicle",
+        "labels": ["car", "truck"],
+    }
+
+
+def test_parse_rollup_groups_both_casings_and_malformed():
+    from nucleus.evaluation_v2 import _parse_rollup_groups
+
+    groups = _parse_rollup_groups(
+        [
+            {"className": "vehicle", "labels": ["car"]},
+            {"class_name": "person", "labels": ["ped"]},
+            {"labels": ["orphan"]},  # missing class name → dropped
+            "not-a-dict",  # malformed → dropped
+        ]
+    )
+    assert groups is not None
+    assert [(g.class_name, g.labels) for g in groups] == [
+        ("vehicle", ["car"]),
+        ("person", ["ped"]),
+    ]
+    assert _parse_rollup_groups(None) is None
+    assert _parse_rollup_groups("nope") is None
+
+
+def test_evaluation_v2_from_json_benchmark_id_and_rollup_groups():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "pending",
+            "benchmark_id": "bm_1",
+            "rollup_groups": [{"className": "vehicle", "labels": ["car"]}],
+        }
+    )
+    assert ev.benchmark_id == "bm_1"
+    assert ev.rollup_groups is not None
+    assert ev.rollup_groups[0].class_name == "vehicle"
+
+
+def test_evaluation_v2_from_json_benchmark_fields_absent():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "dataset_id": "ds_1",
+            "status": "pending",
+        }
+    )
+    assert ev.benchmark_id is None
+    assert ev.rollup_groups is None
