@@ -57,6 +57,9 @@ class Benchmark:
     item_count: Optional[int] = None
     dataset_count: Optional[int] = None
     skipped_items_without_ground_truth: Optional[int] = None
+    #: Async build lifecycle: ``"building"`` until the server's build job finishes
+    #: streaming members in, then ``"ready"`` (or ``"failed"``).
+    status: Optional[str] = None
     _client: Optional["NucleusClient"] = field(repr=False, default=None)
 
     @classmethod
@@ -77,6 +80,7 @@ class Benchmark:
             skipped_items_without_ground_truth=payload.get(
                 SKIPPED_ITEMS_WITHOUT_GROUND_TRUTH_KEY
             ),
+            status=payload.get("status"),
             _client=client,
         )
 

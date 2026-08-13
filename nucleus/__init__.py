@@ -113,10 +113,12 @@ from .constants import (
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
+    BENCHMARK_ID_KEY,
     BENCHMARK_IDS_KEY,
     COLLAPSE_KEY,
     CONFIDENCE_THRESHOLD_KEY,
     DATASET_ID_KEY,
+    DATASET_IDS_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
@@ -158,6 +160,7 @@ from .constants import (
     ROLLUP_GROUPS_CAMEL_KEY,
     SCOPE_KEY,
     SLICE_ID_KEY,
+    SLICE_IDS_KEY,
     SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
     TOP_N_KEY,
@@ -1110,15 +1113,26 @@ class NucleusClient:
         items: Optional[List[Dict[str, str]]] = None,
         slice_id: Optional[str] = None,
         dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
     ) -> Benchmark:
         """Create a benchmark from ground-truth items.
 
-        Provide the members through exactly one source: explicit ``item_ids``,
-        ``(dataset_id, ref_id)`` pairs via ``items``, all items in a slice via
-        ``slice_id``, or all items in a dataset via ``dataset_id``. Items
-        without ground truth are skipped (reported on the returned benchmark
-        as ``skipped_items_without_ground_truth``). Membership is frozen at
-        creation.
+        Provide members through any combination of sources: explicit
+        ``item_ids``, ``(dataset_id, ref_id)`` pairs via ``items``, one or more
+        slices via ``slice_id`` / ``slice_ids``, and one or more datasets via
+        ``dataset_id`` / ``dataset_ids``. Members are unioned and de-duplicated
+        across all sources; at least one source is required. Items without
+        ground truth are skipped. Membership is frozen at creation.
+
+        Creation is **asynchronous**: the server creates the benchmark in a
+        ``"building"`` state and streams its members in via a background job.
+        By default this method blocks until that job finishes and returns the
+        completed (``"ready"``) benchmark. Pass ``wait_for_completion=False``
+        to return immediately with a ``"building"`` benchmark you can poll via
+        :meth:`Benchmark.refresh` (checking ``benchmark.status``).
 
         Parameters:
             name: Benchmark display name.
@@ -1128,19 +1142,32 @@ class NucleusClient:
             items: ``{"dataset_id": ..., "ref_id": ...}`` pairs.
             slice_id: Slice id (``slc_*``) whose items become members.
             dataset_id: Dataset id (``ds_*``) whose items become members.
+            slice_ids: Multiple slice ids whose items become members.
+            dataset_ids: Multiple dataset ids whose items become members.
+            wait_for_completion: Block until the build job finishes and return
+                the ready benchmark (default). If ``False``, return the
+                ``"building"`` benchmark immediately.
+            verbose: Log build-job polling progress while waiting.
 
         Returns:
-            :class:`Benchmark`: The created benchmark.
+            :class:`Benchmark`: The created benchmark — ``"ready"`` when
+            ``wait_for_completion`` is ``True``, otherwise ``"building"``.
         """
-        sources = [
+        has_source = any(
             source
-            for source in (item_ids, items, slice_id, dataset_id)
-            if source is not None
-        ]
-        if len(sources) != 1:
+            for source in (
+                item_ids,
+                items,
+                slice_id,
+                dataset_id,
+                slice_ids,
+                dataset_ids,
+            )
+        )
+        if not has_source:
             raise ValueError(
-                "Provide exactly one of item_ids, items, slice_id, or "
-                "dataset_id to define benchmark membership"
+                "Provide at least one of item_ids, items, slice_id(s), or "
+                "dataset_id(s) to define benchmark membership"
             )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if description is not None:
@@ -1155,8 +1182,27 @@ class NucleusClient:
             payload[SLICE_ID_KEY] = slice_id
         if dataset_id is not None:
             payload[DATASET_ID_KEY] = dataset_id
-        data = self.post(payload, "benchmarks")
-        return Benchmark.from_json(data, self)
+        if slice_ids is not None:
+            payload[SLICE_IDS_KEY] = slice_ids
+        if dataset_ids is not None:
+            payload[DATASET_IDS_KEY] = dataset_ids
+
+        # Async: the server responds 202 with {benchmark_id, job_id}. The
+        # benchmark row already exists (in 'building' state); the build job
+        # streams members in and flips it to 'ready' (or 'failed').
+        response = self.post(payload, "benchmarks")
+        benchmark_id = response[BENCHMARK_ID_KEY]
+        job_id = response.get(JOB_ID_KEY)
+        if wait_for_completion:
+            if job_id is None:
+                raise ValueError(
+                    "Server did not return a job_id in the create-benchmark "
+                    "response; cannot poll for completion. Pass "
+                    "wait_for_completion=False to suppress this error."
+                )
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+
+        return self.get_benchmark(benchmark_id)
 
     def list_benchmarks(self) -> List[Benchmark]:
         """List benchmarks visible to the current user.
