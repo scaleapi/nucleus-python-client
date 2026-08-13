@@ -6,6 +6,7 @@ internal machinery for :meth:`NucleusClient.upload_model_weights` and
 """
 
 import os
+import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -42,6 +43,12 @@ MODEL_WEIGHTS_MAX_BYTES = 10 * 1024 * 1024 * 1024  # 10 GB
 # Chunks of a large upload sent at once. Each transfer is
 # connection-throughput-bound, so a small pool is several times faster.
 CONCURRENT_PART_UPLOADS = 4
+
+# Ceiling on how much part data is held in memory at once. Each in-flight part is
+# read fully into a `bytes` before it is sent, so peak usage is
+# `workers * partSizeBytes` and the part size is chosen by the server — an
+# unusually large one would otherwise multiply into GBs of resident memory.
+MAX_INFLIGHT_PART_BYTES = 512 * 1024 * 1024  # 512 MB
 
 # Chunk size for streaming a download to disk.
 DOWNLOAD_CHUNK_BYTES = 8 * 1024 * 1024
@@ -179,6 +186,16 @@ def _upload_single(
         on_progress(total_bytes, total_bytes)
 
 
+def _part_upload_workers(part_count: int, part_size_bytes: int) -> int:
+    """Concurrency for a multipart upload, bounded by memory as well as count.
+
+    Always at least 1: a part larger than the whole budget still has to be sent,
+    and one at a time is the least memory that can do it.
+    """
+    budget = max(1, MAX_INFLIGHT_PART_BYTES // max(1, part_size_bytes))
+    return max(1, min(CONCURRENT_PART_UPLOADS, part_count, budget))
+
+
 def _upload_multipart(
     path: str,
     parts: List[dict],
@@ -189,10 +206,11 @@ def _upload_multipart(
     """Upload each part concurrently and return the finalize part list."""
     transferred = 0
     # Parts upload concurrently, and `transferred += ...` is a read-modify-write
-    # the interpreter can interleave, so the counter and the value handed to
-    # on_progress are both taken under the lock.
+    # the interpreter can interleave. The callback is invoked under the same lock
+    # as the counter, not just the arithmetic: releasing first lets two threads
+    # compute 100 and 200 and then call in either order, so a caller's progress
+    # bar can jump backwards.
     progress_lock = threading.Lock()
-    finalized: List[Dict[str, Any]] = []
 
     def upload_part(part: dict) -> Dict[str, Any]:
         nonlocal transferred
@@ -209,13 +227,12 @@ def _upload_multipart(
             )
         with progress_lock:
             transferred += len(chunk)
-            current = min(transferred, total_bytes)
-        if on_progress is not None:
-            on_progress(current, total_bytes)
+            if on_progress is not None:
+                on_progress(min(transferred, total_bytes), total_bytes)
         return {PART_NUMBER_KEY: part_number, ETAG_KEY: etag}
 
     with ThreadPoolExecutor(
-        max_workers=min(CONCURRENT_PART_UPLOADS, len(parts))
+        max_workers=_part_upload_workers(len(parts), part_size_bytes)
     ) as pool:
         finalized = list(pool.map(upload_part, parts))
 
@@ -275,16 +292,34 @@ def _stream_weights_to_file(
         parent = os.path.dirname(os.path.abspath(path))
         if parent:
             os.makedirs(parent, exist_ok=True)
-        with open(path, "wb") as handle:
-            for chunk in response.iter_content(
-                chunk_size=DOWNLOAD_CHUNK_BYTES
-            ):
-                if not chunk:
-                    continue
-                handle.write(chunk)
-                transferred += len(chunk)
-                if on_progress is not None:
-                    on_progress(transferred, total_bytes)
+        # Stream into a sibling temp file and rename only once the body is fully
+        # written. Writing straight to `path` would leave a truncated artifact
+        # behind on an interrupted transfer — indistinguishable from a complete
+        # one until something tries to load the weights.
+        handle_fd, partial_path = tempfile.mkstemp(
+            dir=parent or None,
+            prefix=f"{os.path.basename(path)}.",
+            suffix=".part",
+        )
+        try:
+            with os.fdopen(handle_fd, "wb") as handle:
+                for chunk in response.iter_content(
+                    chunk_size=DOWNLOAD_CHUNK_BYTES
+                ):
+                    if not chunk:
+                        continue
+                    handle.write(chunk)
+                    transferred += len(chunk)
+                    if on_progress is not None:
+                        on_progress(transferred, total_bytes)
+            # Same directory, so this is an atomic replace.
+            os.replace(partial_path, path)
+        except BaseException:
+            try:
+                os.remove(partial_path)
+            except OSError:
+                pass
+            raise
     return path
 
 

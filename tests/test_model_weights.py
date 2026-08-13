@@ -1,6 +1,9 @@
 """Unit tests for model weights upload/download (no live API, no real S3)."""
 
 import os
+import tempfile
+import threading
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,11 +11,15 @@ import requests
 
 from nucleus import Model, ModelWeights, NucleusClient
 from nucleus.model_weights import (
+    CONCURRENT_PART_UPLOADS,
+    MAX_INFLIGHT_PART_BYTES,
     MODEL_WEIGHTS_MAX_BYTES,
     _finalize_payload,
+    _part_upload_workers,
     _presign_payload,
     _stream_weights_to_file,
     _transfer_weights_to_storage,
+    _upload_multipart,
 )
 
 _WEIGHTS_DTO = {
@@ -294,6 +301,116 @@ def test_stream_weights_to_file_raises_on_error(tmp_path):
         _stream_weights_to_file(
             "https://s3.example/gone", str(tmp_path / "out.bin")
         )
+
+
+def test_stream_weights_to_file_leaves_nothing_behind_when_the_body_fails(
+    tmp_path,
+):
+    """A body that dies mid-stream must not leave a truncated artifact."""
+
+    def chunks(chunk_size):  # pylint: disable=unused-argument
+        yield b"a" * 8
+        raise requests.exceptions.ChunkedEncodingError("connection reset")
+
+    response = MagicMock()
+    response.ok = True
+    response.headers = {"Content-Length": "32"}
+    response.iter_content = chunks
+    response.__enter__ = lambda self: self
+    response.__exit__ = lambda *args: False
+
+    out = tmp_path / "out.bin"
+    with (
+        patch("nucleus.model_weights.requests.get", return_value=response),
+        pytest.raises(requests.exceptions.ChunkedEncodingError),
+    ):
+        _stream_weights_to_file("https://s3.example/weights", str(out))
+
+    assert not out.exists()
+    # No temp file orphaned next to it either.
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_stream_weights_to_file_replaces_an_existing_file_only_on_success(
+    tmp_path,
+):
+    out = tmp_path / "out.bin"
+    out.write_bytes(b"previous contents")
+
+    def chunks(chunk_size):  # pylint: disable=unused-argument
+        yield b"x" * 4
+        raise requests.exceptions.ChunkedEncodingError("connection reset")
+
+    response = MagicMock()
+    response.ok = True
+    response.headers = {"Content-Length": "32"}
+    response.iter_content = chunks
+    response.__enter__ = lambda self: self
+    response.__exit__ = lambda *args: False
+
+    with (
+        patch("nucleus.model_weights.requests.get", return_value=response),
+        pytest.raises(requests.exceptions.ChunkedEncodingError),
+    ):
+        _stream_weights_to_file("https://s3.example/weights", str(out))
+
+    # The prior artifact survives a failed re-download.
+    assert out.read_bytes() == b"previous contents"
+
+
+# --------------------------------------------------------------------------- #
+# Multipart concurrency
+# --------------------------------------------------------------------------- #
+def test_part_upload_workers_bounded_by_memory_budget():
+    small = 8 * 1024 * 1024
+    # Plenty of small parts -> the plain concurrency cap applies.
+    assert _part_upload_workers(100, small) == CONCURRENT_PART_UPLOADS
+    # Fewer parts than workers -> no idle threads.
+    assert _part_upload_workers(2, small) == 2
+    # 256 MB parts -> only 2 fit in the 512 MB budget.
+    assert _part_upload_workers(100, 256 * 1024 * 1024) == 2
+    # A part bigger than the whole budget still has to be sent, one at a time.
+    assert _part_upload_workers(100, MAX_INFLIGHT_PART_BYTES * 4) == 1
+    # Degenerate part size must not divide by zero or return 0 workers.
+    assert _part_upload_workers(100, 0) == CONCURRENT_PART_UPLOADS
+
+
+def test_multipart_progress_callbacks_never_overlap_or_go_backwards():
+    """The callback runs under the counter's lock, so it is serialized.
+
+    Without that, two threads can compute their totals under the lock, release
+    it, and then call in either order — a progress bar that jumps backwards.
+    """
+    overlaps = []
+    values = []
+    in_callback = threading.Event()
+
+    def on_progress(transferred, total):  # pylint: disable=unused-argument
+        if in_callback.is_set():
+            overlaps.append(transferred)
+        in_callback.set()
+        time.sleep(0.01)  # widen the window a racing thread would land in
+        values.append(transferred)
+        in_callback.clear()
+
+    parts = [
+        {"partNumber": n, "url": f"https://s3.example/p{n}"}
+        for n in range(1, 9)
+    ]
+    with (
+        tempfile.NamedTemporaryFile(suffix=".bin") as handle,
+        patch(
+            "nucleus.model_weights._put_bytes", return_value="etag"
+        ) as put_bytes,
+    ):
+        handle.write(b"z" * 64)
+        handle.flush()
+        _upload_multipart(handle.name, parts, 8, 64, on_progress)
+
+    assert put_bytes.call_count == 8
+    assert not overlaps, "on_progress was entered concurrently"
+    assert values == sorted(values), "progress went backwards"
+    assert values[-1] == 64
 
 
 # --------------------------------------------------------------------------- #
