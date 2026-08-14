@@ -31,6 +31,7 @@ from .constants import (
     BOX_TYPE,
     CATEGORY_TYPE,
     CUBOID_TYPE,
+    DATASET_ITEM_ID_KEY,
     EXPORTED_SCALE_TASK_INFO_ROWS,
     ITEM_KEY,
     KEYPOINTS_TYPE,
@@ -239,10 +240,15 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
     for row in api_payload:
         return_payload_row = {}
         return_payload_row[ITEM_KEY] = DatasetItem.from_json(row[ITEM_KEY])
+        # The backend returns reference_id and dataset_item_id on the item, not on each
+        # object, so stamp both down onto every annotation/prediction below.
+        item_reference_id = row[ITEM_KEY][REFERENCE_ID_KEY]
+        item_dataset_item_id = row[ITEM_KEY].get(DATASET_ITEM_ID_KEY)
         annotations = defaultdict(list)
         if row.get(SEGMENTATION_TYPE) is not None:
             segmentation = row[SEGMENTATION_TYPE]
-            segmentation[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            segmentation[REFERENCE_ID_KEY] = item_reference_id
+            segmentation[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[
                     SEGMENTATION_TYPE
@@ -252,7 +258,8 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
                     SEGMENTATION_TYPE
                 ] = SegmentationPrediction.from_json(segmentation)
         for polygon in row[POLYGON_TYPE]:
-            polygon[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            polygon[REFERENCE_ID_KEY] = item_reference_id
+            polygon[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[POLYGON_TYPE].append(
                     PolygonAnnotation.from_json(polygon)
@@ -262,13 +269,15 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
                     PolygonPrediction.from_json(polygon)
                 )
         for line in row[LINE_TYPE]:
-            line[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            line[REFERENCE_ID_KEY] = item_reference_id
+            line[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[LINE_TYPE].append(LineAnnotation.from_json(line))
             else:
                 annotations[LINE_TYPE].append(LinePrediction.from_json(line))
         for keypoints in row[KEYPOINTS_TYPE]:
-            keypoints[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            keypoints[REFERENCE_ID_KEY] = item_reference_id
+            keypoints[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[KEYPOINTS_TYPE].append(
                     KeypointsAnnotation.from_json(keypoints)
@@ -278,13 +287,15 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
                     KeypointsPrediction.from_json(keypoints)
                 )
         for box in row[BOX_TYPE]:
-            box[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            box[REFERENCE_ID_KEY] = item_reference_id
+            box[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[BOX_TYPE].append(BoxAnnotation.from_json(box))
             else:
                 annotations[BOX_TYPE].append(BoxPrediction.from_json(box))
         for cuboid in row[CUBOID_TYPE]:
-            cuboid[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            cuboid[REFERENCE_ID_KEY] = item_reference_id
+            cuboid[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[CUBOID_TYPE].append(
                     CuboidAnnotation.from_json(cuboid)
@@ -294,7 +305,8 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
                     CuboidPrediction.from_json(cuboid)
                 )
         for category in row[CATEGORY_TYPE]:
-            category[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            category[REFERENCE_ID_KEY] = item_reference_id
+            category[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             if not has_predictions:
                 annotations[CATEGORY_TYPE].append(
                     CategoryAnnotation.from_json(category)
@@ -304,7 +316,8 @@ def convert_export_payload(api_payload, has_predictions: bool = False):
                     CategoryPrediction.from_json(category)
                 )
         for multicategory in row[MULTICATEGORY_TYPE]:
-            multicategory[REFERENCE_ID_KEY] = row[ITEM_KEY][REFERENCE_ID_KEY]
+            multicategory[REFERENCE_ID_KEY] = item_reference_id
+            multicategory[DATASET_ITEM_ID_KEY] = item_dataset_item_id
             annotations[MULTICATEGORY_TYPE].append(
                 MultiCategoryAnnotation.from_json(multicategory)
             )

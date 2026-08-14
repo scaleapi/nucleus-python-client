@@ -13,6 +13,7 @@ from .constants import (
     BOX_TYPE,
     CATEGORY_TYPE,
     CUBOID_TYPE,
+    DATASET_ITEM_ID_KEY,
     DIMENSIONS_KEY,
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
@@ -58,6 +59,9 @@ class Annotation:
     """
 
     reference_id: str
+    # Set on every subclass so callers can read it off the base type. See the note on
+    # BoxAnnotation for why it is server-assigned and excluded from equality.
+    dataset_item_id: Optional[str]
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -160,6 +164,14 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
     embedding_vector: Optional[list] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -181,6 +193,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -281,6 +294,14 @@ class LineAnnotation(Annotation):
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -311,6 +332,7 @@ class LineAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -376,6 +398,14 @@ class PolygonAnnotation(Annotation):
     embedding_vector: Optional[list] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -407,6 +437,7 @@ class PolygonAnnotation(Annotation):
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -519,6 +550,14 @@ class KeypointsAnnotation(Annotation):
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata or {}
@@ -572,6 +611,7 @@ class KeypointsAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -693,6 +733,14 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -710,6 +758,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -846,6 +895,10 @@ class SegmentationAnnotation(Annotation):
     reference_id: str
     annotation_id: Optional[str] = None
     # metadata: Optional[dict] = None # TODO(sc: 422637)
+    # See the note on BoxAnnotation.dataset_item_id — server-assigned, read-only.
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         if not self.mask_url:
@@ -863,6 +916,7 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
@@ -947,6 +1001,14 @@ class CategoryAnnotation(Annotation):
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -960,6 +1022,7 @@ class CategoryAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -987,6 +1050,14 @@ class MultiCategoryAnnotation(Annotation):
     metadata: Optional[Dict] = None
     track_reference_id: Optional[str] = None
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self):
         self.metadata = self.metadata if self.metadata else {}
@@ -1000,6 +1071,7 @@ class MultiCategoryAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:
@@ -1050,6 +1122,14 @@ class SceneCategoryAnnotation(Annotation):
     taxonomy_name: Optional[str] = None
     metadata: Optional[Dict] = field(default_factory=dict)
     _task_id: Optional[str] = field(default=None, repr=False)
+    # Nucleus-internal dataset item id (``di_*``) of the item this object sits on.
+    # Server-assigned and read-only: populated on objects returned by the API, ``None``
+    # on ones you construct locally to upload, and never sent in ``to_payload``.
+    # Excluded from ``__eq__`` so a locally-built object still compares equal to its
+    # round-tripped self (same reason as ``DatasetItem.phash``).
+    dataset_item_id: Optional[str] = field(
+        default=None, repr=False, compare=False
+    )
 
     @classmethod
     def from_json(cls, payload: dict):
@@ -1059,6 +1139,7 @@ class SceneCategoryAnnotation(Annotation):
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             _task_id=payload.get(TASK_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
         )
 
     def to_payload(self) -> dict:

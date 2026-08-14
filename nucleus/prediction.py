@@ -3,6 +3,7 @@ All of the prediction types supported. In general, prediction types are the same
 as annotation types, but come with additional, optional data that can be attached
 such as confidence or probability distributions.
 """
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Type, Union
 
@@ -28,6 +29,7 @@ from .constants import (
     CLASS_PDF_KEY,
     CONFIDENCE_KEY,
     CUBOID_TYPE,
+    DATASET_ITEM_ID_KEY,
     DIMENSIONS_KEY,
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
@@ -129,6 +131,7 @@ class SegmentationPrediction(SegmentationAnnotation):
                 for ann in payload.get(ANNOTATIONS_KEY, [])
             ],
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
@@ -189,6 +192,7 @@ class BoxPrediction(BoxAnnotation):
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
         track_reference_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -197,6 +201,7 @@ class BoxPrediction(BoxAnnotation):
             width=width,
             height=height,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
@@ -224,6 +229,7 @@ class BoxPrediction(BoxAnnotation):
             width=geometry.get(WIDTH_KEY, 0),
             height=geometry.get(HEIGHT_KEY, 0),
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -269,11 +275,13 @@ class LinePrediction(LineAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         track_reference_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
             vertices=vertices,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
             track_reference_id=track_reference_id,
@@ -299,6 +307,7 @@ class LinePrediction(LineAnnotation):
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -347,11 +356,13 @@ class PolygonPrediction(PolygonAnnotation):
         class_pdf: Optional[Dict] = None,
         embedding_vector: Optional[list] = None,
         track_reference_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
             vertices=vertices,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
             embedding_vector=embedding_vector,
@@ -378,6 +389,7 @@ class PolygonPrediction(PolygonAnnotation):
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -428,6 +440,7 @@ class KeypointsPrediction(KeypointsAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         track_reference_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -435,6 +448,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             names=names,
             skeleton=skeleton,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
             track_reference_id=track_reference_id,
@@ -462,6 +476,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             names=geometry[KEYPOINTS_NAMES_KEY],
             skeleton=geometry[KEYPOINTS_SKELETON_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -509,6 +524,7 @@ class CuboidPrediction(CuboidAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         track_reference_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -516,6 +532,7 @@ class CuboidPrediction(CuboidAnnotation):
             dimensions=dimensions,
             yaw=yaw,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
             track_reference_id=track_reference_id,
@@ -541,6 +558,7 @@ class CuboidPrediction(CuboidAnnotation):
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
             yaw=geometry.get(YAW_KEY, 0),
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -580,11 +598,13 @@ class CategoryPrediction(CategoryAnnotation):
         metadata: Optional[Dict] = None,
         class_pdf: Optional[Dict] = None,
         track_reference_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             metadata=metadata,
             track_reference_id=track_reference_id,
         )
@@ -606,6 +626,7 @@ class CategoryPrediction(CategoryAnnotation):
             label=payload.get(LABEL_KEY, 0),
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
@@ -649,11 +670,13 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
         taxonomy_name: Optional[str] = None,
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
+        dataset_item_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
             reference_id=reference_id,
+            dataset_item_id=dataset_item_id,
             metadata=metadata,
         )
         self.confidence = confidence
@@ -671,6 +694,7 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
             label=payload.get(LABEL_KEY, 0),
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload[REFERENCE_ID_KEY],
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )
