@@ -145,8 +145,10 @@ from .constants import (
     MESSAGE_KEY,
     METADATA_KEY,
     METRIC_TYPE_KEY,
+    MODEL_ID_KEY,
     MODEL_IDS_KEY,
     MODEL_RUN_ID_KEY,
+    MODEL_RUN_IDS_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
@@ -525,6 +527,66 @@ class NucleusClient:
         return self.make_request(
             {}, f"modelRun/{model_run_id}", requests.delete
         )
+
+    def merge_model_runs(
+        self,
+        model_run_ids: List[str],
+        name: str,
+        *,
+        model_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Merge several model runs into one new run holding all their predictions.
+
+        A benchmark evaluation names a single model run, and a benchmark's items may
+        span several datasets. A model whose predictions were uploaded as separate runs
+        — one per dataset, or one per inference batch — therefore has no single run
+        covering the benchmark, and every uncovered item scores as a false negative.
+        Merging the runs produces one run that does cover it, which you can then pass to
+        :meth:`create_benchmark_evaluation_v2`.
+
+        The merge is a full union: predictions are copied, never deduplicated. If two
+        source runs predict on the same item with the same ``annotation_id``, the
+        colliding id is rewritten rather than dropped, and the count of rewrites comes
+        back in ``annotation_ids_rewritten``.
+
+        The source runs are left untouched.
+
+        Parameters:
+            model_run_ids: Two or more model run ids (``run_*``) to merge.
+            name: Display name for the merged run.
+            model_id: Model the merged run belongs to (``prj_*``). Defaults to the
+                sources' shared model; required when they belong to different models.
+            metadata: Optional metadata for the merged run. The merge always records
+                ``merged_from_model_run_ids`` alongside whatever you pass.
+
+        Returns:
+            Dict describing the merge::
+
+                {
+                    "model_run_id": str,          # the new run
+                    "source_model_run_ids": List[str],
+                    "dataset_ids": List[str],     # datasets the new run spans
+                    "predictions_copied": int,
+                    "predictions_ignored": int,   # already present in the target
+                    "annotation_ids_rewritten": int,
+                    "errors": List[str],
+                }
+        """
+        if len(set(model_run_ids)) < 2:
+            raise ValueError(
+                "merge_model_runs needs at least two distinct model run ids, got "
+                f"{sorted(set(model_run_ids))}"
+            )
+        payload: Dict[str, Any] = {
+            MODEL_RUN_IDS_KEY: model_run_ids,
+            NAME_KEY: name,
+        }
+        if model_id is not None:
+            payload[MODEL_ID_KEY] = model_id
+        if metadata is not None:
+            payload[METADATA_KEY] = metadata
+        return self.make_request(payload, "modelRun/merge")
 
     def create_dataset_from_project(
         self,
