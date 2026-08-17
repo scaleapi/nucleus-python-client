@@ -220,9 +220,9 @@ from .model_run import ModelRun
 from .model_weights import (
     MODEL_WEIGHTS_MAX_BYTES,
     ModelWeights,
-    ProgressCallback,
     _finalize_payload,
     _presign_payload,
+    _progress_to_bar,
     _stream_weights_to_file,
     _transfer_weights_to_storage,
 )
@@ -1706,7 +1706,7 @@ class NucleusClient:
         content_type: Optional[str] = None,
         original_filename: Optional[str] = None,
         checksum_sha256: Optional[str] = None,
-        on_progress: Optional[ProgressCallback] = None,
+        progress: bool = True,
     ) -> ModelWeights:
         """Attach a weights artifact to a model.
 
@@ -1729,8 +1729,7 @@ class NucleusClient:
             original_filename: Filename to show for the artifact. Defaults to
               the name of the file at ``path``.
             checksum_sha256: Optional SHA-256 of the artifact.
-            on_progress: Called with ``(bytes_uploaded, total_bytes)`` as the
-              upload proceeds.
+            progress: Whether to show a ``tqdm`` progress bar for the upload.
 
         Returns:
             :class:`ModelWeights`: Metadata for the uploaded artifact.
@@ -1760,21 +1759,40 @@ class NucleusClient:
             raise ValueError(
                 "Presign response did not include an uploadId; cannot upload"
             )
-        parts = _transfer_weights_to_storage(
-            path, presign, total_bytes, on_progress
+        progress_bar = (
+            self.tqdm_bar(
+                total=total_bytes,
+                unit="B",
+                unit_scale=True,
+                desc=f"Uploading {filename}",
+            )
+            if progress
+            else None
         )
-        finalized = self.make_request(
-            _finalize_payload(upload_id, parts),
-            f"model/{model_id}/weights/finalize",
-        )
-        return ModelWeights.from_json(finalized, self)
+        try:
+            on_progress = (
+                _progress_to_bar(progress_bar)
+                if progress_bar is not None
+                else None
+            )
+            parts = _transfer_weights_to_storage(
+                path, presign, total_bytes, on_progress
+            )
+            finalized = self.make_request(
+                _finalize_payload(upload_id, parts),
+                f"model/{model_id}/weights/finalize",
+            )
+        finally:
+            if progress_bar is not None:
+                progress_bar.close()
+        return ModelWeights.from_json(finalized)
 
     def download_model_weights(
         self,
         model: Union[Model, str],
         path: str,
         *,
-        on_progress: Optional[ProgressCallback] = None,
+        progress: bool = True,
     ) -> str:
         """Download a model's weights artifact to a local path.
 
@@ -1792,9 +1810,7 @@ class NucleusClient:
             model: A :class:`Model` or a model id (``prj_*``).
             path: Local path to write the artifact to. Parent directories are
               created if needed.
-            on_progress: Called with ``(bytes_downloaded, total_bytes)`` as the
-              download proceeds. ``total_bytes`` is ``0`` when the size isn't
-              known ahead of time.
+            progress: Whether to show a ``tqdm`` progress bar for the download.
 
         Returns:
             str: The path written.
@@ -1816,7 +1832,21 @@ class NucleusClient:
             raise NotFoundError(
                 f"Model {model_id} has no downloadable weights artifact"
             )
-        return _stream_weights_to_file(url, path, on_progress)
+        if not progress:
+            return _stream_weights_to_file(url, path)
+        # The size isn't known until the GET responds, so the bar tracks bytes
+        # without a percentage.
+        progress_bar = self.tqdm_bar(
+            unit="B",
+            unit_scale=True,
+            desc=f"Downloading {os.path.basename(path)}",
+        )
+        try:
+            return _stream_weights_to_file(
+                url, path, _progress_to_bar(progress_bar)
+            )
+        finally:
+            progress_bar.close()
 
     def get_model_weights(self, model: Union[Model, str]) -> ModelWeights:
         """Fetch metadata for a model's weights artifact.
@@ -1832,8 +1862,7 @@ class NucleusClient:
         return ModelWeights.from_json(
             self.make_request(
                 {}, f"model/{model_id}/weights", requests_command=requests.get
-            ),
-            self,
+            )
         )
 
     def delete_model_weights(self, model: Union[Model, str]) -> bool:

@@ -15,13 +15,23 @@ from nucleus.model_weights import (
     CONCURRENT_PART_UPLOADS,
     MAX_INFLIGHT_PART_BYTES,
     MODEL_WEIGHTS_MAX_BYTES,
+    TRANSFER_MAX_ATTEMPTS,
     _finalize_payload,
     _part_upload_workers,
     _presign_payload,
+    _put_bytes,
     _stream_weights_to_file,
     _transfer_weights_to_storage,
     _upload_multipart,
 )
+
+
+@pytest.fixture(autouse=True)
+def _no_backoff_sleep():
+    """Retries use exponential backoff — skip the real waits in tests."""
+    with patch("nucleus.model_weights.time.sleep"):
+        yield
+
 
 _WEIGHTS_DTO = {
     "modelProjectId": "prj_1",
@@ -101,6 +111,14 @@ def _ok_put(etag='"abc"'):
     response = MagicMock()
     response.ok = True
     response.headers = {"ETag": etag}
+    return response
+
+
+def _err_put(status=503):
+    response = MagicMock()
+    response.ok = False
+    response.status_code = status
+    response.text = "error"
     return response
 
 
@@ -503,7 +521,9 @@ def test_download_model_weights_resolves_signed_url(tmp_path):
     with patch(
         "nucleus._stream_weights_to_file", return_value=str(target)
     ) as mock_stream:
-        written = client.download_model_weights("prj_1", str(target))
+        written = client.download_model_weights(
+            "prj_1", str(target), progress=False
+        )
 
     assert written == str(target)
     assert (
@@ -512,7 +532,7 @@ def test_download_model_weights_resolves_signed_url(tmp_path):
     )
     assert client.make_request.call_args[1]["requests_command"] is requests.get
     mock_stream.assert_called_once_with(
-        "https://s3.example/signed-get", str(target), None
+        "https://s3.example/signed-get", str(target)
     )
 
 
@@ -562,12 +582,12 @@ def test_model_weights_helpers_delegate_to_client():
         content_type="application/zip",
         original_filename=None,
         checksum_sha256=None,
-        on_progress=None,
+        progress=True,
     )
 
     model.download_weights("/tmp/out.bin")
     client.download_model_weights.assert_called_once_with(
-        model, "/tmp/out.bin", on_progress=None
+        model, "/tmp/out.bin", progress=True
     )
 
     model.weights()
@@ -713,3 +733,144 @@ def test_upload_model_weights_multipart_finalize_payload(tmp_path):
             {"partNumber": 2, "eTag": "etag-x"},
         ],
     }
+
+
+# --------------------------------------------------------------------------- #
+# Transient-failure retries
+# --------------------------------------------------------------------------- #
+def test_put_bytes_retries_transient_5xx_then_succeeds():
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.side_effect = [
+            _err_put(503),
+            _err_put(500),
+            _ok_put('"etag-x"'),
+        ]
+        etag = _put_bytes("https://s3.example/put", b"data")
+
+    assert etag == "etag-x"
+    assert mock_put.call_count == 3
+
+
+def test_put_bytes_retries_network_error():
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.side_effect = [
+            requests.exceptions.ConnectionError("reset"),
+            _ok_put('"etag-x"'),
+        ]
+        etag = _put_bytes("https://s3.example/put", b"data")
+
+    assert etag == "etag-x"
+    assert mock_put.call_count == 2
+
+
+def test_put_bytes_gives_up_after_max_attempts():
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _err_put(503)
+        with pytest.raises(RuntimeError, match="503"):
+            _put_bytes("https://s3.example/put", b"data")
+
+    assert mock_put.call_count == TRANSFER_MAX_ATTEMPTS
+
+
+def test_put_bytes_does_not_retry_client_error():
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _err_put(403)
+        with pytest.raises(RuntimeError, match="403"):
+            _put_bytes("https://s3.example/put", b"data")
+
+    # A 403 (e.g. a bad signature) won't fix itself, so don't waste retries.
+    assert mock_put.call_count == 1
+
+
+def test_single_put_reseeks_file_between_retries(tmp_path):
+    """A retried single PUT rewinds the handle so it re-sends the full body."""
+    path = tmp_path / "w.bin"
+    path.write_bytes(bytes(range(32)))
+    bodies = []
+
+    def fake_put(url, data=None, headers=None, timeout=None):
+        bodies.append(data.read())
+        return _err_put(503) if len(bodies) == 1 else _ok_put()
+
+    with patch("nucleus.model_weights.requests.put", side_effect=fake_put):
+        _transfer_weights_to_storage(
+            str(path),
+            {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
+            32,
+            on_progress=lambda *_: None,
+        )
+
+    assert len(bodies) == 2
+    assert bodies[1] == bytes(range(32))
+
+
+def test_download_retries_then_succeeds(tmp_path):
+    target = tmp_path / "out.bin"
+    bad = MagicMock()
+    bad.ok = False
+    bad.status_code = 503
+    bad.__enter__ = lambda self: self
+    bad.__exit__ = lambda *args: False
+
+    good = MagicMock()
+    good.ok = True
+    good.headers = {"Content-Length": "6"}
+    good.iter_content.return_value = [b"abc", b"def"]
+    good.__enter__ = lambda self: self
+    good.__exit__ = lambda *args: False
+
+    with patch(
+        "nucleus.model_weights.requests.get", side_effect=[bad, good]
+    ) as mock_get:
+        written = _stream_weights_to_file(
+            "https://s3.example/signed-get", str(target)
+        )
+
+    assert written == str(target)
+    assert target.read_bytes() == b"abcdef"
+    assert mock_get.call_count == 2
+
+
+# --------------------------------------------------------------------------- #
+# tqdm progress bar
+# --------------------------------------------------------------------------- #
+def test_upload_model_weights_shows_a_progress_bar(tmp_path):
+    path = tmp_path / "weights.bin"
+    path.write_bytes(b"x" * 16)
+    client = _client()
+    client.make_request = MagicMock(
+        side_effect=[
+            {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
+            _WEIGHTS_DTO,
+        ]
+    )
+    bar = MagicMock()
+    bar.n = 0
+    client.tqdm_bar = MagicMock(return_value=bar)
+
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _ok_put()
+        client.upload_model_weights("prj_1", str(path))
+
+    client.tqdm_bar.assert_called_once()
+    assert bar.update.called
+    bar.close.assert_called_once()
+
+
+def test_upload_model_weights_skips_progress_bar_when_disabled(tmp_path):
+    path = tmp_path / "weights.bin"
+    path.write_bytes(b"x" * 16)
+    client = _client()
+    client.make_request = MagicMock(
+        side_effect=[
+            {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
+            _WEIGHTS_DTO,
+        ]
+    )
+    client.tqdm_bar = MagicMock()
+
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _ok_put()
+        client.upload_model_weights("prj_1", str(path), progress=False)
+
+    client.tqdm_bar.assert_not_called()
