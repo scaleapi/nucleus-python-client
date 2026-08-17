@@ -12,6 +12,7 @@ from .constants import (
 )
 from .dataset import Dataset
 from .model_run import ModelRun
+from .model_weights import ModelWeights
 from .prediction import (
     BoxPrediction,
     CuboidPrediction,
@@ -343,3 +344,55 @@ class Model:
             )
 
         return response.json()
+
+    def upload_weights(
+        self,
+        path: str,
+        *,
+        content_type: Optional[str] = None,
+        original_filename: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        progress: bool = True,
+    ) -> ModelWeights:
+        """Attach a weights artifact to this model. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.get_model(reference_id="My-CNN")
+
+            model.upload_weights("/path/to/weights.bin")
+
+        See :meth:`NucleusClient.upload_model_weights` for the accepted keyword
+        arguments.
+        """
+        return self._client.upload_model_weights(
+            self,
+            path,
+            content_type=content_type,
+            original_filename=original_filename,
+            checksum_sha256=checksum_sha256,
+            progress=progress,
+        )
+
+    def download_weights(self, path: str, *, progress: bool = True) -> str:
+        """Download this model's weights artifact to ``path``.
+
+        See :meth:`NucleusClient.download_model_weights`.
+        """
+        return self._client.download_model_weights(
+            self, path, progress=progress
+        )
+
+    def weights(self) -> ModelWeights:
+        """Fetch metadata for this model's weights artifact.
+
+        See :meth:`NucleusClient.get_model_weights`.
+        """
+        return self._client.get_model_weights(self)
+
+    def delete_weights(self) -> bool:
+        """Delete this model's weights artifact.
+
+        See :meth:`NucleusClient.delete_model_weights`.
+        """
+        return self._client.delete_model_weights(self)

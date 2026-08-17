@@ -5,6 +5,12 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-13
+
+### Added
+- **Model weights.** Attach a raw weights artifact (any binary, no format constraints) to a model and fetch it back: `NucleusClient.upload_model_weights(model, path)`, `download_model_weights(model, path)`, `get_model_weights(model)`, and `delete_model_weights(model)`, plus `Model.upload_weights()` / `download_weights()` / `weights()` / `delete_weights()` and the new `ModelWeights` metadata type (`present`, `status`, `size_bytes`, `original_filename`, `content_type`, `download_url`). Artifacts up to 10 GB are supported; uploading requires edit access on the model, downloading is available to anyone who can see it.
+- Large artifacts are handled without any extra work on the caller's part: transfers stream directly to/from storage, show a `tqdm` progress bar by default (pass `progress=False` to silence it), and automatically retry transient storage failures (network blips, 429s, 5xx) with exponential backoff.
+
 ## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
 
 ### Added
