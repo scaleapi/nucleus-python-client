@@ -1736,6 +1736,12 @@ class NucleusClient:
             :class:`ModelWeights`: Metadata for the uploaded artifact.
         """
         model_id = model.id if isinstance(model, Model) else model
+        path = os.path.expanduser(path)
+        filename = (
+            original_filename
+            if original_filename is not None
+            else os.path.basename(path)
+        )
         total_bytes = os.path.getsize(path)
         if total_bytes > MODEL_WEIGHTS_MAX_BYTES:
             raise ValueError(
@@ -1745,20 +1751,20 @@ class NucleusClient:
 
         presign = self.make_request(
             _presign_payload(
-                total_bytes,
-                content_type,
-                original_filename
-                if original_filename is not None
-                else os.path.basename(path),
-                checksum_sha256,
+                total_bytes, content_type, filename, checksum_sha256
             ),
             f"model/{model_id}/weights/presign",
         )
+        upload_id = presign.get(UPLOAD_ID_KEY)
+        if not upload_id:
+            raise ValueError(
+                "Presign response did not include an uploadId; cannot upload"
+            )
         parts = _transfer_weights_to_storage(
             path, presign, total_bytes, on_progress
         )
         finalized = self.make_request(
-            _finalize_payload(presign[UPLOAD_ID_KEY], parts),
+            _finalize_payload(upload_id, parts),
             f"model/{model_id}/weights/finalize",
         )
         return ModelWeights.from_json(finalized, self)
@@ -1794,9 +1800,10 @@ class NucleusClient:
             str: The path written.
 
         Raises:
-            ValueError: If the model has no weights artifact to download.
+            NotFoundError: If the model has no weights artifact to download.
         """
         model_id = model.id if isinstance(model, Model) else model
+        path = os.path.expanduser(path)
         # Ask for the URL as JSON rather than following the redirect, so the
         # API credentials aren't replayed to the download host.
         signed = self.make_request(
@@ -1806,7 +1813,7 @@ class NucleusClient:
         )
         url = signed.get(URL_KEY)
         if not url:
-            raise ValueError(
+            raise NotFoundError(
                 f"Model {model_id} has no downloadable weights artifact"
             )
         return _stream_weights_to_file(url, path, on_progress)

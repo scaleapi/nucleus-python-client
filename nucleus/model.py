@@ -12,7 +12,7 @@ from .constants import (
 )
 from .dataset import Dataset
 from .model_run import ModelRun
-from .model_weights import ModelWeights
+from .model_weights import ModelWeights, ProgressCallback
 from .prediction import (
     BoxPrediction,
     CuboidPrediction,
@@ -345,7 +345,15 @@ class Model:
 
         return response.json()
 
-    def upload_weights(self, path: str, **kwargs) -> "ModelWeights":
+    def upload_weights(
+        self,
+        path: str,
+        *,
+        content_type: Optional[str] = None,
+        original_filename: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        on_progress: Optional[ProgressCallback] = None,
+    ) -> ModelWeights:
         """Attach a weights artifact to this model. ::
 
             import nucleus
@@ -357,16 +365,27 @@ class Model:
         See :meth:`NucleusClient.upload_model_weights` for the accepted keyword
         arguments.
         """
-        return self._client.upload_model_weights(self, path, **kwargs)
+        return self._client.upload_model_weights(
+            self,
+            path,
+            content_type=content_type,
+            original_filename=original_filename,
+            checksum_sha256=checksum_sha256,
+            on_progress=on_progress,
+        )
 
-    def download_weights(self, path: str, **kwargs) -> str:
+    def download_weights(
+        self, path: str, *, on_progress: Optional[ProgressCallback] = None
+    ) -> str:
         """Download this model's weights artifact to ``path``.
 
         See :meth:`NucleusClient.download_model_weights`.
         """
-        return self._client.download_model_weights(self, path, **kwargs)
+        return self._client.download_model_weights(
+            self, path, on_progress=on_progress
+        )
 
-    def weights(self) -> "ModelWeights":
+    def weights(self) -> ModelWeights:
         """Fetch metadata for this model's weights artifact.
 
         See :meth:`NucleusClient.get_model_weights`.

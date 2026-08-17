@@ -10,6 +10,7 @@ import pytest
 import requests
 
 from nucleus import Model, ModelWeights, NucleusClient
+from nucleus.errors import NotFoundError
 from nucleus.model_weights import (
     CONCURRENT_PART_UPLOADS,
     MAX_INFLIGHT_PART_BYTES,
@@ -125,7 +126,7 @@ def test_transfer_single_put_sends_required_headers(tmp_path):
 
 def test_transfer_multipart_uploads_each_part_without_headers(tmp_path):
     path = tmp_path / "w.bin"
-    path.write_bytes(b"ab" * 16)  # 32 bytes, 2 parts of 16
+    path.write_bytes(bytes(range(32)))  # 32 distinct bytes, 2 parts of 16
     presign = {
         "uploadId": "up_1",
         "uploadUrl": None,
@@ -145,6 +146,12 @@ def test_transfer_multipart_uploads_each_part_without_headers(tmp_path):
         {"partNumber": 2, "eTag": "etag-x"},
     ]
     assert mock_put.call_count == 2
+    # Each part carries its own slice of the file at the right offset.
+    sent = {
+        call.args[0]: call.kwargs["data"] for call in mock_put.call_args_list
+    }
+    assert sent["https://s3.example/p1"] == bytes(range(0, 16))
+    assert sent["https://s3.example/p2"] == bytes(range(16, 32))
     # Part PUTs are signed without the Content-Type condition — sending
     # requiredHeaders on them makes S3 reject the signature.
     for _, kwargs in mock_put.call_args_list:
@@ -512,7 +519,7 @@ def test_download_model_weights_resolves_signed_url(tmp_path):
 def test_download_model_weights_raises_without_url(tmp_path):
     client = _client()
     client.make_request = MagicMock(return_value={})
-    with pytest.raises(ValueError, match="no downloadable weights"):
+    with pytest.raises(NotFoundError, match="no downloadable weights"):
         client.download_model_weights("prj_1", str(tmp_path / "out.bin"))
 
 
@@ -550,12 +557,17 @@ def test_model_weights_helpers_delegate_to_client():
 
     model.upload_weights("/tmp/w.bin", content_type="application/zip")
     client.upload_model_weights.assert_called_once_with(
-        model, "/tmp/w.bin", content_type="application/zip"
+        model,
+        "/tmp/w.bin",
+        content_type="application/zip",
+        original_filename=None,
+        checksum_sha256=None,
+        on_progress=None,
     )
 
     model.download_weights("/tmp/out.bin")
     client.download_model_weights.assert_called_once_with(
-        model, "/tmp/out.bin"
+        model, "/tmp/out.bin", on_progress=None
     )
 
     model.weights()
@@ -581,3 +593,123 @@ def test_upload_uses_basename_when_original_filename_unset(tmp_path):
 
     payload = client.make_request.call_args_list[0][0][0]
     assert payload["originalFilename"] == os.path.basename(str(path))
+
+
+# --------------------------------------------------------------------------- #
+# Multipart edge cases
+# --------------------------------------------------------------------------- #
+def test_transfer_multipart_sends_short_final_part(tmp_path):
+    """A file that doesn't divide evenly still sends a correct 1-byte tail."""
+    path = tmp_path / "w.bin"
+    path.write_bytes(bytes(range(33)))  # 33 bytes, part size 16 -> 16/16/1
+    presign = {
+        "uploadId": "up_1",
+        "uploadUrl": None,
+        "partSizeBytes": 16,
+        "parts": [
+            {"partNumber": n, "url": f"https://s3.example/p{n}"}
+            for n in range(1, 4)
+        ],
+    }
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _ok_put('"etag-x"')
+        parts = _transfer_weights_to_storage(str(path), presign, 33)
+
+    assert [p["partNumber"] for p in parts] == [1, 2, 3]
+    sent = {
+        call.args[0]: call.kwargs["data"] for call in mock_put.call_args_list
+    }
+    assert sent["https://s3.example/p1"] == bytes(range(0, 16))
+    assert sent["https://s3.example/p2"] == bytes(range(16, 32))
+    assert sent["https://s3.example/p3"] == bytes([32])
+
+
+def test_transfer_multipart_propagates_part_failure_across_many_parts(
+    tmp_path,
+):
+    """One part missing its ETag aborts a genuinely concurrent upload."""
+    path = tmp_path / "w.bin"
+    path.write_bytes(b"a" * 64)  # 8 parts of 8
+
+    def put(url, data=None, headers=None, timeout=None):
+        # The 5th part comes back without an ETag; the rest succeed.
+        return _ok_put("" if url.endswith("/p5") else '"etag-x"')
+
+    presign = {
+        "uploadId": "up_1",
+        "uploadUrl": None,
+        "partSizeBytes": 8,
+        "parts": [
+            {"partNumber": n, "url": f"https://s3.example/p{n}"}
+            for n in range(1, 9)
+        ],
+    }
+    with (
+        patch("nucleus.model_weights.requests.put", side_effect=put),
+        pytest.raises(RuntimeError, match="did not return an ETag"),
+    ):
+        _transfer_weights_to_storage(str(path), presign, 64)
+
+
+def test_multipart_propagates_a_raising_progress_callback(tmp_path):
+    """A callback that raises surfaces the error without deadlocking.
+
+    ``on_progress`` runs inside the counter's lock; the ``with`` block must
+    still release it on the way out or the pool would hang instead of draining.
+    """
+    path = tmp_path / "w.bin"
+    path.write_bytes(b"a" * 32)
+    presign = {
+        "uploadId": "up_1",
+        "uploadUrl": None,
+        "partSizeBytes": 8,
+        "parts": [
+            {"partNumber": n, "url": f"https://s3.example/p{n}"}
+            for n in range(1, 5)
+        ],
+    }
+
+    def boom(sent, total):  # pylint: disable=unused-argument
+        raise ValueError("callback blew up")
+
+    with (
+        patch("nucleus.model_weights.requests.put") as mock_put,
+        pytest.raises(ValueError, match="callback blew up"),
+    ):
+        mock_put.return_value = _ok_put('"etag-x"')
+        _transfer_weights_to_storage(str(path), presign, 32, on_progress=boom)
+
+
+def test_upload_model_weights_multipart_finalize_payload(tmp_path):
+    """The client path sends finalize an ordered parts list, even when the
+    presign response lists the parts out of order."""
+    path = tmp_path / "weights.bin"
+    path.write_bytes(bytes(range(32)))  # 2 parts of 16
+    client = _client()
+    client.make_request = MagicMock(
+        side_effect=[
+            {
+                "uploadId": "up_1",
+                "uploadUrl": None,
+                "partSizeBytes": 16,
+                "parts": [
+                    {"partNumber": 2, "url": "https://s3.example/p2"},
+                    {"partNumber": 1, "url": "https://s3.example/p1"},
+                ],
+            },
+            _WEIGHTS_DTO,
+        ]
+    )
+    with patch("nucleus.model_weights.requests.put") as mock_put:
+        mock_put.return_value = _ok_put('"etag-x"')
+        client.upload_model_weights("prj_1", str(path))
+
+    finalize_call = client.make_request.call_args_list[1]
+    assert finalize_call[0][1] == "model/prj_1/weights/finalize"
+    assert finalize_call[0][0] == {
+        "uploadId": "up_1",
+        "parts": [
+            {"partNumber": 1, "eTag": "etag-x"},
+            {"partNumber": 2, "eTag": "etag-x"},
+        ],
+    }

@@ -312,6 +312,14 @@ def _stream_weights_to_file(
                     transferred += len(chunk)
                     if on_progress is not None:
                         on_progress(transferred, total_bytes)
+            # A stream can end short of Content-Length without raising (e.g. a
+            # dropped connection), which would otherwise promote a truncated
+            # artifact to `path`. Only checkable when the length was advertised.
+            if total_bytes and transferred != total_bytes:
+                raise RuntimeError(
+                    f"Download incomplete: received {transferred} of "
+                    f"{total_bytes} bytes"
+                )
             # Same directory, so this is an atomic replace.
             os.replace(partial_path, path)
         except BaseException:
