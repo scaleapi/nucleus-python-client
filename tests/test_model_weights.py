@@ -229,9 +229,9 @@ def test_transfer_reports_progress(tmp_path):
             str(path),
             {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
             32,
-            on_progress=lambda sent, total: seen.append((sent, total)),
+            on_progress=seen.append,
         )
-    assert seen == [(32, 32)]
+    assert seen == [32]
 
 
 def test_transfer_single_put_reports_progress_while_the_body_is_read(tmp_path):
@@ -254,12 +254,12 @@ def test_transfer_single_put_reports_progress_while_the_body_is_read(tmp_path):
             str(path),
             {"uploadId": "up_1", "uploadUrl": "https://s3.example/put"},
             32,
-            on_progress=lambda sent, total: seen.append((sent, total)),
+            on_progress=seen.append,
         )
 
     assert sized == [32]
     # Four 8-byte reads, then the final completion call.
-    assert seen == [(8, 32), (16, 32), (24, 32), (32, 32), (32, 32)]
+    assert seen == [8, 16, 24, 32, 32]
 
 
 def test_transfer_multipart_progress_totals_every_part(tmp_path):
@@ -278,17 +278,13 @@ def test_transfer_multipart_progress_totals_every_part(tmp_path):
     with patch("nucleus.model_weights.requests.put") as mock_put:
         mock_put.return_value = _ok_put('"etag-x"')
         _transfer_weights_to_storage(
-            str(path),
-            presign,
-            32,
-            on_progress=lambda sent, total: seen.append((sent, total)),
+            str(path), presign, 32, on_progress=seen.append
         )
 
     # Parts upload concurrently, so the delivery order of the four callbacks is
     # not fixed — but the counter behind them is locked, so each part is counted
     # exactly once and the byte counts are the four distinct running totals.
-    assert sorted(sent for sent, _ in seen) == [8, 16, 24, 32]
-    assert all(total == 32 for _, total in seen)
+    assert sorted(seen) == [8, 16, 24, 32]
 
 
 # --------------------------------------------------------------------------- #
@@ -410,7 +406,7 @@ def test_multipart_progress_callbacks_never_overlap_or_go_backwards():
     values = []
     in_callback = threading.Event()
 
-    def on_progress(transferred, total):  # pylint: disable=unused-argument
+    def on_progress(transferred):
         if in_callback.is_set():
             overlaps.append(transferred)
         in_callback.set()
@@ -689,7 +685,7 @@ def test_multipart_propagates_a_raising_progress_callback(tmp_path):
         ],
     }
 
-    def boom(sent, total):  # pylint: disable=unused-argument
+    def boom(sent):  # pylint: disable=unused-argument
         raise ValueError("callback blew up")
 
     with (

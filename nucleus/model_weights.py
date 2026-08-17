@@ -61,8 +61,8 @@ TRANSFER_TIMEOUT_SEC = 60 * 60
 TRANSFER_MAX_ATTEMPTS = 5
 TRANSFER_BACKOFF_BASE_SEC = 0.5
 
-#: Called with ``(bytes_transferred, total_bytes)`` as a transfer progresses.
-ProgressCallback = Callable[[int, int], None]
+#: Called with the cumulative ``bytes_transferred`` as a transfer progresses.
+ProgressCallback = Callable[[int], None]
 
 
 @dataclass
@@ -189,13 +189,9 @@ def _put_bytes(
 
 
 def _progress_to_bar(progress_bar: Any) -> ProgressCallback:
-    """Adapt the cumulative ``(transferred, total)`` callback to a tqdm bar.
+    """Adapt the cumulative-bytes callback to a tqdm bar."""
 
-    ``total`` is part of the :data:`ProgressCallback` contract but unused here
-    (the bar already knows its total), so it's named ``_total``.
-    """
-
-    def update(transferred: int, _total: int) -> None:
+    def update(transferred: int) -> None:
         progress_bar.update(transferred - progress_bar.n)
 
     return update
@@ -231,9 +227,7 @@ class _ProgressReader:
         chunk = self._handle.read(size)
         if chunk:
             self._transferred += len(chunk)
-            self._on_progress(
-                min(self._transferred, self._total_bytes), self._total_bytes
-            )
+            self._on_progress(min(self._transferred, self._total_bytes))
         return chunk
 
 
@@ -263,7 +257,7 @@ def _upload_single(
 
         _put_bytes(upload_url, body, headers, reset=reset)
     if on_progress is not None:
-        on_progress(total_bytes, total_bytes)
+        on_progress(total_bytes)
 
 
 def _part_upload_workers(part_count: int, part_size_bytes: int) -> int:
@@ -308,7 +302,7 @@ def _upload_multipart(
         with progress_lock:
             transferred += len(chunk)
             if on_progress is not None:
-                on_progress(min(transferred, total_bytes), total_bytes)
+                on_progress(min(transferred, total_bytes))
         return {PART_NUMBER_KEY: part_number, ETAG_KEY: etag}
 
     with ThreadPoolExecutor(
@@ -383,7 +377,7 @@ def _download_to_handle(
                 handle.write(chunk)
                 transferred += len(chunk)
                 if on_progress is not None:
-                    on_progress(transferred, total_bytes)
+                    on_progress(transferred)
         except requests.exceptions.RequestException as exc:
             raise _RetryableTransferError() from exc
         # A stream can end short of Content-Length without raising (e.g. a
