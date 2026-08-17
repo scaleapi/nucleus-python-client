@@ -189,10 +189,13 @@ def _put_bytes(
 
 
 def _progress_to_bar(progress_bar: Any) -> ProgressCallback:
-    """Adapt the cumulative ``(transferred, total)`` callback to a tqdm bar."""
+    """Adapt the cumulative ``(transferred, total)`` callback to a tqdm bar.
 
-    def update(transferred: int, total: int) -> None:
-        # pylint: disable=unused-argument
+    ``total`` is part of the :data:`ProgressCallback` contract but unused here
+    (the bar already knows its total), so it's named ``_total``.
+    """
+
+    def update(transferred: int, _total: int) -> None:
         progress_bar.update(transferred - progress_bar.n)
 
     return update
