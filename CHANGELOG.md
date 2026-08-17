@@ -5,6 +5,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-17
+
+### Added
+- **Benchmark versioning / lineage.** `create_benchmark()` accepts `parent_benchmark_id` to create a new **version** downstream of an existing benchmark: the child inherits the parent's items, the source arguments add on top, and `removed_item_ids` prune inherited items (`parent ∪ added ∖ removed`). Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor` (must exceed the parent's). `Benchmark` now exposes `parent_benchmark_id`, `version_major`, `version_minor`, and `version_label`.
+- **Draft benchmarks.** `create_benchmark(..., draft=True)` creates a mutable draft (sources optional). Add items across many calls with `Benchmark.add_items()` / `NucleusClient.add_benchmark_items()` (async, same sources as create), remove with `Benchmark.remove_items()` / `NucleusClient.remove_benchmark_items()`, then freeze with `Benchmark.finalize()` / `NucleusClient.finalize_benchmark()`. A draft cannot be evaluated until finalized; a finalized benchmark is immutable (make a new version instead).
+
+### Changed
+- `Benchmark.status` can now be `"draft"` (in addition to `"building"` / `"ready"` / `"failed"`). A draft benchmark cannot be evaluated until finalized.
+
 ## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
 
 ### Added

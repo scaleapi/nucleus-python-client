@@ -114,6 +114,7 @@ from .constants import (
     AUTOTAGS_KEY,
     BENCHMARK_ID_KEY,
     BENCHMARK_IDS_KEY,
+    BUMP_TYPE_KEY,
     COLLAPSE_KEY,
     CONFIDENCE_THRESHOLD_KEY,
     DATASET_ID_KEY,
@@ -122,6 +123,7 @@ from .constants import (
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
     DESCRIPTION_KEY,
+    DRAFT_KEY,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
     ERROR_ITEMS,
@@ -151,11 +153,14 @@ from .constants import (
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     NUCLEUS_ENDPOINT,
+    PARENT_BENCHMARK_ID_KEY,
     POINTS_KEY,
     PREDICTIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
     REFERENCE_IDS_KEY,
+    REMOVED_ITEM_IDS_KEY,
     ROLLUP_GROUPS_CAMEL_KEY,
+    SCENE_IDS_KEY,
     SCOPE_KEY,
     SLICE_ID_KEY,
     SLICE_IDS_KEY,
@@ -163,6 +168,9 @@ from .constants import (
     STATUS_CODE_KEY,
     TOP_N_KEY,
     UPDATE_KEY,
+    VERSION_LABEL_KEY,
+    VERSION_MAJOR_KEY,
+    VERSION_MINOR_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -1102,6 +1110,13 @@ class NucleusClient:
         dataset_id: Optional[str] = None,
         slice_ids: Optional[List[str]] = None,
         dataset_ids: Optional[List[str]] = None,
+        parent_benchmark_id: Optional[str] = None,
+        bump_type: Optional[str] = None,
+        version_major: Optional[int] = None,
+        version_minor: Optional[int] = None,
+        version_label: Optional[str] = None,
+        removed_item_ids: Optional[List[str]] = None,
+        draft: bool = False,
         wait_for_completion: bool = True,
         verbose: bool = True,
     ) -> Benchmark:
@@ -1121,6 +1136,22 @@ class NucleusClient:
         to return immediately with a ``"building"`` benchmark you can poll via
         :meth:`Benchmark.refresh` (checking ``benchmark.status``).
 
+        **Versioning.** Pass ``parent_benchmark_id`` to create a new *version*
+        downstream of an existing benchmark: the child inherits the parent's
+        items, the source arguments **add** on top, and ``removed_item_ids``
+        **prune** inherited items (``final set = parent ∪ added ∖ removed``).
+        The version defaults to a minor bump; pass ``bump_type="major"`` for a
+        major bump, or an explicit ``version_major`` + ``version_minor`` (which
+        must exceed the parent's). ``parent_benchmark_id`` alone is a valid
+        source (a pure re-version). Lineage is immutable — a parent is fixed at
+        creation.
+
+        **Drafts.** Pass ``draft=True`` to create a mutable draft instead of
+        building in one shot. Sources are then optional (an empty draft is
+        valid); add items later with :meth:`Benchmark.add_items`, remove with
+        :meth:`Benchmark.remove_items`, then :meth:`Benchmark.finalize`. A draft
+        cannot be evaluated until finalized.
+
         Parameters:
             name: Benchmark display name.
             description: Optional description.
@@ -1131,14 +1162,27 @@ class NucleusClient:
             dataset_id: Dataset id (``ds_*``) whose items become members.
             slice_ids: Multiple slice ids whose items become members.
             dataset_ids: Multiple dataset ids whose items become members.
-            wait_for_completion: Block until the build job finishes and return
-                the ready benchmark (default). If ``False``, return the
-                ``"building"`` benchmark immediately.
+            parent_benchmark_id: Create as a new version downstream of this
+                benchmark, inheriting its items.
+            bump_type: ``"minor"`` (default) or ``"major"`` version bump
+                relative to the parent. Ignored without ``parent_benchmark_id``.
+            version_major: Explicit major version (with ``version_minor``); must
+                exceed the parent's version.
+            version_minor: Explicit minor version (with ``version_major``).
+            version_label: Optional human-readable version label.
+            removed_item_ids: Inherited item ids (``di_*``) to prune from the
+                parent's set. Only valid with ``parent_benchmark_id``.
+            draft: Create a mutable draft (sources optional) instead of a
+                one-shot build.
+            wait_for_completion: Block until the build/seed job finishes and
+                return the resulting benchmark (default). If ``False``, return
+                immediately. Ignored for an empty draft (no job is started).
             verbose: Log build-job polling progress while waiting.
 
         Returns:
-            :class:`Benchmark`: The created benchmark — ``"ready"`` when
-            ``wait_for_completion`` is ``True``, otherwise ``"building"``.
+            :class:`Benchmark`: The created benchmark — ``"ready"`` for a
+            completed one-shot build, ``"draft"`` for a draft, otherwise
+            ``"building"``.
         """
         has_source = any(
             source
@@ -1149,12 +1193,21 @@ class NucleusClient:
                 dataset_id,
                 slice_ids,
                 dataset_ids,
+                parent_benchmark_id,
             )
         )
-        if not has_source:
+        # A draft may start empty (items added later); a version inherits from
+        # its parent. Otherwise at least one explicit source is required.
+        if not has_source and not draft:
             raise ValueError(
-                "Provide at least one of item_ids, items, slice_id(s), or "
-                "dataset_id(s) to define benchmark membership"
+                "Provide at least one of item_ids, items, slice_id(s), "
+                "dataset_id(s), or parent_benchmark_id to define benchmark "
+                "membership (or pass draft=True to start an empty draft)"
+            )
+        if removed_item_ids is not None and parent_benchmark_id is None:
+            raise ValueError(
+                "removed_item_ids is only valid together with "
+                "parent_benchmark_id"
             )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if description is not None:
@@ -1173,21 +1226,36 @@ class NucleusClient:
             payload[SLICE_IDS_KEY] = slice_ids
         if dataset_ids is not None:
             payload[DATASET_IDS_KEY] = dataset_ids
+        if parent_benchmark_id is not None:
+            payload[PARENT_BENCHMARK_ID_KEY] = parent_benchmark_id
+        if bump_type is not None:
+            payload[BUMP_TYPE_KEY] = bump_type
+        if version_major is not None:
+            payload[VERSION_MAJOR_KEY] = version_major
+        if version_minor is not None:
+            payload[VERSION_MINOR_KEY] = version_minor
+        if version_label is not None:
+            payload[VERSION_LABEL_KEY] = version_label
+        if removed_item_ids is not None:
+            payload[REMOVED_ITEM_IDS_KEY] = removed_item_ids
+        if draft:
+            payload[DRAFT_KEY] = True
 
         # Async: the server responds 202 with {benchmark_id, job_id}. The
-        # benchmark row already exists (in 'building' state); the build job
-        # streams members in and flips it to 'ready' (or 'failed').
+        # benchmark row already exists (in 'building', or 'draft'); the build /
+        # seed job streams members in. An empty draft starts no job, so job_id
+        # may be null there.
         response = self.post(payload, "benchmarks")
         benchmark_id = response[BENCHMARK_ID_KEY]
         job_id = response.get(JOB_ID_KEY)
-        if wait_for_completion:
-            if job_id is None:
-                raise ValueError(
-                    "Server did not return a job_id in the create-benchmark "
-                    "response; cannot poll for completion. Pass "
-                    "wait_for_completion=False to suppress this error."
-                )
+        if wait_for_completion and job_id is not None:
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+        elif wait_for_completion and job_id is None and not draft:
+            raise ValueError(
+                "Server did not return a job_id in the create-benchmark "
+                "response; cannot poll for completion. Pass "
+                "wait_for_completion=False to suppress this error."
+            )
 
         return self.get_benchmark(benchmark_id)
 
@@ -1288,6 +1356,123 @@ class NucleusClient:
             route = f"{route}?{'&'.join(params)}"
         data = self.get(route)
         return BenchmarkItemsPage.parse_obj(data)
+
+    def add_benchmark_items(
+        self,
+        benchmark_id: str,
+        *,
+        item_ids: Optional[List[str]] = None,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        scene_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
+    ) -> None:
+        """Add items to a **draft** benchmark.
+
+        Only valid while the benchmark is a draft (``status == "draft"``); a
+        finalized benchmark is immutable (409 otherwise). Accepts the same
+        sources as :meth:`create_benchmark`; members are unioned/de-duplicated
+        and items without ground truth are skipped.
+
+        Like create, this is **asynchronous**: the server streams the sources in
+        via a background job. By default this blocks until the job finishes.
+
+        Parameters:
+            benchmark_id: Draft benchmark id (``bm_*``).
+            item_ids: Global dataset item ids (``di_*``).
+            items: ``{"dataset_id": ..., "ref_id": ...}`` pairs.
+            slice_id: Slice id whose items are added.
+            dataset_id: Dataset id whose items are added.
+            slice_ids: Multiple slice ids whose items are added.
+            dataset_ids: Multiple dataset ids whose items are added.
+            scene_ids: Scene ids (``scn_*``) whose items are added.
+            wait_for_completion: Block until the add job finishes (default).
+            verbose: Log add-job polling progress while waiting.
+        """
+        has_source = any(
+            source
+            for source in (
+                item_ids,
+                items,
+                slice_id,
+                dataset_id,
+                slice_ids,
+                dataset_ids,
+                scene_ids,
+            )
+        )
+        if not has_source:
+            raise ValueError(
+                "Provide at least one of item_ids, items, slice_id(s), "
+                "dataset_id(s), or scene_ids to add"
+            )
+        payload: Dict[str, Any] = {}
+        if item_ids is not None:
+            payload[ITEM_IDS_KEY] = item_ids
+        if items is not None:
+            payload[ITEMS_KEY] = items
+        if slice_id is not None:
+            payload[SLICE_ID_KEY] = slice_id
+        if dataset_id is not None:
+            payload[DATASET_ID_KEY] = dataset_id
+        if slice_ids is not None:
+            payload[SLICE_IDS_KEY] = slice_ids
+        if dataset_ids is not None:
+            payload[DATASET_IDS_KEY] = dataset_ids
+        if scene_ids is not None:
+            payload[SCENE_IDS_KEY] = scene_ids
+
+        # 202 with {job_id}; the append job streams items into the draft and
+        # leaves its status 'draft'.
+        response = self.post(payload, f"benchmarks/{benchmark_id}/items")
+        job_id = response.get(JOB_ID_KEY)
+        if wait_for_completion:
+            if job_id is None:
+                raise ValueError(
+                    "Server did not return a job_id in the add-benchmark-items "
+                    "response; cannot poll for completion. Pass "
+                    "wait_for_completion=False to suppress this error."
+                )
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+
+    def remove_benchmark_items(
+        self, benchmark_id: str, item_ids: List[str]
+    ) -> None:
+        """Remove items from a **draft** benchmark (synchronous).
+
+        Only valid while the benchmark is a draft (409 otherwise). Unknown ids
+        are ignored.
+
+        Parameters:
+            benchmark_id: Draft benchmark id (``bm_*``).
+            item_ids: Dataset item ids (``di_*``) to remove.
+        """
+        self.make_request(
+            {ITEM_IDS_KEY: item_ids},
+            f"benchmarks/{benchmark_id}/items",
+            requests_command=requests.delete,
+            return_raw_response=True,
+        )
+
+    def finalize_benchmark(self, benchmark_id: str) -> Benchmark:
+        """Finalize a **draft** benchmark, freezing it into a ``"ready"`` one.
+
+        After finalizing, the benchmark is immutable and can be evaluated. Fails
+        (409) if it is not a draft or an add-items job is still in flight, and
+        (400) if the draft is empty.
+
+        Parameters:
+            benchmark_id: Draft benchmark id (``bm_*``).
+
+        Returns:
+            :class:`Benchmark`: The finalized (``"ready"``) benchmark.
+        """
+        data = self.post({}, f"benchmarks/{benchmark_id}/finalize")
+        return Benchmark.from_json(data, self)
 
     def create_benchmark_evaluation_v2(
         self,
