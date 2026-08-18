@@ -45,6 +45,7 @@ __all__ = [
     "LinePrediction",
     "Model",
     "ModelCreationError",
+    "ModelWeights",
     # "MultiCategoryAnnotation", # coming soon!
     "NotFoundError",
     "NucleusAPIError",
@@ -121,6 +122,7 @@ from .constants import (
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
+    DELETED_KEY,
     DESCRIPTION_KEY,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -165,6 +167,8 @@ from .constants import (
     STATUS_CODE_KEY,
     TOP_N_KEY,
     UPDATE_KEY,
+    UPLOAD_ID_KEY,
+    URL_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -215,6 +219,15 @@ from .local_deduplication import (
 )
 from .model import Model
 from .model_run import ModelRun
+from .model_weights import (
+    MODEL_WEIGHTS_MAX_BYTES,
+    ModelWeights,
+    _finalize_payload,
+    _presign_payload,
+    _progress_to_bar,
+    _stream_weights_to_file,
+    _transfer_weights_to_storage,
+)
 from .payload_constructor import (
     construct_annotation_payload,
     construct_box_predictions_payload,
@@ -1373,10 +1386,16 @@ class NucleusClient:
         background — call :meth:`EvaluationV2.wait_for_completion`, then
         :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples`.
 
+        The benchmark may span datasets the model run has no predictions in at
+        all. Those members are scored as false negatives like any other
+        uncovered item, so a partial run still ranks comparably rather than
+        being rejected. To give a run predictions across several datasets, use
+        :meth:`Dataset.upload_predictions_for_model_run`.
+
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
-            model_run_id: Model run id (``run_*``). Its predictions must
-                cover items from the benchmark's datasets.
+            model_run_id: Model run id (``run_*``). It need not cover the
+                benchmark's datasets — coverage may be partial, or empty.
             name: Optional display name.
             rollup_groups: Optional rollup classes (the primary label
                 configuration); each :class:`RollupGroup` maps raw labels
@@ -1746,6 +1765,192 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def upload_model_weights(
+        self,
+        model: Union[Model, str],
+        path: str,
+        *,
+        content_type: Optional[str] = None,
+        original_filename: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        progress: bool = True,
+    ) -> ModelWeights:
+        """Attach a weights artifact to a model.
+
+        Any binary is accepted — there are no format constraints — up to 10 GB.
+        Requires edit access on the model.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            model = client.get_model(reference_id="My-CNN")
+            client.upload_model_weights(model, "/path/to/weights.bin")
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+            path: Local path of the artifact to upload.
+            content_type: Content type to record for the artifact. Defaults to
+              ``application/octet-stream``.
+            original_filename: Filename to show for the artifact. Defaults to
+              the name of the file at ``path``.
+            checksum_sha256: Optional SHA-256 of the artifact.
+            progress: Whether to show a ``tqdm`` progress bar for the upload.
+
+        Returns:
+            :class:`ModelWeights`: Metadata for the uploaded artifact.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        path = os.path.expanduser(path)
+        filename = (
+            original_filename
+            if original_filename is not None
+            else os.path.basename(path)
+        )
+        total_bytes = os.path.getsize(path)
+        if total_bytes > MODEL_WEIGHTS_MAX_BYTES:
+            raise ValueError(
+                f"{path} is {total_bytes} bytes, which exceeds the "
+                f"{MODEL_WEIGHTS_MAX_BYTES // 1024 ** 3} GB model weights limit"
+            )
+
+        presign = self.make_request(
+            _presign_payload(
+                total_bytes, content_type, filename, checksum_sha256
+            ),
+            f"model/{model_id}/weights/presign",
+        )
+        upload_id = presign.get(UPLOAD_ID_KEY)
+        if not upload_id:
+            raise ValueError(
+                "Presign response did not include an uploadId; cannot upload"
+            )
+        progress_bar = (
+            self.tqdm_bar(
+                total=total_bytes,
+                unit="B",
+                unit_scale=True,
+                desc=f"Uploading {filename}",
+            )
+            if progress
+            else None
+        )
+        try:
+            on_progress = (
+                _progress_to_bar(progress_bar)
+                if progress_bar is not None
+                else None
+            )
+            parts = _transfer_weights_to_storage(
+                path, presign, total_bytes, on_progress
+            )
+            finalized = self.make_request(
+                _finalize_payload(upload_id, parts),
+                f"model/{model_id}/weights/finalize",
+            )
+        finally:
+            if progress_bar is not None:
+                progress_bar.close()
+        return ModelWeights.from_json(finalized)
+
+    def download_model_weights(
+        self,
+        model: Union[Model, str],
+        path: str,
+        *,
+        progress: bool = True,
+    ) -> str:
+        """Download a model's weights artifact to a local path.
+
+        Available to anyone who can see the model.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            model = client.get_model(reference_id="My-CNN")
+            client.download_model_weights(model, "/path/to/save/weights.bin")
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+            path: Local path to write the artifact to. Parent directories are
+              created if needed.
+            progress: Whether to show a ``tqdm`` progress bar for the download.
+
+        Returns:
+            str: The path written.
+
+        Raises:
+            NotFoundError: If the model has no weights artifact to download.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        path = os.path.expanduser(path)
+        # Ask for the URL as JSON rather than following the redirect, so the
+        # API credentials aren't replayed to the download host.
+        signed = self.make_request(
+            {},
+            f"model/{model_id}/weights/download?json=1",
+            requests_command=requests.get,
+        )
+        url = signed.get(URL_KEY)
+        if not url:
+            raise NotFoundError(
+                f"Model {model_id} has no downloadable weights artifact"
+            )
+        if not progress:
+            return _stream_weights_to_file(url, path)
+        # The size isn't known until the GET responds, so the bar tracks bytes
+        # without a percentage.
+        progress_bar = self.tqdm_bar(
+            unit="B",
+            unit_scale=True,
+            desc=f"Downloading {os.path.basename(path)}",
+        )
+        try:
+            return _stream_weights_to_file(
+                url, path, _progress_to_bar(progress_bar)
+            )
+        finally:
+            progress_bar.close()
+
+    def get_model_weights(self, model: Union[Model, str]) -> ModelWeights:
+        """Fetch metadata for a model's weights artifact.
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+
+        Returns:
+            :class:`ModelWeights`: Metadata. ``present`` is ``False`` when the
+            model has no weights artifact available.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        return ModelWeights.from_json(
+            self.make_request(
+                {}, f"model/{model_id}/weights", requests_command=requests.get
+            )
+        )
+
+    def delete_model_weights(self, model: Union[Model, str]) -> bool:
+        """Delete a model's weights artifact.
+
+        Requires edit access on the model.
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+
+        Returns:
+            bool: Whether an artifact was deleted.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        response = self.make_request(
+            {},
+            f"model/{model_id}/weights",
+            requests_command=requests.delete,
+        )
+        return bool(response.get(DELETED_KEY, False))
 
     def download_pointcloud_task(
         self, task_id: str, frame_num: int

@@ -237,3 +237,23 @@ EXCLUSION_VALUE_KEY = "value"
 EXCLUSION_TYPE_BOX_AREA = "boxArea"
 EXCLUSION_TYPE_LABELS = "labels"
 EXCLUSION_TYPE_METADATA = "metadata"
+
+# Model weights payload keys. Unlike most of the keys above these are camelCase:
+# the weights routes serialize their DTOs straight through rather than
+# snake_casing them, so the wire format is camelCase in both directions.
+CHECKSUM_SHA256_KEY = "checksumSha256"
+CONTENT_TYPE_KEY = "contentType"
+DECLARED_SIZE_BYTES_KEY = "declaredSizeBytes"
+DELETED_KEY = "deleted"
+DOWNLOAD_URL_KEY = "downloadUrl"
+ETAG_KEY = "eTag"
+MODEL_PROJECT_ID_KEY = "modelProjectId"
+ORIGINAL_FILENAME_KEY = "originalFilename"
+PART_NUMBER_KEY = "partNumber"
+PART_SIZE_BYTES_KEY = "partSizeBytes"
+PARTS_KEY = "parts"
+PRESENT_KEY = "present"
+REQUIRED_HEADERS_KEY = "requiredHeaders"
+SIZE_BYTES_KEY = "sizeBytes"
+UPLOAD_ID_KEY = "uploadId"
+UPLOAD_URL_KEY = "uploadUrl"
