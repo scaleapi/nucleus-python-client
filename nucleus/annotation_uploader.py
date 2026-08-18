@@ -271,17 +271,23 @@ class PredictionUploader(AnnotationUploader):
         self._client = client
         self.trained_slice_id = trained_slice_id
         if model_run_id is not None and dataset_id is not None:
-            assert (
-                model_id is None
-            ), "Pass either model_id or model_run_id, not both."
+            if model_id is not None:
+                raise ValueError(
+                    "Pass either model_id or model_run_id, not both."
+                )
             self._route = f"dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions"
         elif model_run_id is not None:
-            assert model_id is None
+            if model_id is not None:
+                raise ValueError(
+                    "Pass either model_id or model_run_id, not both."
+                )
             self._route = f"modelRun/{model_run_id}/predict"
         else:
-            assert (
-                model_id is not None and dataset_id is not None
-            ), "Model ID and dataset ID are required if not using model run id."
+            if model_id is None or dataset_id is None:
+                raise ValueError(
+                    "Model ID and dataset ID are required if not using model "
+                    "run id."
+                )
             self._route = (
                 f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
             )

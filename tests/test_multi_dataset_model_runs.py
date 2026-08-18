@@ -71,7 +71,7 @@ def test_model_run_id_alone_routes_to_the_deprecated_endpoint():
 
 
 def test_model_id_and_model_run_id_together_are_rejected():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="not both"):
         PredictionUploader(
             client=_client(),
             dataset_id="ds_1",
@@ -81,7 +81,7 @@ def test_model_id_and_model_run_id_together_are_rejected():
 
 
 def test_neither_model_nor_model_run_is_rejected():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="required"):
         PredictionUploader(client=_client(), dataset_id="ds_1")
 
 

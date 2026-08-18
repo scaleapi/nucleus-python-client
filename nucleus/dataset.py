@@ -2080,7 +2080,7 @@ class Dataset:
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
         trained_slice_id: Optional[str] = None,
-    ):
+    ) -> Union[Dict[str, Any], AsyncJob]:
         """Uploads predictions for an existing model run against **this** dataset.
 
         Use this instead of :meth:`upload_predictions` when one model run should
