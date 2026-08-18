@@ -140,8 +140,9 @@ class ModelRun:
         Deprecated along with the rest of this class. The target dataset is
         inferred from the run rather than named, so this fails for a run that
         spans more than one dataset — there is no single dataset to infer. Use
-        :meth:`Dataset.upload_predictions_for_model_run` instead, which takes
-        both ids explicitly.
+        ``dataset.upload_predictions_for_model_run(model_run_id, predictions)``
+        instead: the ``dataset_id`` comes from the :class:`Dataset` you call it
+        on and the ``model_run_id`` is passed explicitly, so both are named.
 
         Args:
             annotations: Predictions to upload for this model run.
@@ -172,9 +173,7 @@ class ModelRun:
                 "predictions_ignored": int,
             }
         """
-        # Deprecated route: PredictionUploader no longer derives it from ids, so
-        # pass it explicitly. See Dataset.upload_predictions_for_model_run for
-        # the supported multi-dataset path.
+        
         uploader = PredictionUploader(
             client=self._client,
             dataset_id=self.dataset_id,
