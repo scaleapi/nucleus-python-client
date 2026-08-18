@@ -2043,28 +2043,13 @@ class Dataset:
             model_id=model.id,
             client=self._client,
         )
-        uploader.check_for_duplicate_ids(predictions)
-
-        if asynchronous:
-            check_all_mask_paths_remote(predictions)
-
-            request_id = serialize_and_write_to_presigned_url(
-                predictions, self.id, self._client
-            )
-            response = self._client.make_request(
-                payload={
-                    REQUEST_ID_KEY: request_id,
-                    UPDATE_KEY: update,
-                    TRAINED_SLICE_ID_KEY: trained_slice_id,
-                },
-                route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
-            )
-            return AsyncJob.from_json(response, self._client)
-
-        return uploader.upload(
-            annotations=predictions,
-            batch_size=batch_size,
+        return self._upload_predictions(
+            uploader,
+            predictions,
+            async_route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
             update=update,
+            asynchronous=asynchronous,
+            batch_size=batch_size,
             remote_files_per_upload_request=remote_files_per_upload_request,
             local_files_per_upload_request=local_files_per_upload_request,
             trained_slice_id=trained_slice_id,
@@ -2134,6 +2119,37 @@ class Dataset:
             dataset_id=self.id,
             client=self._client,
         )
+        return self._upload_predictions(
+            uploader,
+            predictions,
+            async_route=f"dataset/{self.id}/modelRun/{model_run_id}/uploadPredictions?async=1",
+            update=update,
+            asynchronous=asynchronous,
+            batch_size=batch_size,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            trained_slice_id=trained_slice_id,
+        )
+
+    def _upload_predictions(
+        self,
+        uploader: PredictionUploader,
+        predictions: List[Prediction],
+        *,
+        async_route: str,
+        update: bool,
+        asynchronous: bool,
+        batch_size: int,
+        remote_files_per_upload_request: int,
+        local_files_per_upload_request: int,
+        trained_slice_id: Optional[str],
+    ) -> Union[Dict[str, Any], AsyncJob]:
+        """Shared driver for the prediction-upload entry points.
+
+        The public methods differ only in how they build ``uploader`` and in
+        ``async_route``; the duplicate-id check and the sync/async dispatch are
+        identical.
+        """
         uploader.check_for_duplicate_ids(predictions)
 
         if asynchronous:
@@ -2148,7 +2164,7 @@ class Dataset:
                     UPDATE_KEY: update,
                     TRAINED_SLICE_ID_KEY: trained_slice_id,
                 },
-                route=f"dataset/{self.id}/modelRun/{model_run_id}/uploadPredictions?async=1",
+                route=async_route,
             )
             return AsyncJob.from_json(response, self._client)
 
