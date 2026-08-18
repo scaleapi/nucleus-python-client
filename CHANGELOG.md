@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
+## [0.20.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.2) - 2026-08-18
 
 ### Added
 - **Multi-dataset model runs.** `Dataset.upload_predictions_for_model_run(model_run_id, predictions, ...)` uploads predictions for an existing run against *this* dataset, adding the dataset to the run's set if it isn't there already. This is what lets a single model run be scored against a benchmark whose items span several datasets. Supports the same `update` / `asynchronous` / `batch_size` / file-batching / `trained_slice_id` arguments as `upload_predictions`.
@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ModelRun.predict()` (already deprecated with the rest of `ModelRun`) infers its target dataset from the run, so it fails for a run spanning several datasets. Use `Dataset.upload_predictions_for_model_run` instead.
 
 > **Server dependency:** requires the `POST /nucleus/dataset/:datasetId/modelRun/:modelRunId/uploadPredictions` route and the multi-dataset model-run work in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
+## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-13
+
+### Added
+- **Model weights.** Attach a raw weights artifact (any binary, no format constraints) to a model and fetch it back: `NucleusClient.upload_model_weights(model, path)`, `download_model_weights(model, path)`, `get_model_weights(model)`, and `delete_model_weights(model)`, plus `Model.upload_weights()` / `download_weights()` / `weights()` / `delete_weights()` and the new `ModelWeights` metadata type (`present`, `status`, `size_bytes`, `original_filename`, `content_type`, `download_url`). Artifacts up to 10 GB are supported; uploading requires edit access on the model, downloading is available to anyone who can see it.
+- Large artifacts are handled without any extra work on the caller's part: transfers stream directly to/from storage, show a `tqdm` progress bar by default (pass `progress=False` to silence it), and automatically retry transient storage failures (network blips, 429s, 5xx) with exponential backoff.
+
+## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
+
+### Added
+- **Multi-source `create_benchmark()`.** Members can now come from any combination of `item_ids`, `(dataset_id, ref_id)` `items`, one or more slices (`slice_id` / `slice_ids`), and one or more datasets (`dataset_id` / `dataset_ids`) — unioned and de-duplicated server-side. At least one source is required (previously exactly one).
+
+### Changed
+- **`create_benchmark()` is now asynchronous.** The server creates the benchmark in a `"building"` state and streams its members in via a background job (removing the previous item-count ceiling on slice/dataset-sourced benchmarks). `create_benchmark()` blocks on that job by default and returns the completed `"ready"` benchmark — the return type is unchanged, so existing blocking callers are unaffected. Pass `wait_for_completion=False` to return the `"building"` benchmark immediately and poll it yourself via `Benchmark.refresh()` (checking the new `Benchmark.status` field). A failed build job raises `JobError`. `Benchmark` now exposes `status` (`"building"` / `"ready"` / `"failed"`).
 
 ## [0.19.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.1) - 2026-08-07
 

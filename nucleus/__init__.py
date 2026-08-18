@@ -45,6 +45,7 @@ __all__ = [
     "LinePrediction",
     "Model",
     "ModelCreationError",
+    "ModelWeights",
     # "MultiCategoryAnnotation", # coming soon!
     "NotFoundError",
     "NucleusAPIError",
@@ -112,13 +113,16 @@ from .constants import (
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
     AUTOTAGS_KEY,
+    BENCHMARK_ID_KEY,
     BENCHMARK_IDS_KEY,
     COLLAPSE_KEY,
     CONFIDENCE_THRESHOLD_KEY,
     DATASET_ID_KEY,
+    DATASET_IDS_KEY,
     DATASET_IS_SCENE_KEY,
     DATASET_PRIVACY_MODE_KEY,
     DEFAULT_NETWORK_TIMEOUT_SEC,
+    DELETED_KEY,
     DESCRIPTION_KEY,
     EMBEDDING_DIMENSION_KEY,
     EMBEDDINGS_URL_KEY,
@@ -156,10 +160,13 @@ from .constants import (
     ROLLUP_GROUPS_CAMEL_KEY,
     SCOPE_KEY,
     SLICE_ID_KEY,
+    SLICE_IDS_KEY,
     SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
     TOP_N_KEY,
     UPDATE_KEY,
+    UPLOAD_ID_KEY,
+    URL_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -210,6 +217,15 @@ from .local_deduplication import (
 )
 from .model import Model
 from .model_run import ModelRun
+from .model_weights import (
+    MODEL_WEIGHTS_MAX_BYTES,
+    ModelWeights,
+    _finalize_payload,
+    _presign_payload,
+    _progress_to_bar,
+    _stream_weights_to_file,
+    _transfer_weights_to_storage,
+)
 from .payload_constructor import (
     construct_annotation_payload,
     construct_box_predictions_payload,
@@ -1097,15 +1113,26 @@ class NucleusClient:
         items: Optional[List[Dict[str, str]]] = None,
         slice_id: Optional[str] = None,
         dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
     ) -> Benchmark:
         """Create a benchmark from ground-truth items.
 
-        Provide the members through exactly one source: explicit ``item_ids``,
-        ``(dataset_id, ref_id)`` pairs via ``items``, all items in a slice via
-        ``slice_id``, or all items in a dataset via ``dataset_id``. Items
-        without ground truth are skipped (reported on the returned benchmark
-        as ``skipped_items_without_ground_truth``). Membership is frozen at
-        creation.
+        Provide members through any combination of sources: explicit
+        ``item_ids``, ``(dataset_id, ref_id)`` pairs via ``items``, one or more
+        slices via ``slice_id`` / ``slice_ids``, and one or more datasets via
+        ``dataset_id`` / ``dataset_ids``. Members are unioned and de-duplicated
+        across all sources; at least one source is required. Items without
+        ground truth are skipped. Membership is frozen at creation.
+
+        Creation is **asynchronous**: the server creates the benchmark in a
+        ``"building"`` state and streams its members in via a background job.
+        By default this method blocks until that job finishes and returns the
+        completed (``"ready"``) benchmark. Pass ``wait_for_completion=False``
+        to return immediately with a ``"building"`` benchmark you can poll via
+        :meth:`Benchmark.refresh` (checking ``benchmark.status``).
 
         Parameters:
             name: Benchmark display name.
@@ -1115,19 +1142,32 @@ class NucleusClient:
             items: ``{"dataset_id": ..., "ref_id": ...}`` pairs.
             slice_id: Slice id (``slc_*``) whose items become members.
             dataset_id: Dataset id (``ds_*``) whose items become members.
+            slice_ids: Multiple slice ids whose items become members.
+            dataset_ids: Multiple dataset ids whose items become members.
+            wait_for_completion: Block until the build job finishes and return
+                the ready benchmark (default). If ``False``, return the
+                ``"building"`` benchmark immediately.
+            verbose: Log build-job polling progress while waiting.
 
         Returns:
-            :class:`Benchmark`: The created benchmark.
+            :class:`Benchmark`: The created benchmark — ``"ready"`` when
+            ``wait_for_completion`` is ``True``, otherwise ``"building"``.
         """
-        sources = [
+        has_source = any(
             source
-            for source in (item_ids, items, slice_id, dataset_id)
-            if source is not None
-        ]
-        if len(sources) != 1:
+            for source in (
+                item_ids,
+                items,
+                slice_id,
+                dataset_id,
+                slice_ids,
+                dataset_ids,
+            )
+        )
+        if not has_source:
             raise ValueError(
-                "Provide exactly one of item_ids, items, slice_id, or "
-                "dataset_id to define benchmark membership"
+                "Provide at least one of item_ids, items, slice_id(s), or "
+                "dataset_id(s) to define benchmark membership"
             )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if description is not None:
@@ -1142,8 +1182,27 @@ class NucleusClient:
             payload[SLICE_ID_KEY] = slice_id
         if dataset_id is not None:
             payload[DATASET_ID_KEY] = dataset_id
-        data = self.post(payload, "benchmarks")
-        return Benchmark.from_json(data, self)
+        if slice_ids is not None:
+            payload[SLICE_IDS_KEY] = slice_ids
+        if dataset_ids is not None:
+            payload[DATASET_IDS_KEY] = dataset_ids
+
+        # Async: the server responds 202 with {benchmark_id, job_id}. The
+        # benchmark row already exists (in 'building' state); the build job
+        # streams members in and flips it to 'ready' (or 'failed').
+        response = self.post(payload, "benchmarks")
+        benchmark_id = response[BENCHMARK_ID_KEY]
+        job_id = response.get(JOB_ID_KEY)
+        if wait_for_completion:
+            if job_id is None:
+                raise ValueError(
+                    "Server did not return a job_id in the create-benchmark "
+                    "response; cannot poll for completion. Pass "
+                    "wait_for_completion=False to suppress this error."
+                )
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+
+        return self.get_benchmark(benchmark_id)
 
     def list_benchmarks(self) -> List[Benchmark]:
         """List benchmarks visible to the current user.
@@ -1644,6 +1703,192 @@ class NucleusClient:
             requests_command=requests.delete,
         )
         return response
+
+    def upload_model_weights(
+        self,
+        model: Union[Model, str],
+        path: str,
+        *,
+        content_type: Optional[str] = None,
+        original_filename: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        progress: bool = True,
+    ) -> ModelWeights:
+        """Attach a weights artifact to a model.
+
+        Any binary is accepted — there are no format constraints — up to 10 GB.
+        Requires edit access on the model.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            model = client.get_model(reference_id="My-CNN")
+            client.upload_model_weights(model, "/path/to/weights.bin")
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+            path: Local path of the artifact to upload.
+            content_type: Content type to record for the artifact. Defaults to
+              ``application/octet-stream``.
+            original_filename: Filename to show for the artifact. Defaults to
+              the name of the file at ``path``.
+            checksum_sha256: Optional SHA-256 of the artifact.
+            progress: Whether to show a ``tqdm`` progress bar for the upload.
+
+        Returns:
+            :class:`ModelWeights`: Metadata for the uploaded artifact.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        path = os.path.expanduser(path)
+        filename = (
+            original_filename
+            if original_filename is not None
+            else os.path.basename(path)
+        )
+        total_bytes = os.path.getsize(path)
+        if total_bytes > MODEL_WEIGHTS_MAX_BYTES:
+            raise ValueError(
+                f"{path} is {total_bytes} bytes, which exceeds the "
+                f"{MODEL_WEIGHTS_MAX_BYTES // 1024 ** 3} GB model weights limit"
+            )
+
+        presign = self.make_request(
+            _presign_payload(
+                total_bytes, content_type, filename, checksum_sha256
+            ),
+            f"model/{model_id}/weights/presign",
+        )
+        upload_id = presign.get(UPLOAD_ID_KEY)
+        if not upload_id:
+            raise ValueError(
+                "Presign response did not include an uploadId; cannot upload"
+            )
+        progress_bar = (
+            self.tqdm_bar(
+                total=total_bytes,
+                unit="B",
+                unit_scale=True,
+                desc=f"Uploading {filename}",
+            )
+            if progress
+            else None
+        )
+        try:
+            on_progress = (
+                _progress_to_bar(progress_bar)
+                if progress_bar is not None
+                else None
+            )
+            parts = _transfer_weights_to_storage(
+                path, presign, total_bytes, on_progress
+            )
+            finalized = self.make_request(
+                _finalize_payload(upload_id, parts),
+                f"model/{model_id}/weights/finalize",
+            )
+        finally:
+            if progress_bar is not None:
+                progress_bar.close()
+        return ModelWeights.from_json(finalized)
+
+    def download_model_weights(
+        self,
+        model: Union[Model, str],
+        path: str,
+        *,
+        progress: bool = True,
+    ) -> str:
+        """Download a model's weights artifact to a local path.
+
+        Available to anyone who can see the model.
+
+        ::
+
+            import nucleus
+
+            client = nucleus.NucleusClient(YOUR_SCALE_API_KEY)
+            model = client.get_model(reference_id="My-CNN")
+            client.download_model_weights(model, "/path/to/save/weights.bin")
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+            path: Local path to write the artifact to. Parent directories are
+              created if needed.
+            progress: Whether to show a ``tqdm`` progress bar for the download.
+
+        Returns:
+            str: The path written.
+
+        Raises:
+            NotFoundError: If the model has no weights artifact to download.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        path = os.path.expanduser(path)
+        # Ask for the URL as JSON rather than following the redirect, so the
+        # API credentials aren't replayed to the download host.
+        signed = self.make_request(
+            {},
+            f"model/{model_id}/weights/download?json=1",
+            requests_command=requests.get,
+        )
+        url = signed.get(URL_KEY)
+        if not url:
+            raise NotFoundError(
+                f"Model {model_id} has no downloadable weights artifact"
+            )
+        if not progress:
+            return _stream_weights_to_file(url, path)
+        # The size isn't known until the GET responds, so the bar tracks bytes
+        # without a percentage.
+        progress_bar = self.tqdm_bar(
+            unit="B",
+            unit_scale=True,
+            desc=f"Downloading {os.path.basename(path)}",
+        )
+        try:
+            return _stream_weights_to_file(
+                url, path, _progress_to_bar(progress_bar)
+            )
+        finally:
+            progress_bar.close()
+
+    def get_model_weights(self, model: Union[Model, str]) -> ModelWeights:
+        """Fetch metadata for a model's weights artifact.
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+
+        Returns:
+            :class:`ModelWeights`: Metadata. ``present`` is ``False`` when the
+            model has no weights artifact available.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        return ModelWeights.from_json(
+            self.make_request(
+                {}, f"model/{model_id}/weights", requests_command=requests.get
+            )
+        )
+
+    def delete_model_weights(self, model: Union[Model, str]) -> bool:
+        """Delete a model's weights artifact.
+
+        Requires edit access on the model.
+
+        Parameters:
+            model: A :class:`Model` or a model id (``prj_*``).
+
+        Returns:
+            bool: Whether an artifact was deleted.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        response = self.make_request(
+            {},
+            f"model/{model_id}/weights",
+            requests_command=requests.delete,
+        )
+        return bool(response.get(DELETED_KEY, False))
 
     def download_pointcloud_task(
         self, task_id: str, frame_num: int
