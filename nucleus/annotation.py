@@ -60,9 +60,13 @@ def _server_assigned_id_field():
     ``to_payload``. Excluded from ``__eq__`` so a locally-built object still
     compares equal to its round-tripped self (same reason as
     ``DatasetItem.phash``).
+
+    ``kw_only`` keeps it off the positional signature: it is server-assigned, so
+    a caller passing it positionally would only have it silently dropped by
+    ``to_payload``.
     """
     # pylint: disable=invalid-field-call  # returned into a dataclass body below
-    return field(default=None, repr=False, compare=False)
+    return field(default=None, repr=False, compare=False, kw_only=True)
 
 
 class Annotation:
@@ -200,7 +204,7 @@ class BoxAnnotation(Annotation):  # pylint: disable=R0902
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -332,7 +336,7 @@ class LineAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -430,7 +434,7 @@ class PolygonAnnotation(Annotation):
             embedding_vector=payload.get(EMBEDDING_VECTOR_KEY, None),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -597,7 +601,7 @@ class KeypointsAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -737,7 +741,7 @@ class CuboidAnnotation(Annotation):  # pylint: disable=R0902
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -892,7 +896,7 @@ class SegmentationAnnotation(Annotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
 
@@ -991,7 +995,7 @@ class CategoryAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -1033,7 +1037,7 @@ class MultiCategoryAnnotation(Annotation):
             metadata=payload.get(METADATA_KEY, {}),
             track_reference_id=payload.get(TRACK_REFERENCE_ID_KEY, None),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:
@@ -1094,7 +1098,7 @@ class SceneCategoryAnnotation(Annotation):
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             _task_id=payload.get(TASK_ID_KEY, None),
-            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY, None),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def to_payload(self) -> dict:

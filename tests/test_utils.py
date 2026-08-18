@@ -146,3 +146,57 @@ def test_dataset_item_id_populates_from_dataset_item_json():
     )
     assert item.dataset_item_id == DI_ID
     assert "dataset_item_id" not in item.to_payload()
+
+
+def test_format_dataset_item_response_stamps_dataset_item_id():
+    """Single-item loc/refloc/iloc annotations carry the id like exports do."""
+    response = {
+        "item": {
+            "url": "https://example.com/a.jpg",
+            "reference_id": REF_ID,
+            "dataset_item_id": DI_ID,
+        },
+        "annotations": {
+            "box": [BoxAnnotation("car", 0, 0, 4, 4, REF_ID).to_payload()]
+        },
+    }
+    out = utils.format_dataset_item_response(response)
+    assert out["item"].dataset_item_id == DI_ID
+    assert out["annotations"]["box"][0].dataset_item_id == DI_ID
+
+
+def test_format_dataset_item_response_none_when_backend_omits_id():
+    response = {
+        "item": {"url": "https://example.com/a.jpg", "reference_id": REF_ID},
+        "annotations": {
+            "box": [BoxAnnotation("car", 0, 0, 4, 4, REF_ID).to_payload()]
+        },
+    }
+    out = utils.format_dataset_item_response(response)
+    assert out["annotations"]["box"][0].dataset_item_id is None
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda di: BoxAnnotation(
+            "car", 0, 0, 4, 4, REF_ID, dataset_item_id=di
+        ),
+        lambda di: BoxPrediction(
+            "car", 0, 0, 4, 4, REF_ID, dataset_item_id=di
+        ),
+    ],
+)
+def test_dataset_item_id_is_keyword_only(factory):
+    """Server-assigned, so it must be passed by keyword, never positionally."""
+    # Keyword works.
+    assert factory("di_kw").dataset_item_id == "di_kw"
+
+
+def test_dataset_item_id_rejected_positionally():
+    """A positional value would be silently dropped by to_payload — block it."""
+    with pytest.raises(TypeError):
+        # One arg past track_reference_id would land on the old positional slot.
+        BoxPrediction(
+            "car", 0, 0, 4, 4, REF_ID, 0.9, "a1", {}, {}, None, None, "di_x"
+        )

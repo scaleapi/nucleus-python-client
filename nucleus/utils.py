@@ -185,13 +185,19 @@ def format_dataset_item_response(response: dict) -> dict:
     item = response[ITEM_KEY]
     annotation_payload = response[ANNOTATIONS_KEY]
 
+    # The endpoint returns dataset_item_id on the item, not on each annotation,
+    # so stamp it down the same way convert_export_payload does — otherwise
+    # loc/refloc/iloc annotations would come back with it unset.
+    item_dataset_item_id = item.get(DATASET_ITEM_ID_KEY)
+
     annotation_response = {}
     for annotation_type in ANNOTATION_TYPES:
         if annotation_type in annotation_payload:
-            annotation_response[annotation_type] = [
-                Annotation.from_json(ann)
-                for ann in annotation_payload[annotation_type]
-            ]
+            annotations = []
+            for ann in annotation_payload[annotation_type]:
+                ann[DATASET_ITEM_ID_KEY] = item_dataset_item_id
+                annotations.append(Annotation.from_json(ann))
+            annotation_response[annotation_type] = annotations
     return {
         ITEM_KEY: DatasetItem.from_json(item),
         ANNOTATIONS_KEY: annotation_response,
