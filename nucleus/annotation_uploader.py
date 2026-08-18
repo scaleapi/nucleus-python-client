@@ -236,9 +236,9 @@ class AnnotationUploader:
 
 
 class PredictionUploader(AnnotationUploader):
-    """Routes a prediction upload to one of three endpoints.
+    """Routes a prediction upload to one of two ``uploadPredictions`` endpoints.
 
-    Which one depends on the identifiers supplied:
+    Which one depends on the identifiers supplied (``dataset_id`` is required):
 
     ``dataset_id`` + ``model_run_id``
         ``dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions``. The
@@ -253,10 +253,9 @@ class PredictionUploader(AnnotationUploader):
         existing run: passing a ``model_run_id`` belonging to a different
         dataset is rejected server-side.
 
-    ``model_run_id`` alone
-        ``modelRun/{model_run_id}/predict``. Deprecated — the target dataset is
-        inferred from the run, so the server rejects it for a run spanning
-        several datasets. Prefer the first form.
+    ``route`` overrides the id-based selection with an explicit endpoint. It
+    exists only for the deprecated :meth:`ModelRun.predict`, which posts to
+    ``modelRun/{model_run_id}/predict``; new code should not use it.
     """
 
     def __init__(
@@ -266,31 +265,26 @@ class PredictionUploader(AnnotationUploader):
         model_id: Optional[str] = None,
         model_run_id: Optional[str] = None,
         trained_slice_id: Optional[str] = None,
+        route: Optional[str] = None,
     ):
         super().__init__(dataset_id, client)
         self._client = client
         self.trained_slice_id = trained_slice_id
-        if model_run_id is not None and dataset_id is not None:
-            if model_id is not None:
-                raise ValueError(
-                    "Pass either model_id or model_run_id, not both."
-                )
+        if route is not None:
+            self._route = route
+            return
+        if dataset_id is None:
+            raise ValueError("dataset_id is required to upload predictions.")
+        if model_run_id is not None and model_id is not None:
+            raise ValueError("Pass either model_id or model_run_id, not both.")
+        if model_run_id is not None:
             self._route = f"dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions"
-        elif model_run_id is not None:
-            if model_id is not None:
-                raise ValueError(
-                    "Pass either model_id or model_run_id, not both."
-                )
-            self._route = f"modelRun/{model_run_id}/predict"
-        else:
-            if model_id is None or dataset_id is None:
-                raise ValueError(
-                    "Model ID and dataset ID are required if not using model "
-                    "run id."
-                )
+        elif model_id is not None:
             self._route = (
                 f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
             )
+        else:
+            raise ValueError("Either model_id or model_run_id is required.")
 
     def check_for_duplicate_ids(self, annotations: Iterable[Annotation]):
         """Do not allow predictions to have the same (annotation_id, reference_id) tuple"""

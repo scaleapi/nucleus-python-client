@@ -172,8 +172,13 @@ class ModelRun:
                 "predictions_ignored": int,
             }
         """
+        # Deprecated route: PredictionUploader no longer derives it from ids, so
+        # pass it explicitly. See Dataset.upload_predictions_for_model_run for
+        # the supported multi-dataset path.
         uploader = PredictionUploader(
-            model_run_id=self.model_run_id, client=self._client
+            client=self._client,
+            dataset_id=self.dataset_id,
+            route=f"modelRun/{self.model_run_id}/predict",
         )
         uploader.check_for_duplicate_ids(annotations)
 

@@ -64,9 +64,14 @@ def test_dataset_and_model_ids_route_to_the_model_endpoint():
     )
 
 
-def test_model_run_id_alone_routes_to_the_deprecated_endpoint():
-    """Kept working for single-dataset runs; the server infers the dataset."""
-    uploader = PredictionUploader(client=_client(), model_run_id="run_1")
+def test_explicit_route_overrides_id_based_selection():
+    """The deprecated ModelRun.predict path passes its route verbatim; the
+    uploader no longer derives modelRun/{run}/predict from ids."""
+    uploader = PredictionUploader(
+        client=_client(),
+        dataset_id="ds_1",
+        route="modelRun/run_1/predict",
+    )
     assert uploader._route == "modelRun/run_1/predict"  # noqa: SLF001
 
 
@@ -83,6 +88,12 @@ def test_model_id_and_model_run_id_together_are_rejected():
 def test_neither_model_nor_model_run_is_rejected():
     with pytest.raises(ValueError, match="required"):
         PredictionUploader(client=_client(), dataset_id="ds_1")
+
+
+def test_dataset_id_is_required_for_id_based_routing():
+    """model_run_id alone no longer selects the deprecated route."""
+    with pytest.raises(ValueError, match="dataset_id is required"):
+        PredictionUploader(client=_client(), model_run_id="run_1")
 
 
 # --------------------------------------------------------------------------- #
