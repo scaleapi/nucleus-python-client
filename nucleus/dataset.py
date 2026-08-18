@@ -1584,7 +1584,7 @@ class Dataset:
                                 "width": int,
                                 "height": int,
                                 "key": str, # frame key
-                                "dataset_item_id": str, # id of the frame's dataset item
+                                "dataset_item_id": str, # internally generated id of the frame's dataset item
                                 "metadata": Dict[str, Any]
                             }]
                         }

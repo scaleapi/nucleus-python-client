@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-14
+## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-18
 
 ### Added
 - **`dataset_item_id` on exported items and objects.** Batch exports now carry the Nucleus-internal dataset item id (`di_*`) everywhere `reference_id` already appeared: on `DatasetItem`, and on every exported annotation and prediction (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `multicategory`, `segmentation`). Video/scene exports carry it on each track frame. Previously only `reference_id` was returned, so keying predictions back to items required a second lookup.
