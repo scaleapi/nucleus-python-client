@@ -2044,6 +2044,113 @@ class Dataset:
             model_id=model.id,
             client=self._client,
         )
+        return self._upload_predictions(
+            uploader,
+            predictions,
+            async_route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
+            update=update,
+            asynchronous=asynchronous,
+            batch_size=batch_size,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            trained_slice_id=trained_slice_id,
+        )
+
+    def upload_predictions_for_model_run(
+        self,
+        model_run_id: str,
+        predictions: List[Prediction],
+        update: bool = False,
+        asynchronous: bool = False,
+        batch_size: int = 5000,
+        remote_files_per_upload_request: int = 20,
+        local_files_per_upload_request: int = 10,
+        trained_slice_id: Optional[str] = None,
+    ) -> Union[Dict[str, Any], AsyncJob]:
+        """Uploads predictions for an existing model run against **this** dataset.
+
+        Use this instead of :meth:`upload_predictions` when one model run should
+        hold predictions across several datasets — for example to evaluate the
+        run against a benchmark whose items span more than one dataset. The run
+        does not need to cover this dataset already; uploading here adds it to
+        the run's dataset set.
+
+        :meth:`upload_predictions` cannot do this. It identifies the run by
+        ``(dataset, model)``, so it either finds the run already on this dataset
+        or creates a new one — an existing run belonging to a different dataset
+        is rejected.
+
+        A run's dataset set only ever grows: a later upload never removes a
+        dataset, so it cannot widen who can read the run.
+
+        Access: you need write access to this dataset **and** to every dataset
+        the run already covers. Model runs are visible only to users who can
+        read all of their datasets, so adding a dataset to a run can remove it
+        from a collaborator's view — hence the stricter check.
+
+        Parameters:
+            model_run_id: Nucleus-generated model run ID (starts with ``run_``).
+            predictions: List of prediction objects to upload. Same types as
+              :meth:`upload_predictions`.
+            update: Whether or not to overwrite metadata or ignore on reference
+              ID collision. Default is False.
+            asynchronous: Whether or not to process the upload asynchronously
+              (and return an :class:`AsyncJob` object). Default is False.
+            batch_size: Number of predictions processed in each concurrent
+              batch. Default is 5000. Only relevant for asynchronous=False.
+            remote_files_per_upload_request: Number of remote files to upload in
+              each request. Only relevant for asynchronous=False.
+            local_files_per_upload_request: Number of local files to upload in
+              each request. Maximum is 10. Only relevant for asynchronous=False.
+            trained_slice_id: Nucleus-generated slice ID (starts with ``slc_``)
+              which was used to train the model. Must belong to this dataset.
+
+        Returns:
+            Payload describing the synchronous upload::
+
+                {
+                    "dataset_id": str,
+                    "model_run_id": str,
+                    "predictions_processed": int,
+                    "predictions_ignored": int,
+                }
+        """
+        uploader = PredictionUploader(
+            model_run_id=model_run_id,
+            dataset_id=self.id,
+            client=self._client,
+        )
+        return self._upload_predictions(
+            uploader,
+            predictions,
+            async_route=f"dataset/{self.id}/modelRun/{model_run_id}/uploadPredictions?async=1",
+            update=update,
+            asynchronous=asynchronous,
+            batch_size=batch_size,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+            trained_slice_id=trained_slice_id,
+        )
+
+    def _upload_predictions(
+        self,
+        uploader: PredictionUploader,
+        predictions: List[Prediction],
+        *,
+        async_route: str,
+        update: bool,
+        asynchronous: bool,
+        batch_size: int,
+        remote_files_per_upload_request: int,
+        local_files_per_upload_request: int,
+        trained_slice_id: Optional[str],
+    ) -> Union[Dict[str, Any], AsyncJob]:
+        """Shared driver for the prediction-upload entry points.
+
+        The public methods differ only in how they build ``uploader`` and in
+        ``async_route``; the duplicate-id check and the sync/async dispatch are
+        identical.
+        """
         uploader.check_for_duplicate_ids(predictions)
 
         if asynchronous:
@@ -2058,7 +2165,7 @@ class Dataset:
                     UPDATE_KEY: update,
                     TRAINED_SLICE_ID_KEY: trained_slice_id,
                 },
-                route=f"dataset/{self.id}/model/{model.id}/uploadPredictions?async=1",
+                route=async_route,
             )
             return AsyncJob.from_json(response, self._client)
 

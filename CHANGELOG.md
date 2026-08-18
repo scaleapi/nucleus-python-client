@@ -8,9 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.20.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.2) - 2026-08-18
 
 ### Added
-- **`dataset_item_id` on exported items and objects.** Batch exports now carry the Nucleus-internal dataset item id (`di_*`) everywhere `reference_id` already appeared: on `DatasetItem`, and on every exported annotation and prediction (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `multicategory`, `segmentation`). Video/scene exports carry it on each track frame. Previously only `reference_id` was returned, so keying predictions back to items required a second lookup.
+- **`dataset_item_id` on exported items and objects.** Batch exports now carry the Nucleus-internal dataset item id (`di_*`) everywhere `reference_id` already appeared: on `DatasetItem`, and on every exported annotation and prediction (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `multicategory`, `segmentation`). Video/scene exports carry it on each track frame. Previously only `reference_id` was returned, so keying predictions back to items required a second lookup. The field is server-assigned and read-only: it is populated by `from_json`, left `None` on objects you construct locally, excluded from `__eq__`, passed keyword-only on constructors, and never sent in `to_payload`. Exports from an older backend that does not return it simply leave it `None`.
+- **Multi-dataset model runs.** `Dataset.upload_predictions_for_model_run(model_run_id, predictions, ...)` uploads predictions for an existing run against *this* dataset, adding the dataset to the run's set if it isn't there already. This is what lets a single model run be scored against a benchmark whose items span several datasets. Supports the same `update` / `asynchronous` / `batch_size` / file-batching / `trained_slice_id` arguments as `upload_predictions`.
+  - A run's dataset set only ever grows — a later upload never removes a dataset, so it cannot widen who can read the run.
+  - Access: write on this dataset **and** on every dataset the run already covers. Runs are visible only to users who can read all of their datasets, so adding one can remove the run from a collaborator's view.
+  - `Dataset.upload_predictions` is unchanged and still cannot widen a run: it identifies the run by `(dataset, model)`, so it finds the run already on this dataset or creates a new one.
 
-  The field is server-assigned and read-only: it is populated by `from_json`, left `None` on objects you construct locally, excluded from `__eq__`, passed keyword-only on constructors, and never sent in `to_payload`. Exports from an older backend that does not return it simply leave it `None`.
+### Changed
+- **Benchmark evaluations no longer require the run to cover the benchmark's datasets.** `create_benchmark_evaluation_v2` previously failed when the benchmark contained items outside the model run's dataset. Those members are now scored as false negatives like any other uncovered item, so a partial run ranks comparably instead of being rejected. Docstrings on `create_benchmark_evaluation_v2` and `Benchmark.create_evaluation_v2` updated accordingly.
+- `PredictionUploader` accepts `dataset_id` together with `model_run_id` to select the new endpoint. Previously that combination was rejected by an assertion. The other two forms — `(dataset_id, model_id)` and `model_run_id` alone — route exactly as before.
+
+### Deprecated
+- `ModelRun.predict()` (already deprecated with the rest of `ModelRun`) infers its target dataset from the run, so it fails for a run spanning several datasets. Use `Dataset.upload_predictions_for_model_run` instead.
+
+> **Server dependency:** requires the `POST /nucleus/dataset/:datasetId/modelRun/:modelRunId/uploadPredictions` route and the multi-dataset model-run work in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
 
 ## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-13
 
