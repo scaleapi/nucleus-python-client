@@ -178,9 +178,9 @@ class Model:
 
             run = model.create_run(name="my-run", predictions=predictions)
 
-        Each prediction identifies the item it belongs to (by ``item_id``, or a
-        ``reference_id``), so you can add predictions from anywhere without
-        wiring anything up ahead of time.
+        Each prediction identifies its target item by ``dataset_item_id`` (the
+        ``di_*`` id returned on exported items), so predictions can come from
+        anywhere and a single run can cover items across different datasets.
 
         Args:
             name: Human-readable name for the model run.

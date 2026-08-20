@@ -229,14 +229,14 @@ class ModelRun:
     ) -> dict:
         """Adds predictions to this model run.
 
-        Each prediction identifies the item it belongs to (by ``item_id``,
-        preferred, or ``reference_id``), so predictions can come from anywhere
-        and be added at any time — a single run can cover items that live in
-        different datasets.
+        Each prediction identifies its target item by ``dataset_item_id`` (the
+        ``di_*`` id returned on exported items), so predictions can come from
+        anywhere and be added at any time — a single run can cover items that
+        live in different datasets.
 
         Args:
-            predictions: Predictions to upload. Each must identify its item by
-                ``item_id`` (preferred) or ``reference_id``.
+            predictions: Predictions to upload. Each must set
+                ``dataset_item_id`` to identify its item.
             update: If True, existing predictions for the same
                 (reference_id, annotation_id) will be overwritten. If False,
                 existing predictions will be skipped.
