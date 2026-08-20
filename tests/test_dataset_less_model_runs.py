@@ -102,14 +102,14 @@ def test_model_id_without_dataset_id_is_rejected():
 
 
 # --------------------------------------------------------------------------- #
-# Model.create_run_without_dataset
+# Model.create_run (dataset-less)
 # --------------------------------------------------------------------------- #
-def test_create_run_without_dataset_posts_to_the_create_route():
+def test_create_run_posts_to_the_create_route():
     client = _client()
     client.make_request = MagicMock(return_value={"model_run_id": "run_1"})
     model = _model(client)
 
-    run = model.create_run_without_dataset(
+    run = model.create_run(
         name="my run", metadata={"k": "v"}, reference_id="ref_1"
     )
 
@@ -126,12 +126,12 @@ def test_create_run_without_dataset_posts_to_the_create_route():
     assert run.dataset_id is None
 
 
-def test_create_run_without_dataset_defaults_metadata_to_empty_dict():
+def test_create_run_defaults_metadata_to_empty_dict():
     client = _client()
     client.make_request = MagicMock(return_value={"model_run_id": "run_1"})
     model = _model(client)
 
-    model.create_run_without_dataset(name="my run")
+    model.create_run(name="my run")
 
     payload = client.make_request.call_args[0][0]
     assert payload == {

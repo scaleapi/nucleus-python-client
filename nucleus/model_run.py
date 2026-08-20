@@ -227,24 +227,21 @@ class ModelRun:
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
     ) -> dict:
-        """Uploads predictions to a dataset-less model run.
+        """Adds predictions to this model run.
 
-        Unlike :meth:`predict`, this run is not bound to a single dataset. Each
-        prediction names its own target item, and the server groups the
-        predictions by dataset and widens the run's dataset set accordingly.
-        Every prediction must carry either ``dataset_item_id`` (preferred) or
-        ``dataset_id`` + ``reference_id`` so the server can resolve its item.
+        Each prediction identifies the item it belongs to (by ``item_id``,
+        preferred, or ``reference_id``), so predictions can come from anywhere
+        and be added at any time — a single run can cover items that live in
+        different datasets.
 
         Args:
-            predictions: Predictions to upload. Each must carry
-                ``dataset_item_id`` or ``dataset_id`` + ``reference_id``.
+            predictions: Predictions to upload. Each must identify its item by
+                ``item_id`` (preferred) or ``reference_id``.
             update: If True, existing predictions for the same
                 (reference_id, annotation_id) will be overwritten. If False,
                 existing predictions will be skipped.
-            asynchronous: Not supported for dataset-less uploads yet — passing
-                True raises :class:`NotImplementedError`. Use
-                ``dataset.upload_predictions_for_model_run(...)`` for async
-                per-dataset uploads.
+            asynchronous: Not supported yet — passing True raises
+                :class:`NotImplementedError`.
             batch_size: Number of predictions processed in each concurrent batch.
             remote_files_per_upload_request: Number of remote segmentation files
                 to upload in each request.

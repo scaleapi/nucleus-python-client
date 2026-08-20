@@ -8,9 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-19
 
 ### Added
-- **Dataset-less model runs.** `Model.create_run_without_dataset(name, metadata=None, reference_id=None)` creates a model run that starts with an empty dataset set and is not bound to any dataset up front. The run is not readable until predictions are added, and its dataset set grows as predictions arrive — letting a single run span multiple datasets without naming them ahead of time.
-- **`ModelRun.add_predictions(predictions, ...)`** uploads predictions to a dataset-less run via `POST /nucleus/modelRun/:modelRunId/uploadPredictions`. The server resolves each prediction's target item, groups by dataset, and widens the run's dataset set. Supports `update` / `batch_size` / file-batching arguments; `asynchronous=True` raises `NotImplementedError` (use `Dataset.upload_predictions_for_model_run` for async per-dataset uploads).
-- **Per-prediction upload targets.** Every prediction type (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `scene_category`, `segmentation`) now accepts a `dataset_id` constructor kwarg alongside the existing `dataset_item_id`, and emits them in `to_payload` (as `item_id` and `dataset_id`) when set. A prediction targets its item by `dataset_item_id` (preferred) or `dataset_id` + `reference_id`, which is what the dataset-less upload route uses to resolve items. Both are optional and unset by default, so per-dataset uploads are unchanged.
+- **`Model.create_run(name)` + `ModelRun.add_predictions(predictions, ...)`.** Create a model run with just a name, then attach predictions — no dataset needed up front:
+  ```python
+  run = model.create_run(name="my-run")
+  run.add_predictions(predictions)
+  ```
+  Each prediction identifies the item it belongs to (by `item_id`, preferred, or `reference_id`), so predictions can come from anywhere and a single run can cover items across multiple datasets. `add_predictions` posts to `POST /nucleus/modelRun/:modelRunId/uploadPredictions` and supports `update` / `batch_size` / file-batching arguments; `asynchronous=True` raises `NotImplementedError` for now.
+  - `create_run` still accepts the old `dataset=` / `predictions=` arguments for backwards compatibility (the deprecated dataset-bound path); omit them to use the flow above.
+- **Per-prediction targets.** Every prediction type (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `scene_category`, `segmentation`) now accepts an optional `dataset_id` constructor kwarg alongside the existing `dataset_item_id`, emitted in `to_payload` (as `item_id` and `dataset_id`) when set. Both are optional and unset by default, so existing uploads are unchanged.
 
 > **Server dependency:** requires the `POST /nucleus/model/:modelId/modelRun/create` and `POST /nucleus/modelRun/:modelRunId/uploadPredictions` routes in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
 

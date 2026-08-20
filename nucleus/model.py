@@ -151,80 +151,79 @@ class Model:
     def create_run(
         self,
         name: str,
-        dataset: Dataset,
-        predictions: List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
+        dataset: Optional[Dataset] = None,
+        predictions: Optional[
+            List[
+                Union[
+                    BoxPrediction,
+                    PolygonPrediction,
+                    CuboidPrediction,
+                    SegmentationPrediction,
+                ]
             ]
-        ],
+        ] = None,
         metadata: Optional[Dict] = None,
         asynchronous: bool = False,
-    ) -> ModelRun:
-        # This method, as well as model runs in general are now deprecated.
-
-        # Instead models will automatically generate a model run when applied to
-        # a dataset using dataset.upload_predictions(model, predictions). Therefore
-        # there is no longer any need to create a model run, since you can upload
-        # predictions without needing to explicitly create a model run.
-
-        # When uploading to a dataset twice using the same model, the same model
-        # run will be reused by Nucleus.
-
-        payload: dict = {
-            NAME_KEY: name,
-            REFERENCE_ID_KEY: self.reference_id,
-        }
-        if metadata:
-            payload[METADATA_KEY] = metadata
-        model_run: ModelRun = self._client.create_model_run(
-            dataset.id, payload
-        )
-
-        model_run.predict(predictions, asynchronous=asynchronous)
-
-        return model_run
-
-    def create_run_without_dataset(
-        self,
-        name: str,
-        metadata: Optional[Dict] = None,
         reference_id: Optional[str] = None,
-    ) -> "ModelRun":
-        """Creates a model run that is not bound to any dataset up front.
+    ) -> ModelRun:
+        """Creates a model run for this model.
 
-        The run starts with an empty dataset set and is not readable until
-        predictions are added to it via :meth:`ModelRun.add_predictions`. Each
-        prediction names its own target item (``dataset_item_id``, or
-        ``dataset_id`` + ``reference_id``); the server groups them by dataset
-        and widens the run's dataset set as predictions arrive. This is what
-        lets a single run span multiple datasets.
+        Call it with just a name to create a run, then attach predictions with
+        :meth:`ModelRun.add_predictions`::
+
+            run = model.create_run(name="my-run")
+            run.add_predictions(predictions)
+
+        Each prediction identifies the item it belongs to (by ``item_id``, or a
+        ``reference_id``), so you can add predictions from anywhere without
+        wiring anything up ahead of time.
 
         Args:
             name: Human-readable name for the model run.
+            predictions: Optional predictions to attach to the run immediately.
             metadata: Optional arbitrary metadata blob for the run.
             reference_id: Optional user-defined reference id for the run.
+            dataset: Deprecated. Passing a dataset uses the legacy path that
+                binds the run to that one dataset and uploads ``predictions``
+                to it. Omit it to use the recommended flow above.
+            asynchronous: Only used by the deprecated dataset-bound path.
 
         Returns:
-            The created :class:`ModelRun` (with ``dataset_id`` unset).
+            The created :class:`ModelRun`.
         """
-        payload: dict = {
-            NAME_KEY: name,
-            REFERENCE_ID_KEY: reference_id,
-            METADATA_KEY: metadata or {},
-        }
+        # Legacy path: an explicit dataset binds the run to that dataset and
+        # uploads predictions to it. Kept for backwards compatibility; new code
+        # should omit `dataset` and use `run.add_predictions(...)`.
+        if dataset is not None:
+            payload: dict = {
+                NAME_KEY: name,
+                REFERENCE_ID_KEY: self.reference_id,
+            }
+            if metadata:
+                payload[METADATA_KEY] = metadata
+            model_run: ModelRun = self._client.create_model_run(
+                dataset.id, payload
+            )
+            model_run.predict(predictions or [], asynchronous=asynchronous)
+            return model_run
+
         response = self._client.make_request(
-            payload,
+            {
+                NAME_KEY: name,
+                REFERENCE_ID_KEY: reference_id,
+                METADATA_KEY: metadata or {},
+            },
             route=f"model/{self.id}/modelRun/create",
             requests_command=requests.post,
         )
-        return ModelRun(
+        run = ModelRun(
             model_run_id=response["model_run_id"],
             dataset_id=None,
             client=self._client,
         )
+        if predictions:
+            run.add_predictions(predictions)
+        return run
 
     def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
