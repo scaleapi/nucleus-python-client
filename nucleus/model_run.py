@@ -189,6 +189,11 @@ class ModelRun:
         if asynchronous:
             check_all_mask_paths_remote(annotations)
 
+            if self.dataset_id is None:
+                raise ValueError(
+                    "Asynchronous predict() requires a dataset-bound model run. "
+                    "Dataset-less runs must use add_predictions(...)."
+                )
             request_id = serialize_and_write_to_presigned_url(
                 annotations, self.dataset_id, self._client
             )
