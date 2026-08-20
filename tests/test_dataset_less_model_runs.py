@@ -141,6 +141,32 @@ def test_create_run_defaults_metadata_to_empty_dict():
     }
 
 
+def test_create_run_with_predictions_and_no_dataset_uploads_them():
+    client = _client()
+    client.make_request = MagicMock(return_value={"model_run_id": "run_1"})
+    model = _model(client)
+    predictions = _predictions()
+
+    with pytest.MonkeyPatch.context() as mp:
+        captured = {}
+        mp.setattr(
+            ModelRun,
+            "add_predictions",
+            lambda self, preds, **kw: captured.update(
+                run_id=self.model_run_id, preds=preds
+            ),
+        )
+        run = model.create_run(name="my run", predictions=predictions)
+
+    # The run is created dataset-less, then the predictions are attached to it.
+    assert client.make_request.call_args[1]["route"] == (
+        "model/prj_1/modelRun/create"
+    )
+    assert run.model_run_id == "run_1"
+    assert run.dataset_id is None
+    assert captured == {"run_id": "run_1", "preds": predictions}
+
+
 # --------------------------------------------------------------------------- #
 # ModelRun.add_predictions
 # --------------------------------------------------------------------------- #

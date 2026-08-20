@@ -174,6 +174,10 @@ class Model:
             run = model.create_run(name="my-run")
             run.add_predictions(predictions)
 
+        or pass ``predictions`` directly to create and upload in one call::
+
+            run = model.create_run(name="my-run", predictions=predictions)
+
         Each prediction identifies the item it belongs to (by ``item_id``, or a
         ``reference_id``), so you can add predictions from anywhere without
         wiring anything up ahead of time.
