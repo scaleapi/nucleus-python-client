@@ -29,11 +29,13 @@ from .constants import (
     CLASS_PDF_KEY,
     CONFIDENCE_KEY,
     CUBOID_TYPE,
+    DATASET_ID_KEY,
     DATASET_ITEM_ID_KEY,
     DIMENSIONS_KEY,
     EMBEDDING_VECTOR_KEY,
     GEOMETRY_KEY,
     HEIGHT_KEY,
+    ITEM_ID_KEY,
     KEYPOINTS_KEY,
     KEYPOINTS_NAMES_KEY,
     KEYPOINTS_SKELETON_KEY,
@@ -54,6 +56,25 @@ from .constants import (
     Y_KEY,
     YAW_KEY,
 )
+
+
+def _add_prediction_target_ids(
+    payload: dict,
+    dataset_item_id: Optional[str],
+    dataset_id: Optional[str],
+) -> dict:
+    """Emit the per-prediction upload target ids used by dataset-less model runs.
+
+    The dataset-less ``modelRun/{run}/uploadPredictions`` endpoint resolves each
+    prediction's dataset item from either ``item_id`` (the dataset_item_id) or
+    ``dataset_id`` + ``reference_id``. Both keys are output-only and are only
+    included when set, keeping regular per-dataset uploads unchanged.
+    """
+    if dataset_item_id is not None:
+        payload[ITEM_ID_KEY] = dataset_item_id
+    if dataset_id is not None:
+        payload[DATASET_ID_KEY] = dataset_id
+    return payload
 
 
 def from_json(payload: dict):
@@ -122,6 +143,33 @@ class SegmentationPrediction(SegmentationAnnotation):
           to an external database, and its value will be returned for any export.
     """
 
+    def __init__(
+        self,
+        mask_url: str,
+        annotations: List[Segment],
+        reference_id: str,
+        annotation_id: Optional[str] = None,
+        dataset_item_id: Optional[str] = None,
+        *,
+        dataset_id: Optional[str] = None,
+    ):
+        super().__init__(
+            mask_url=mask_url,
+            annotations=annotations,
+            reference_id=reference_id,
+            annotation_id=annotation_id,
+            dataset_item_id=dataset_item_id,
+        )
+        self.dataset_id = dataset_id
+
+    def to_payload(self) -> dict:
+        payload = super().to_payload()
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
+
+        return payload
+
     @classmethod
     def from_json(cls, payload: dict):
         return cls(
@@ -132,6 +180,7 @@ class SegmentationPrediction(SegmentationAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             # metadata=payload.get(METADATA_KEY, None),  # TODO(sc: 422637)
         )
@@ -194,6 +243,7 @@ class BoxPrediction(BoxAnnotation):
         track_reference_id: Optional[str] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -210,6 +260,7 @@ class BoxPrediction(BoxAnnotation):
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
@@ -217,6 +268,9 @@ class BoxPrediction(BoxAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -231,6 +285,7 @@ class BoxPrediction(BoxAnnotation):
             height=geometry.get(HEIGHT_KEY, 0),
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -278,6 +333,7 @@ class LinePrediction(LineAnnotation):
         track_reference_id: Optional[str] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -290,6 +346,7 @@ class LinePrediction(LineAnnotation):
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
@@ -297,6 +354,9 @@ class LinePrediction(LineAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -310,6 +370,7 @@ class LinePrediction(LineAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -360,6 +421,7 @@ class PolygonPrediction(PolygonAnnotation):
         track_reference_id: Optional[str] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -373,6 +435,7 @@ class PolygonPrediction(PolygonAnnotation):
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
@@ -380,6 +443,9 @@ class PolygonPrediction(PolygonAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -393,6 +459,7 @@ class PolygonPrediction(PolygonAnnotation):
             ],
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -445,6 +512,7 @@ class KeypointsPrediction(KeypointsAnnotation):
         track_reference_id: Optional[str] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -459,6 +527,7 @@ class KeypointsPrediction(KeypointsAnnotation):
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
@@ -466,6 +535,9 @@ class KeypointsPrediction(KeypointsAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -481,6 +553,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             skeleton=geometry[KEYPOINTS_SKELETON_KEY],
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -530,6 +603,7 @@ class CuboidPrediction(CuboidAnnotation):
         track_reference_id: Optional[str] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -544,6 +618,7 @@ class CuboidPrediction(CuboidAnnotation):
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
@@ -551,6 +626,9 @@ class CuboidPrediction(CuboidAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -564,6 +642,7 @@ class CuboidPrediction(CuboidAnnotation):
             yaw=geometry.get(YAW_KEY, 0),
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
@@ -605,6 +684,7 @@ class CategoryPrediction(CategoryAnnotation):
         track_reference_id: Optional[str] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -616,6 +696,7 @@ class CategoryPrediction(CategoryAnnotation):
         )
         self.confidence = confidence
         self.class_pdf = class_pdf
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
@@ -623,6 +704,9 @@ class CategoryPrediction(CategoryAnnotation):
             payload[CONFIDENCE_KEY] = self.confidence
         if self.class_pdf is not None:
             payload[CLASS_PDF_KEY] = self.class_pdf
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -633,6 +717,7 @@ class CategoryPrediction(CategoryAnnotation):
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
             class_pdf=payload.get(CLASS_PDF_KEY, None),
@@ -678,6 +763,7 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
         metadata: Optional[Dict] = None,
         *,
         dataset_item_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
     ):
         super().__init__(
             label=label,
@@ -687,11 +773,15 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
             metadata=metadata,
         )
         self.confidence = confidence
+        self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
         payload = super().to_payload()
         if self.confidence is not None:
             payload[CONFIDENCE_KEY] = self.confidence
+        _add_prediction_target_ids(
+            payload, self.dataset_item_id, self.dataset_id
+        )
 
         return payload
 
@@ -702,6 +792,7 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
             reference_id=payload[REFERENCE_ID_KEY],
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
+            dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
             metadata=payload.get(METADATA_KEY, {}),
         )

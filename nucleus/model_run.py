@@ -45,7 +45,12 @@ class ModelRun:
     This class is deprecated and will be removed from the python client.
     """
 
-    def __init__(self, model_run_id: str, dataset_id: str, client):
+    def __init__(
+        self,
+        model_run_id: str,
+        dataset_id: Optional[str] = None,
+        client=None,
+    ):
         self.model_run_id = model_run_id
         self._client = client
         self.dataset_id = dataset_id
@@ -173,7 +178,7 @@ class ModelRun:
                 "predictions_ignored": int,
             }
         """
-        
+
         uploader = PredictionUploader(
             client=self._client,
             dataset_id=self.dataset_id,
@@ -195,6 +200,76 @@ class ModelRun:
 
         return uploader.upload(
             annotations=annotations,
+            update=update,
+            batch_size=batch_size,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+        )
+
+    def add_predictions(
+        self,
+        predictions: List[
+            Union[
+                BoxPrediction,
+                PolygonPrediction,
+                CuboidPrediction,
+                SegmentationPrediction,
+            ]
+        ],
+        update: bool = False,
+        asynchronous: bool = False,
+        batch_size: int = 5000,
+        remote_files_per_upload_request: int = 20,
+        local_files_per_upload_request: int = 10,
+    ) -> dict:
+        """Uploads predictions to a dataset-less model run.
+
+        Unlike :meth:`predict`, this run is not bound to a single dataset. Each
+        prediction names its own target item, and the server groups the
+        predictions by dataset and widens the run's dataset set accordingly.
+        Every prediction must carry either ``dataset_item_id`` (preferred) or
+        ``dataset_id`` + ``reference_id`` so the server can resolve its item.
+
+        Args:
+            predictions: Predictions to upload. Each must carry
+                ``dataset_item_id`` or ``dataset_id`` + ``reference_id``.
+            update: If True, existing predictions for the same
+                (reference_id, annotation_id) will be overwritten. If False,
+                existing predictions will be skipped.
+            asynchronous: Not supported for dataset-less uploads yet — passing
+                True raises :class:`NotImplementedError`. Use
+                ``dataset.upload_predictions_for_model_run(...)`` for async
+                per-dataset uploads.
+            batch_size: Number of predictions processed in each concurrent batch.
+            remote_files_per_upload_request: Number of remote segmentation files
+                to upload in each request.
+            local_files_per_upload_request: Number of local segmentation files
+                to upload in each request. The maximum is 10.
+
+        Returns::
+
+            {
+                "model_run_id": str,
+                "predictions_processed": int,
+                "predictions_ignored": int,
+            }
+        """
+        if asynchronous:
+            raise NotImplementedError(
+                "Asynchronous upload is not supported for dataset-less model "
+                "runs yet. Use "
+                "dataset.upload_predictions_for_model_run(model_run_id, "
+                "predictions, asynchronous=True) for the per-dataset route."
+            )
+
+        uploader = PredictionUploader(
+            client=self._client,
+            model_run_id=self.model_run_id,
+        )
+        uploader.check_for_duplicate_ids(predictions)
+
+        return uploader.upload(
+            annotations=predictions,
             update=update,
             batch_size=batch_size,
             remote_files_per_upload_request=remote_files_per_upload_request,

@@ -187,6 +187,45 @@ class Model:
 
         return model_run
 
+    def create_run_without_dataset(
+        self,
+        name: str,
+        metadata: Optional[Dict] = None,
+        reference_id: Optional[str] = None,
+    ) -> "ModelRun":
+        """Creates a model run that is not bound to any dataset up front.
+
+        The run starts with an empty dataset set and is not readable until
+        predictions are added to it via :meth:`ModelRun.add_predictions`. Each
+        prediction names its own target item (``dataset_item_id``, or
+        ``dataset_id`` + ``reference_id``); the server groups them by dataset
+        and widens the run's dataset set as predictions arrive. This is what
+        lets a single run span multiple datasets.
+
+        Args:
+            name: Human-readable name for the model run.
+            metadata: Optional arbitrary metadata blob for the run.
+            reference_id: Optional user-defined reference id for the run.
+
+        Returns:
+            The created :class:`ModelRun` (with ``dataset_id`` unset).
+        """
+        payload: dict = {
+            NAME_KEY: name,
+            REFERENCE_ID_KEY: reference_id,
+            METADATA_KEY: metadata or {},
+        }
+        response = self._client.make_request(
+            payload,
+            route=f"model/{self.id}/modelRun/create",
+            requests_command=requests.post,
+        )
+        return ModelRun(
+            model_run_id=response["model_run_id"],
+            dataset_id=None,
+            client=self._client,
+        )
+
     def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
 
