@@ -164,7 +164,9 @@ class SegmentationPrediction(SegmentationAnnotation):
         super().__init__(
             mask_url=mask_url,
             annotations=annotations,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             annotation_id=annotation_id,
             dataset_item_id=dataset_item_id,
         )
@@ -260,7 +262,9 @@ class BoxPrediction(BoxAnnotation):
             y=y,
             width=width,
             height=height,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
@@ -348,7 +352,9 @@ class LinePrediction(LineAnnotation):
         super().__init__(
             label=label,
             vertices=vertices,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
@@ -437,7 +443,9 @@ class PolygonPrediction(PolygonAnnotation):
         super().__init__(
             label=label,
             vertices=vertices,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
@@ -531,7 +539,9 @@ class KeypointsPrediction(KeypointsAnnotation):
             keypoints=keypoints,
             names=names,
             skeleton=skeleton,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
@@ -624,7 +634,9 @@ class CuboidPrediction(CuboidAnnotation):
             position=position,
             dimensions=dimensions,
             yaw=yaw,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             annotation_id=annotation_id,
             metadata=metadata,
@@ -705,7 +717,9 @@ class CategoryPrediction(CategoryAnnotation):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             metadata=metadata,
             track_reference_id=track_reference_id,
@@ -786,7 +800,9 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
         super().__init__(
             label=label,
             taxonomy_name=taxonomy_name,
-            reference_id=reference_id,
+            # Predictions may omit reference_id when dataset_item_id is set;
+            # annotations still require it, hence the base type is str.
+            reference_id=reference_id,  # type: ignore[arg-type]
             dataset_item_id=dataset_item_id,
             metadata=metadata,
         )
