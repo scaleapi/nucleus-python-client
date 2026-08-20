@@ -77,6 +77,13 @@ def _add_prediction_target_ids(
     return payload
 
 
+def _require_prediction_target(reference_id, dataset_item_id):
+    if reference_id is None and dataset_item_id is None:
+        raise ValueError(
+            "A prediction must set reference_id or dataset_item_id."
+        )
+
+
 def from_json(payload: dict):
     """Instantiates prediction object from schematized JSON dict payload."""
     type_key_to_type: Dict[str, Type[Prediction]] = {
@@ -133,7 +140,8 @@ class SegmentationPrediction(SegmentationAnnotation):
           example above these would map that 0 to background, 1 to car and 2 to
           pedestrian. In the instance segmentation example above, 0 and 1 would
           both be mapped to car, 2 and 3 would both be mapped to motorcycle
-        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        reference_id (Optional[str]): Optional user-defined ID of the item to which to apply
+          this prediction. Provide this or ``dataset_item_id``.
         annotation_id (Optional[str]): For segmentation predictions, this value is ignored
           because there can only be one segmentation prediction per dataset item.
           Therefore regardless of annotation ID, if there is an existing
@@ -147,7 +155,7 @@ class SegmentationPrediction(SegmentationAnnotation):
         self,
         mask_url: str,
         annotations: List[Segment],
-        reference_id: str,
+        reference_id: Optional[str] = None,
         annotation_id: Optional[str] = None,
         dataset_item_id: Optional[str] = None,
         *,
@@ -160,6 +168,7 @@ class SegmentationPrediction(SegmentationAnnotation):
             annotation_id=annotation_id,
             dataset_item_id=dataset_item_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.dataset_id = dataset_id
 
     def to_payload(self) -> dict:
@@ -178,7 +187,7 @@ class SegmentationPrediction(SegmentationAnnotation):
                 Segment.from_json(ann)
                 for ann in payload.get(ANNOTATIONS_KEY, [])
             ],
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             annotation_id=payload.get(ANNOTATION_ID_KEY, None),
@@ -197,8 +206,8 @@ class BoxPrediction(BoxAnnotation):
             of the bounding box and the top border of the image.
         width (Union[float, int]): The width in pixels of the annotation.
         height (Union[float, int]): The height in pixels of the annotation.
-        reference_id (str): User-defined ID of the image to which to apply this
-            annotation.
+        reference_id (Optional[str]): Optional user-defined ID of the item to which to apply
+            this prediction. Provide this or ``dataset_item_id``.
         confidence: 0-1 indicating the confidence of the prediction.
         annotation_id (Optional[str]): The annotation ID that uniquely
             identifies this annotation within its target dataset item. Upon ingest,
@@ -234,7 +243,7 @@ class BoxPrediction(BoxAnnotation):
         y: Union[float, int],
         width: Union[float, int],
         height: Union[float, int],
-        reference_id: str,
+        reference_id: Optional[str] = None,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -258,6 +267,7 @@ class BoxPrediction(BoxAnnotation):
             embedding_vector=embedding_vector,
             track_reference_id=track_reference_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.class_pdf = class_pdf
         self.dataset_id = dataset_id
@@ -283,7 +293,7 @@ class BoxPrediction(BoxAnnotation):
             y=geometry.get(Y_KEY, 0),
             width=geometry.get(WIDTH_KEY, 0),
             height=geometry.get(HEIGHT_KEY, 0),
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
@@ -301,8 +311,8 @@ class LinePrediction(LineAnnotation):
     Parameters:
         label (str): The label for this prediction (e.g. car, pedestrian, bicycle).
         vertices (List[:class:`Point`]): The list of points making up the line.
-        reference_id (str): User-defined ID of the image to which to apply this
-            annotation.
+        reference_id (Optional[str]): Optional user-defined ID of the item to which to apply
+            this prediction. Provide this or ``dataset_item_id``.
         confidence: 0-1 indicating the confidence of the prediction.
         annotation_id (Optional[str]): The annotation ID that uniquely identifies
             this annotation within its target dataset item. Upon ingest, a matching
@@ -325,7 +335,7 @@ class LinePrediction(LineAnnotation):
         self,
         label: str,
         vertices: List[Point],
-        reference_id: str,
+        reference_id: Optional[str] = None,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -344,6 +354,7 @@ class LinePrediction(LineAnnotation):
             metadata=metadata,
             track_reference_id=track_reference_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.class_pdf = class_pdf
         self.dataset_id = dataset_id
@@ -368,7 +379,7 @@ class LinePrediction(LineAnnotation):
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
@@ -385,8 +396,8 @@ class PolygonPrediction(PolygonAnnotation):
     Parameters:
         label (str): The label for this annotation (e.g. car, pedestrian, bicycle).
         vertices (List[:class:`Point`]): The list of points making up the polygon.
-        reference_id (str): User-defined ID of the image to which to apply this
-            annotation.
+        reference_id (Optional[str]): Optional user-defined ID of the item to which to apply
+            this prediction. Provide this or ``dataset_item_id``.
         confidence: 0-1 indicating the confidence of the prediction.
         annotation_id (Optional[str]): The annotation ID that uniquely identifies
             this annotation within its target dataset item. Upon ingest, a matching
@@ -412,7 +423,7 @@ class PolygonPrediction(PolygonAnnotation):
         self,
         label: str,
         vertices: List[Point],
-        reference_id: str,
+        reference_id: Optional[str] = None,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -433,6 +444,7 @@ class PolygonPrediction(PolygonAnnotation):
             embedding_vector=embedding_vector,
             track_reference_id=track_reference_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.class_pdf = class_pdf
         self.dataset_id = dataset_id
@@ -457,7 +469,7 @@ class PolygonPrediction(PolygonAnnotation):
             vertices=[
                 Point.from_json(_) for _ in geometry.get(VERTICES_KEY, [])
             ],
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
@@ -478,8 +490,8 @@ class KeypointsPrediction(KeypointsAnnotation):
         names (List[str]): A list that corresponds to the names of each keypoint.
         skeleton (List[List[int]]): A list of 2-length lists indicating a beginning
             and ending index for each line segment in the skeleton of this keypoint label.
-        reference_id (str): User-defined ID of the image to which to apply this
-            annotation.
+        reference_id (Optional[str]): Optional user-defined ID of the item to which to apply
+            this prediction. Provide this or ``dataset_item_id``.
         confidence: 0-1 indicating the confidence of the prediction.
         annotation_id (Optional[str]): The annotation ID that uniquely identifies
             this annotation within its target dataset item. Upon ingest, a matching
@@ -504,7 +516,7 @@ class KeypointsPrediction(KeypointsAnnotation):
         keypoints: List[Keypoint],
         names: List[str],
         skeleton: List[List[int]],
-        reference_id: str,
+        reference_id: Optional[str] = None,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -525,6 +537,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             metadata=metadata,
             track_reference_id=track_reference_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.class_pdf = class_pdf
         self.dataset_id = dataset_id
@@ -551,7 +564,7 @@ class KeypointsPrediction(KeypointsAnnotation):
             ],
             names=geometry[KEYPOINTS_NAMES_KEY],
             skeleton=geometry[KEYPOINTS_SKELETON_KEY],
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
@@ -570,7 +583,8 @@ class CuboidPrediction(CuboidAnnotation):
         position (:class:`Point3D`): The point at the center of the cuboid
         dimensions (:class:`Point3D`): The length (x), width (y), and height (z) of the cuboid
         yaw (float): The rotation, in radians, about the Z axis of the cuboid
-        reference_id (str): User-defined ID of the image to which to apply this annotation.
+        reference_id (Optional[str]): Optional user-defined ID of the item to which to apply
+          this prediction. Provide this or ``dataset_item_id``.
         confidence: 0-1 indicating the confidence of the prediction.
         annotation_id (Optional[str]): The annotation ID that uniquely identifies this
           annotation within its target dataset item. Upon ingest, a matching
@@ -595,7 +609,7 @@ class CuboidPrediction(CuboidAnnotation):
         position: Point3D,
         dimensions: Point3D,
         yaw: float,
-        reference_id: str,
+        reference_id: Optional[str] = None,
         confidence: Optional[float] = None,
         annotation_id: Optional[str] = None,
         metadata: Optional[Dict] = None,
@@ -616,6 +630,7 @@ class CuboidPrediction(CuboidAnnotation):
             metadata=metadata,
             track_reference_id=track_reference_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.class_pdf = class_pdf
         self.dataset_id = dataset_id
@@ -640,7 +655,7 @@ class CuboidPrediction(CuboidAnnotation):
             position=Point3D.from_json(geometry.get(POSITION_KEY, {})),
             dimensions=Point3D.from_json(geometry.get(DIMENSIONS_KEY, {})),
             yaw=geometry.get(YAW_KEY, 0),
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
@@ -656,7 +671,8 @@ class CategoryPrediction(CategoryAnnotation):
 
     Parameters:
         label: The label for this annotation (e.g. car, pedestrian, bicycle).
-        reference_id: The reference ID of the image you wish to apply this annotation to.
+        reference_id: Optional user-defined ID of the item to which to apply this
+          prediction. Provide this or ``dataset_item_id``.
         taxonomy_name: The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
         confidence: 0-1 indicating the confidence of the prediction.
@@ -676,7 +692,7 @@ class CategoryPrediction(CategoryAnnotation):
     def __init__(
         self,
         label: str,
-        reference_id: str,
+        reference_id: Optional[str] = None,
         taxonomy_name: Optional[str] = None,
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
@@ -694,6 +710,7 @@ class CategoryPrediction(CategoryAnnotation):
             metadata=metadata,
             track_reference_id=track_reference_id,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.class_pdf = class_pdf
         self.dataset_id = dataset_id
@@ -715,7 +732,7 @@ class CategoryPrediction(CategoryAnnotation):
         return cls(
             label=payload.get(LABEL_KEY, 0),
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),
@@ -744,7 +761,8 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
 
     Parameters:
         label: The label for this annotation (e.g. action, subject, scenario).
-        reference_id: The reference ID of the scene you wish to apply this annotation to.
+        reference_id: Optional user-defined ID of the item to which to apply this
+          prediction. Provide this or ``dataset_item_id``.
         taxonomy_name: The name of the taxonomy this annotation conforms to.
           See :meth:`Dataset.add_taxonomy`.
         confidence: 0-1 indicating the confidence of the prediction.
@@ -757,7 +775,7 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
     def __init__(
         self,
         label: str,
-        reference_id: str,
+        reference_id: Optional[str] = None,
         taxonomy_name: Optional[str] = None,
         confidence: Optional[float] = None,
         metadata: Optional[Dict] = None,
@@ -772,6 +790,7 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
             dataset_item_id=dataset_item_id,
             metadata=metadata,
         )
+        _require_prediction_target(reference_id, dataset_item_id)
         self.confidence = confidence
         self.dataset_id = dataset_id
 
@@ -790,7 +809,7 @@ class SceneCategoryPrediction(SceneCategoryAnnotation):
         return cls(
             label=payload.get(LABEL_KEY, 0),
             taxonomy_name=payload.get(TAXONOMY_NAME_KEY, None),
-            reference_id=payload[REFERENCE_ID_KEY],
+            reference_id=payload.get(REFERENCE_ID_KEY),
             dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
             dataset_id=payload.get(DATASET_ID_KEY),
             confidence=payload.get(CONFIDENCE_KEY, None),

@@ -20,7 +20,7 @@ from nucleus.annotation_uploader import PredictionUploader
 from nucleus.errors import DuplicateIDError
 from nucleus.model import Model
 from nucleus.model_run import ModelRun
-from nucleus.prediction import BoxPrediction
+from nucleus.prediction import BoxPrediction, CategoryPrediction
 
 
 def _client():
@@ -248,3 +248,33 @@ def test_box_prediction_omits_target_ids_when_unset():
     payload = _predictions()[0].to_payload()
     assert "item_id" not in payload
     assert "dataset_id" not in payload
+
+
+# --------------------------------------------------------------------------- #
+# Predictions target an item by dataset_item_id alone (no reference_id)
+# --------------------------------------------------------------------------- #
+def test_box_prediction_builds_from_dataset_item_id_alone():
+    pred = BoxPrediction(
+        label="car",
+        x=0,
+        y=0,
+        width=10,
+        height=10,
+        dataset_item_id="di_1",
+        confidence=0.9,
+    )
+    payload = pred.to_payload()
+    assert payload["item_id"] == "di_1"
+    assert payload.get("reference_id") is None
+
+
+def test_prediction_with_no_target_is_rejected():
+    with pytest.raises(ValueError, match="reference_id or dataset_item_id"):
+        BoxPrediction(label="car", x=0, y=0, width=10, height=10)
+
+
+def test_category_prediction_builds_from_dataset_item_id_alone():
+    pred = CategoryPrediction(label="car", dataset_item_id="di_1")
+    payload = pred.to_payload()
+    assert payload["item_id"] == "di_1"
+    assert payload.get("reference_id") is None
