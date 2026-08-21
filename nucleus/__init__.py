@@ -147,7 +147,6 @@ from .constants import (
     MESSAGE_KEY,
     METADATA_KEY,
     METRIC_TYPE_KEY,
-    MODEL_ID_KEY,
     MODEL_IDS_KEY,
     MODEL_RUN_ID_KEY,
     MODEL_RUN_IDS_KEY,
@@ -544,9 +543,8 @@ class NucleusClient:
     def merge_model_runs(
         self,
         model_run_ids: List[str],
-        name: str,
+        name: Optional[str] = None,
         *,
-        model_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Merge several model runs into one new run holding all their predictions.
@@ -558,33 +556,45 @@ class NucleusClient:
         Merging the runs produces one run that does cover it, which you can then pass to
         :meth:`create_benchmark_evaluation_v2`.
 
+        All source runs must belong to the same model; merging across models is rejected
+        server-side (a run's model is its provenance, read by eval, leaderboards and the
+        model page).
+
         The merge is a full union: predictions are copied, never deduplicated. If two
         source runs predict on the same item with the same ``annotation_id``, the
-        colliding id is rewritten rather than dropped, and the count of rewrites comes
-        back in ``annotation_ids_rewritten``.
+        colliding id is rewritten rather than dropped. The source runs are left
+        untouched.
 
-        The source runs are left untouched.
+        **Asynchronous.** The new run is created and returned immediately, but its
+        predictions are copied by a background job. The run is *empty until the job
+        completes*, so wait on the returned job before evaluating — otherwise the
+        evaluation scores uncopied items as false negatives, the very failure this is
+        meant to fix::
+
+            result = client.merge_model_runs(["run_abc", "run_def"])
+            result["job"].sleep_until_complete()
+            client.create_benchmark_evaluation_v2(
+                benchmark_id, result["model_run_id"]
+            )
 
         Parameters:
-            model_run_ids: Two or more model run ids (``run_*``) to merge.
-            name: Display name for the merged run.
-            model_id: Model the merged run belongs to (``prj_*``). Defaults to the
-                sources' shared model; required when they belong to different models.
+            model_run_ids: Two or more distinct model run ids (``run_*``) to merge.
+            name: Display name for the merged run. Defaults server-side to the model's
+                own name when omitted.
             metadata: Optional metadata for the merged run. The merge always records
                 ``merged_from_model_run_ids`` alongside whatever you pass.
 
         Returns:
-            Dict describing the merge::
+            Dict describing the newly created (still-populating) run::
 
                 {
-                    "model_run_id": str,          # the new run
-                    "source_model_run_ids": List[str],
-                    "dataset_ids": List[str],     # datasets the new run spans
-                    "predictions_copied": int,
-                    "predictions_ignored": int,   # already present in the target
-                    "annotation_ids_rewritten": int,
-                    "errors": List[str],
+                    "model_run_id": str,        # the new run, usable once the job finishes
+                    "dataset_ids": List[str],   # datasets the new run spans
+                    "job": AsyncJob,            # copy progress; poll or sleep_until_complete()
                 }
+
+            The copy's counts (``predictions_copied``, ``predictions_ignored``,
+            ``annotation_ids_rewritten``, errors) are reported on the job, not here.
         """
         if len(set(model_run_ids)) < 2:
             raise ValueError(
@@ -593,13 +603,17 @@ class NucleusClient:
             )
         payload: Dict[str, Any] = {
             MODEL_RUN_IDS_KEY: model_run_ids,
-            NAME_KEY: name,
         }
-        if model_id is not None:
-            payload[MODEL_ID_KEY] = model_id
+        if name is not None:
+            payload[NAME_KEY] = name
         if metadata is not None:
             payload[METADATA_KEY] = metadata
-        return self.make_request(payload, "modelRun/merge")
+        response = self.make_request(payload, "modelRun/merge")
+        return {
+            MODEL_RUN_ID_KEY: response[MODEL_RUN_ID_KEY],
+            DATASET_IDS_KEY: response[DATASET_IDS_KEY],
+            "job": AsyncJob.from_id(response[JOB_ID_KEY], self),
+        }
 
     def create_dataset_from_project(
         self,
