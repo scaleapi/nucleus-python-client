@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-17
+## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 
 ### Added
 - **Benchmark versioning / lineage.** `create_benchmark()` accepts `parent_benchmark_id` to create a new **version** downstream of an existing benchmark: the child inherits the parent's items, the source arguments add on top, and `removed_item_ids` prune inherited items (`parent ∪ added ∖ removed`). Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor` (must exceed the parent's). `Benchmark` now exposes `parent_benchmark_id`, `version_major`, `version_minor`, and `version_label`.
