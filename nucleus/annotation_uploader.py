@@ -273,13 +273,21 @@ class PredictionUploader(AnnotationUploader):
         if route is not None:
             self._route = route
             return
-        if dataset_id is None:
-            raise ValueError("dataset_id is required to upload predictions.")
         if model_run_id is not None and model_id is not None:
             raise ValueError("Pass either model_id or model_run_id, not both.")
         if model_run_id is not None:
-            self._route = f"dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions"
+            if dataset_id is not None:
+                self._route = f"dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions"
+            else:
+                # Dataset-less model run: predictions carry their own item_id
+                # (or dataset_id + reference_id); the server groups by dataset
+                # and widens the run.
+                self._route = f"modelRun/{model_run_id}/uploadPredictions"
         elif model_id is not None:
+            if dataset_id is None:
+                raise ValueError(
+                    "dataset_id is required to upload predictions."
+                )
             self._route = (
                 f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
             )

@@ -5,12 +5,29 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-15
+## [0.21.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-15
 
 ### Added
 - **`NucleusClient.merge_model_runs()`.** Merges two or more model runs into one new run holding the union of their predictions, leaving the sources untouched. A benchmark evaluation names a single model run and a benchmark's items may span datasets, so a model uploaded as several runs previously had no single run covering the benchmark — every uncovered item scored as a false negative. Merge first, wait for the copy to finish, then pass the new run to `create_benchmark_evaluation_v2()`. All source runs must belong to the same model.
 
   The copy runs asynchronously: the call returns `{"model_run_id", "dataset_ids", "job"}` immediately, but the new run is empty until the `job` completes — call `job.sleep_until_complete()` before evaluating. The merge is a full union: predictions are copied, never deduplicated, and colliding `annotation_id`s are rewritten rather than dropped. Copy counts (`predictions_copied`, `predictions_ignored`, `annotation_ids_rewritten`) are reported on the job.
+
+## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-19
+
+### Added
+- **`Model.create_run(name)` + `ModelRun.add_predictions(predictions, ...)`.** Create a model run with just a name, then attach predictions — no dataset needed up front:
+  ```python
+  run = model.create_run(name="my-run")
+  run.add_predictions(predictions)
+  ```
+  Each prediction identifies its target item by `dataset_item_id` (the `di_*` id returned on exported items), so predictions can come from anywhere and a single run can cover items across multiple datasets. `add_predictions` posts to `POST /nucleus/modelRun/:modelRunId/uploadPredictions` and supports `update` / `batch_size` / file-batching arguments; `asynchronous=True` raises `NotImplementedError` for now.
+  - `create_run` still accepts the old `dataset=` / `predictions=` arguments for backwards compatibility (the deprecated dataset-bound path); omit them to use the flow above.
+- **Per-prediction target.** Every prediction type (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `scene_category`, `segmentation`) emits its `dataset_item_id` in `to_payload` (as `item_id`) when set, which is how the dataset-less upload route resolves each item.
+
+### Changed
+- **`reference_id` is now optional on predictions.** A prediction can be constructed from its `dataset_item_id` alone (at least one of `reference_id` / `dataset_item_id` is required). Annotations still require `reference_id`. Existing prediction code that passes `reference_id` is unaffected.
+
+> **Server dependency:** requires the `POST /nucleus/model/:modelId/modelRun/create` and `POST /nucleus/modelRun/:modelRunId/uploadPredictions` routes in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
 
 ## [0.20.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.2) - 2026-08-18
 

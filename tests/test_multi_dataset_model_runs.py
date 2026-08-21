@@ -90,10 +90,13 @@ def test_neither_model_nor_model_run_is_rejected():
         PredictionUploader(client=_client(), dataset_id="ds_1")
 
 
-def test_dataset_id_is_required_for_id_based_routing():
-    """model_run_id alone no longer selects the deprecated route."""
-    with pytest.raises(ValueError, match="dataset_id is required"):
-        PredictionUploader(client=_client(), model_run_id="run_1")
+def test_model_run_id_alone_routes_to_the_dataset_less_endpoint():
+    """A bare model_run_id (no dataset_id, no explicit route) now targets the
+    dataset-less endpoint, where predictions carry their own item ids."""
+    uploader = PredictionUploader(client=_client(), model_run_id="run_1")
+    assert (
+        uploader._route == "modelRun/run_1/uploadPredictions"  # noqa: SLF001
+    )
 
 
 # --------------------------------------------------------------------------- #
