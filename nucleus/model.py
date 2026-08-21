@@ -12,6 +12,7 @@ from .constants import (
 )
 from .dataset import Dataset
 from .model_run import ModelRun
+from .model_weights import ModelWeights
 from .prediction import (
     BoxPrediction,
     CuboidPrediction,
@@ -150,41 +151,83 @@ class Model:
     def create_run(
         self,
         name: str,
-        dataset: Dataset,
-        predictions: List[
-            Union[
-                BoxPrediction,
-                PolygonPrediction,
-                CuboidPrediction,
-                SegmentationPrediction,
+        dataset: Optional[Dataset] = None,
+        predictions: Optional[
+            List[
+                Union[
+                    BoxPrediction,
+                    PolygonPrediction,
+                    CuboidPrediction,
+                    SegmentationPrediction,
+                ]
             ]
-        ],
+        ] = None,
         metadata: Optional[Dict] = None,
         asynchronous: bool = False,
+        reference_id: Optional[str] = None,
     ) -> ModelRun:
-        # This method, as well as model runs in general are now deprecated.
+        """Creates a model run for this model.
 
-        # Instead models will automatically generate a model run when applied to
-        # a dataset using dataset.upload_predictions(model, predictions). Therefore
-        # there is no longer any need to create a model run, since you can upload
-        # predictions without needing to explicitly create a model run.
+        Call it with just a name to create a run, then attach predictions with
+        :meth:`ModelRun.add_predictions`::
 
-        # When uploading to a dataset twice using the same model, the same model
-        # run will be reused by Nucleus.
+            run = model.create_run(name="my-run")
+            run.add_predictions(predictions)
 
-        payload: dict = {
-            NAME_KEY: name,
-            REFERENCE_ID_KEY: self.reference_id,
-        }
-        if metadata:
-            payload[METADATA_KEY] = metadata
-        model_run: ModelRun = self._client.create_model_run(
-            dataset.id, payload
+        or pass ``predictions`` directly to create and upload in one call::
+
+            run = model.create_run(name="my-run", predictions=predictions)
+
+        Each prediction identifies its target item by ``dataset_item_id`` (the
+        ``di_*`` id returned on exported items), so predictions can come from
+        anywhere and a single run can cover items across different datasets.
+
+        Args:
+            name: Human-readable name for the model run.
+            predictions: Optional predictions to attach to the run immediately.
+            metadata: Optional arbitrary metadata blob for the run.
+            reference_id: Optional user-defined reference id for the run.
+            dataset: Deprecated. Passing a dataset uses the legacy path that
+                binds the run to that one dataset and uploads ``predictions``
+                to it. Omit it to use the recommended flow above.
+            asynchronous: Only used by the deprecated dataset-bound path.
+
+        Returns:
+            The created :class:`ModelRun`.
+        """
+        # Legacy path: an explicit dataset binds the run to that dataset and
+        # uploads predictions to it. Kept for backwards compatibility; new code
+        # should omit `dataset` and use `run.add_predictions(...)`.
+        if dataset is not None:
+            payload: dict = {
+                NAME_KEY: name,
+                REFERENCE_ID_KEY: self.reference_id,
+            }
+            if metadata:
+                payload[METADATA_KEY] = metadata
+            model_run: ModelRun = self._client.create_model_run(
+                dataset.id, payload
+            )
+            model_run.predict(predictions or [], asynchronous=asynchronous)
+            return model_run
+
+        response = self._client.make_request(
+            {
+                NAME_KEY: name,
+                REFERENCE_ID_KEY: reference_id,
+                METADATA_KEY: metadata or {},
+            },
+            route=f"model/{self.id}/modelRun/create",
+            requests_command=requests.post,
         )
-
-        model_run.predict(predictions, asynchronous=asynchronous)
-
-        return model_run
+        run = ModelRun(
+            model_run_id=response["model_run_id"],
+            dataset_id=None,
+            client=self._client,
+        )
+        if predictions:
+            run.add_predictions(predictions)
+        return run
 
     def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
@@ -343,3 +386,55 @@ class Model:
             )
 
         return response.json()
+
+    def upload_weights(
+        self,
+        path: str,
+        *,
+        content_type: Optional[str] = None,
+        original_filename: Optional[str] = None,
+        checksum_sha256: Optional[str] = None,
+        progress: bool = True,
+    ) -> ModelWeights:
+        """Attach a weights artifact to this model. ::
+
+            import nucleus
+            client = nucleus.NucleusClient("YOUR_SCALE_API_KEY")
+            model = client.get_model(reference_id="My-CNN")
+
+            model.upload_weights("/path/to/weights.bin")
+
+        See :meth:`NucleusClient.upload_model_weights` for the accepted keyword
+        arguments.
+        """
+        return self._client.upload_model_weights(
+            self,
+            path,
+            content_type=content_type,
+            original_filename=original_filename,
+            checksum_sha256=checksum_sha256,
+            progress=progress,
+        )
+
+    def download_weights(self, path: str, *, progress: bool = True) -> str:
+        """Download this model's weights artifact to ``path``.
+
+        See :meth:`NucleusClient.download_model_weights`.
+        """
+        return self._client.download_model_weights(
+            self, path, progress=progress
+        )
+
+    def weights(self) -> ModelWeights:
+        """Fetch metadata for this model's weights artifact.
+
+        See :meth:`NucleusClient.get_model_weights`.
+        """
+        return self._client.get_model_weights(self)
+
+    def delete_weights(self) -> bool:
+        """Delete this model's weights artifact.
+
+        See :meth:`NucleusClient.delete_model_weights`.
+        """
+        return self._client.delete_model_weights(self)

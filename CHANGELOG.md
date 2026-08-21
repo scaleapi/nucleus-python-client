@@ -5,7 +5,7 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-17
+## [0.21.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-17
 
 ### Added
 - **Benchmark versioning / lineage.** `create_benchmark()` accepts `parent_benchmark_id` to create a new **version** downstream of an existing benchmark: the child inherits the parent's items, the source arguments add on top, and `removed_item_ids` prune inherited items (`parent ∪ added ∖ removed`). Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor` (must exceed the parent's). `Benchmark` now exposes `parent_benchmark_id`, `version_major`, `version_minor`, and `version_label`.
@@ -13,6 +13,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `Benchmark.status` can now be `"draft"` (in addition to `"building"` / `"ready"` / `"failed"`). A draft benchmark cannot be evaluated until finalized.
+
+## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-19
+
+### Added
+- **`Model.create_run(name)` + `ModelRun.add_predictions(predictions, ...)`.** Create a model run with just a name, then attach predictions — no dataset needed up front:
+  ```python
+  run = model.create_run(name="my-run")
+  run.add_predictions(predictions)
+  ```
+  Each prediction identifies its target item by `dataset_item_id` (the `di_*` id returned on exported items), so predictions can come from anywhere and a single run can cover items across multiple datasets. `add_predictions` posts to `POST /nucleus/modelRun/:modelRunId/uploadPredictions` and supports `update` / `batch_size` / file-batching arguments; `asynchronous=True` raises `NotImplementedError` for now.
+  - `create_run` still accepts the old `dataset=` / `predictions=` arguments for backwards compatibility (the deprecated dataset-bound path); omit them to use the flow above.
+- **Per-prediction target.** Every prediction type (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `scene_category`, `segmentation`) emits its `dataset_item_id` in `to_payload` (as `item_id`) when set, which is how the dataset-less upload route resolves each item.
+
+### Changed
+- **`reference_id` is now optional on predictions.** A prediction can be constructed from its `dataset_item_id` alone (at least one of `reference_id` / `dataset_item_id` is required). Annotations still require `reference_id`. Existing prediction code that passes `reference_id` is unaffected.
+
+> **Server dependency:** requires the `POST /nucleus/model/:modelId/modelRun/create` and `POST /nucleus/modelRun/:modelRunId/uploadPredictions` routes in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
+## [0.20.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.2) - 2026-08-18
+
+### Added
+- **`dataset_item_id` on exported items and objects.** Batch exports now carry the Nucleus-internal dataset item id (`di_*`) everywhere `reference_id` already appeared: on `DatasetItem`, and on every exported annotation and prediction (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `multicategory`, `segmentation`). Video/scene exports carry it on each track frame. Previously only `reference_id` was returned, so keying predictions back to items required a second lookup. The field is server-assigned and read-only: it is populated by `from_json`, left `None` on objects you construct locally, excluded from `__eq__`, passed keyword-only on constructors, and never sent in `to_payload`. Exports from an older backend that does not return it simply leave it `None`.
+- **Multi-dataset model runs.** `Dataset.upload_predictions_for_model_run(model_run_id, predictions, ...)` uploads predictions for an existing run against *this* dataset, adding the dataset to the run's set if it isn't there already. This is what lets a single model run be scored against a benchmark whose items span several datasets. Supports the same `update` / `asynchronous` / `batch_size` / file-batching / `trained_slice_id` arguments as `upload_predictions`.
+  - A run's dataset set only ever grows — a later upload never removes a dataset, so it cannot widen who can read the run.
+  - Access: write on this dataset **and** on every dataset the run already covers. Runs are visible only to users who can read all of their datasets, so adding one can remove the run from a collaborator's view.
+  - `Dataset.upload_predictions` is unchanged and still cannot widen a run: it identifies the run by `(dataset, model)`, so it finds the run already on this dataset or creates a new one.
+
+### Changed
+- **Benchmark evaluations no longer require the run to cover the benchmark's datasets.** `create_benchmark_evaluation_v2` previously failed when the benchmark contained items outside the model run's dataset. Those members are now scored as false negatives like any other uncovered item, so a partial run ranks comparably instead of being rejected. Docstrings on `create_benchmark_evaluation_v2` and `Benchmark.create_evaluation_v2` updated accordingly.
+- `PredictionUploader` accepts `dataset_id` together with `model_run_id` to select the new endpoint. Previously that combination was rejected by an assertion. The other two forms — `(dataset_id, model_id)` and `model_run_id` alone — route exactly as before.
+
+### Deprecated
+- `ModelRun.predict()` (already deprecated with the rest of `ModelRun`) infers its target dataset from the run, so it fails for a run spanning several datasets. Use `Dataset.upload_predictions_for_model_run` instead.
+
+> **Server dependency:** requires the `POST /nucleus/dataset/:datasetId/modelRun/:modelRunId/uploadPredictions` route and the multi-dataset model-run work in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
+## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-13
+
+### Added
+- **Model weights.** Attach a raw weights artifact (any binary, no format constraints) to a model and fetch it back: `NucleusClient.upload_model_weights(model, path)`, `download_model_weights(model, path)`, `get_model_weights(model)`, and `delete_model_weights(model)`, plus `Model.upload_weights()` / `download_weights()` / `weights()` / `delete_weights()` and the new `ModelWeights` metadata type (`present`, `status`, `size_bytes`, `original_filename`, `content_type`, `download_url`). Artifacts up to 10 GB are supported; uploading requires edit access on the model, downloading is available to anyone who can see it.
+- Large artifacts are handled without any extra work on the caller's part: transfers stream directly to/from storage, show a `tqdm` progress bar by default (pass `progress=False` to silence it), and automatically retry transient storage failures (network blips, 429s, 5xx) with exponential backoff.
 
 ## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
 

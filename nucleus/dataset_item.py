@@ -10,6 +10,7 @@ from .camera_params import CameraParams
 from .constants import (
     BACKEND_REFERENCE_ID_KEY,
     CAMERA_PARAMS_KEY,
+    DATASET_ITEM_ID_KEY,
     EMBEDDING_INFO_KEY,
     EMBEDDING_VECTOR_KEY,
     HEIGHT_KEY,
@@ -131,6 +132,11 @@ class DatasetItem:  # pylint: disable=R0902
     # returned object — so locally-constructed items would otherwise spuriously
     # differ from round-tripped ones.
     phash: Optional[str] = field(default=None, compare=False)
+    # Nucleus-internal dataset item id (``di_*``), assigned server-side. Populated on
+    # items returned by the API; ``None`` on items you construct locally to upload.
+    # Excluded from auto-generated __eq__ for the same reason as ``phash`` — a
+    # locally-built item would otherwise never compare equal to its round-tripped self.
+    dataset_item_id: Optional[str] = field(default=None, compare=False)
 
     def __post_init__(self):
         assert self.reference_id is not None, "reference_id is required."
@@ -187,6 +193,7 @@ class DatasetItem:  # pylint: disable=R0902
             reference_id=payload.get(REFERENCE_ID_KEY),
             metadata=payload.get(METADATA_KEY, {}),
             phash=payload.get(PHASH_KEY),
+            dataset_item_id=payload.get(DATASET_ITEM_ID_KEY),
         )
 
     def local_file_exists(self):

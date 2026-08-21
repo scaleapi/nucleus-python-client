@@ -236,6 +236,28 @@ class AnnotationUploader:
 
 
 class PredictionUploader(AnnotationUploader):
+    """Routes a prediction upload to one of two ``uploadPredictions`` endpoints.
+
+    Which one depends on the identifiers supplied (``dataset_id`` is required):
+
+    ``dataset_id`` + ``model_run_id``
+        ``dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions``. The
+        only route that lets a run span more than one dataset — uploading here
+        adds ``dataset_id`` to the run's dataset set. Requires write access to
+        every dataset the run already covers, not just this one, because a run
+        is only visible to users who can read all of its datasets.
+
+    ``dataset_id`` + ``model_id``
+        ``dataset/{dataset_id}/model/{model_id}/uploadPredictions``. Resolves
+        (or creates) the run for that model on that dataset. Cannot widen an
+        existing run: passing a ``model_run_id`` belonging to a different
+        dataset is rejected server-side.
+
+    ``route`` overrides the id-based selection with an explicit endpoint. It
+    exists only for the deprecated :meth:`ModelRun.predict`, which posts to
+    ``modelRun/{model_run_id}/predict``; new code should not use it.
+    """
+
     def __init__(
         self,
         client: "NucleusClient",
@@ -243,20 +265,34 @@ class PredictionUploader(AnnotationUploader):
         model_id: Optional[str] = None,
         model_run_id: Optional[str] = None,
         trained_slice_id: Optional[str] = None,
+        route: Optional[str] = None,
     ):
         super().__init__(dataset_id, client)
         self._client = client
         self.trained_slice_id = trained_slice_id
+        if route is not None:
+            self._route = route
+            return
+        if model_run_id is not None and model_id is not None:
+            raise ValueError("Pass either model_id or model_run_id, not both.")
         if model_run_id is not None:
-            assert model_id is None and dataset_id is None
-            self._route = f"modelRun/{model_run_id}/predict"
-        else:
-            assert (
-                model_id is not None and dataset_id is not None
-            ), "Model ID and dataset ID are required if not using model run id."
+            if dataset_id is not None:
+                self._route = f"dataset/{dataset_id}/modelRun/{model_run_id}/uploadPredictions"
+            else:
+                # Dataset-less model run: predictions carry their own item_id
+                # (or dataset_id + reference_id); the server groups by dataset
+                # and widens the run.
+                self._route = f"modelRun/{model_run_id}/uploadPredictions"
+        elif model_id is not None:
+            if dataset_id is None:
+                raise ValueError(
+                    "dataset_id is required to upload predictions."
+                )
             self._route = (
                 f"dataset/{dataset_id}/model/{model_id}/uploadPredictions"
             )
+        else:
+            raise ValueError("Either model_id or model_run_id is required.")
 
     def check_for_duplicate_ids(self, annotations: Iterable[Annotation]):
         """Do not allow predictions to have the same (annotation_id, reference_id) tuple"""

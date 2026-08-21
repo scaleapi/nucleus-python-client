@@ -194,6 +194,11 @@ class Benchmark:
     ) -> EvaluationV2:
         """Evaluate a model run against this benchmark.
 
+        The run need not cover this benchmark's datasets — uncovered members are
+        scored as false negatives, so a partial run still ranks comparably. To
+        give a run predictions across several datasets, use
+        :meth:`Dataset.upload_predictions_for_model_run`.
+
         See :meth:`NucleusClient.create_benchmark_evaluation_v2` for parameter
         details.
 
