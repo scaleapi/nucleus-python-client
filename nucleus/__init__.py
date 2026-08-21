@@ -543,8 +543,8 @@ class NucleusClient:
     def merge_model_runs(
         self,
         model_run_ids: List[str],
-        name: Optional[str] = None,
         *,
+        name: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Merge several model runs into one new run holding all their predictions.
@@ -556,20 +556,16 @@ class NucleusClient:
         Merging the runs produces one run that does cover it, which you can then pass to
         :meth:`create_benchmark_evaluation_v2`.
 
-        All source runs must belong to the same model; merging across models is rejected
-        server-side (a run's model is its provenance, read by eval, leaderboards and the
-        model page).
+        All source runs must belong to the same model.
 
-        The merge is a full union: predictions are copied, never deduplicated. If two
+        The merge is a full union of all predictions. If two
         source runs predict on the same item with the same ``annotation_id``, the
         colliding id is rewritten rather than dropped. The source runs are left
         untouched.
 
         **Asynchronous.** The new run is created and returned immediately, but its
         predictions are copied by a background job. The run is *empty until the job
-        completes*, so wait on the returned job before evaluating — otherwise the
-        evaluation scores uncopied items as false negatives, the very failure this is
-        meant to fix::
+        completes*, so wait on the returned job before evaluating::
 
             result = client.merge_model_runs(["run_abc", "run_def"])
             result["job"].sleep_until_complete()
@@ -596,13 +592,14 @@ class NucleusClient:
             The copy's counts (``predictions_copied``, ``predictions_ignored``,
             ``annotation_ids_rewritten``, errors) are reported on the job, not here.
         """
-        if len(set(model_run_ids)) < 2:
+        unique_model_run_ids = list(dict.fromkeys(model_run_ids))
+        if len(unique_model_run_ids) < 2:
             raise ValueError(
                 "merge_model_runs needs at least two distinct model run ids, got "
-                f"{sorted(set(model_run_ids))}"
+                f"{sorted(unique_model_run_ids)}"
             )
         payload: Dict[str, Any] = {
-            MODEL_RUN_IDS_KEY: model_run_ids,
+            MODEL_RUN_IDS_KEY: unique_model_run_ids,
         }
         if name is not None:
             payload[NAME_KEY] = name
@@ -612,7 +609,7 @@ class NucleusClient:
         return {
             MODEL_RUN_ID_KEY: response[MODEL_RUN_ID_KEY],
             DATASET_IDS_KEY: response[DATASET_IDS_KEY],
-            "job": AsyncJob.from_id(response[JOB_ID_KEY], self),
+            "job": AsyncJob.from_json(response, self),
         }
 
     def create_dataset_from_project(
