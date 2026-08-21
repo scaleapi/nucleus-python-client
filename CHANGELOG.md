@@ -5,6 +5,13 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-15
+
+### Added
+- **`NucleusClient.merge_model_runs()`.** Merges two or more model runs into one new run holding the union of their predictions, leaving the sources untouched. A benchmark evaluation names a single model run and a benchmark's items may span datasets, so a model uploaded as several runs previously had no single run covering the benchmark — every uncovered item scored as a false negative. Merge first, wait for the copy to finish, then pass the new run to `create_benchmark_evaluation_v2()`. All source runs must belong to the same model.
+
+  The copy runs asynchronously: the call returns `{"model_run_id", "dataset_ids", "job"}` immediately, but the new run is empty until the `job` completes — call `job.sleep_until_complete()` before evaluating. The merge is a full union: predictions are copied, never deduplicated, and colliding `annotation_id`s are rewritten rather than dropped. Copy counts (`predictions_copied`, `predictions_ignored`, `annotation_ids_rewritten`) are reported on the job.
+
 ## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-19
 
 ### Added
