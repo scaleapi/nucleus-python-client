@@ -1223,34 +1223,29 @@ class NucleusClient:
                 "parent_benchmark_id"
             )
         payload: Dict[str, Any] = {NAME_KEY: name}
-        if description is not None:
-            payload[DESCRIPTION_KEY] = description
-        if metadata is not None:
-            payload[METADATA_KEY] = metadata
-        if item_ids is not None:
-            payload[ITEM_IDS_KEY] = item_ids
-        if items is not None:
-            payload[ITEMS_KEY] = items
-        if slice_id is not None:
-            payload[SLICE_ID_KEY] = slice_id
-        if dataset_id is not None:
-            payload[DATASET_ID_KEY] = dataset_id
-        if slice_ids is not None:
-            payload[SLICE_IDS_KEY] = slice_ids
-        if dataset_ids is not None:
-            payload[DATASET_IDS_KEY] = dataset_ids
-        if parent_benchmark_id is not None:
-            payload[PARENT_BENCHMARK_ID_KEY] = parent_benchmark_id
-        if bump_type is not None:
-            payload[BUMP_TYPE_KEY] = bump_type
-        if version_major is not None:
-            payload[VERSION_MAJOR_KEY] = version_major
-        if version_minor is not None:
-            payload[VERSION_MINOR_KEY] = version_minor
-        if version_label is not None:
-            payload[VERSION_LABEL_KEY] = version_label
-        if removed_item_ids is not None:
-            payload[REMOVED_ITEM_IDS_KEY] = removed_item_ids
+        optional_fields = {
+            DESCRIPTION_KEY: description,
+            METADATA_KEY: metadata,
+            ITEM_IDS_KEY: item_ids,
+            ITEMS_KEY: items,
+            SLICE_ID_KEY: slice_id,
+            DATASET_ID_KEY: dataset_id,
+            SLICE_IDS_KEY: slice_ids,
+            DATASET_IDS_KEY: dataset_ids,
+            PARENT_BENCHMARK_ID_KEY: parent_benchmark_id,
+            BUMP_TYPE_KEY: bump_type,
+            VERSION_MAJOR_KEY: version_major,
+            VERSION_MINOR_KEY: version_minor,
+            VERSION_LABEL_KEY: version_label,
+            REMOVED_ITEM_IDS_KEY: removed_item_ids,
+        }
+        payload.update(
+            {
+                key: value
+                for key, value in optional_fields.items()
+                if value is not None
+            }
+        )
         if draft:
             payload[DRAFT_KEY] = True
 
