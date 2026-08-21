@@ -614,10 +614,14 @@ class NucleusClient:
         if metadata is not None:
             payload[METADATA_KEY] = metadata
         response = self.make_request(payload, "modelRun/merge")
+        # The merge endpoint responds 202 with only {job_id, model_run_id,
+        # dataset_ids} — not a full job payload — so fetch the job by id rather
+        # than parsing it out of this response (the convention used by
+        # create_benchmark / add_benchmark_items).
         return {
             MODEL_RUN_ID_KEY: response[MODEL_RUN_ID_KEY],
             DATASET_IDS_KEY: response[DATASET_IDS_KEY],
-            "job": AsyncJob.from_json(response, self),
+            "job": self.get_job(response[JOB_ID_KEY]),
         }
 
     def create_dataset_from_project(
