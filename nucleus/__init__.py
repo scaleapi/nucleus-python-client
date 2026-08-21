@@ -170,11 +170,11 @@ from .constants import (
     STATUS_CODE_KEY,
     TOP_N_KEY,
     UPDATE_KEY,
+    UPLOAD_ID_KEY,
+    URL_KEY,
     VERSION_LABEL_KEY,
     VERSION_MAJOR_KEY,
     VERSION_MINOR_KEY,
-    UPLOAD_ID_KEY,
-    URL_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
