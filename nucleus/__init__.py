@@ -151,6 +151,7 @@ from .constants import (
     METRIC_TYPE_KEY,
     MODEL_IDS_KEY,
     MODEL_RUN_ID_KEY,
+    MODEL_RUN_IDS_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
@@ -546,6 +547,78 @@ class NucleusClient:
         return self.make_request(
             {}, f"modelRun/{model_run_id}", requests.delete
         )
+
+    def merge_model_runs(
+        self,
+        model_run_ids: List[str],
+        *,
+        name: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Merge several model runs into one new run holding all their predictions.
+
+        A benchmark evaluation names a single model run, and a benchmark's items may
+        span several datasets. A model whose predictions were uploaded as separate runs
+        — one per dataset, or one per inference batch — therefore has no single run
+        covering the benchmark, and every uncovered item scores as a false negative.
+        Merging the runs produces one run that does cover it, which you can then pass to
+        :meth:`create_benchmark_evaluation_v2`.
+
+        All source runs must belong to the same model.
+
+        The merge is a full union of all predictions. If two
+        source runs predict on the same item with the same ``annotation_id``, the
+        colliding id is rewritten rather than dropped. The source runs are left
+        untouched.
+
+        **Asynchronous.** The new run is created and returned immediately, but its
+        predictions are copied by a background job. The run is *empty until the job
+        completes*, so wait on the returned job before evaluating::
+
+            result = client.merge_model_runs(["run_abc", "run_def"])
+            result["job"].sleep_until_complete()
+            client.create_benchmark_evaluation_v2(
+                benchmark_id, result["model_run_id"]
+            )
+
+        Parameters:
+            model_run_ids: Two or more distinct model run ids (``run_*``) to merge.
+            name: Display name for the merged run. Defaults server-side to the model's
+                own name when omitted.
+            metadata: Optional metadata for the merged run. The merge always records
+                ``merged_from_model_run_ids`` alongside whatever you pass.
+
+        Returns:
+            Dict describing the newly created (still-populating) run::
+
+                {
+                    "model_run_id": str,        # the new run, usable once the job finishes
+                    "dataset_ids": List[str],   # datasets the new run spans
+                    "job": AsyncJob,            # copy progress; poll or sleep_until_complete()
+                }
+
+            The copy's counts (``predictions_copied``, ``predictions_ignored``,
+            ``annotation_ids_rewritten``, errors) are reported on the job, not here.
+        """
+        unique_model_run_ids = list(dict.fromkeys(model_run_ids))
+        if len(unique_model_run_ids) < 2:
+            raise ValueError(
+                "merge_model_runs needs at least two distinct model run ids, got "
+                f"{sorted(unique_model_run_ids)}"
+            )
+        payload: Dict[str, Any] = {
+            MODEL_RUN_IDS_KEY: unique_model_run_ids,
+        }
+        if name is not None:
+            payload[NAME_KEY] = name
+        if metadata is not None:
+            payload[METADATA_KEY] = metadata
+        response = self.make_request(payload, "modelRun/merge")
+        return {
+            MODEL_RUN_ID_KEY: response[MODEL_RUN_ID_KEY],
+            DATASET_IDS_KEY: response[DATASET_IDS_KEY],
+            "job": AsyncJob.from_json(response, self),
+        }
 
     def create_dataset_from_project(
         self,
