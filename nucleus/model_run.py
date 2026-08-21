@@ -173,7 +173,7 @@ class ModelRun:
                 "predictions_ignored": int,
             }
         """
-        
+
         uploader = PredictionUploader(
             client=self._client,
             dataset_id=self.dataset_id,
