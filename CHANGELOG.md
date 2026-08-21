@@ -5,6 +5,23 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-19
+
+### Added
+- **`Model.create_run(name)` + `ModelRun.add_predictions(predictions, ...)`.** Create a model run with just a name, then attach predictions — no dataset needed up front:
+  ```python
+  run = model.create_run(name="my-run")
+  run.add_predictions(predictions)
+  ```
+  Each prediction identifies its target item by `dataset_item_id` (the `di_*` id returned on exported items), so predictions can come from anywhere and a single run can cover items across multiple datasets. `add_predictions` posts to `POST /nucleus/modelRun/:modelRunId/uploadPredictions` and supports `update` / `batch_size` / file-batching arguments; `asynchronous=True` raises `NotImplementedError` for now.
+  - `create_run` still accepts the old `dataset=` / `predictions=` arguments for backwards compatibility (the deprecated dataset-bound path); omit them to use the flow above.
+- **Per-prediction target.** Every prediction type (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `scene_category`, `segmentation`) emits its `dataset_item_id` in `to_payload` (as `item_id`) when set, which is how the dataset-less upload route resolves each item.
+
+### Changed
+- **`reference_id` is now optional on predictions.** A prediction can be constructed from its `dataset_item_id` alone (at least one of `reference_id` / `dataset_item_id` is required). Annotations still require `reference_id`. Existing prediction code that passes `reference_id` is unaffected.
+
+> **Server dependency:** requires the `POST /nucleus/model/:modelId/modelRun/create` and `POST /nucleus/modelRun/:modelRunId/uploadPredictions` routes in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
 ## [0.20.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.2) - 2026-08-18
 
 ### Added
