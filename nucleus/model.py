@@ -2,12 +2,8 @@ from typing import Any, Dict, List, Optional, Union
 
 import requests
 
-from nucleus.annotation import check_all_mask_paths_remote
 from nucleus.annotation_uploader import PredictionUploader
-from nucleus.utils import (
-    format_prediction_response,
-    serialize_and_write_to_presigned_url,
-)
+from nucleus.utils import format_prediction_response
 
 from .async_job import AsyncJob
 from .constants import (
@@ -17,8 +13,6 @@ from .constants import (
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
-    REQUEST_ID_KEY,
-    UPDATE_KEY,
 )
 from .dataset import Dataset
 from .model_run import ModelRun
@@ -248,7 +242,7 @@ class Model:
         batch_size: int = 5000,
         remote_files_per_upload_request: int = 20,
         local_files_per_upload_request: int = 10,
-    ) -> Union[Dict[str, Any], AsyncJob]:
+    ) -> Dict[str, Any]:
         """Uploads predictions directly to this model, with no model run.
 
         This is the run-free ("model v2") prediction path: predictions are tied
@@ -271,21 +265,19 @@ class Model:
             update: If True, existing predictions for the same
                 (reference_id, annotation_id) are overwritten. If False, they
                 are skipped. Default is False.
-            asynchronous: Whether or not to process the upload asynchronously
-                (and return an :class:`AsyncJob` object). Default is False.
+            asynchronous: Not yet supported for this path — passing True raises
+                :class:`NotImplementedError`. The upload always runs
+                synchronously.
             batch_size: Number of predictions processed in each concurrent
                 batch. Default is 5000. If you get timeouts when uploading
                 geometric predictions, you can try lowering this batch size.
-                This is only relevant for asynchronous=False.
             remote_files_per_upload_request: Number of remote files to upload in
-                each request. Only relevant for asynchronous=False.
+                each request.
             local_files_per_upload_request: Number of local files to upload in
-                each request. The maximum is 10. Only relevant for
-                asynchronous=False.
+                each request. The maximum is 10.
 
         Returns:
-            Payload describing the synchronous upload, or an :class:`AsyncJob`
-            when ``asynchronous=True``::
+            Payload describing the synchronous upload::
 
                 {
                     "model_id": str,
@@ -293,25 +285,17 @@ class Model:
                     "predictions_ignored": int,
                 }
         """
+        if asynchronous:
+            raise NotImplementedError(
+                "async is not yet supported for model prediction v2 uploads; "
+                "use asynchronous=False"
+            )
+
         uploader = PredictionUploader(
             client=self._client,
             route=f"model/{self.id}/predictions",
         )
         uploader.check_for_duplicate_ids(predictions)
-
-        if asynchronous:
-            check_all_mask_paths_remote(predictions)
-            request_id = serialize_and_write_to_presigned_url(
-                predictions,
-                dataset_id=None,
-                client=self._client,
-                route_prefix=f"model/{self.id}",
-            )
-            response = self._client.make_request(
-                payload={REQUEST_ID_KEY: request_id, UPDATE_KEY: update},
-                route=f"model/{self.id}/predictions?async=1",
-            )
-            return AsyncJob.from_json(response, self._client)
 
         return uploader.upload(
             annotations=predictions,
@@ -403,9 +387,7 @@ class Model:
             )
         )
 
-    def copy_predictions_from_run(
-        self, model_run_id: str, asynchronous: bool = True
-    ) -> AsyncJob:
+    def copy_predictions_from_run(self, model_run_id: str) -> Dict[str, Any]:
         """Copies predictions from a legacy v1 model run onto this model.
 
         Backfills the run-free ("model v2") prediction store for this model from
@@ -413,21 +395,27 @@ class Model:
         run-based path become readable through :meth:`predictions_loc` and
         friends. The source run is left untouched.
 
+        Runs synchronously server-side and returns once the copy completes.
+
         Args:
             model_run_id: Source model run id (``run_*``) to copy predictions
                 from.
-            asynchronous: Retained for forward compatibility; the copy always
-                runs server-side as an async job. Default is True.
 
         Returns:
-            An :class:`AsyncJob` tracking the copy.
+            Payload describing the copy::
+
+                {
+                    "model_id": str,
+                    "model_run_ids": List[str],
+                    "predictions_copied": int,
+                    "predictions_skipped_unsupported": int,
+                }
         """
-        response = self._client.make_request(
+        return self._client.make_request(
             {MODEL_RUN_ID_KEY: model_run_id},
             route=f"model/{self.id}/predictions/copyFromRun",
             requests_command=requests.post,
         )
-        return AsyncJob.from_json(response, self._client)
 
     def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
