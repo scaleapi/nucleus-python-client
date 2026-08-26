@@ -5,6 +5,18 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.0) - 2026-08-26
+
+### Added
+- **Run-free ("model v2") predictions.** Predictions can now be uploaded and read directly against a `Model`, with no `ModelRun` or `Dataset` involved — the concept is `(model, dataset_item) -> prediction`. New methods on `Model`:
+  - `Model.upload_predictions(predictions, update=False, asynchronous=False, batch_size=5000, ...)` — upserts predictions onto the model (`box` / `polygon` / `cuboid` only). Reuses the existing `PredictionUploader` batching machinery, targeting `model/{id}/predictions` (async posts to `model/{id}/predictions?async=1` and returns an `AsyncJob`).
+  - `Model.predictions_loc(dataset_item_id)`, `Model.predictions_refloc(reference_id)`, `Model.predictions_iloc(i)` — model-scoped reads returning the same shape as their `Dataset` equivalents.
+  - `Model.copy_predictions_from_run(model_run_id, asynchronous=True)` — backfills the run-free store from an existing model run, returning an `AsyncJob`.
+- **Model-anchored benchmark evaluations.** `NucleusClient.create_benchmark_evaluation_v2()` accepts a `model_id` (a `prj_*` id or a `Model`) as an alternative to `model_run_id`; the model-anchored flow evaluates the model's run-free predictions and ignores model runs. Provide exactly one of the two. `EvaluationV2` now exposes an optional `model_id` field alongside `model_run_id`.
+
+### Changed
+- The existing run-based prediction paths (`Dataset.upload_predictions`, `ModelRun.add_predictions`, `create_benchmark_evaluation_v2(model_run_id=...)`) are unchanged and continue to work; the model-centric methods are purely additive.
+
 ## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 
 ### Added

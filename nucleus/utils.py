@@ -6,7 +6,17 @@ import os
 import urllib.request
 import uuid
 from collections import defaultdict
-from typing import IO, TYPE_CHECKING, Dict, List, Sequence, Tuple, Type, Union
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    Union,
+)
 
 import requests
 from PIL import Image
@@ -396,12 +406,22 @@ def serialize_and_write_to_presigned_url(
     upload_units: Sequence[
         Union[DatasetItem, Annotation, LidarScene, VideoScene]
     ],
-    dataset_id: str,
+    dataset_id: Optional[str],
     client,
+    route_prefix: Optional[str] = None,
 ):
-    """This helper function can be used to serialize a list of API objects to NDJSON."""
+    """This helper function can be used to serialize a list of API objects to NDJSON.
+
+    By default the presigned URL is requested from the dataset-scoped route
+    ``dataset/{dataset_id}/signedUrl/{request_id}``. Pass ``route_prefix`` (e.g.
+    ``model/{model_id}``) to target a different signed-URL route — used by the
+    model-scoped prediction upload, which has no owning dataset.
+    """
     request_id = uuid.uuid4().hex
-    route = f"dataset/{dataset_id}/signedUrl/{request_id}"
+    prefix = (
+        route_prefix if route_prefix is not None else f"dataset/{dataset_id}"
+    )
+    route = f"{prefix}/signedUrl/{request_id}"
     if os.environ.get("S3_ENDPOINT") is not None:
         route += "?s3Endpoint=" + urllib.request.pathname2url(
             os.environ["S3_ENDPOINT"]

@@ -149,6 +149,7 @@ from .constants import (
     MESSAGE_KEY,
     METADATA_KEY,
     METRIC_TYPE_KEY,
+    MODEL_ID_KEY,
     MODEL_IDS_KEY,
     MODEL_RUN_ID_KEY,
     MODEL_RUN_IDS_KEY,
@@ -1562,8 +1563,9 @@ class NucleusClient:
     def create_benchmark_evaluation_v2(
         self,
         benchmark_id: str,
-        model_run_id: str,
+        model_run_id: Optional[str] = None,
         *,
+        model_id: Optional[Union[str, Model]] = None,
         name: Optional[str] = None,
         rollup_groups: Optional[List[RollupGroup]] = None,
         allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
@@ -1587,10 +1589,19 @@ class NucleusClient:
         being rejected. To give a run predictions across several datasets, use
         :meth:`Dataset.upload_predictions_for_model_run`.
 
+        The evaluation can be anchored on either a legacy model run
+        (``model_run_id``) or, for the run-free "model v2" flow, a model
+        (``model_id``). Provide exactly one; the model-anchored flow evaluates
+        the model's run-free predictions and ignores model runs entirely.
+
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
             model_run_id: Model run id (``run_*``). It need not cover the
                 benchmark's datasets — coverage may be partial, or empty.
+                Mutually exclusive with ``model_id``.
+            model_id: Model id (``prj_*``) or :class:`Model` to anchor the
+                evaluation on the model's run-free predictions instead of a
+                model run. Mutually exclusive with ``model_run_id``.
             name: Optional display name.
             rollup_groups: Optional rollup classes (the primary label
                 configuration); each :class:`RollupGroup` maps raw labels
@@ -1610,6 +1621,13 @@ class NucleusClient:
         Returns:
             :class:`EvaluationV2`: The created evaluation.
         """
+        resolved_model_id = (
+            model_id.id if isinstance(model_id, Model) else model_id
+        )
+        if (resolved_model_id is None) == (model_run_id is None):
+            raise ValueError(
+                "Provide exactly one of model_run_id or model_id."
+            )
         if preset is not None:
             if (
                 rollup_groups is None
@@ -1635,7 +1653,11 @@ class NucleusClient:
                 "Set at most one of rollup_groups, allowed_label_matches, "
                 "or allowed_label_matches_id"
             )
-        payload: Dict[str, Any] = {MODEL_RUN_ID_KEY: model_run_id}
+        payload: Dict[str, Any] = (
+            {MODEL_ID_KEY: resolved_model_id}
+            if resolved_model_id is not None
+            else {MODEL_RUN_ID_KEY: model_run_id}
+        )
         if name is not None:
             payload[NAME_KEY] = name
         if rollup_groups is not None:

@@ -31,6 +31,7 @@ from nucleus.constants import (
     LABELS_KEY,
     LIMIT_KEY,
     MATCH_TYPE_KEY,
+    MODEL_ID_KEY,
     MODEL_PREDICTION_LABEL_CAMEL_KEY,
     MODEL_PREDICTION_LABEL_KEY,
     MODEL_RUN_ID_KEY,
@@ -170,12 +171,13 @@ def _parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
 
 @dataclass
 class EvaluationV2:
-    """An Evaluation V2 run for a model run."""
+    """An Evaluation V2 run for a model run or a run-free model."""
 
     id: str
-    model_run_id: str
+    model_run_id: Optional[str]
     dataset_id: str
     status: str
+    model_id: Optional[str] = None
     name: Optional[str] = None
     temporal_workflow_id: Optional[str] = None
     error_message: Optional[str] = None
@@ -202,9 +204,18 @@ class EvaluationV2:
 
         return cls(
             id=str(payload[ID_KEY]),
-            model_run_id=str(payload[MODEL_RUN_ID_KEY]),
+            model_run_id=(
+                str(payload[MODEL_RUN_ID_KEY])
+                if payload.get(MODEL_RUN_ID_KEY) is not None
+                else None
+            ),
             dataset_id=str(payload[DATASET_ID_KEY]),
             status=str(payload[STATUS_KEY]),
+            model_id=(
+                str(payload[MODEL_ID_KEY])
+                if payload.get(MODEL_ID_KEY) is not None
+                else None
+            ),
             name=payload.get(NAME_KEY),
             temporal_workflow_id=payload.get(TEMPORAL_WORKFLOW_ID_KEY),
             error_message=payload.get(ERROR_MESSAGE_KEY),
