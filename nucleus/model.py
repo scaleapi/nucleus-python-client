@@ -4,15 +4,29 @@ import requests
 
 from .async_job import AsyncJob
 from .constants import (
+    BACKEND_REFERENCE_ID_KEY,
     METADATA_KEY,
+    MODEL_ARCHITECTURE_KEY,
+    MODEL_BUMP_TYPE_KEY,
+    MODEL_BUNDLE_NAME_KEY,
+    MODEL_DESCRIPTION_KEY,
+    MODEL_INPUT_SCHEMA_KEY,
+    MODEL_NUM_PARAMETERS_KEY,
+    MODEL_OUTPUT_SCHEMA_KEY,
+    MODEL_PARENT_MODEL_PROJECT_ID_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
+    MODEL_TRAINING_DATA_KEY,
+    MODEL_VERSION_LABEL_KEY,
+    MODEL_VERSION_MAJOR_KEY,
+    MODEL_VERSION_MINOR_KEY,
     NAME_KEY,
     REFERENCE_ID_KEY,
 )
 from .dataset import Dataset
 from .model_run import ModelRun
 from .model_weights import ModelWeights
+from .payload_constructor import NO_UPDATE
 from .prediction import (
     BoxPrediction,
     CuboidPrediction,
@@ -109,6 +123,16 @@ class Model:
         bundle_name=None,
         tags=None,
         trained_slice_ids=None,
+        description=None,
+        architecture=None,
+        num_parameters=None,
+        training_data=None,
+        input_schema=None,
+        output_schema=None,
+        parent_model_project_id=None,
+        version_major=None,
+        version_minor=None,
+        version_label=None,
     ):
         self.id = model_id
         self.name = name
@@ -118,9 +142,30 @@ class Model:
         self.tags = tags if tags else []
         self._client = client
         self.trained_slice_ids = trained_slice_ids if trained_slice_ids else []
+        self.description = description
+        self.architecture = architecture
+        self.num_parameters = num_parameters
+        self.training_data = training_data
+        self.input_schema = input_schema
+        self.output_schema = output_schema
+        self.parent_model_project_id = parent_model_project_id
+        self.version_major = version_major
+        self.version_minor = version_minor
+        self.version_label = version_label
 
     def __repr__(self):
-        return f"Model(model_id='{self.id}', name='{self.name}', reference_id='{self.reference_id}', metadata={self.metadata}, bundle_name={self.bundle_name}, tags={self.tags}, client={self._client}, trained_slice_ids={self.trained_slice_ids})"
+        return (
+            f"Model(model_id='{self.id}', name='{self.name}', "
+            f"reference_id='{self.reference_id}', metadata={self.metadata}, "
+            f"bundle_name={self.bundle_name}, tags={self.tags}, "
+            f"trained_slice_ids={self.trained_slice_ids}, "
+            f"description={self.description}, architecture={self.architecture}, "
+            f"num_parameters={self.num_parameters}, training_data={self.training_data}, "
+            f"input_schema={self.input_schema}, output_schema={self.output_schema}, "
+            f"parent_model_project_id={self.parent_model_project_id}, "
+            f"version_major={self.version_major}, version_minor={self.version_minor}, "
+            f"version_label={self.version_label}, client={self._client})"
+        )
 
     def __eq__(self, other):
         return (
@@ -141,12 +186,110 @@ class Model:
         return cls(
             model_id=payload["id"],
             name=payload["name"],
-            reference_id=payload["ref_id"],
+            # The backend returns the reference id as `ref_id`; fall back to the
+            # canonical key for any endpoint that returns it that way.
+            reference_id=payload.get(
+                BACKEND_REFERENCE_ID_KEY, payload.get(REFERENCE_ID_KEY)
+            ),
             metadata=payload["metadata"] or None,
             client=client,
+            bundle_name=payload.get(MODEL_BUNDLE_NAME_KEY, None),
             tags=payload.get(MODEL_TAGS_KEY, None),
             trained_slice_ids=payload.get(MODEL_TRAINED_SLICE_IDS_KEY, None),
+            description=payload.get(MODEL_DESCRIPTION_KEY, None),
+            architecture=payload.get(MODEL_ARCHITECTURE_KEY, None),
+            num_parameters=payload.get(MODEL_NUM_PARAMETERS_KEY, None),
+            training_data=payload.get(MODEL_TRAINING_DATA_KEY, None),
+            input_schema=payload.get(MODEL_INPUT_SCHEMA_KEY, None),
+            output_schema=payload.get(MODEL_OUTPUT_SCHEMA_KEY, None),
+            parent_model_project_id=payload.get(
+                MODEL_PARENT_MODEL_PROJECT_ID_KEY, None
+            ),
+            version_major=payload.get(MODEL_VERSION_MAJOR_KEY, None),
+            version_minor=payload.get(MODEL_VERSION_MINOR_KEY, None),
+            version_label=payload.get(MODEL_VERSION_LABEL_KEY, None),
         )
+
+    def update(
+        self,
+        name=NO_UPDATE,
+        reference_id=NO_UPDATE,
+        metadata=NO_UPDATE,
+        description=NO_UPDATE,
+        architecture=NO_UPDATE,
+        num_parameters=NO_UPDATE,
+        training_data=NO_UPDATE,
+        input_schema=NO_UPDATE,
+        output_schema=NO_UPDATE,
+        training_data_fields=NO_UPDATE,
+    ) -> "Model":
+        """Edit this model's descriptive fields in place.
+
+        Thin wrapper over :meth:`NucleusClient.update_model` — only the fields you pass
+        are changed, and passing ``None`` clears a nullable field. Refreshes this
+        object's attributes from the server response and returns ``self``.
+        """
+        updated = self._client.update_model(
+            self.id,
+            name=name,
+            reference_id=reference_id,
+            metadata=metadata,
+            description=description,
+            architecture=architecture,
+            num_parameters=num_parameters,
+            training_data=training_data,
+            input_schema=input_schema,
+            output_schema=output_schema,
+            training_data_fields=training_data_fields,
+        )
+        # Copy refreshed state back onto this instance (both share the same client).
+        self.__dict__.update(updated.__dict__)
+        return self
+
+    def set_parent(
+        self,
+        parent_model_project_id: Optional[str],
+        bump_type: Optional[str] = None,
+        version_major: Optional[int] = None,
+        version_minor: Optional[int] = None,
+        version_label: Optional[str] = None,
+    ) -> "Model":
+        """Set or clear this model's parent and version.
+
+        Pass a model id to make this model a version branched from that parent, or
+        ``None`` to clear the parent and turn it back into a root. ``bump_type``
+        (``"major"``/``"minor"``) selects the version bump relative to the parent unless
+        ``version_major``/``version_minor`` are given explicitly. Updates this object's
+        version fields from the server response and returns ``self``.
+        """
+        payload: Dict[str, Union[str, int, None]] = {
+            MODEL_PARENT_MODEL_PROJECT_ID_KEY: parent_model_project_id,
+        }
+        if bump_type is not None:
+            payload[MODEL_BUMP_TYPE_KEY] = bump_type
+        if version_major is not None:
+            payload[MODEL_VERSION_MAJOR_KEY] = version_major
+        if version_minor is not None:
+            payload[MODEL_VERSION_MINOR_KEY] = version_minor
+        if version_label is not None:
+            payload[MODEL_VERSION_LABEL_KEY] = version_label
+
+        response = self._client.make_request(
+            payload, f"model/{self.id}/parent"
+        )
+        self.parent_model_project_id = response.get(
+            MODEL_PARENT_MODEL_PROJECT_ID_KEY, self.parent_model_project_id
+        )
+        self.version_major = response.get(
+            MODEL_VERSION_MAJOR_KEY, self.version_major
+        )
+        self.version_minor = response.get(
+            MODEL_VERSION_MINOR_KEY, self.version_minor
+        )
+        self.version_label = response.get(
+            MODEL_VERSION_LABEL_KEY, self.version_label
+        )
+        return self
 
     def create_run(
         self,
