@@ -5,6 +5,8 @@ __all__ = [
     "AllowedLabelMatch",
     "Benchmark",
     "BenchmarkItemsPage",
+    "TrainingSet",
+    "TrainingSetItemsPage",
     "EmbeddingsExportJob",
     "BoxAnnotation",
     "DeduplicationJob",
@@ -157,6 +159,7 @@ from .constants import (
     NAME_KEY,
     NUCLEUS_ENDPOINT,
     PARENT_BENCHMARK_ID_KEY,
+    PARENT_TRAINING_SET_ID_KEY,
     POINTS_KEY,
     PREDICTIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
@@ -170,6 +173,8 @@ from .constants import (
     SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
     TOP_N_KEY,
+    TRAINING_SET_ID_KEY,
+    TRAINING_SET_IDS_KEY,
     UPDATE_KEY,
     UPLOAD_ID_KEY,
     URL_KEY,
@@ -190,6 +195,7 @@ from .data_transfer_object.evaluation_v2 import (
     LeaderboardRankingEntry,
 )
 from .data_transfer_object.job_status import JobInfoRequestPayload
+from .data_transfer_object.training_set import TrainingSetItemsPage
 from .dataset import Dataset
 from .dataset_item import DatasetItem
 from .deduplication import (
@@ -255,6 +261,7 @@ from .quaternion import Quaternion
 from .retry_strategy import RetryStrategy
 from .scene import Frame, LidarScene, VideoScene
 from .slice import Slice
+from .training_set import TrainingSet
 from .utils import create_items_from_folder_crawl
 from .validate import Validate
 
@@ -1166,9 +1173,11 @@ class NucleusClient:
                 None
                 if exclusion_rules is None
                 else [
-                    rule.to_api_dict()
-                    if hasattr(rule, "to_api_dict")
-                    else rule
+                    (
+                        rule.to_api_dict()
+                        if hasattr(rule, "to_api_dict")
+                        else rule
+                    )
                     for rule in exclusion_rules
                 ]
             )
@@ -1558,6 +1567,492 @@ class NucleusClient:
         """
         data = self.post({}, f"benchmarks/{benchmark_id}/finalize")
         return Benchmark.from_json(data, self)
+
+    # --------------------------------------------------------------------- #
+    # Training sets
+    # --------------------------------------------------------------------- #
+    @staticmethod
+    def _training_set_source_payload(
+        *,
+        item_ids: Optional[List[str]] = None,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        training_set_ids: Optional[List[str]] = None,
+        scene_ids: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Map each non-None membership source to its payload key.
+
+        Shared by create / add / new-version. Members are unioned and
+        de-duplicated across every source by the backend.
+        """
+        source_fields = {
+            ITEM_IDS_KEY: item_ids,
+            ITEMS_KEY: items,
+            SLICE_ID_KEY: slice_id,
+            DATASET_ID_KEY: dataset_id,
+            SLICE_IDS_KEY: slice_ids,
+            DATASET_IDS_KEY: dataset_ids,
+            TRAINING_SET_IDS_KEY: training_set_ids,
+            SCENE_IDS_KEY: scene_ids,
+        }
+        return {
+            key: value
+            for key, value in source_fields.items()
+            if value is not None
+        }
+
+    def create_training_set(
+        self,
+        name: str,
+        *,
+        model: Union[Model, str],
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        item_ids: Optional[List[str]] = None,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        training_set_ids: Optional[List[str]] = None,
+        parent_training_set_id: Optional[str] = None,
+        bump_type: Optional[str] = None,
+        version_major: Optional[int] = None,
+        version_minor: Optional[int] = None,
+        version_label: Optional[str] = None,
+        removed_item_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
+    ) -> TrainingSet:
+        """Create a training set scoped to a model and attach it.
+
+        A training set is a mutable, versioned collection of ``dataset_item``
+        ids spanning one or more datasets. Provide members through any
+        combination of sources: explicit ``item_ids``, ``(dataset_id,
+        reference_id)`` pairs via ``items``, one or more slices via ``slice_id``
+        / ``slice_ids``, one or more datasets via ``dataset_id`` /
+        ``dataset_ids``, and the members of other training sets via
+        ``training_set_ids``. Members are unioned and de-duplicated; at least
+        one source is required.
+
+        Creation is **asynchronous**: the server creates the training set in a
+        ``"building"`` state and streams its members in via a background job.
+        By default this blocks until that job finishes and returns the
+        ``"ready"`` training set. Pass ``wait_for_completion=False`` to return
+        immediately with a ``"building"`` set you can poll via
+        :meth:`TrainingSet.refresh`.
+
+        **Versioning.** Pass ``parent_training_set_id`` to create a new version
+        downstream of an existing training set: the child inherits the parent's
+        items, the source arguments **add** on top, and ``removed_item_ids``
+        **prune** inherited items (``final set = parent ∪ added ∖ removed``).
+        The version defaults to a minor bump; pass ``bump_type="major"`` or an
+        explicit ``version_major`` + ``version_minor``.
+
+        Parameters:
+            name: Training set display name.
+            model: The :class:`Model` (or model id) to scope and attach to.
+            description: Optional description.
+            metadata: Optional arbitrary metadata dict.
+            item_ids: Global dataset item ids (``di_*``).
+            items: ``{"dataset_id": ..., "reference_id": ...}`` pairs.
+            slice_id: Slice id (``slc_*``) whose items become members.
+            dataset_id: Dataset id (``ds_*``) whose items become members.
+            slice_ids: Multiple slice ids whose items become members.
+            dataset_ids: Multiple dataset ids whose items become members.
+            training_set_ids: Other training set ids whose members are unioned in.
+            parent_training_set_id: Create as a new version downstream of this
+                training set, inheriting its items.
+            bump_type: ``"minor"`` (default) or ``"major"`` version bump relative
+                to the parent. Ignored without ``parent_training_set_id``.
+            version_major: Explicit major version (with ``version_minor``).
+            version_minor: Explicit minor version (with ``version_major``).
+            version_label: Optional human-readable version label.
+            removed_item_ids: Inherited item ids (``di_*``) to prune from the
+                parent's set. Only valid with ``parent_training_set_id``.
+            wait_for_completion: Block until the build job finishes and return
+                the resulting training set (default).
+            verbose: Log build-job polling progress while waiting.
+
+        Returns:
+            :class:`TrainingSet`: The created training set.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        sources = self._training_set_source_payload(
+            item_ids=item_ids,
+            items=items,
+            slice_id=slice_id,
+            dataset_id=dataset_id,
+            slice_ids=slice_ids,
+            dataset_ids=dataset_ids,
+            training_set_ids=training_set_ids,
+        )
+        if not any(sources.values()) and not parent_training_set_id:
+            raise ValueError(
+                "Provide at least one of item_ids, items, slice_id(s), "
+                "dataset_id(s), training_set_ids, or parent_training_set_id to "
+                "define training set membership"
+            )
+        if removed_item_ids is not None and parent_training_set_id is None:
+            raise ValueError(
+                "removed_item_ids is only valid together with "
+                "parent_training_set_id"
+            )
+        payload: Dict[str, Any] = {NAME_KEY: name, **sources}
+        version_fields = {
+            DESCRIPTION_KEY: description,
+            METADATA_KEY: metadata,
+            PARENT_TRAINING_SET_ID_KEY: parent_training_set_id,
+            BUMP_TYPE_KEY: bump_type,
+            VERSION_MAJOR_KEY: version_major,
+            VERSION_MINOR_KEY: version_minor,
+            VERSION_LABEL_KEY: version_label,
+            REMOVED_ITEM_IDS_KEY: removed_item_ids,
+        }
+        payload.update(
+            {
+                key: value
+                for key, value in version_fields.items()
+                if value is not None
+            }
+        )
+
+        # Async: server responds 202 with {training_set_id, job_id}. The row
+        # already exists (in 'building'); the seed job streams members in.
+        response = self.post(payload, f"model/{model_id}/trainingSet")
+        training_set_id = response[TRAINING_SET_ID_KEY]
+        job_id = response.get(JOB_ID_KEY)
+        if wait_for_completion and job_id is not None:
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+        elif wait_for_completion and job_id is None:
+            raise ValueError(
+                "Server did not return a job_id in the create-training-set "
+                "response; cannot poll for completion. Pass "
+                "wait_for_completion=False to suppress this error."
+            )
+        return self.get_training_set(training_set_id)
+
+    def list_training_sets(self) -> List[TrainingSet]:
+        """List training sets visible to the current user.
+
+        Returns:
+            List of :class:`TrainingSet`.
+        """
+        rows = self.get("trainingSets")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected list training sets response: {rows!r}"
+            )
+        return [TrainingSet.from_json(r, self) for r in rows]
+
+    def get_training_set(self, training_set_id: str) -> TrainingSet:
+        """Get a training set by id.
+
+        Parameters:
+            training_set_id: Training set id.
+
+        Returns:
+            :class:`TrainingSet`.
+        """
+        data = self.get(f"trainingSets/{training_set_id}")
+        return TrainingSet.from_json(data, self)
+
+    def get_model_training_set(self, model: Union[Model, str]) -> TrainingSet:
+        """Get the training set currently pinned to a model.
+
+        Parameters:
+            model: The :class:`Model` (or model id).
+
+        Returns:
+            :class:`TrainingSet`: The model's currently pinned training set.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        data = self.get(f"model/{model_id}/trainingSet")
+        return TrainingSet.from_json(data, self)
+
+    def repin_training_set(
+        self, model: Union[Model, str], training_set_id: str
+    ) -> TrainingSet:
+        """Pin a model to a specific training set (version).
+
+        Parameters:
+            model: The :class:`Model` (or model id) to repin.
+            training_set_id: The training set id to pin the model to.
+
+        Returns:
+            :class:`TrainingSet`: The now-pinned training set.
+        """
+        model_id = model.id if isinstance(model, Model) else model
+        data = self.put(
+            {TRAINING_SET_ID_KEY: training_set_id},
+            f"model/{model_id}/trainingSet",
+        )
+        return TrainingSet.from_json(data, self)
+
+    def update_training_set(
+        self,
+        training_set_id: str,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> TrainingSet:
+        """Update a training set's name, description, or metadata.
+
+        Only the arguments you pass are changed. Use
+        :meth:`add_training_set_items` / :meth:`remove_training_set_items` to
+        change membership.
+
+        Parameters:
+            training_set_id: Training set id.
+            name: Optional new display name.
+            description: Optional new description.
+            metadata: Optional new metadata dict.
+
+        Returns:
+            :class:`TrainingSet`: The updated training set.
+        """
+        payload: Dict[str, Any] = {}
+        if name is not None:
+            payload[NAME_KEY] = name
+        if description is not None:
+            payload[DESCRIPTION_KEY] = description
+        if metadata is not None:
+            payload[METADATA_KEY] = metadata
+        data = self.patch(payload, f"trainingSets/{training_set_id}")
+        return TrainingSet.from_json(data, self)
+
+    def delete_training_set(self, training_set_id: str) -> None:
+        """Delete a training set.
+
+        Parameters:
+            training_set_id: Training set id.
+        """
+        self.make_request(
+            {},
+            f"trainingSets/{training_set_id}",
+            requests_command=requests.delete,
+            return_raw_response=True,
+        )
+
+    def list_training_set_items(
+        self,
+        training_set_id: str,
+        *,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> TrainingSetItemsPage:
+        """Return one page of a training set's member item ids.
+
+        Parameters:
+            training_set_id: Training set id.
+            limit: Optional page size.
+            offset: Optional offset for pagination.
+
+        Returns:
+            :class:`~nucleus.data_transfer_object.training_set.TrainingSetItemsPage`.
+        """
+        route = f"trainingSets/{training_set_id}/items"
+        params = []
+        if limit is not None:
+            params.append(f"limit={limit}")
+        if offset is not None:
+            params.append(f"offset={offset}")
+        if params:
+            route = f"{route}?{'&'.join(params)}"
+        data = self.get(route)
+        return TrainingSetItemsPage.parse_obj(data)
+
+    def add_training_set_items(
+        self,
+        training_set_id: str,
+        *,
+        item_ids: Optional[List[str]] = None,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        training_set_ids: Optional[List[str]] = None,
+        scene_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
+    ) -> None:
+        """Add items to a training set.
+
+        Accepts the same sources as :meth:`create_training_set`; members are
+        unioned/de-duplicated with the existing set.
+
+        Like create, this is **asynchronous**: the server streams the sources in
+        via a background job. By default this blocks until the job finishes.
+
+        Parameters:
+            training_set_id: Training set id.
+            item_ids: Global dataset item ids (``di_*``).
+            items: ``{"dataset_id": ..., "reference_id": ...}`` pairs.
+            slice_id: Slice id whose items are added.
+            dataset_id: Dataset id whose items are added.
+            slice_ids: Multiple slice ids whose items are added.
+            dataset_ids: Multiple dataset ids whose items are added.
+            training_set_ids: Other training set ids whose members are added.
+            scene_ids: Scene ids (``scn_*``) whose items are added.
+            wait_for_completion: Block until the add job finishes (default).
+            verbose: Log add-job polling progress while waiting.
+        """
+        payload = self._training_set_source_payload(
+            item_ids=item_ids,
+            items=items,
+            slice_id=slice_id,
+            dataset_id=dataset_id,
+            slice_ids=slice_ids,
+            dataset_ids=dataset_ids,
+            training_set_ids=training_set_ids,
+            scene_ids=scene_ids,
+        )
+        if not any(payload.values()):
+            raise ValueError(
+                "Provide at least one of item_ids, items, slice_id(s), "
+                "dataset_id(s), training_set_ids, or scene_ids to add"
+            )
+        # 202 with {job_id}; the append job streams items into the set.
+        response = self.post(payload, f"trainingSets/{training_set_id}/items")
+        job_id = response.get(JOB_ID_KEY)
+        if wait_for_completion:
+            if job_id is None:
+                raise ValueError(
+                    "Server did not return a job_id in the "
+                    "add-training-set-items response; cannot poll for "
+                    "completion. Pass wait_for_completion=False to suppress "
+                    "this error."
+                )
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+
+    def remove_training_set_items(
+        self, training_set_id: str, item_ids: List[str]
+    ) -> None:
+        """Remove items from a training set (synchronous).
+
+        Unknown ids are ignored.
+
+        Parameters:
+            training_set_id: Training set id.
+            item_ids: Dataset item ids (``di_*``) to remove.
+        """
+        self.make_request(
+            {ITEM_IDS_KEY: item_ids},
+            f"trainingSets/{training_set_id}/items",
+            requests_command=requests.delete,
+            return_raw_response=True,
+        )
+
+    def create_training_set_version(
+        self,
+        training_set_id: str,
+        *,
+        item_ids: Optional[List[str]] = None,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        training_set_ids: Optional[List[str]] = None,
+        removed_item_ids: Optional[List[str]] = None,
+        bump_type: Optional[str] = None,
+        version_major: Optional[int] = None,
+        version_minor: Optional[int] = None,
+        version_label: Optional[str] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
+    ) -> TrainingSet:
+        """Create a new version downstream of an existing training set.
+
+        The child inherits the parent's items, the source arguments add on top,
+        and ``removed_item_ids`` prune inherited items
+        (``final set = parent ∪ added ∖ removed``). The version defaults to a
+        minor bump; pass ``bump_type="major"`` or explicit ``version_major`` +
+        ``version_minor``.
+
+        Like create, this is **asynchronous**: by default it blocks until the
+        seed job finishes and returns the new ``"ready"`` version.
+
+        Parameters:
+            training_set_id: Parent training set id to version from.
+            item_ids: Global dataset item ids (``di_*``) to add on top.
+            items: ``{"dataset_id": ..., "reference_id": ...}`` pairs to add.
+            slice_id: Slice id whose items are added.
+            dataset_id: Dataset id whose items are added.
+            slice_ids: Multiple slice ids whose items are added.
+            dataset_ids: Multiple dataset ids whose items are added.
+            training_set_ids: Other training set ids whose members are added.
+            removed_item_ids: Inherited item ids (``di_*``) to prune.
+            bump_type: ``"minor"`` (default) or ``"major"`` version bump.
+            version_major: Explicit major version (with ``version_minor``).
+            version_minor: Explicit minor version (with ``version_major``).
+            version_label: Optional human-readable version label.
+            wait_for_completion: Block until the seed job finishes (default).
+            verbose: Log seed-job polling progress while waiting.
+
+        Returns:
+            :class:`TrainingSet`: The newly created version.
+        """
+        payload = self._training_set_source_payload(
+            item_ids=item_ids,
+            items=items,
+            slice_id=slice_id,
+            dataset_id=dataset_id,
+            slice_ids=slice_ids,
+            dataset_ids=dataset_ids,
+            training_set_ids=training_set_ids,
+        )
+        version_fields = {
+            REMOVED_ITEM_IDS_KEY: removed_item_ids,
+            BUMP_TYPE_KEY: bump_type,
+            VERSION_MAJOR_KEY: version_major,
+            VERSION_MINOR_KEY: version_minor,
+            VERSION_LABEL_KEY: version_label,
+        }
+        payload.update(
+            {
+                key: value
+                for key, value in version_fields.items()
+                if value is not None
+            }
+        )
+        response = self.post(
+            payload, f"trainingSets/{training_set_id}/versions"
+        )
+        new_id = response[TRAINING_SET_ID_KEY]
+        job_id = response.get(JOB_ID_KEY)
+        if wait_for_completion and job_id is not None:
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
+        elif wait_for_completion and job_id is None:
+            raise ValueError(
+                "Server did not return a job_id in the create-training-set-"
+                "version response; cannot poll for completion. Pass "
+                "wait_for_completion=False to suppress this error."
+            )
+        return self.get_training_set(new_id)
+
+    def list_training_set_family(
+        self, training_set_id: str
+    ) -> List[TrainingSet]:
+        """Return every version in a training set's lineage (its family).
+
+        Parameters:
+            training_set_id: Any training set id in the lineage.
+
+        Returns:
+            List of :class:`TrainingSet` sharing the lineage root.
+        """
+        rows = self.get(f"trainingSets/{training_set_id}/family")
+        if not isinstance(rows, list):
+            raise RuntimeError(
+                f"Unexpected training set family response: {rows!r}"
+            )
+        return [TrainingSet.from_json(r, self) for r in rows]
 
     def create_benchmark_evaluation_v2(
         self,

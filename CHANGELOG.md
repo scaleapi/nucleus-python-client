@@ -5,6 +5,13 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.3) - 2026-08-27
+
+### Added
+- **Training sets (DE-8692).** `TrainingSet` — a mutable, versioned, model-scoped collection of `dataset_item` ids spanning one or more datasets. Create and attach one to a model with `NucleusClient.create_training_set(name, model=...)` or `Model.create_training_set(name, ...)`, providing members through any combination of `item_ids`, `(dataset_id, reference_id)` pairs via `items`, `slice_id` / `slice_ids`, `dataset_id` / `dataset_ids`, and the members of other training sets via `training_set_ids`. Fetch/list with `get_training_set()` / `list_training_sets()`; read a model's pinned set via `Model.training_set`.
+- **Mutable membership.** Add sources with `TrainingSet.add_items()` / `NucleusClient.add_training_set_items()` (async, same sources as create), remove with `TrainingSet.remove_items()` / `NucleusClient.remove_training_set_items()`, and page members with `TrainingSet.items()` / `NucleusClient.list_training_set_items(limit=, offset=)`.
+- **Versioning / lineage.** Cut a new version with `TrainingSet.new_version()` / `NucleusClient.create_training_set_version()` (child inherits the parent's items, sources add on top, `removed_item_ids` prune; `parent ∪ added ∖ removed`), or pass `parent_training_set_id` to `create_training_set()`. Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor`. Inspect a set's lineage with `NucleusClient.list_training_set_family()` and repin a model to a specific version with `Model.repin_training_set()` / `NucleusClient.repin_training_set()`. `TrainingSet` exposes `model_id`, `parent_training_set_id`, `version_major`, `version_minor`, and `version_label`.
+
 ## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 
 ### Added

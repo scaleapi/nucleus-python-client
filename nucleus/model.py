@@ -438,3 +438,45 @@ class Model:
         See :meth:`NucleusClient.delete_model_weights`.
         """
         return self._client.delete_model_weights(self)
+
+    def create_training_set(self, name: str, **kwargs):
+        """Create a training set scoped to this model and attach it.
+
+        A training set is a mutable, versioned collection of ``dataset_item``
+        ids spanning one or more datasets. ::
+
+            training_set = model.create_training_set(
+                "pedestrians-v1", slice_id="slc_..."
+            )
+
+        See :meth:`NucleusClient.create_training_set` for the accepted keyword
+        arguments (membership sources and versioning).
+
+        Returns:
+            The created :class:`~nucleus.training_set.TrainingSet`.
+        """
+        return self._client.create_training_set(name, model=self, **kwargs)
+
+    @property
+    def training_set(self):
+        """The training set currently pinned to this model.
+
+        See :meth:`NucleusClient.get_model_training_set`.
+
+        Returns:
+            The pinned :class:`~nucleus.training_set.TrainingSet`.
+        """
+        return self._client.get_model_training_set(self)
+
+    def repin_training_set(self, training_set_id: str):
+        """Pin this model to a specific training set (version).
+
+        See :meth:`NucleusClient.repin_training_set`.
+
+        Args:
+            training_set_id: The training set id to pin this model to.
+
+        Returns:
+            The now-pinned :class:`~nucleus.training_set.TrainingSet`.
+        """
+        return self._client.repin_training_set(self, training_set_id)

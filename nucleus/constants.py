@@ -200,6 +200,12 @@ REMOVED_ITEM_IDS_KEY = "removed_item_ids"
 VERSION_LABEL_KEY = "version_label"
 VERSION_MAJOR_KEY = "version_major"
 VERSION_MINOR_KEY = "version_minor"
+# Training sets: mutable, versioned, model-scoped collections of dataset_item ids.
+# A near-clone of Benchmark; reuses the item/slice/dataset/version keys above and
+# adds a training-set id (identity + as a membership source) and its lineage parent.
+TRAINING_SET_ID_KEY = "training_set_id"
+TRAINING_SET_IDS_KEY = "training_set_ids"
+PARENT_TRAINING_SET_ID_KEY = "parent_training_set_id"
 CLASS_NAME_KEY = "class_name"
 CLASS_NAME_CAMEL_KEY = "className"
 COLLAPSE_KEY = "collapse"
