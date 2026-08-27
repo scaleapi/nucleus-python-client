@@ -5,6 +5,14 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.3) - 2026-08-27
+
+### Added
+- **Full model create/edit parity with the dashboard.** `create_model()` now accepts every field the UI exposes: `description`, `architecture`, `num_parameters`, `training_data`, `input_schema`, `output_schema`, structured `training_data_fields` ({key: value}, stored in metadata + indexed for search), and versioning (`parent_model_project_id`, `bump_type`, `version_major`, `version_minor`, `version_label`).
+- **`NucleusClient.update_model()` / `Model.update()`.** Edit an existing model's descriptive fields (name, reference id, metadata, description, architecture, num parameters, training data, input/output schema, training-data fields). Only fields you pass change; passing `None` clears a nullable field. Backed by the new `POST /nucleus/model/:modelId/update` endpoint.
+- **`Model.set_parent()`.** Set or clear a model's parent and version (pass `None` to make it a root).
+- `Model` now exposes `description`, `architecture`, `num_parameters`, `training_data`, `input_schema`, `output_schema`, `parent_model_project_id`, `version_major`, `version_minor`, and `version_label`, populated by `Model.from_json`.
+
 ## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 
 ### Added

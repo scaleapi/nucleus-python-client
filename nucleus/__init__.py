@@ -236,10 +236,13 @@ from .model_weights import (
     _transfer_weights_to_storage,
 )
 from .payload_constructor import (
+    NO_UPDATE,
     construct_annotation_payload,
     construct_box_predictions_payload,
     construct_model_creation_payload,
+    construct_model_update_payload,
     construct_segmentation_payload,
+    merge_training_data_fields_into_metadata,
 )
 from .prediction import (
     BoxPrediction,
@@ -764,6 +767,18 @@ class NucleusClient:
         bundle_name: Optional[str] = None,
         tags: Optional[List[str]] = None,
         trained_slice_ids: Optional[List[str]] = None,
+        description: Optional[str] = None,
+        architecture: Optional[str] = None,
+        num_parameters: Optional[str] = None,
+        training_data: Optional[str] = None,
+        input_schema: Optional[Dict] = None,
+        output_schema: Optional[Dict] = None,
+        training_data_fields: Optional[Dict[str, str]] = None,
+        parent_model_project_id: Optional[str] = None,
+        bump_type: Optional[str] = None,
+        version_major: Optional[int] = None,
+        version_minor: Optional[int] = None,
+        version_label: Optional[str] = None,
     ) -> Model:
         """Adds a :class:`Model` to Nucleus.
 
@@ -777,10 +792,32 @@ class NucleusClient:
               about the hyperparameters used in training this model.
             bundle_name: Optional name of bundle attached to this model
             tags: Optional list of tags to attach to this model
+            description: Optional free-text description of the model.
+            architecture: Optional model architecture (e.g. ``"ResNet-50"``).
+            num_parameters: Optional parameter count, as a string so values like
+              ``"7B"`` are allowed.
+            training_data: Optional free-text description of the training data.
+            input_schema: Optional JSON schema describing the model's input.
+            output_schema: Optional JSON schema describing the model's output.
+            training_data_fields: Optional ``{key: value}`` mapping of structured
+              training-data fields (e.g. ``{"biome": "desert"}``), matching the
+              dashboard's training-data editor. Stored inside ``metadata`` and
+              indexed for search; merged on top of any ``metadata`` you pass.
+            parent_model_project_id: Optional id of a model to branch a new version
+              from. When set, this model becomes a version of that parent.
+            bump_type: ``"major"`` or ``"minor"``; how to bump the version relative
+              to the parent. Required when ``parent_model_project_id`` is set unless
+              ``version_major``/``version_minor`` are given explicitly.
+            version_major: Optional explicit major version.
+            version_minor: Optional explicit minor version.
+            version_label: Optional display label (e.g. a semver string).
 
         Returns:
             :class:`Model`: The newly created model as an object.
         """
+        metadata = merge_training_data_fields_into_metadata(
+            metadata, training_data_fields
+        )
         response = self.make_request(
             construct_model_creation_payload(
                 name,
@@ -789,6 +826,17 @@ class NucleusClient:
                 bundle_name,
                 tags,
                 trained_slice_ids,
+                description=description,
+                architecture=architecture,
+                num_parameters=num_parameters,
+                training_data=training_data,
+                input_schema=input_schema,
+                output_schema=output_schema,
+                parent_model_project_id=parent_model_project_id,
+                bump_type=bump_type,
+                version_major=version_major,
+                version_minor=version_minor,
+                version_label=version_label,
             ),
             "models/add",
         )
@@ -805,7 +853,80 @@ class NucleusClient:
             client=self,
             tags=tags,
             trained_slice_ids=trained_slice_ids,
+            description=description,
+            architecture=architecture,
+            num_parameters=num_parameters,
+            training_data=training_data,
+            input_schema=input_schema,
+            output_schema=output_schema,
+            parent_model_project_id=parent_model_project_id,
+            version_major=response.get("version_major", version_major),
+            version_minor=response.get("version_minor", version_minor),
+            version_label=version_label,
         )
+
+    def update_model(
+        self,
+        model_id: str,
+        name=NO_UPDATE,
+        reference_id=NO_UPDATE,
+        metadata=NO_UPDATE,
+        description=NO_UPDATE,
+        architecture=NO_UPDATE,
+        num_parameters=NO_UPDATE,
+        training_data=NO_UPDATE,
+        input_schema=NO_UPDATE,
+        output_schema=NO_UPDATE,
+        training_data_fields=NO_UPDATE,
+    ) -> Model:
+        """Edit an existing model's descriptive fields.
+
+        Only the fields you pass are changed; anything left at its default is untouched
+        server-side. For nullable fields, passing ``None`` deliberately clears the value
+        (distinct from not passing it at all). Versioning/parent changes go through
+        :meth:`Model.set_parent` instead.
+
+        Parameters:
+            model_id: Id of the model to edit.
+            name: New name.
+            reference_id: New reference id (``None`` clears it).
+            metadata: Replacement metadata dict (``None`` clears it). If
+              ``training_data_fields`` is also given it is merged on top of this.
+            description: New description (``None`` clears it).
+            architecture: New architecture (``None`` clears it).
+            num_parameters: New parameter count string (``None`` clears it).
+            training_data: New training-data description (``None`` clears it).
+            input_schema: New input JSON schema (``None`` clears it).
+            output_schema: New output JSON schema (``None`` clears it).
+            training_data_fields: ``{key: value}`` structured training-data fields to
+              write into ``metadata`` under the reserved key. Merged on top of
+              ``metadata`` when both are supplied; on its own it starts from an empty
+              metadata object, so pass ``metadata`` too if you need to preserve
+              existing keys.
+
+        Returns:
+            :class:`Model`: The updated model, refreshed from the server.
+        """
+        if training_data_fields is not NO_UPDATE:
+            base = (
+                {} if metadata is NO_UPDATE or metadata is None else metadata
+            )
+            metadata = merge_training_data_fields_into_metadata(
+                base, training_data_fields
+            )
+        payload = construct_model_update_payload(
+            name=name,
+            reference_id=reference_id,
+            metadata=metadata,
+            description=description,
+            architecture=architecture,
+            num_parameters=num_parameters,
+            training_data=training_data,
+            input_schema=input_schema,
+            output_schema=output_schema,
+        )
+        response = self.make_request(payload, f"model/{model_id}/update")
+        return Model.from_json(response, self)
 
     def create_launch_model(
         self,
@@ -1166,9 +1287,11 @@ class NucleusClient:
                 None
                 if exclusion_rules is None
                 else [
-                    rule.to_api_dict()
-                    if hasattr(rule, "to_api_dict")
-                    else rule
+                    (
+                        rule.to_api_dict()
+                        if hasattr(rule, "to_api_dict")
+                        else rule
+                    )
                     for rule in exclusion_rules
                 ]
             )
