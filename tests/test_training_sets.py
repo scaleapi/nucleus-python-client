@@ -368,6 +368,142 @@ def test_list_training_set_items_no_paging_params():
 
 
 # --------------------------------------------------------------------------- #
+# Export / download
+# --------------------------------------------------------------------------- #
+def _export_record(i, *, pointcloud=False):
+    """One backend export record (matches the shared export contract)."""
+    return {
+        "dataset_item_id": f"di_{i}",
+        "dataset_id": "ds_1",
+        "reference_id": f"ref_{i}",
+        "metadata": {"k": i},
+        "image_location": None if pointcloud else f"https://x/{i}.jpg",
+        "pointcloud_location": f"https://x/{i}.json" if pointcloud else None,
+        "width": None if pointcloud else 10,
+        "height": None if pointcloud else 20,
+    }
+
+
+def test_export_training_set_items_pages_until_total():
+    from nucleus.dataset_item import DatasetItem
+
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        side_effect=[
+            {"items": [_export_record(0), _export_record(1)], "total": 3},
+            {"items": [_export_record(2)], "total": 3},
+        ]
+    )
+    items = client.export_training_set_items("ts_1", limit=2)
+    assert [call[0][0] for call in client.connection.get.call_args_list] == [
+        "trainingSets/ts_1/export?limit=2&offset=0",
+        "trainingSets/ts_1/export?limit=2&offset=2",
+    ]
+    assert len(items) == 3
+    assert all(isinstance(it, DatasetItem) for it in items)
+    assert items[0].dataset_item_id == "di_0"
+    assert items[0].reference_id == "ref_0"
+    assert items[0].image_location == "https://x/0.jpg"
+    assert items[0].metadata == {"k": 0}
+    assert items[0].width == 10
+    assert items[0].height == 20
+
+
+def test_export_training_set_items_single_page_stops():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        return_value={"items": [_export_record(0)], "total": 1}
+    )
+    items = client.export_training_set_items("ts_1", limit=1000)
+    client.connection.get.assert_called_once_with(
+        "trainingSets/ts_1/export?limit=1000&offset=0"
+    )
+    assert len(items) == 1
+
+
+def test_export_to_file_writes_jsonl_roundtrip(tmp_path):
+    import json
+
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        return_value={
+            "items": [
+                _export_record(1),
+                _export_record(2, pointcloud=True),  # pointcloud member
+            ],
+            "total": 2,
+        }
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    path = tmp_path / "nested" / "export.jsonl"
+    count = ts.export_to_file(str(path))
+
+    assert count == 2
+    lines = path.read_text().splitlines()
+    assert len(lines) == 2
+    rows = [json.loads(line) for line in lines]
+    for row in rows:
+        assert "dataset_item_id" in row
+        assert "dataset_id" in row
+        assert "metadata" in row
+    assert rows[0]["dataset_item_id"] == "di_1"
+    assert rows[0]["dataset_id"] == "ds_1"
+    # The pointcloud member round-trips faithfully (would raise via to_json()).
+    assert rows[1]["pointcloud_location"] == "https://x/2.json"
+    assert rows[1]["image_location"] is None
+
+
+def test_download_items_streams_media_to_directory(tmp_path, monkeypatch):
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        return_value={
+            "items": [_export_record(1), _export_record(2)],
+            "total": 2,
+        }
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+
+    fake_response = MagicMock()
+    fake_response.iter_content.return_value = [b"fake-bytes"]
+    fake_response.raise_for_status.return_value = None
+    context = MagicMock()
+    context.__enter__.return_value = fake_response
+    fake_get = MagicMock(return_value=context)
+    monkeypatch.setattr("nucleus.training_set.requests.get", fake_get)
+
+    count = ts.download_items(str(tmp_path), progress=False)
+
+    assert count == 2
+    files = sorted(p.name for p in tmp_path.iterdir())
+    assert files == ["ref_1.jpg", "ref_2.jpg"]
+    assert (tmp_path / "ref_1.jpg").read_bytes() == b"fake-bytes"
+    # No leftover .part temp files.
+    assert not any(p.name.endswith(".part") for p in tmp_path.iterdir())
+
+
+def test_download_items_media_less_record_raises_on_hydration(
+    tmp_path, monkeypatch
+):
+    client = NucleusClient(api_key="test")
+    # A member with neither image nor pointcloud location.
+    record = {**_export_record(1), "image_location": None}
+    record["reference_id"] = "ref_nomedia"
+    client.connection.get = MagicMock(
+        return_value={"items": [record], "total": 1}
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    fake_get = MagicMock()
+    monkeypatch.setattr("nucleus.training_set.requests.get", fake_get)
+
+    # download_items pages export_items(), which hydrates each record into a
+    # DatasetItem; DatasetItem asserts "exactly one media location", so a
+    # media-less record raises before any download is attempted.
+    with pytest.raises(AssertionError):
+        ts.download_items(str(tmp_path), progress=False)
+    fake_get.assert_not_called()
+
+
+# --------------------------------------------------------------------------- #
 # Instance methods delegate to the client
 # --------------------------------------------------------------------------- #
 def test_training_set_instance_methods_delegate_to_client():
@@ -390,6 +526,11 @@ def test_training_set_instance_methods_delegate_to_client():
     client.list_training_set_items.assert_called_once_with(
         "ts_1", limit=5, offset=None
     )
+
+    client.export_training_set_items.return_value = ["item"]
+    result = ts.export_items(limit=50)
+    client.export_training_set_items.assert_called_once_with("ts_1", limit=50)
+    assert result == ["item"]
 
     client.get_training_set.return_value = TrainingSet(
         id="ts_1", name="renamed", _client=client

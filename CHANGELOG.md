@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.4) - 2026-08-27
+
+### Added
+- **Training set export / download (DE-8692).** Pull a training set's members back out as fully-hydrated items. `TrainingSet.export_items()` / `NucleusClient.export_training_set_items()` page the whole set and return `DatasetItem`s (media location, `reference_id`, `metadata`, `width` / `height`, and the server-side `dataset_item_id`). `TrainingSet.export_to_file(path)` writes every member to a JSONL file (one raw export record per line — `dataset_item_id`, `dataset_id`, `reference_id`, `metadata`, `image_location`, `pointcloud_location`, `width`, `height`) and returns the count written. `TrainingSet.download_items(directory)` streams each member's media file to disk (named by `reference_id`, falling back to `dataset_item_id`), returning the number downloaded.
+
 ## [0.21.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.3) - 2026-08-27
 
 ### Added

@@ -136,8 +136,10 @@ from .constants import (
     EVALUATION_ID_KEY,
     EXCLUSION_RULES_CAMEL_KEY,
     GLOB_SIZE_THRESHOLD_CHECK,
+    HEIGHT_KEY,
     I_KEY,
     IMAGE_KEY,
+    IMAGE_LOCATION_KEY,
     IMAGE_URL_KEY,
     INDEX_CONTINUOUS_ENABLE_KEY,
     ITEM_IDS_KEY,
@@ -160,6 +162,8 @@ from .constants import (
     NUCLEUS_ENDPOINT,
     PARENT_BENCHMARK_ID_KEY,
     PARENT_TRAINING_SET_ID_KEY,
+    POINTCLOUD_LOCATION_KEY,
+    POINTCLOUD_URL_KEY,
     POINTS_KEY,
     PREDICTIONS_IGNORED_KEY,
     PREDICTIONS_PROCESSED_KEY,
@@ -181,6 +185,7 @@ from .constants import (
     VERSION_LABEL_KEY,
     VERSION_MAJOR_KEY,
     VERSION_MINOR_KEY,
+    WIDTH_KEY,
 )
 from .data_transfer_object.dataset_details import DatasetDetails
 from .data_transfer_object.dataset_info import DatasetInfo
@@ -1865,6 +1870,92 @@ class NucleusClient:
             route = f"{route}?{'&'.join(params)}"
         data = self.get(route)
         return TrainingSetItemsPage.parse_obj(data)
+
+    def _export_training_set_records(
+        self,
+        training_set_id: str,
+        *,
+        limit: int = 1000,
+    ) -> List[Dict[str, Any]]:
+        """Page the training-set export endpoint, returning the raw records.
+
+        Each record is the backend's export shape (``dataset_item_id``,
+        ``dataset_id``, ``reference_id``, ``metadata``, ``image_location``,
+        ``pointcloud_location``, ``width``, ``height``). This preserves fields
+        (notably ``dataset_id``) that :class:`~nucleus.dataset_item.DatasetItem`
+        cannot hold, so file/media exports use these directly.
+        """
+        accumulated: List[Dict[str, Any]] = []
+        offset = 0
+        while True:
+            route = (
+                f"trainingSets/{training_set_id}/export"
+                f"?limit={limit}&offset={offset}"
+            )
+            data = self.get(route)
+            items = data.get("items", []) or []
+            total = data.get("total", 0)
+            accumulated.extend(items)
+            # Stop when the server returns an empty page or we've collected the
+            # advertised total (guards against an off-by-one final page).
+            if not items or len(accumulated) >= total:
+                break
+            offset += limit
+        return accumulated
+
+    @staticmethod
+    def _training_set_record_to_dataset_item(
+        record: Dict[str, Any],
+    ) -> DatasetItem:
+        """Hydrate one export record into a :class:`DatasetItem`.
+
+        The export record keys ``image_location`` / ``pointcloud_location`` are
+        remapped to the ``image_url`` / ``pointcloud_url`` keys that
+        :meth:`DatasetItem.from_json` reads; ``width`` / ``height`` (which
+        ``from_json`` does not map) are set afterwards. Note ``dataset_id`` has
+        no home on ``DatasetItem`` — use the raw records (e.g. via
+        :meth:`TrainingSet.export_to_file`) when you need it.
+        """
+        adapted = dict(record)
+        image_location = record.get(IMAGE_LOCATION_KEY)
+        pointcloud_location = record.get(POINTCLOUD_LOCATION_KEY)
+        if image_location:
+            adapted[IMAGE_URL_KEY] = image_location
+        if pointcloud_location:
+            adapted[POINTCLOUD_URL_KEY] = pointcloud_location
+        item = DatasetItem.from_json(adapted)
+        item.width = record.get(WIDTH_KEY)
+        item.height = record.get(HEIGHT_KEY)
+        return item
+
+    def export_training_set_items(
+        self,
+        training_set_id: str,
+        *,
+        limit: int = 1000,
+    ) -> List[DatasetItem]:
+        """Export a training set's members as fully-hydrated dataset items.
+
+        Pages the export endpoint from ``offset=0`` in ``limit``-sized batches
+        until every member has been fetched, converting each record into a
+        :class:`~nucleus.dataset_item.DatasetItem` (with ``image_location`` /
+        ``pointcloud_location``, ``reference_id``, ``metadata``, ``width`` /
+        ``height`` and the server-side ``dataset_item_id``).
+
+        Parameters:
+            training_set_id: Training set id.
+            limit: Page size for the underlying export requests.
+
+        Returns:
+            List[:class:`~nucleus.dataset_item.DatasetItem`]: Every member item.
+        """
+        records = self._export_training_set_records(
+            training_set_id, limit=limit
+        )
+        return [
+            self._training_set_record_to_dataset_item(record)
+            for record in records
+        ]
 
     def add_training_set_items(
         self,
