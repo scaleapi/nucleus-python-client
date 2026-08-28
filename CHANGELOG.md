@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The existing run-based prediction paths (`Dataset.upload_predictions`, `ModelRun.add_predictions`, `create_benchmark_evaluation_v2(model_run_id=...)`) are unchanged and continue to work; the model-centric methods are purely additive.
 
+### Fixed
+- `Model.predictions_loc` / `predictions_refloc` / `predictions_iloc` now actually parse their responses. The run-free read endpoints return a flat `{"predictions": [...]}` list (each element carrying its own `"type"`), but `format_prediction_response` only understood the legacy type-keyed `{"annotations": {"box": [...]}}` shape, so these methods returned the raw payload unparsed instead of the documented `{"box": [...], "polygon": [...], "cuboid": [...]}` dict.
+
 ## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 
 ### Added
