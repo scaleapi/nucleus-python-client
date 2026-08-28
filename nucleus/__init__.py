@@ -1725,19 +1725,14 @@ class NucleusClient:
             }
         )
 
-        # Async: server responds 202 with {training_set_id, job_id}. The row
-        # already exists (in 'building'); the seed job streams members in.
-        response = self.post(payload, f"model/{model_id}/trainingSet")
+        # Create is synchronous: the server responds 201 with the finished
+        # training set. If the backend instead returns a job_id (async seed
+        # job), poll it to completion before returning.
+        response = self.post(payload, f"models/{model_id}/trainingSet")
         training_set_id = response[TRAINING_SET_ID_KEY]
         job_id = response.get(JOB_ID_KEY)
         if wait_for_completion and job_id is not None:
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
-        elif wait_for_completion and job_id is None:
-            raise ValueError(
-                "Server did not return a job_id in the create-training-set "
-                "response; cannot poll for completion. Pass "
-                "wait_for_completion=False to suppress this error."
-            )
         return self.get_training_set(training_set_id)
 
     def list_training_sets(self) -> List[TrainingSet]:
@@ -1775,7 +1770,7 @@ class NucleusClient:
             :class:`TrainingSet`: The model's currently pinned training set.
         """
         model_id = model.id if isinstance(model, Model) else model
-        data = self.get(f"model/{model_id}/trainingSet")
+        data = self.get(f"models/{model_id}/trainingSet")
         return TrainingSet.from_json(data, self)
 
     def repin_training_set(
@@ -1793,7 +1788,7 @@ class NucleusClient:
         model_id = model.id if isinstance(model, Model) else model
         data = self.put(
             {TRAINING_SET_ID_KEY: training_set_id},
-            f"model/{model_id}/trainingSet",
+            f"models/{model_id}/trainingSet",
         )
         return TrainingSet.from_json(data, self)
 
@@ -2008,17 +2003,11 @@ class NucleusClient:
                 "Provide at least one of item_ids, items, slice_id(s), "
                 "dataset_id(s), training_set_ids, or scene_ids to add"
             )
-        # 202 with {job_id}; the append job streams items into the set.
+        # Add is synchronous: the server responds with the updated training set.
+        # If the backend instead returns a job_id (async append job), poll it.
         response = self.post(payload, f"trainingSets/{training_set_id}/items")
         job_id = response.get(JOB_ID_KEY)
-        if wait_for_completion:
-            if job_id is None:
-                raise ValueError(
-                    "Server did not return a job_id in the "
-                    "add-training-set-items response; cannot poll for "
-                    "completion. Pass wait_for_completion=False to suppress "
-                    "this error."
-                )
+        if wait_for_completion and job_id is not None:
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
 
     def remove_training_set_items(
