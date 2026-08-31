@@ -1586,12 +1586,12 @@ class NucleusClient:
         slice_ids: Optional[List[str]] = None,
         dataset_ids: Optional[List[str]] = None,
         training_set_ids: Optional[List[str]] = None,
-        scene_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Map each non-None membership source to its payload key.
 
-        Shared by create / add / new-version. Members are unioned and
-        de-duplicated across every source by the backend.
+        Shared by create / add / remove / new-version. Members are unioned and
+        de-duplicated across every source by the backend. (Training sets resolve
+        dataset items only — there is no scene source, unlike benchmarks.)
         """
         source_fields = {
             ITEM_IDS_KEY: item_ids,
@@ -1601,7 +1601,6 @@ class NucleusClient:
             SLICE_IDS_KEY: slice_ids,
             DATASET_IDS_KEY: dataset_ids,
             TRAINING_SET_IDS_KEY: training_set_ids,
-            SCENE_IDS_KEY: scene_ids,
         }
         return {
             key: value
@@ -1963,7 +1962,6 @@ class NucleusClient:
         slice_ids: Optional[List[str]] = None,
         dataset_ids: Optional[List[str]] = None,
         training_set_ids: Optional[List[str]] = None,
-        scene_ids: Optional[List[str]] = None,
         wait_for_completion: bool = True,
         verbose: bool = True,
     ) -> None:
@@ -1972,8 +1970,10 @@ class NucleusClient:
         Accepts the same sources as :meth:`create_training_set`; members are
         unioned/de-duplicated with the existing set.
 
-        Like create, this is **asynchronous**: the server streams the sources in
-        via a background job. By default this blocks until the job finishes.
+        A small, explicit add (``item_ids`` / ``items``) applies synchronously.
+        Adding a whole slice / dataset (or the members of a large training set)
+        streams in via a background job; the response then carries a ``job_id``
+        and by default this blocks until that job finishes.
 
         Parameters:
             training_set_id: Training set id.
@@ -1984,8 +1984,8 @@ class NucleusClient:
             slice_ids: Multiple slice ids whose items are added.
             dataset_ids: Multiple dataset ids whose items are added.
             training_set_ids: Other training set ids whose members are added.
-            scene_ids: Scene ids (``scn_*``) whose items are added.
-            wait_for_completion: Block until the add job finishes (default).
+            wait_for_completion: Block until the add job finishes, if one was
+                started (default).
             verbose: Log add-job polling progress while waiting.
         """
         payload = self._training_set_source_payload(
@@ -1996,37 +1996,79 @@ class NucleusClient:
             slice_ids=slice_ids,
             dataset_ids=dataset_ids,
             training_set_ids=training_set_ids,
-            scene_ids=scene_ids,
         )
         if not any(payload.values()):
             raise ValueError(
                 "Provide at least one of item_ids, items, slice_id(s), "
-                "dataset_id(s), training_set_ids, or scene_ids to add"
+                "dataset_id(s), or training_set_ids to add"
             )
-        # Add is synchronous: the server responds with the updated training set.
-        # If the backend instead returns a job_id (async append job), poll it.
+        # Small explicit adds apply synchronously; a large slice/dataset/training-set
+        # source returns a job_id for the async streaming build — poll it if present.
         response = self.post(payload, f"trainingSets/{training_set_id}/items")
         job_id = response.get(JOB_ID_KEY)
         if wait_for_completion and job_id is not None:
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
 
     def remove_training_set_items(
-        self, training_set_id: str, item_ids: List[str]
+        self,
+        training_set_id: str,
+        item_ids: Optional[List[str]] = None,
+        *,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        training_set_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
     ) -> None:
-        """Remove items from a training set (synchronous).
+        """Remove members from a training set.
 
-        Unknown ids are ignored.
+        Accepts the same source shape as :meth:`add_training_set_items`: remove
+        explicit ``item_ids`` / ``items``, or every member covered by a whole
+        slice / dataset (or another training set). Unknown ids are ignored.
+
+        A small, explicit removal applies synchronously. Removing a whole large
+        slice / dataset / training set streams out via a background job — the
+        response then carries a ``job_id`` and by default this blocks until it
+        finishes.
 
         Parameters:
             training_set_id: Training set id.
             item_ids: Dataset item ids (``di_*``) to remove.
+            items: ``{"dataset_id": ..., "reference_id": ...}`` pairs to remove.
+            slice_id: Remove every member of this slice.
+            dataset_id: Remove every member of this dataset.
+            slice_ids: Remove every member of these slices.
+            dataset_ids: Remove every member of these datasets.
+            training_set_ids: Remove every member of these training sets.
+            wait_for_completion: Block until the remove job finishes, if one was
+                started (default).
+            verbose: Log remove-job polling progress while waiting.
         """
-        self.make_request(
-            {ITEM_IDS_KEY: item_ids},
+        payload = self._training_set_source_payload(
+            item_ids=item_ids,
+            items=items,
+            slice_id=slice_id,
+            dataset_id=dataset_id,
+            slice_ids=slice_ids,
+            dataset_ids=dataset_ids,
+            training_set_ids=training_set_ids,
+        )
+        if not any(payload.values()):
+            raise ValueError(
+                "Provide at least one of item_ids, items, slice_id(s), "
+                "dataset_id(s), or training_set_ids to remove"
+            )
+        response = self.make_request(
+            payload,
             f"trainingSets/{training_set_id}/items",
             requests_command=requests.delete,
-            return_raw_response=True,
         )
+        job_id = response.get(JOB_ID_KEY) if isinstance(response, dict) else None
+        if wait_for_completion and job_id is not None:
+            self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
 
     def create_training_set_version(
         self,

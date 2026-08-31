@@ -78,7 +78,7 @@ def test_create_training_set_from_slice_polls_then_returns_ready():
         "pedestrians", model="prj_1", description="desc", slice_id="slc_1"
     )
     payload, route = client.connection.post.call_args[0]
-    assert route == "model/prj_1/trainingSet"
+    assert route == "models/prj_1/trainingSet"
     assert payload == {
         "name": "pedestrians",
         "description": "desc",
@@ -152,7 +152,7 @@ def test_create_training_set_accepts_model_object():
     real_model = Model("prj_99", "m", "ref", {}, client)
     client.create_training_set("m", model=real_model, item_ids=["di_1"])
     _, route = client.connection.post.call_args[0]
-    assert route == "model/prj_99/trainingSet"
+    assert route == "models/prj_99/trainingSet"
 
 
 def test_create_training_set_requires_a_source():
@@ -274,7 +274,7 @@ def test_get_model_training_set_reads_pinned():
     client = NucleusClient(api_key="test")
     client.connection.get = MagicMock(return_value=dict(_TRAINING_SET_ROW))
     ts = client.get_model_training_set("prj_1")
-    client.connection.get.assert_called_once_with("model/prj_1/trainingSet")
+    client.connection.get.assert_called_once_with("models/prj_1/trainingSet")
     assert ts.id == "ts_1"
 
 
@@ -307,7 +307,7 @@ def test_repin_training_set_puts_model_route():
     client.connection.put = MagicMock(return_value=dict(_TRAINING_SET_ROW))
     ts = client.repin_training_set("prj_1", "ts_1")
     payload, route = client.connection.put.call_args[0]
-    assert route == "model/prj_1/trainingSet"
+    assert route == "models/prj_1/trainingSet"
     assert payload == {"training_set_id": "ts_1"}
     assert ts.id == "ts_1"
 
@@ -337,12 +337,41 @@ def test_add_training_set_items_requires_a_source():
 
 def test_remove_training_set_items_deletes_with_body():
     client = NucleusClient(api_key="test")
-    client.connection.make_request = MagicMock(return_value=MagicMock())
+    # A small explicit removal is synchronous: the response carries no job_id.
+    client.connection.make_request = MagicMock(
+        return_value={"training_set_id": "ts_1", "status": "ready", "job_id": None}
+    )
+    client.get_job = MagicMock()
     client.remove_training_set_items("ts_1", ["di_1", "di_2"])
     args = client.connection.make_request.call_args[0]
     assert args[0] == {"item_ids": ["di_1", "di_2"]}
     assert args[1] == "trainingSets/ts_1/items"
     assert args[2] is requests.delete
+    client.get_job.assert_not_called()
+
+
+def test_remove_training_set_items_from_dataset_polls():
+    client = NucleusClient(api_key="test")
+    # Removing a whole dataset streams out via a job — the response carries a job_id to poll.
+    client.connection.make_request = MagicMock(
+        return_value={
+            "training_set_id": "ts_1",
+            "status": "building",
+            "job_id": "job_rm",
+        }
+    )
+    client.get_job = MagicMock()
+    client.remove_training_set_items("ts_1", dataset_ids=["ds_1"])
+    args = client.connection.make_request.call_args[0]
+    assert args[0] == {"dataset_ids": ["ds_1"]}
+    assert args[2] is requests.delete
+    client.get_job.assert_called_once_with("job_rm")
+
+
+def test_remove_training_set_items_requires_a_source():
+    client = NucleusClient(api_key="test")
+    with pytest.raises(ValueError, match="at least one"):
+        client.remove_training_set_items("ts_1")
 
 
 def test_list_training_set_items_paging_query_string():
@@ -536,7 +565,18 @@ def test_training_set_instance_methods_delegate_to_client():
         id="ts_1", name="renamed", _client=client
     )
     ts.remove_items(["di_1"])
-    client.remove_training_set_items.assert_called_once_with("ts_1", ["di_1"])
+    client.remove_training_set_items.assert_called_once_with(
+        "ts_1",
+        item_ids=["di_1"],
+        items=None,
+        slice_id=None,
+        dataset_id=None,
+        slice_ids=None,
+        dataset_ids=None,
+        training_set_ids=None,
+        wait_for_completion=True,
+        verbose=True,
+    )
 
     ts.new_version(removed_item_ids=["di_9"], bump_type="major")
     _, kwargs = client.create_training_set_version.call_args

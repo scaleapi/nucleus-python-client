@@ -333,7 +333,6 @@ class TrainingSet:
         slice_ids: Optional[List[str]] = None,
         dataset_ids: Optional[List[str]] = None,
         training_set_ids: Optional[List[str]] = None,
-        scene_ids: Optional[List[str]] = None,
         wait_for_completion: bool = True,
         verbose: bool = True,
     ) -> "TrainingSet":
@@ -355,26 +354,48 @@ class TrainingSet:
             slice_ids=slice_ids,
             dataset_ids=dataset_ids,
             training_set_ids=training_set_ids,
-            scene_ids=scene_ids,
             wait_for_completion=wait_for_completion,
             verbose=verbose,
         )
         return self.refresh()
 
-    def remove_items(self, item_ids: List[str]) -> "TrainingSet":
-        """Remove items from this training set.
+    def remove_items(
+        self,
+        item_ids: Optional[List[str]] = None,
+        *,
+        items: Optional[List[Dict[str, str]]] = None,
+        slice_id: Optional[str] = None,
+        dataset_id: Optional[str] = None,
+        slice_ids: Optional[List[str]] = None,
+        dataset_ids: Optional[List[str]] = None,
+        training_set_ids: Optional[List[str]] = None,
+        wait_for_completion: bool = True,
+        verbose: bool = True,
+    ) -> "TrainingSet":
+        """Remove members from this training set.
 
-        Unknown ids are ignored.
-
-        Parameters:
-            item_ids: Dataset item ids (``di_*``) to remove.
+        Accepts the same sources as :meth:`add_items`: explicit ``item_ids`` /
+        ``items``, or every member covered by a whole slice / dataset / training
+        set. Unknown ids are ignored. See
+        :meth:`NucleusClient.remove_training_set_items` for details.
 
         Returns:
             self, refreshed.
         """
         if self._client is None:
             raise RuntimeError("TrainingSet has no client.")
-        self._client.remove_training_set_items(self.id, item_ids)
+        self._client.remove_training_set_items(
+            self.id,
+            item_ids=item_ids,
+            items=items,
+            slice_id=slice_id,
+            dataset_id=dataset_id,
+            slice_ids=slice_ids,
+            dataset_ids=dataset_ids,
+            training_set_ids=training_set_ids,
+            wait_for_completion=wait_for_completion,
+            verbose=verbose,
+        )
         return self.refresh()
 
     def new_version(

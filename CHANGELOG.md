@@ -5,6 +5,15 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.5) - 2026-08-31
+
+### Changed
+- **Training set membership scales to whole datasets/slices (DE-8692).** Adding or removing a whole dataset, slice, or the members of a large training set now streams asynchronously server-side instead of being resolved in memory, so a training set can span an arbitrarily large source. Small, explicit `item_ids` / `items` changes stay synchronous. When a change kicks off an async build the response carries a `job_id`; `create_training_set()`, `add_training_set_items()`, `remove_training_set_items()`, and `create_training_set_version()` block on it by default (`wait_for_completion=True`). `TrainingSet.status` reads `"building"` while a job is streaming members and `"ready"` otherwise.
+- **`remove_training_set_items()` / `TrainingSet.remove_items()` accept sources.** Removal now takes the same source shape as add — explicit `item_ids` / `items`, or a whole `slice_id(s)` / `dataset_id(s)` / `training_set_ids` whose (potentially huge) membership is streamed out — with `wait_for_completion` / `verbose`. `item_ids` stays the first positional argument, so existing `remove_items([...])` / `remove_training_set_items(id, [...])` calls are unchanged.
+
+### Removed
+- **`scene_ids` on training set add/create.** Training sets resolve dataset items only (there is no scene source, unlike benchmarks); the parameter never had a server-side effect and has been dropped from `add_training_set_items()` / `TrainingSet.add_items()`.
+
 ## [0.21.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.4) - 2026-08-27
 
 ### Added
