@@ -518,9 +518,28 @@ def test_create_benchmark_evaluation_v2_rollup_groups_does_not_warn():
         warnings.simplefilter("error", DeprecationWarning)
         client.create_benchmark_evaluation_v2(
             "bm_1",
-            "run_1",
+            model_id="prj_1",
             rollup_groups=[RollupGroup("vehicle", ["car"])],
         )
+
+
+def test_create_benchmark_evaluation_v2_model_run_id_deprecated():
+    client = NucleusClient(api_key="test")
+    _mock_create_eval(client)
+    with pytest.warns(DeprecationWarning, match="model_run_id"):
+        client.create_benchmark_evaluation_v2("bm_1", "run_1")
+    payload = client.connection.post.call_args[0][0]
+    assert payload["model_run_id"] == "run_1"
+
+
+def test_create_benchmark_evaluation_v2_model_id_does_not_warn():
+    import warnings
+
+    client = NucleusClient(api_key="test")
+    _mock_create_eval(client)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        client.create_benchmark_evaluation_v2("bm_1", model_id="prj_1")
 
 
 def test_create_benchmark_evaluation_v2_explicit_args_override_preset():

@@ -213,6 +213,7 @@ from .evaluation_v2 import (
     EvaluationV2Status,
     RollupGroup,
     _warn_allowed_label_matches_deprecated,
+    _warn_model_run_deprecated,
 )
 from .evaluation_v2_exclusions import (
     BoxAreaExclusionRule,
@@ -1035,21 +1036,23 @@ class NucleusClient:
         *,
         model_id: Optional[Union[str, Model]] = None,
     ) -> List[EvaluationV2]:
-        """List evaluations for a model run or a run-free model (newest first).
+        """List evaluations for a run-free model (newest first).
 
-        Provide exactly one of ``model_run_id`` or ``model_id``. The
-        model-anchored path lists run-free evaluations for that model
-        (``model_run_id`` is null on those rows).
+        Provide exactly one of ``model_id`` or ``model_run_id``. The
+        model-anchored path lists run-free evaluations for that model; the
+        ``model_run_id`` path is deprecated.
 
         Parameters:
-            model_run_id: Model run id (``run_*``). Mutually exclusive with
-                ``model_id``.
+            model_run_id: Deprecated. Legacy model run id (``run_*``); prefer
+                ``model_id``. Mutually exclusive with ``model_id``.
             model_id: Model id (``prj_*``) or :class:`Model` to list run-free
                 evaluations. Mutually exclusive with ``model_run_id``.
 
         Returns:
             List of :class:`EvaluationV2`.
         """
+        if model_run_id is not None:
+            _warn_model_run_deprecated()
         resolved_model_id = (
             model_id.id if isinstance(model_id, Model) else model_id
         )
@@ -1598,27 +1601,27 @@ class NucleusClient:
         ] = None,
         preset: Optional[EvaluationV2Preset] = None,
     ) -> EvaluationV2:
-        """Evaluate a model run against a benchmark.
+        """Evaluate a model against a benchmark.
 
-        Every benchmark item is scored: items the model run has no
-        predictions for count as false negatives, keeping scores comparable
-        across runs with different coverage. The evaluation runs in the
-        background — call :meth:`EvaluationV2.wait_for_completion`, then
+        Every benchmark item is scored: items the model has no predictions for
+        count as false negatives, keeping scores comparable across models with
+        different coverage. The evaluation runs in the background — call
+        :meth:`EvaluationV2.wait_for_completion`, then
         :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples`.
 
-        The evaluation can be anchored on either a legacy model run
-        (``model_run_id``) or, for the run-free "model v2" flow, a model
-        (``model_id``). Provide exactly one; the model-anchored flow evaluates
-        the model's run-free predictions and ignores model runs entirely.
+        Anchor the evaluation on a model (``model_id``) for the run-free
+        "model v2" flow, which evaluates the model's run-free predictions.
+        The legacy ``model_run_id`` anchor is deprecated. Provide exactly one.
 
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
-            model_run_id: Model run id (``run_*``). It need not cover the
-                benchmark's datasets — coverage may be partial, or empty.
-                Mutually exclusive with ``model_id``.
             model_id: Model id (``prj_*``) or :class:`Model` to anchor the
-                evaluation on the model's run-free predictions instead of a
-                model run. Mutually exclusive with ``model_run_id``.
+                evaluation on the model's run-free predictions. Mutually
+                exclusive with ``model_run_id``.
+            model_run_id: Deprecated. Legacy model run id (``run_*``); prefer
+                ``model_id``. It need not cover the benchmark's datasets —
+                coverage may be partial, or empty. Mutually exclusive with
+                ``model_id``.
             name: Optional display name.
             rollup_groups: Optional rollup classes (the primary label
                 configuration); each :class:`RollupGroup` maps raw labels
@@ -1643,6 +1646,8 @@ class NucleusClient:
             or allowed_label_matches_id is not None
         ):
             _warn_allowed_label_matches_deprecated()
+        if model_run_id is not None:
+            _warn_model_run_deprecated()
         resolved_model_id = (
             model_id.id if isinstance(model_id, Model) else model_id
         )
@@ -1715,7 +1720,7 @@ class NucleusClient:
         scope: Optional[str] = None,
         collapse: Optional[str] = None,
     ) -> List[LeaderboardRankingEntry]:
-        """Rank model runs on one or more benchmarks by a metric.
+        """Rank models on one or more benchmarks by a metric.
 
         Parameters:
             metric_type: Metric to rank by — one of ``"MAP_50"``,
@@ -1727,8 +1732,8 @@ class NucleusClient:
             model_ids: Optional model ids to restrict the ranking to.
             scope: ``"mine"`` (only the caller's evaluations) or ``"all"``
                 (default).
-            collapse: ``"bestPerModel"`` (default), ``"allRuns"``, or
-                ``"allEvaluations"``.
+            collapse: ``"bestPerModel"`` (default) or ``"allEvaluations"``.
+                ``"allRuns"`` is deprecated (model runs are being phased out).
 
         Returns:
             List of :class:`LeaderboardRankingEntry`, best score first.
@@ -1759,12 +1764,13 @@ class NucleusClient:
         model_ids: Optional[List[str]] = None,
         top_n: int = 5,
     ) -> List[LeaderboardF1CurveEntry]:
-        """Return F1-vs-confidence curves for the top runs on benchmarks.
+        """Return F1-vs-confidence curves for the top models on benchmarks.
 
         Parameters:
             benchmark_ids: Benchmark ids (``bm_*``).
             model_ids: Optional model ids to restrict the curves to.
-            top_n: Number of top-ranked runs to return curves for (default 5).
+            top_n: Number of top-ranked models to return curves for
+                (default 5).
 
         Returns:
             List of :class:`LeaderboardF1CurveEntry`, best F1 first.

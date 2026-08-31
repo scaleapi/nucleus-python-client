@@ -80,6 +80,24 @@ def test_leaderboard_ranking_payload_and_parsing():
     assert rows[0].rank == 1
 
 
+def test_leaderboard_ranking_parses_run_free_row():
+    # Run-free evaluations have no model run: model_run_id / model_run_name
+    # arrive absent (or null) and must parse to None, not raise.
+    client = NucleusClient(api_key="test")
+    run_free_row = {
+        "evaluation_id": "evalv2_1",
+        "model_id": "prj_1",
+        "model_name": "model",
+        "score": 0.5,
+        "rank": 1,
+    }
+    client.connection.post = MagicMock(return_value=[run_free_row])
+    rows = client.leaderboard_ranking("MAP_50", ["bm_1"])
+    assert rows[0].model_run_id is None
+    assert rows[0].model_run_name is None
+    assert rows[0].model_id == "prj_1"
+
+
 def test_leaderboard_ranking_minimal_payload():
     client = NucleusClient(api_key="test")
     client.connection.post = MagicMock(return_value=[])

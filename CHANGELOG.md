@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The existing run-based prediction paths (`Dataset.upload_predictions`, `ModelRun.add_predictions`, `create_benchmark_evaluation_v2(model_run_id=...)`) are unchanged and continue to work; the model-centric methods are purely additive.
 
+### Deprecated
+- **Model-run-anchored Evaluation V2 is deprecated** in favor of the run-free (`model_id`) path. Passing `model_run_id` to `create_benchmark_evaluation_v2()` or `list_evaluations_v2()` now emits a `DeprecationWarning`; both keep working. `EvaluationV2.model_run_id` is documented as deprecated (it is `None` on run-free evaluations). On the leaderboard, `LeaderboardRankingEntry` / `LeaderboardF1CurveEntry` `model_run_id` and `model_run_name` are deprecated and now `Optional` (they are `None` for run-free evaluations — previously `model_run_id` was a required field and would fail to parse), and `collapse="allRuns"` on `leaderboard_ranking()` is discouraged. Prefer anchoring on and identifying evaluations by `model_id`.
+
 ### Removed
 - **`dataset_id` dropped from the EvaluationV2 surface** (breaking). An evaluation is no longer anchored on a single dataset — a model run now carries a *set* of datasets and a benchmark's items may span several — so the backend no longer returns a denormalized dataset on evaluations or leaderboards. Removed `EvaluationV2.dataset_id`, and `dataset_id` / `dataset_name` from `LeaderboardRankingEntry` and `LeaderboardF1CurveEntry`, matching the current backend responses. Without this, `EvaluationV2.from_json` raised `KeyError: 'dataset_id'` on every model-anchored (run-free) benchmark evaluation, since those payloads never carry a `dataset_id`.
 

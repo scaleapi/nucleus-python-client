@@ -189,7 +189,9 @@ class LeaderboardRankingEntry(DictCompatibleModel):
 
     evaluation_id: str
     evaluation_name: Optional[str] = None
-    model_run_id: str
+    #: Deprecated. ``None`` for run-free evaluations; prefer :attr:`model_id`.
+    model_run_id: Optional[str] = None
+    #: Deprecated. ``None`` for run-free evaluations; prefer :attr:`model_name`.
     model_run_name: Optional[str] = None
     model_id: Optional[str] = None
     model_name: Optional[str] = None
@@ -211,7 +213,9 @@ class LeaderboardF1CurveEntry(DictCompatibleModel):
 
     evaluation_id: str
     evaluation_name: Optional[str] = None
-    model_run_id: str
+    #: Deprecated. ``None`` for run-free evaluations; prefer :attr:`model_id`.
+    model_run_id: Optional[str] = None
+    #: Deprecated. ``None`` for run-free evaluations; prefer :attr:`model_name`.
     model_run_name: Optional[str] = None
     model_id: Optional[str] = None
     model_name: Optional[str] = None

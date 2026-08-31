@@ -90,6 +90,27 @@ def _warn_allowed_label_matches_deprecated() -> None:
     )
 
 
+_MODEL_RUN_DEPRECATION = (
+    "Model-run-anchored Evaluation V2 is deprecated and will be removed in a "
+    "future release. Upload run-free predictions to a Model "
+    "(Model.upload_predictions / Model.copy_predictions_from_run) and pass "
+    "model_id instead of model_run_id."
+)
+
+
+def _warn_model_run_deprecated() -> None:
+    """Emit the Evaluation V2 model-run deprecation warning.
+
+    ``stacklevel=3`` points at the public method's caller (this helper →
+    the client/wrapper method → user code).
+    """
+    warnings.warn(
+        _MODEL_RUN_DEPRECATION,
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
 def _parse_json_field(value: Any) -> Optional[Any]:
     """Normalize a field that may arrive already decoded or as a JSON string."""
     if value is None or isinstance(value, (dict, list)):
@@ -192,9 +213,15 @@ def _parse_rollup_groups(raw_groups: Any) -> Optional[List[RollupGroup]]:
 
 @dataclass
 class EvaluationV2:
-    """An Evaluation V2 run for a model run or a run-free model."""
+    """An Evaluation V2 run for a run-free model.
+
+    The model-run-anchored flow is deprecated; new evaluations should be
+    anchored on a :class:`~nucleus.model.Model` via ``model_id``.
+    """
 
     id: str
+    #: Deprecated. Model-run-anchored evaluations are being phased out; this is
+    #: ``None`` for run-free evaluations. Prefer :attr:`model_id`.
     model_run_id: Optional[str]
     status: str
     model_id: Optional[str] = None
@@ -341,7 +368,8 @@ class EvaluationV2:
     def retry(self) -> "EvaluationV2":
         """Retry this evaluation if it failed.
 
-        Creates a new evaluation for the same model run, reusing this
+        Creates a new evaluation for the same anchor (the model for a run-free
+        evaluation, or the model run for a legacy one), reusing this
         evaluation's slice, rollup groups, and exclusion rules. Only
         ``failed`` evaluations can be retried.
 

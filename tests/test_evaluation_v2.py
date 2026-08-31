@@ -140,7 +140,6 @@ def test_list_evaluations_v2_by_model_id():
                 "id": "evalv2_1",
                 "model_run_id": None,
                 "model_id": "prj_1",
-                "dataset_id": "ds_1",
                 "status": "succeeded",
             },
         ]
@@ -167,6 +166,26 @@ def test_list_evaluations_v2_requires_exactly_one_id():
         client.list_evaluations_v2()
     with pytest.raises(ValueError, match="exactly one"):
         client.list_evaluations_v2("run_1", model_id="prj_1")
+
+
+def test_list_evaluations_v2_by_model_run_id_deprecated():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(return_value=[])
+    with pytest.warns(DeprecationWarning, match="model_run_id"):
+        client.list_evaluations_v2("run_1")
+    client.connection.get.assert_called_once_with(
+        "modelRun/run_1/evaluationsV2"
+    )
+
+
+def test_list_evaluations_v2_by_model_id_does_not_warn():
+    import warnings
+
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(return_value=[])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        client.list_evaluations_v2(model_id="prj_1")
 
 
 def test_evaluation_v2_filter_args_gt_area_and_slices():
