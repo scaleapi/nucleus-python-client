@@ -2,7 +2,6 @@
 
 __all__ = [
     "AsyncJob",
-    "AllowedLabelMatch",
     "Benchmark",
     "BenchmarkItemsPage",
     "EmbeddingsExportJob",
@@ -108,7 +107,6 @@ from .benchmark import Benchmark
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
-    ALLOWED_LABEL_MATCHES_CAMEL_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
@@ -208,11 +206,9 @@ from .errors import (
     NucleusAPIError,
 )
 from .evaluation_v2 import (
-    AllowedLabelMatch,
     EvaluationV2,
     EvaluationV2Status,
     RollupGroup,
-    _warn_allowed_label_matches_deprecated,
     _warn_model_run_deprecated,
 )
 from .evaluation_v2_exclusions import (
@@ -264,6 +260,27 @@ from .validate import Validate
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
+
+
+def _evaluation_v2_config_payload(
+    name: Optional[str],
+    rollup_groups: Optional[List[RollupGroup]],
+    exclusion_rules: Optional[List[Union[EvaluationV2ExclusionRule, Dict]]],
+) -> Dict[str, Any]:
+    """Build the optional name/label/exclusion fields of an eval-V2 payload."""
+    payload: Dict[str, Any] = {}
+    if name is not None:
+        payload[NAME_KEY] = name
+    if rollup_groups is not None:
+        payload[ROLLUP_GROUPS_CAMEL_KEY] = [
+            g.to_api_dict() for g in rollup_groups
+        ]
+    if exclusion_rules is not None:
+        payload[EXCLUSION_RULES_CAMEL_KEY] = [
+            rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+            for rule in exclusion_rules
+        ]
+    return payload
 
 
 class NucleusClient:
@@ -1090,7 +1107,6 @@ class NucleusClient:
         name: str,
         *,
         rollup_groups: Optional[List[RollupGroup]] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
         exclusion_rules: Optional[
             List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
         ] = None,
@@ -1100,32 +1116,18 @@ class NucleusClient:
         Parameters:
             name: Preset name. Must be non-empty and unique among the user's
                 presets.
-            rollup_groups: Optional rollup classes (the primary label
-                configuration); each :class:`RollupGroup` maps raw labels onto
-                one class name. Mutually exclusive with
-                ``allowed_label_matches``.
-            allowed_label_matches: Deprecated. Use ``rollup_groups``. Optional
-                legacy label pairs to treat as matches.
+            rollup_groups: Optional rollup classes (the label configuration);
+                each :class:`RollupGroup` maps raw labels onto one class name.
             exclusion_rules: Optional rules that drop items/annotations (same
                 types accepted by :meth:`create_benchmark_evaluation_v2`).
 
         Returns:
             :class:`EvaluationV2Preset`: The created preset.
         """
-        if allowed_label_matches is not None:
-            _warn_allowed_label_matches_deprecated()
-        if rollup_groups is not None and allowed_label_matches is not None:
-            raise ValueError(
-                "rollup_groups and allowed_label_matches cannot both be set"
-            )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if rollup_groups is not None:
             payload[ROLLUP_GROUPS_CAMEL_KEY] = [
                 g.to_api_dict() for g in rollup_groups
-            ]
-        if allowed_label_matches is not None:
-            payload[ALLOWED_LABEL_MATCHES_CAMEL_KEY] = [
-                m.to_api_dict() for m in allowed_label_matches
             ]
         if exclusion_rules is not None:
             payload[EXCLUSION_RULES_CAMEL_KEY] = [
@@ -1141,7 +1143,6 @@ class NucleusClient:
         *,
         name: Any = _UNSET,
         rollup_groups: Any = _UNSET,
-        allowed_label_matches: Any = _UNSET,
         exclusion_rules: Any = _UNSET,
     ) -> EvaluationV2Preset:
         """Update a saved Evaluation V2 preset.
@@ -1154,25 +1155,11 @@ class NucleusClient:
             preset_id: Preset id (``prev_*``). Must be owned by the caller.
             name: Optional new name.
             rollup_groups: Optional new rollup classes, or ``None`` to clear.
-                Mutually exclusive with ``allowed_label_matches``.
-            allowed_label_matches: Deprecated. Use ``rollup_groups``. Optional
-                new legacy label-match list, or ``None`` to clear.
             exclusion_rules: Optional new exclusion rules, or ``None`` to clear.
 
         Returns:
             :class:`EvaluationV2Preset`: The updated preset.
         """
-        if allowed_label_matches is not _UNSET:
-            _warn_allowed_label_matches_deprecated()
-        if (
-            rollup_groups is not _UNSET
-            and rollup_groups is not None
-            and allowed_label_matches is not _UNSET
-            and allowed_label_matches is not None
-        ):
-            raise ValueError(
-                "rollup_groups and allowed_label_matches cannot both be set"
-            )
         payload: Dict[str, Any] = {}
         if name is not _UNSET:
             payload[NAME_KEY] = name
@@ -1181,12 +1168,6 @@ class NucleusClient:
                 None
                 if rollup_groups is None
                 else [g.to_api_dict() for g in rollup_groups]
-            )
-        if allowed_label_matches is not _UNSET:
-            payload[ALLOWED_LABEL_MATCHES_CAMEL_KEY] = (
-                None
-                if allowed_label_matches is None
-                else [m.to_api_dict() for m in allowed_label_matches]
             )
         if exclusion_rules is not _UNSET:
             payload[EXCLUSION_RULES_CAMEL_KEY] = (
@@ -1594,8 +1575,6 @@ class NucleusClient:
         model_id: Optional[Union[str, Model]] = None,
         name: Optional[str] = None,
         rollup_groups: Optional[List[RollupGroup]] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
-        allowed_label_matches_id: Optional[str] = None,
         exclusion_rules: Optional[
             List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
         ] = None,
@@ -1623,29 +1602,18 @@ class NucleusClient:
                 coverage may be partial, or empty. Mutually exclusive with
                 ``model_id``.
             name: Optional display name.
-            rollup_groups: Optional rollup classes (the primary label
-                configuration); each :class:`RollupGroup` maps raw labels
-                onto one class name. Mutually exclusive with the
-                ``allowed_label_matches*`` arguments.
-            allowed_label_matches: Deprecated. Use ``rollup_groups``. Optional
-                legacy label pairs to treat as matches.
-            allowed_label_matches_id: Deprecated. Use ``rollup_groups``.
-                Optional id of a saved label-match configuration.
+            rollup_groups: Optional rollup classes (the label configuration);
+                each :class:`RollupGroup` maps raw labels onto one class name.
             exclusion_rules: Optional rules that drop items/annotations
                 before metrics are computed (see
                 :mod:`nucleus.evaluation_v2_exclusions`).
-            preset: Optional :class:`EvaluationV2Preset` whose label
-                configuration and ``exclusion_rules`` seed this evaluation.
-                Explicit arguments take precedence over the preset's values.
+            preset: Optional :class:`EvaluationV2Preset` whose ``rollup_groups``
+                and ``exclusion_rules`` seed this evaluation. Explicit
+                arguments take precedence over the preset's values.
 
         Returns:
             :class:`EvaluationV2`: The created evaluation.
         """
-        if (
-            allowed_label_matches is not None
-            or allowed_label_matches_id is not None
-        ):
-            _warn_allowed_label_matches_deprecated()
         if model_run_id is not None:
             _warn_model_run_deprecated()
         resolved_model_id = (
@@ -1656,52 +1624,22 @@ class NucleusClient:
                 "Provide exactly one of model_run_id or model_id."
             )
         if preset is not None:
-            if (
-                rollup_groups is None
-                and allowed_label_matches is None
-                and allowed_label_matches_id is None
-            ):
+            if rollup_groups is None:
                 rollup_groups = preset.rollup_groups
-                if rollup_groups is None:
-                    allowed_label_matches = preset.allowed_label_matches
             if exclusion_rules is None and preset.exclusion_rules is not None:
                 exclusion_rules = list(preset.exclusion_rules)
-        label_configs = [
-            config
-            for config in (
-                rollup_groups,
-                allowed_label_matches,
-                allowed_label_matches_id,
-            )
-            if config is not None
-        ]
-        if len(label_configs) > 1:
-            raise ValueError(
-                "Set at most one of rollup_groups, allowed_label_matches, "
-                "or allowed_label_matches_id"
-            )
         payload: Dict[str, Any] = (
             {MODEL_ID_KEY: resolved_model_id}
             if resolved_model_id is not None
             else {MODEL_RUN_ID_KEY: model_run_id}
         )
-        if name is not None:
-            payload[NAME_KEY] = name
-        if rollup_groups is not None:
-            payload[ROLLUP_GROUPS_CAMEL_KEY] = [
-                g.to_api_dict() for g in rollup_groups
-            ]
-        if allowed_label_matches is not None:
-            payload["allowed_label_matches"] = [
-                m.to_api_dict() for m in allowed_label_matches
-            ]
-        if allowed_label_matches_id is not None:
-            payload["allowed_label_matches_id"] = allowed_label_matches_id
-        if exclusion_rules is not None:
-            payload[EXCLUSION_RULES_CAMEL_KEY] = [
-                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
-                for rule in exclusion_rules
-            ]
+        payload.update(
+            _evaluation_v2_config_payload(
+                name,
+                rollup_groups,
+                exclusion_rules,
+            )
+        )
         result = self.post(payload, f"benchmarks/{benchmark_id}/evaluationsV2")
         eval_id = result.get(EVALUATION_ID_KEY)
         if not eval_id:

@@ -4,9 +4,6 @@ A preset bundles a ``name`` with a label configuration (``rollup_groups``)
 and ``exclusion_rules`` so the same configuration can be applied across many
 evaluations. Presets are private to the creating user.
 
-``allowed_label_matches`` is still accepted for backwards compatibility but
-is deprecated; use ``rollup_groups``.
-
 Create and manage presets via :class:`~nucleus.NucleusClient`::
 
     preset = client.create_evaluation_v2_preset(
@@ -23,8 +20,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from nucleus.constants import (
-    ALLOWED_LABEL_MATCHES_CAMEL_KEY,
-    ALLOWED_LABEL_MATCHES_KEY,
     CREATED_AT_KEY,
     CREATED_BY_USER_ID_KEY,
     DELETED_AT_KEY,
@@ -37,9 +32,7 @@ from nucleus.constants import (
     UPDATED_AT_KEY,
 )
 from nucleus.evaluation_v2 import (
-    AllowedLabelMatch,
     RollupGroup,
-    _parse_allowed_label_matches,
     _parse_json_field,
     _parse_rollup_groups,
 )
@@ -65,8 +58,6 @@ class EvaluationV2Preset:
     id: str
     name: str
     rollup_groups: Optional[List[RollupGroup]] = None
-    #: Deprecated. Prefer :attr:`rollup_groups`.
-    allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
     exclusion_rules: Optional[List[Dict[str, Any]]] = None
     created_by_user_id: Optional[str] = None
     created_at: Optional[str] = None
@@ -90,10 +81,6 @@ class EvaluationV2Preset:
                     else payload.get(ROLLUP_GROUPS_CAMEL_KEY)
                 )
             ),
-            allowed_label_matches=_parse_allowed_label_matches(
-                payload.get(ALLOWED_LABEL_MATCHES_KEY)
-                or payload.get(ALLOWED_LABEL_MATCHES_CAMEL_KEY)
-            ),
             exclusion_rules=_parse_json_field(
                 payload.get(EXCLUSION_RULES_KEY)
                 if payload.get(EXCLUSION_RULES_KEY) is not None
@@ -111,7 +98,6 @@ class EvaluationV2Preset:
         *,
         name: Any = _UNSET,
         rollup_groups: Any = _UNSET,
-        allowed_label_matches: Any = _UNSET,
         exclusion_rules: Any = _UNSET,
     ) -> "EvaluationV2Preset":
         """Update this preset in place.
@@ -119,8 +105,6 @@ class EvaluationV2Preset:
         Only the arguments you pass are changed. Passing
         ``rollup_groups=None`` / ``exclusion_rules=None`` clears that field;
         omitting an argument leaves it unchanged.
-
-        ``allowed_label_matches`` is deprecated; use ``rollup_groups``.
 
         Returns:
             self, with updated fields.
@@ -134,7 +118,6 @@ class EvaluationV2Preset:
             self.id,
             name=name,
             rollup_groups=rollup_groups,
-            allowed_label_matches=allowed_label_matches,
             exclusion_rules=exclusion_rules,
         )
         self.__dict__.update(updated.__dict__)

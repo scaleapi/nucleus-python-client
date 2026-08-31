@@ -8,11 +8,11 @@ import pytest
 import requests
 
 from nucleus import (
-    AllowedLabelMatch,
     EvaluationV2,
     EvaluationV2Preset,
     LabelExclusionRule,
     NucleusClient,
+    RollupGroup,
 )
 from nucleus.dataset import Dataset
 
@@ -27,11 +27,8 @@ def test_list_evaluation_v2_presets():
             {
                 "id": "prev_1",
                 "name": "vehicles",
-                "allowed_label_matches": [
-                    {
-                        "groundTruthLabel": "car",
-                        "modelPredictionLabel": "vehicle",
-                    }
+                "rollup_groups": [
+                    {"class_name": "vehicle", "labels": ["car", "truck"]}
                 ],
                 "exclusion_rules": None,
                 "created_by_user_id": "u_1",
@@ -43,8 +40,8 @@ def test_list_evaluation_v2_presets():
     assert len(presets) == 1
     assert presets[0].id == "prev_1"
     assert presets[0].name == "vehicles"
-    assert presets[0].allowed_label_matches[0] == AllowedLabelMatch(
-        ground_truth_label="car", model_prediction_label="vehicle"
+    assert presets[0].rollup_groups[0] == RollupGroup(
+        class_name="vehicle", labels=["car", "truck"]
     )
 
 
@@ -54,25 +51,24 @@ def test_create_evaluation_v2_preset_payload():
         return_value={
             "id": "prev_1",
             "name": "vehicles",
-            "allowed_label_matches": [],
+            "rollup_groups": [],
             "exclusion_rules": None,
         }
     )
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        preset = client.create_evaluation_v2_preset(
-            "vehicles",
-            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-            exclusion_rules=[
-                LabelExclusionRule(
-                    scope="item", target="prediction", labels=["ignore"]
-                )
-            ],
-        )
+    preset = client.create_evaluation_v2_preset(
+        "vehicles",
+        rollup_groups=[RollupGroup("vehicle", ["car", "truck"])],
+        exclusion_rules=[
+            LabelExclusionRule(
+                scope="item", target="prediction", labels=["ignore"]
+            )
+        ],
+    )
     payload, route = client.connection.post.call_args[0]
     assert route == "evaluationV2Presets"
     assert payload["name"] == "vehicles"
-    assert payload["allowedLabelMatches"] == [
-        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
+    assert payload["rollupGroups"] == [
+        {"class_name": "vehicle", "labels": ["car", "truck"]}
     ]
     assert payload["exclusionRules"] == [
         {
@@ -234,22 +230,6 @@ def test_create_evaluation_v2_preset_with_rollup_groups():
     assert preset.rollup_groups[0].class_name == "vehicle"
 
 
-def test_create_evaluation_v2_preset_rollup_and_matches_mutually_exclusive():
-    from nucleus import RollupGroup
-
-    client = NucleusClient(api_key="test")
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        try:
-            client.create_evaluation_v2_preset(
-                "p",
-                rollup_groups=[RollupGroup("vehicle", ["car"])],
-                allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-            )
-            raise AssertionError("expected ValueError")
-        except ValueError as e:
-            assert "cannot both be set" in str(e)
-
-
 def test_update_evaluation_v2_preset_rollup_groups_and_clear():
     from nucleus import RollupGroup
 
@@ -297,19 +277,3 @@ def test_create_evaluation_v2_preset_rollup_groups_does_not_warn():
             "vehicles",
             rollup_groups=[RollupGroup("vehicle", ["car"])],
         )
-
-
-def test_update_evaluation_v2_preset_allowed_label_matches_warns():
-    client = NucleusClient(api_key="test")
-    client.connection.patch = MagicMock(
-        return_value={"id": "prev_1", "name": "p"}
-    )
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        client.update_evaluation_v2_preset(
-            "prev_1",
-            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-        )
-    payload = client.connection.patch.call_args[0][0]
-    assert payload["allowedLabelMatches"] == [
-        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
-    ]

@@ -6,7 +6,6 @@ import pytest
 import requests
 
 from nucleus import (
-    AllowedLabelMatch,
     BoxAreaExclusionRule,
     EvaluationV2,
     LabelExclusionRule,
@@ -73,19 +72,13 @@ def test_camelize_filter_value_preserves_predicate_value():
     ) == {"key": "k", "op": "EQ", "value": {"keep_snake": 1}}
 
 
-def test_allowed_label_match_to_api_dict():
-    m = AllowedLabelMatch(ground_truth_label="a", model_prediction_label="b")
-    assert m.to_api_dict() == {
-        "ground_truth_label": "a",
-        "model_prediction_label": "b",
-    }
-
-
-def test_evaluation_v2_from_json_with_matches():
+def test_evaluation_v2_from_json_ignores_legacy_allowed_label_matches():
+    # allowed_label_matches was removed from the eval-V2 surface; a payload
+    # that still carries it (legacy backend rows) parses fine and drops it.
     client = NucleusClient(api_key="k")
     payload = {
         "id": "evalv2_1",
-        "model_run_id": "run_1",
+        "model_id": "prj_1",
         "status": "pending",
         "allowed_label_matches": [
             {"groundTruthLabel": "x", "modelPredictionLabel": "y"},
@@ -93,9 +86,7 @@ def test_evaluation_v2_from_json_with_matches():
     }
     ev = EvaluationV2.from_json(payload, client)
     assert ev.id == "evalv2_1"
-    assert ev.allowed_label_matches is not None
-    assert len(ev.allowed_label_matches) == 1
-    assert ev.allowed_label_matches[0].ground_truth_label == "x"
+    assert not hasattr(ev, "allowed_label_matches")
 
 
 def test_list_evaluations_v2_empty():

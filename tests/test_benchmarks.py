@@ -6,7 +6,6 @@ import pytest
 import requests
 
 from nucleus import (
-    AllowedLabelMatch,
     Benchmark,
     EvaluationV2Preset,
     LabelExclusionRule,
@@ -28,7 +27,6 @@ _BENCHMARK_ROW = {
 _EVAL_ROW = {
     "id": "evalv2_1",
     "model_run_id": "run_1",
-    "dataset_id": "ds_1",
     "benchmark_id": "bm_1",
     "status": "pending",
 }
@@ -382,6 +380,18 @@ def test_benchmark_instance_methods_delegate_to_client():
     assert kwargs["name"] == "e"
 
 
+def test_benchmark_create_evaluation_v2_run_free_passes_model_id():
+    client = MagicMock(spec=NucleusClient)
+    benchmark = Benchmark(id="bm_1", name="b", _client=client)
+    benchmark.create_evaluation_v2(
+        model_id="prj_1", rollup_groups=[RollupGroup("vehicle", ["car"])]
+    )
+    args, kwargs = client.create_benchmark_evaluation_v2.call_args
+    # benchmark id positional, model_run_id positional None (run-free).
+    assert args == ("bm_1", None)
+    assert kwargs["model_id"] == "prj_1"
+
+
 def test_benchmark_without_client_raises():
     benchmark = Benchmark(id="bm_1", name="b")
     with pytest.raises(RuntimeError, match="no client"):
@@ -425,26 +435,6 @@ def test_create_benchmark_evaluation_v2_with_rollup_groups():
     assert evaluation.benchmark_id == "bm_1"
 
 
-def test_create_benchmark_evaluation_v2_label_config_mutual_exclusion():
-    client = NucleusClient(api_key="test")
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        with pytest.raises(ValueError, match="at most one"):
-            client.create_benchmark_evaluation_v2(
-                "bm_1",
-                "run_1",
-                rollup_groups=[RollupGroup("vehicle", ["car"])],
-                allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-            )
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        with pytest.raises(ValueError, match="at most one"):
-            client.create_benchmark_evaluation_v2(
-                "bm_1",
-                "run_1",
-                rollup_groups=[RollupGroup("vehicle", ["car"])],
-                allowed_label_matches_id="alm_1",
-            )
-
-
 def test_create_benchmark_evaluation_v2_preset_seeds_rollup_groups():
     client = NucleusClient(api_key="test")
     _mock_create_eval(client)
@@ -454,59 +444,14 @@ def test_create_benchmark_evaluation_v2_preset_seeds_rollup_groups():
         rollup_groups=[RollupGroup("vehicle", ["car"])],
         exclusion_rules=[{"type": "labels", "scope": "item"}],
     )
-    client.create_benchmark_evaluation_v2("bm_1", "run_1", preset=preset)
+    client.create_benchmark_evaluation_v2(
+        "bm_1", model_id="prj_1", preset=preset
+    )
     payload = client.connection.post.call_args[0][0]
     assert payload["rollupGroups"] == [
         {"class_name": "vehicle", "labels": ["car"]}
     ]
     assert payload["exclusionRules"] == [{"type": "labels", "scope": "item"}]
-    assert "allowed_label_matches" not in payload
-
-
-def test_create_benchmark_evaluation_v2_preset_seeds_legacy_matches():
-    client = NucleusClient(api_key="test")
-    _mock_create_eval(client)
-    preset = EvaluationV2Preset(
-        id="prev_1",
-        name="p",
-        allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-    )
-    # Seeding from a stored preset does not itself warn — the deprecated
-    # kwargs were not passed by the caller.
-    client.create_benchmark_evaluation_v2("bm_1", "run_1", preset=preset)
-    payload = client.connection.post.call_args[0][0]
-    assert payload["allowed_label_matches"] == [
-        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
-    ]
-    assert "rollupGroups" not in payload
-
-
-def test_create_benchmark_evaluation_v2_allowed_label_matches_deprecated():
-    client = NucleusClient(api_key="test")
-    _mock_create_eval(client)
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        client.create_benchmark_evaluation_v2(
-            "bm_1",
-            "run_1",
-            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-        )
-    payload = client.connection.post.call_args[0][0]
-    assert payload["allowed_label_matches"] == [
-        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
-    ]
-
-
-def test_create_benchmark_evaluation_v2_allowed_label_matches_id_deprecated():
-    client = NucleusClient(api_key="test")
-    _mock_create_eval(client)
-    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
-        client.create_benchmark_evaluation_v2(
-            "bm_1",
-            "run_1",
-            allowed_label_matches_id="alm_1",
-        )
-    payload = client.connection.post.call_args[0][0]
-    assert payload["allowed_label_matches_id"] == "alm_1"
 
 
 def test_create_benchmark_evaluation_v2_rollup_groups_does_not_warn():

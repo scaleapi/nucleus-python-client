@@ -12,9 +12,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 import requests
 
 from nucleus.constants import (
-    ALLOWED_LABEL_MATCHES_ID_KEY,
-    ALLOWED_LABEL_MATCHES_KEY,
-    ALLOWED_LABEL_MATCHES_NAME_KEY,
     BENCHMARK_ID_KEY,
     CLASS_NAME_CAMEL_KEY,
     CLASS_NAME_KEY,
@@ -24,16 +21,12 @@ from nucleus.constants import (
     EXCLUSION_RULES_KEY,
     EXCLUSION_STATS_KEY,
     FILTERS_KEY,
-    GROUND_TRUTH_LABEL_CAMEL_KEY,
-    GROUND_TRUTH_LABEL_KEY,
     ID_KEY,
     IOU_THRESHOLD_KEY,
     LABELS_KEY,
     LIMIT_KEY,
     MATCH_TYPE_KEY,
     MODEL_ID_KEY,
-    MODEL_PREDICTION_LABEL_CAMEL_KEY,
-    MODEL_PREDICTION_LABEL_KEY,
     MODEL_RUN_ID_KEY,
     NAME_KEY,
     OFFSET_KEY,
@@ -71,25 +64,6 @@ _TERMINAL_OK: Set[EvaluationV2Status] = {
     EvaluationV2Status.CANCELLED,
 }
 
-_ALLOWED_LABEL_MATCHES_DEPRECATION = (
-    "allowed_label_matches is deprecated and will be removed in a future "
-    "release. Use rollup_groups instead."
-)
-
-
-def _warn_allowed_label_matches_deprecated() -> None:
-    """Emit the Evaluation V2 ``allowed_label_matches`` deprecation warning.
-
-    ``stacklevel=3`` points at the public method's caller (this helper →
-    the client/wrapper method → user code).
-    """
-    warnings.warn(
-        _ALLOWED_LABEL_MATCHES_DEPRECATION,
-        DeprecationWarning,
-        stacklevel=3,
-    )
-
-
 _MODEL_RUN_DEPRECATION = (
     "Model-run-anchored Evaluation V2 is deprecated and will be removed in a "
     "future release. Upload run-free predictions to a Model "
@@ -121,52 +95,6 @@ def _parse_json_field(value: Any) -> Optional[Any]:
         except (ValueError, TypeError):
             return None
     return value
-
-
-@dataclass
-class AllowedLabelMatch:
-    """Deprecated. Use :class:`RollupGroup` instead.
-
-    Ground-truth and prediction label pair that counts as a match.
-    """
-
-    ground_truth_label: str
-    model_prediction_label: str
-
-    def to_api_dict(self) -> Dict[str, str]:
-        return {
-            GROUND_TRUTH_LABEL_KEY: self.ground_truth_label,
-            MODEL_PREDICTION_LABEL_KEY: self.model_prediction_label,
-        }
-
-
-def _parse_allowed_label_matches(
-    raw_matches: Any,
-) -> Optional[List[AllowedLabelMatch]]:
-    """Parse an ``allowed_label_matches`` array from an API payload.
-
-    Tolerates either key casing and drops malformed entries.
-    """
-    if not isinstance(raw_matches, list):
-        return None
-    matches: List[AllowedLabelMatch] = []
-    for m in raw_matches:
-        if not isinstance(m, dict):
-            continue
-        gt = m.get(GROUND_TRUTH_LABEL_CAMEL_KEY)
-        if gt is None:
-            gt = m.get(GROUND_TRUTH_LABEL_KEY)
-        mp = m.get(MODEL_PREDICTION_LABEL_CAMEL_KEY)
-        if mp is None:
-            mp = m.get(MODEL_PREDICTION_LABEL_KEY)
-        if gt is not None and mp is not None:
-            matches.append(
-                AllowedLabelMatch(
-                    ground_truth_label=str(gt),
-                    model_prediction_label=str(mp),
-                )
-            )
-    return matches
 
 
 @dataclass
@@ -229,12 +157,6 @@ class EvaluationV2:
     temporal_workflow_id: Optional[str] = None
     error_message: Optional[str] = None
     created_at: Optional[str] = None
-    #: Deprecated. Prefer :attr:`rollup_groups`.
-    allowed_label_matches_id: Optional[str] = None
-    #: Deprecated. Prefer :attr:`rollup_groups`.
-    allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
-    #: Deprecated. Prefer :attr:`rollup_groups`.
-    allowed_label_matches_name: Optional[str] = None
     rollup_groups: Optional[List[RollupGroup]] = None
     benchmark_id: Optional[str] = None
     slice_id: Optional[str] = None
@@ -248,10 +170,6 @@ class EvaluationV2:
         payload: Dict[str, Any],
         client: Optional["NucleusClient"] = None,
     ) -> "EvaluationV2":
-        matches = _parse_allowed_label_matches(
-            payload.get(ALLOWED_LABEL_MATCHES_KEY)
-        )
-
         return cls(
             id=str(payload[ID_KEY]),
             model_run_id=(
@@ -269,11 +187,6 @@ class EvaluationV2:
             temporal_workflow_id=payload.get(TEMPORAL_WORKFLOW_ID_KEY),
             error_message=payload.get(ERROR_MESSAGE_KEY),
             created_at=payload.get(CREATED_AT_KEY),
-            allowed_label_matches_id=payload.get(ALLOWED_LABEL_MATCHES_ID_KEY),
-            allowed_label_matches=matches,
-            allowed_label_matches_name=payload.get(
-                ALLOWED_LABEL_MATCHES_NAME_KEY
-            ),
             rollup_groups=_parse_rollup_groups(
                 _parse_json_field(payload.get(ROLLUP_GROUPS_KEY))
             ),

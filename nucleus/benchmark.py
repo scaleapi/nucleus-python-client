@@ -9,7 +9,7 @@ Create and manage benchmarks via :class:`~nucleus.NucleusClient`::
 
     benchmark = client.create_benchmark("city-streets-v1", slice_id="slc_...")
     evaluation = benchmark.create_evaluation_v2(
-        model_run_id,
+        model_id=model.id,
         rollup_groups=[RollupGroup("vehicle", ["car", "truck"])],
     )
     evaluation.wait_for_completion()
@@ -48,7 +48,6 @@ from nucleus.constants import (
 )
 from nucleus.data_transfer_object.evaluation_v2 import BenchmarkItemsPage
 from nucleus.evaluation_v2 import (
-    AllowedLabelMatch,
     EvaluationV2,
     RollupGroup,
 )
@@ -57,6 +56,7 @@ from nucleus.evaluation_v2_preset import EvaluationV2Preset
 
 if TYPE_CHECKING:
     from nucleus import NucleusClient
+    from nucleus.model import Model
 
 
 @dataclass
@@ -181,27 +181,25 @@ class Benchmark:
 
     def create_evaluation_v2(
         self,
-        model_run_id: str,
+        model_run_id: Optional[str] = None,
         *,
+        model_id: Optional[Union[str, "Model"]] = None,
         name: Optional[str] = None,
         rollup_groups: Optional[List[RollupGroup]] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
-        allowed_label_matches_id: Optional[str] = None,
         exclusion_rules: Optional[
             List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
         ] = None,
         preset: Optional[EvaluationV2Preset] = None,
     ) -> EvaluationV2:
-        """Evaluate a model run against this benchmark.
+        """Evaluate a model against this benchmark.
 
-        The run need not cover this benchmark's datasets — uncovered members are
-        scored as false negatives, so a partial run still ranks comparably. To
-        give a run predictions across several datasets, use
-        :meth:`Dataset.upload_predictions_for_model_run`.
+        Anchor the evaluation on a model (``model_id``) for the run-free
+        "model v2" flow. The legacy ``model_run_id`` anchor is deprecated.
+        Provide exactly one. Uncovered benchmark members are scored as false
+        negatives, so partial coverage still ranks comparably.
 
         See :meth:`NucleusClient.create_benchmark_evaluation_v2` for parameter
-        details. ``allowed_label_matches`` / ``allowed_label_matches_id`` are
-        deprecated; use ``rollup_groups``.
+        details.
 
         Returns:
             :class:`~nucleus.evaluation_v2.EvaluationV2`: The created evaluation.
@@ -211,10 +209,9 @@ class Benchmark:
         return self._client.create_benchmark_evaluation_v2(
             self.id,
             model_run_id,
+            model_id=model_id,
             name=name,
             rollup_groups=rollup_groups,
-            allowed_label_matches=allowed_label_matches,
-            allowed_label_matches_id=allowed_label_matches_id,
             exclusion_rules=exclusion_rules,
             preset=preset,
         )
