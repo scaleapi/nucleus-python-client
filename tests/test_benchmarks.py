@@ -84,7 +84,9 @@ def _mock_async_create(client, *, benchmark_row=None):
     client.connection.post = MagicMock(
         return_value={"benchmark_id": "bm_1", "job_id": "job_1"}
     )
-    client.get_job = MagicMock()  # .sleep_until_complete() is a no-op MagicMock
+    client.get_job = (
+        MagicMock()
+    )  # .sleep_until_complete() is a no-op MagicMock
     client.get_benchmark = MagicMock(
         return_value=Benchmark.from_json(
             benchmark_row or {**_BENCHMARK_ROW, "status": "ready"}, client
@@ -128,7 +130,11 @@ def test_create_benchmark_from_item_ids_and_metadata():
 def test_create_benchmark_no_wait_returns_building_without_polling():
     client = _mock_async_create(
         NucleusClient(api_key="test"),
-        benchmark_row={**_BENCHMARK_ROW, "status": "building", "item_count": 0},
+        benchmark_row={
+            **_BENCHMARK_ROW,
+            "status": "building",
+            "item_count": 0,
+        },
     )
     benchmark = client.create_benchmark(
         "city-streets", slice_id="slc_1", wait_for_completion=False
@@ -272,9 +278,7 @@ def test_add_benchmark_items_posts_sources_and_polls():
     client = NucleusClient(api_key="test")
     client.connection.post = MagicMock(return_value={"job_id": "job_add"})
     client.get_job = MagicMock()
-    client.add_benchmark_items(
-        "bm_1", item_ids=["di_1"], slice_ids=["slc_1"]
-    )
+    client.add_benchmark_items("bm_1", item_ids=["di_1"], slice_ids=["slc_1"])
     payload, route = client.connection.post.call_args[0]
     assert route == "benchmarks/bm_1/items"
     assert payload["item_ids"] == ["di_1"]
@@ -317,9 +321,7 @@ def test_benchmark_finalize_updates_self_in_place():
     client.connection.post = MagicMock(
         return_value={**_BENCHMARK_ROW, "status": "ready"}
     )
-    draft = Benchmark.from_json(
-        {**_BENCHMARK_ROW, "status": "draft"}, client
-    )
+    draft = Benchmark.from_json({**_BENCHMARK_ROW, "status": "draft"}, client)
     result = draft.finalize()
     assert result is draft
     assert draft.status == "ready"
@@ -425,20 +427,22 @@ def test_create_benchmark_evaluation_v2_with_rollup_groups():
 
 def test_create_benchmark_evaluation_v2_label_config_mutual_exclusion():
     client = NucleusClient(api_key="test")
-    with pytest.raises(ValueError, match="at most one"):
-        client.create_benchmark_evaluation_v2(
-            "bm_1",
-            "run_1",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
-            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-        )
-    with pytest.raises(ValueError, match="at most one"):
-        client.create_benchmark_evaluation_v2(
-            "bm_1",
-            "run_1",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
-            allowed_label_matches_id="alm_1",
-        )
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        with pytest.raises(ValueError, match="at most one"):
+            client.create_benchmark_evaluation_v2(
+                "bm_1",
+                "run_1",
+                rollup_groups=[RollupGroup("vehicle", ["car"])],
+                allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+            )
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        with pytest.raises(ValueError, match="at most one"):
+            client.create_benchmark_evaluation_v2(
+                "bm_1",
+                "run_1",
+                rollup_groups=[RollupGroup("vehicle", ["car"])],
+                allowed_label_matches_id="alm_1",
+            )
 
 
 def test_create_benchmark_evaluation_v2_preset_seeds_rollup_groups():
@@ -467,12 +471,56 @@ def test_create_benchmark_evaluation_v2_preset_seeds_legacy_matches():
         name="p",
         allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
     )
+    # Seeding from a stored preset does not itself warn — the deprecated
+    # kwargs were not passed by the caller.
     client.create_benchmark_evaluation_v2("bm_1", "run_1", preset=preset)
     payload = client.connection.post.call_args[0][0]
     assert payload["allowed_label_matches"] == [
         {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
     ]
     assert "rollupGroups" not in payload
+
+
+def test_create_benchmark_evaluation_v2_allowed_label_matches_deprecated():
+    client = NucleusClient(api_key="test")
+    _mock_create_eval(client)
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        client.create_benchmark_evaluation_v2(
+            "bm_1",
+            "run_1",
+            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+        )
+    payload = client.connection.post.call_args[0][0]
+    assert payload["allowed_label_matches"] == [
+        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
+    ]
+
+
+def test_create_benchmark_evaluation_v2_allowed_label_matches_id_deprecated():
+    client = NucleusClient(api_key="test")
+    _mock_create_eval(client)
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        client.create_benchmark_evaluation_v2(
+            "bm_1",
+            "run_1",
+            allowed_label_matches_id="alm_1",
+        )
+    payload = client.connection.post.call_args[0][0]
+    assert payload["allowed_label_matches_id"] == "alm_1"
+
+
+def test_create_benchmark_evaluation_v2_rollup_groups_does_not_warn():
+    import warnings
+
+    client = NucleusClient(api_key="test")
+    _mock_create_eval(client)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        client.create_benchmark_evaluation_v2(
+            "bm_1",
+            "run_1",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+        )
 
 
 def test_create_benchmark_evaluation_v2_explicit_args_override_preset():

@@ -197,8 +197,6 @@ class LeaderboardRankingEntry(DictCompatibleModel):
     model_version_minor: Optional[int] = None
     model_version_label: Optional[str] = None
     parent_model_project_id: Optional[str] = None
-    dataset_id: Optional[str] = None
-    dataset_name: Optional[str] = None
     score: float
     rank: int
 
@@ -217,8 +215,6 @@ class LeaderboardF1CurveEntry(DictCompatibleModel):
     model_run_name: Optional[str] = None
     model_id: Optional[str] = None
     model_name: Optional[str] = None
-    dataset_id: Optional[str] = None
-    dataset_name: Optional[str] = None
     best_f1: Optional[float] = None
     points: List[LeaderboardF1CurvePoint]
     rank: int

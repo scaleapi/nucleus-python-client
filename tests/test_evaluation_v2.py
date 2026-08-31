@@ -11,6 +11,7 @@ from nucleus import (
     EvaluationV2,
     LabelExclusionRule,
     MetadataExclusionRule,
+    Model,
     NucleusClient,
 )
 from nucleus.data_transfer_object.evaluation_v2 import (
@@ -85,7 +86,6 @@ def test_evaluation_v2_from_json_with_matches():
     payload = {
         "id": "evalv2_1",
         "model_run_id": "run_1",
-        "dataset_id": "ds_1",
         "status": "pending",
         "allowed_label_matches": [
             {"groundTruthLabel": "x", "modelPredictionLabel": "y"},
@@ -115,7 +115,6 @@ def test_list_evaluations_v2_returns_rows():
             {
                 "id": "evalv2_1",
                 "model_run_id": "run_1",
-                "dataset_id": "ds_1",
                 "status": "succeeded",
             },
         ]
@@ -131,6 +130,43 @@ def test_list_evaluations_v2_invalid_response():
     client.connection.get = MagicMock(return_value={"evaluations": []})
     with pytest.raises(RuntimeError, match="Unexpected list evaluations V2"):
         client.list_evaluations_v2("run_1")
+
+
+def test_list_evaluations_v2_by_model_id():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        return_value=[
+            {
+                "id": "evalv2_1",
+                "model_run_id": None,
+                "model_id": "prj_1",
+                "dataset_id": "ds_1",
+                "status": "succeeded",
+            },
+        ]
+    )
+    result = client.list_evaluations_v2(model_id="prj_1")
+    assert len(result) == 1
+    assert result[0].id == "evalv2_1"
+    assert result[0].model_id == "prj_1"
+    client.connection.get.assert_called_once_with("model/prj_1/evaluationsV2")
+
+
+def test_list_evaluations_v2_by_model_object():
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(return_value=[])
+    model = Model("prj_1", "My CNN", "My-CNN", {}, client)
+    result = client.list_evaluations_v2(model_id=model)
+    assert result == []
+    client.connection.get.assert_called_once_with("model/prj_1/evaluationsV2")
+
+
+def test_list_evaluations_v2_requires_exactly_one_id():
+    client = NucleusClient(api_key="test")
+    with pytest.raises(ValueError, match="exactly one"):
+        client.list_evaluations_v2()
+    with pytest.raises(ValueError, match="exactly one"):
+        client.list_evaluations_v2("run_1", model_id="prj_1")
 
 
 def test_evaluation_v2_filter_args_gt_area_and_slices():
@@ -150,7 +186,6 @@ def test_evaluation_v2_from_json_slice_and_exclusions():
         {
             "id": "evalv2_1",
             "model_run_id": "run_1",
-            "dataset_id": "ds_1",
             "status": "succeeded",
             "slice_id": "slc_x",
             "exclusion_rules": '[{"type":"labels","scope":"item","target":"prediction","labels":["ignore"]}]',
@@ -174,7 +209,6 @@ def test_evaluation_v2_from_json_exclusions_absent():
         {
             "id": "evalv2_1",
             "model_run_id": "run_1",
-            "dataset_id": "ds_1",
             "status": "succeeded",
         }
     )
@@ -189,7 +223,6 @@ def test_charts_post_body():
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )
@@ -207,7 +240,6 @@ def test_charts_with_filter_args():
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )
@@ -232,7 +264,6 @@ def test_examples_post_body():
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )
@@ -253,7 +284,6 @@ def test_examples_with_filter_args():
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )
@@ -278,13 +308,11 @@ def test_wait_for_completion():
             {
                 "id": "evalv2_1",
                 "model_run_id": "run_1",
-                "dataset_id": "ds_1",
                 "status": "pending",
             },
             {
                 "id": "evalv2_1",
                 "model_run_id": "run_1",
-                "dataset_id": "ds_1",
                 "status": "succeeded",
             },
         ]
@@ -292,7 +320,6 @@ def test_wait_for_completion():
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="pending",
         _client=client,
     )
@@ -309,7 +336,6 @@ def test_delete_success(status_code):
     ev = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )
@@ -360,7 +386,6 @@ def test_evaluation_v2_from_json_benchmark_id_and_rollup_groups():
         {
             "id": "evalv2_1",
             "model_run_id": "run_1",
-            "dataset_id": "ds_1",
             "status": "pending",
             "benchmark_id": "bm_1",
             "rollup_groups": [{"className": "vehicle", "labels": ["car"]}],
@@ -376,7 +401,6 @@ def test_evaluation_v2_from_json_benchmark_fields_absent():
         {
             "id": "evalv2_1",
             "model_run_id": "run_1",
-            "dataset_id": "ds_1",
             "status": "pending",
         }
     )

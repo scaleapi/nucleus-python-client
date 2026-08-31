@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
@@ -18,7 +19,6 @@ from nucleus.constants import (
     CLASS_NAME_CAMEL_KEY,
     CLASS_NAME_KEY,
     CREATED_AT_KEY,
-    DATASET_ID_KEY,
     ERROR_MESSAGE_KEY,
     EVALUATION_ID_KEY,
     EXCLUSION_RULES_KEY,
@@ -71,6 +71,24 @@ _TERMINAL_OK: Set[EvaluationV2Status] = {
     EvaluationV2Status.CANCELLED,
 }
 
+_ALLOWED_LABEL_MATCHES_DEPRECATION = (
+    "allowed_label_matches is deprecated and will be removed in a future "
+    "release. Use rollup_groups instead."
+)
+
+
+def _warn_allowed_label_matches_deprecated() -> None:
+    """Emit the Evaluation V2 ``allowed_label_matches`` deprecation warning.
+
+    ``stacklevel=3`` points at the public method's caller (this helper →
+    the client/wrapper method → user code).
+    """
+    warnings.warn(
+        _ALLOWED_LABEL_MATCHES_DEPRECATION,
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
 
 def _parse_json_field(value: Any) -> Optional[Any]:
     """Normalize a field that may arrive already decoded or as a JSON string."""
@@ -86,7 +104,10 @@ def _parse_json_field(value: Any) -> Optional[Any]:
 
 @dataclass
 class AllowedLabelMatch:
-    """Ground-truth and prediction label pair that counts as a match."""
+    """Deprecated. Use :class:`RollupGroup` instead.
+
+    Ground-truth and prediction label pair that counts as a match.
+    """
 
     ground_truth_label: str
     model_prediction_label: str
@@ -175,15 +196,17 @@ class EvaluationV2:
 
     id: str
     model_run_id: Optional[str]
-    dataset_id: str
     status: str
     model_id: Optional[str] = None
     name: Optional[str] = None
     temporal_workflow_id: Optional[str] = None
     error_message: Optional[str] = None
     created_at: Optional[str] = None
+    #: Deprecated. Prefer :attr:`rollup_groups`.
     allowed_label_matches_id: Optional[str] = None
+    #: Deprecated. Prefer :attr:`rollup_groups`.
     allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
+    #: Deprecated. Prefer :attr:`rollup_groups`.
     allowed_label_matches_name: Optional[str] = None
     rollup_groups: Optional[List[RollupGroup]] = None
     benchmark_id: Optional[str] = None
@@ -209,7 +232,6 @@ class EvaluationV2:
                 if payload.get(MODEL_RUN_ID_KEY) is not None
                 else None
             ),
-            dataset_id=str(payload[DATASET_ID_KEY]),
             status=str(payload[STATUS_KEY]),
             model_id=(
                 str(payload[MODEL_ID_KEY])
@@ -320,7 +342,7 @@ class EvaluationV2:
         """Retry this evaluation if it failed.
 
         Creates a new evaluation for the same model run, reusing this
-        evaluation's slice, allowed-label-matches, and exclusion rules. Only
+        evaluation's slice, rollup groups, and exclusion rules. Only
         ``failed`` evaluations can be retried.
 
         Returns:

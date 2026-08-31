@@ -1,9 +1,11 @@
 """Evaluation V2 presets — saved, reusable evaluation configurations.
 
-A preset bundles a ``name`` with a label configuration (``rollup_groups``,
-or legacy ``allowed_label_matches``) and ``exclusion_rules`` so the same
-configuration can be applied across many evaluations. Presets are private to
-the creating user.
+A preset bundles a ``name`` with a label configuration (``rollup_groups``)
+and ``exclusion_rules`` so the same configuration can be applied across many
+evaluations. Presets are private to the creating user.
+
+``allowed_label_matches`` is still accepted for backwards compatibility but
+is deprecated; use ``rollup_groups``.
 
 Create and manage presets via :class:`~nucleus.NucleusClient`::
 
@@ -63,6 +65,7 @@ class EvaluationV2Preset:
     id: str
     name: str
     rollup_groups: Optional[List[RollupGroup]] = None
+    #: Deprecated. Prefer :attr:`rollup_groups`.
     allowed_label_matches: Optional[List[AllowedLabelMatch]] = None
     exclusion_rules: Optional[List[Dict[str, Any]]] = None
     created_by_user_id: Optional[str] = None
@@ -116,6 +119,8 @@ class EvaluationV2Preset:
         Only the arguments you pass are changed. Passing
         ``rollup_groups=None`` / ``exclusion_rules=None`` clears that field;
         omitting an argument leaves it unchanged.
+
+        ``allowed_label_matches`` is deprecated; use ``rollup_groups``.
 
         Returns:
             self, with updated fields.

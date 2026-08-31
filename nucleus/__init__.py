@@ -212,6 +212,7 @@ from .evaluation_v2 import (
     EvaluationV2,
     EvaluationV2Status,
     RollupGroup,
+    _warn_allowed_label_matches_deprecated,
 )
 from .evaluation_v2_exclusions import (
     BoxAreaExclusionRule,
@@ -557,13 +558,6 @@ class NucleusClient:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Merge several model runs into one new run holding all their predictions.
-
-        A benchmark evaluation names a single model run, and a benchmark's items may
-        span several datasets. A model whose predictions were uploaded as separate runs
-        — one per dataset, or one per inference batch — therefore has no single run
-        covering the benchmark, and every uncovered item scores as a false negative.
-        Merging the runs produces one run that does cover it, which you can then pass to
-        :meth:`create_benchmark_evaluation_v2`.
 
         All source runs must belong to the same model.
 
@@ -1035,16 +1029,40 @@ class NucleusClient:
         data = self.get(f"evaluationsV2/{evaluation_id}")
         return EvaluationV2.from_json(data, self)
 
-    def list_evaluations_v2(self, model_run_id: str) -> List[EvaluationV2]:
-        """List evaluations for a model run (newest first).
+    def list_evaluations_v2(
+        self,
+        model_run_id: Optional[str] = None,
+        *,
+        model_id: Optional[Union[str, Model]] = None,
+    ) -> List[EvaluationV2]:
+        """List evaluations for a model run or a run-free model (newest first).
+
+        Provide exactly one of ``model_run_id`` or ``model_id``. The
+        model-anchored path lists run-free evaluations for that model
+        (``model_run_id`` is null on those rows).
 
         Parameters:
-            model_run_id: Model run id (``run_*``).
+            model_run_id: Model run id (``run_*``). Mutually exclusive with
+                ``model_id``.
+            model_id: Model id (``prj_*``) or :class:`Model` to list run-free
+                evaluations. Mutually exclusive with ``model_run_id``.
 
         Returns:
             List of :class:`EvaluationV2`.
         """
-        rows = self.get(f"modelRun/{model_run_id}/evaluationsV2")
+        resolved_model_id = (
+            model_id.id if isinstance(model_id, Model) else model_id
+        )
+        if (resolved_model_id is None) == (model_run_id is None):
+            raise ValueError(
+                "Provide exactly one of model_run_id or model_id."
+            )
+        route = (
+            f"model/{resolved_model_id}/evaluationsV2"
+            if resolved_model_id is not None
+            else f"modelRun/{model_run_id}/evaluationsV2"
+        )
+        rows = self.get(route)
         if not isinstance(rows, list):
             raise RuntimeError(
                 f"Unexpected list evaluations V2 response: {rows!r}"
@@ -1083,14 +1101,16 @@ class NucleusClient:
                 configuration); each :class:`RollupGroup` maps raw labels onto
                 one class name. Mutually exclusive with
                 ``allowed_label_matches``.
-            allowed_label_matches: Optional legacy label pairs to treat as
-                matches. Prefer ``rollup_groups``.
+            allowed_label_matches: Deprecated. Use ``rollup_groups``. Optional
+                legacy label pairs to treat as matches.
             exclusion_rules: Optional rules that drop items/annotations (same
                 types accepted by :meth:`create_benchmark_evaluation_v2`).
 
         Returns:
             :class:`EvaluationV2Preset`: The created preset.
         """
+        if allowed_label_matches is not None:
+            _warn_allowed_label_matches_deprecated()
         if rollup_groups is not None and allowed_label_matches is not None:
             raise ValueError(
                 "rollup_groups and allowed_label_matches cannot both be set"
@@ -1132,12 +1152,15 @@ class NucleusClient:
             name: Optional new name.
             rollup_groups: Optional new rollup classes, or ``None`` to clear.
                 Mutually exclusive with ``allowed_label_matches``.
-            allowed_label_matches: Optional new legacy label-match list.
+            allowed_label_matches: Deprecated. Use ``rollup_groups``. Optional
+                new legacy label-match list, or ``None`` to clear.
             exclusion_rules: Optional new exclusion rules, or ``None`` to clear.
 
         Returns:
             :class:`EvaluationV2Preset`: The updated preset.
         """
+        if allowed_label_matches is not _UNSET:
+            _warn_allowed_label_matches_deprecated()
         if (
             rollup_groups is not _UNSET
             and rollup_groups is not None
@@ -1583,12 +1606,6 @@ class NucleusClient:
         background — call :meth:`EvaluationV2.wait_for_completion`, then
         :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples`.
 
-        The benchmark may span datasets the model run has no predictions in at
-        all. Those members are scored as false negatives like any other
-        uncovered item, so a partial run still ranks comparably rather than
-        being rejected. To give a run predictions across several datasets, use
-        :meth:`Dataset.upload_predictions_for_model_run`.
-
         The evaluation can be anchored on either a legacy model run
         (``model_run_id``) or, for the run-free "model v2" flow, a model
         (``model_id``). Provide exactly one; the model-anchored flow evaluates
@@ -1607,10 +1624,10 @@ class NucleusClient:
                 configuration); each :class:`RollupGroup` maps raw labels
                 onto one class name. Mutually exclusive with the
                 ``allowed_label_matches*`` arguments.
-            allowed_label_matches: Optional legacy label pairs to treat as
-                matches. Prefer ``rollup_groups``.
-            allowed_label_matches_id: Optional id of a saved label-match
-                configuration.
+            allowed_label_matches: Deprecated. Use ``rollup_groups``. Optional
+                legacy label pairs to treat as matches.
+            allowed_label_matches_id: Deprecated. Use ``rollup_groups``.
+                Optional id of a saved label-match configuration.
             exclusion_rules: Optional rules that drop items/annotations
                 before metrics are computed (see
                 :mod:`nucleus.evaluation_v2_exclusions`).
@@ -1621,6 +1638,11 @@ class NucleusClient:
         Returns:
             :class:`EvaluationV2`: The created evaluation.
         """
+        if (
+            allowed_label_matches is not None
+            or allowed_label_matches_id is not None
+        ):
+            _warn_allowed_label_matches_deprecated()
         resolved_model_id = (
             model_id.id if isinstance(model_id, Model) else model_id
         )

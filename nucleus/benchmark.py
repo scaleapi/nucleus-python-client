@@ -200,7 +200,8 @@ class Benchmark:
         :meth:`Dataset.upload_predictions_for_model_run`.
 
         See :meth:`NucleusClient.create_benchmark_evaluation_v2` for parameter
-        details.
+        details. ``allowed_label_matches`` / ``allowed_label_matches_id`` are
+        deprecated; use ``rollup_groups``.
 
         Returns:
             :class:`~nucleus.evaluation_v2.EvaluationV2`: The created evaluation.

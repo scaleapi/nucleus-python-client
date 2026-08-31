@@ -1,8 +1,10 @@
 """Unit tests for Evaluation V2 presets, cancel/retry, and label-schema
 discovery (no live API)."""
 
+import warnings
 from unittest.mock import MagicMock
 
+import pytest
 import requests
 
 from nucleus import (
@@ -56,15 +58,16 @@ def test_create_evaluation_v2_preset_payload():
             "exclusion_rules": None,
         }
     )
-    preset = client.create_evaluation_v2_preset(
-        "vehicles",
-        allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-        exclusion_rules=[
-            LabelExclusionRule(
-                scope="item", target="prediction", labels=["ignore"]
-            )
-        ],
-    )
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        preset = client.create_evaluation_v2_preset(
+            "vehicles",
+            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+            exclusion_rules=[
+                LabelExclusionRule(
+                    scope="item", target="prediction", labels=["ignore"]
+                )
+            ],
+        )
     payload, route = client.connection.post.call_args[0]
     assert route == "evaluationV2Presets"
     assert payload["name"] == "vehicles"
@@ -135,7 +138,6 @@ def _eval(client, status="computing"):
     return EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status=status,
         _client=client,
     )
@@ -163,7 +165,6 @@ def test_evaluation_retry_resolves_new_evaluation():
     client.get_evaluation_v2.return_value = EvaluationV2(
         id="evalv2_retry",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="pending",
         _client=client,
     )
@@ -237,15 +238,16 @@ def test_create_evaluation_v2_preset_rollup_and_matches_mutually_exclusive():
     from nucleus import RollupGroup
 
     client = NucleusClient(api_key="test")
-    try:
-        client.create_evaluation_v2_preset(
-            "p",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
-            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-        )
-        raise AssertionError("expected ValueError")
-    except ValueError as e:
-        assert "cannot both be set" in str(e)
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        try:
+            client.create_evaluation_v2_preset(
+                "p",
+                rollup_groups=[RollupGroup("vehicle", ["car"])],
+                allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+            )
+            raise AssertionError("expected ValueError")
+        except ValueError as e:
+            assert "cannot both be set" in str(e)
 
 
 def test_update_evaluation_v2_preset_rollup_groups_and_clear():
@@ -280,3 +282,34 @@ def test_preset_from_json_parses_rollup_groups_both_casings():
         )
         assert preset.rollup_groups is not None
         assert preset.rollup_groups[0].labels == ["car", "truck"]
+
+
+def test_create_evaluation_v2_preset_rollup_groups_does_not_warn():
+    from nucleus import RollupGroup
+
+    client = NucleusClient(api_key="test")
+    client.connection.post = MagicMock(
+        return_value={"id": "prev_1", "name": "vehicles", "rollup_groups": []}
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        client.create_evaluation_v2_preset(
+            "vehicles",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+        )
+
+
+def test_update_evaluation_v2_preset_allowed_label_matches_warns():
+    client = NucleusClient(api_key="test")
+    client.connection.patch = MagicMock(
+        return_value={"id": "prev_1", "name": "p"}
+    )
+    with pytest.warns(DeprecationWarning, match="allowed_label_matches"):
+        client.update_evaluation_v2_preset(
+            "prev_1",
+            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+        )
+    payload = client.connection.patch.call_args[0][0]
+    assert payload["allowedLabelMatches"] == [
+        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
+    ]

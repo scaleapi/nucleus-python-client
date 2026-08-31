@@ -29,8 +29,6 @@ _RANKING_ROW = {
     "model_version_minor": 2,
     "model_version_label": "1.2",
     "parent_model_project_id": None,
-    "dataset_id": "ds_1",
-    "dataset_name": "dataset",
     "score": 0.42,
     "rank": 1,
 }
@@ -127,7 +125,6 @@ def test_evaluation_filter_schema_instance_method():
     evaluation = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )

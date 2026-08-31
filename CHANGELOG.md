@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.1) - 2026-08-31
+
+### Deprecated
+- **`allowed_label_matches` on Evaluation V2.** `create_evaluation_v2_preset()`, `update_evaluation_v2_preset()`, `create_benchmark_evaluation_v2()`, and `Benchmark.create_evaluation_v2()` still accept `allowed_label_matches` / `allowed_label_matches_id` for backwards compatibility, but they now emit a `DeprecationWarning`. Use `rollup_groups` instead. `AllowedLabelMatch` and the corresponding fields on `EvaluationV2` / `EvaluationV2Preset` are likewise marked deprecated.
+
 ## [0.22.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.0) - 2026-08-26
 
 ### Added
@@ -13,9 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Model.predictions_loc(dataset_item_id)`, `Model.predictions_refloc(reference_id)`, `Model.predictions_iloc(i)` — model-scoped reads returning the same shape as their `Dataset` equivalents.
   - `Model.copy_predictions_from_run(model_run_id)` — synchronously backfills the run-free store from an existing model run, returning a dict `{model_id, model_run_ids, predictions_copied, predictions_skipped_unsupported}`.
 - **Model-anchored benchmark evaluations.** `NucleusClient.create_benchmark_evaluation_v2()` accepts a `model_id` (a `prj_*` id or a `Model`) as an alternative to `model_run_id`; the model-anchored flow evaluates the model's run-free predictions and ignores model runs. Provide exactly one of the two. `EvaluationV2` now exposes an optional `model_id` field alongside `model_run_id`.
+- **`list_evaluations_v2` accepts a model.** `NucleusClient.list_evaluations_v2()` takes exactly one of `model_run_id` (`run_*`) or `model_id` (`prj_*` or a `Model`). The model-anchored path hits `GET model/{id}/evaluationsV2` and returns that model's run-free evaluations.
 
 ### Changed
 - The existing run-based prediction paths (`Dataset.upload_predictions`, `ModelRun.add_predictions`, `create_benchmark_evaluation_v2(model_run_id=...)`) are unchanged and continue to work; the model-centric methods are purely additive.
+
+### Removed
+- **`dataset_id` dropped from the EvaluationV2 surface** (breaking). An evaluation is no longer anchored on a single dataset — a model run now carries a *set* of datasets and a benchmark's items may span several — so the backend no longer returns a denormalized dataset on evaluations or leaderboards. Removed `EvaluationV2.dataset_id`, and `dataset_id` / `dataset_name` from `LeaderboardRankingEntry` and `LeaderboardF1CurveEntry`, matching the current backend responses. Without this, `EvaluationV2.from_json` raised `KeyError: 'dataset_id'` on every model-anchored (run-free) benchmark evaluation, since those payloads never carry a `dataset_id`.
 
 ### Fixed
 - `Model.predictions_loc` / `predictions_refloc` / `predictions_iloc` now actually parse their responses. The run-free read endpoints return a flat `{"predictions": [...]}` list (each element carrying its own `"type"`), but `format_prediction_response` only understood the legacy type-keyed `{"annotations": {"box": [...]}}` shape, so these methods returned the raw payload unparsed instead of the documented `{"box": [...], "polygon": [...], "cuboid": [...]}` dict.
