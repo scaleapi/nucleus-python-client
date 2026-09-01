@@ -47,6 +47,7 @@ from .constants import (
     SCALE_TASK_INFO_KEY,
     SCENE_KEY,
     SEGMENTATION_TYPE,
+    TYPE_KEY,
 )
 from .dataset_item import DatasetItem
 from .prediction import (
@@ -131,10 +132,6 @@ def format_prediction_response(
             keyed by the type name.
     """
     annotation_payload = response.get(ANNOTATIONS_KEY, None)
-    if not annotation_payload:
-        # An error occurred
-        return response
-    annotation_response = {}
     type_key_to_class: Dict[
         str,
         Union[
@@ -156,6 +153,24 @@ def format_prediction_response(
         KEYPOINTS_TYPE: KeypointsPrediction,
         SEGMENTATION_TYPE: SegmentationPrediction,
     }
+    if not annotation_payload:
+        # Run-free ("model v2") reads (Model.predictions_loc / _refloc /
+        # _iloc) return a flat list under "predictions", each element carrying
+        # its own "type", rather than the type-keyed "annotations" dict. Group
+        # it into the same {type: [obj, ...]} shape those methods promise.
+        prediction_payload = response.get(PREDICTIONS_KEY, None)
+        if not prediction_payload:
+            # An error occurred, or there are no predictions.
+            return response
+        annotation_response: Dict[str, list] = {}
+        for prediction in prediction_payload:
+            type_key = prediction[TYPE_KEY]
+            type_class = type_key_to_class[type_key]
+            annotation_response.setdefault(type_key, []).append(
+                type_class.from_json(prediction)
+            )
+        return annotation_response
+    annotation_response = {}
     for type_key in annotation_payload:
         type_class = type_key_to_class[type_key]
         annotation_response[type_key] = [
@@ -229,6 +244,7 @@ def format_scale_task_info_response(response: dict) -> Union[Dict, List[Dict]]:
         elif SCENE_KEY in row:
             ret.append(row)
     return ret
+
 
 # pylint: disable=too-many-branches,too-many-statements
 def convert_export_payload(api_payload, has_predictions: bool = False):
