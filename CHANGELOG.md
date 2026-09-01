@@ -5,6 +5,17 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.2) - 2026-09-01
+
+### Added
+- **`Model.model_runs()`.** Lists the ids of every model run for a model — the model-scoped counterpart to `Dataset.model_runs()`, which only lists a single dataset's runs. Pass `include_versions=True` to union runs across the model's version lineage (its version root and all descendants). Results are scoped server-side to runs on datasets you can read.
+
+  ```python
+  run_ids = model.model_runs()
+  ```
+
+> **Server dependency:** requires the `GET /nucleus/model/:modelId/modelRun` route in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
 ## [0.22.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.1) - 2026-08-31
 
 ### Deprecated

@@ -417,6 +417,25 @@ class Model:
             requests_command=requests.post,
         )
 
+    def model_runs(self, include_versions: bool = False) -> List[str]:
+        """List the ids of every model run for this model. ::
+
+            run_ids = model.model_runs()
+
+        Args:
+            include_versions: Also include runs from other versions in this
+                model's lineage — its version root and all descendants. Defaults
+                to False, returning only runs whose ``model_id`` is this model.
+
+        Returns:
+            The model run ids (``run_*``). Scoped server-side to runs on datasets
+            you can read, so a run on a dataset you can't access is omitted.
+        """
+        route = f"model/{self.id}/modelRun"
+        if include_versions:
+            route += "?family=true"
+        return self._client.make_request({}, route, requests.get)
+
     def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
 
