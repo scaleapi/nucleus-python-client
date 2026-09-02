@@ -69,7 +69,16 @@ __all__ = [
 import datetime
 import os
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import requests
 import tqdm
@@ -176,6 +185,7 @@ from .constants import (
     SLICE_TAGS_KEY,
     STATUS_CODE_KEY,
     TOP_N_KEY,
+    TOTAL_KEY,
     TRAINING_SET_ID_KEY,
     TRAINING_SET_IDS_KEY,
     UPDATE_KEY,
@@ -1186,11 +1196,9 @@ class NucleusClient:
                 None
                 if exclusion_rules is None
                 else [
-                    (
-                        rule.to_api_dict()
-                        if hasattr(rule, "to_api_dict")
-                        else rule
-                    )
+                    rule.to_api_dict()
+                    if hasattr(rule, "to_api_dict")
+                    else rule
                     for rule in exclusion_rules
                 ]
             )
@@ -1650,12 +1658,13 @@ class NucleusClient:
         ``training_set_ids``. Members are unioned and de-duplicated; at least
         one source is required.
 
-        Creation is **asynchronous**: the server creates the training set in a
-        ``"building"`` state and streams its members in via a background job.
-        By default this blocks until that job finishes and returns the
-        ``"ready"`` training set. Pass ``wait_for_completion=False`` to return
-        immediately with a ``"building"`` set you can poll via
-        :meth:`TrainingSet.refresh`.
+        A small, explicit membership (``item_ids`` / ``items``) is applied
+        synchronously. A large source — a whole slice / dataset, or another
+        training set's members — streams in via a background job; the response
+        then carries a ``job_id`` and by default this blocks until that job
+        finishes and returns the ``"ready"`` training set. Pass
+        ``wait_for_completion=False`` to return immediately (a ``"building"``
+        set when a job was started) and poll via :meth:`TrainingSet.refresh`.
 
         **Versioning.** Pass ``parent_training_set_id`` to create a new version
         downstream of an existing training set: the child inherits the parent's
@@ -1732,9 +1741,9 @@ class NucleusClient:
             }
         )
 
-        # Create is synchronous: the server responds 201 with the finished
-        # training set. If the backend instead returns a job_id (async seed
-        # job), poll it to completion before returning.
+        # A large source streams members in via a background job whose id is
+        # returned; poll it to completion. A small explicit membership applies
+        # synchronously (no job_id) and needs no polling.
         response = self.post(payload, f"models/{model_id}/trainingSet")
         training_set_id = response[TRAINING_SET_ID_KEY]
         job_id = response.get(JOB_ID_KEY)
@@ -1873,37 +1882,64 @@ class NucleusClient:
         data = self.get(route)
         return TrainingSetItemsPage.parse_obj(data)
 
-    def _export_training_set_records(
+    def iter_training_set_export_records(
         self,
         training_set_id: str,
         *,
         limit: int = 1000,
-    ) -> List[Dict[str, Any]]:
-        """Page the training-set export endpoint, returning the raw records.
+    ) -> Iterator[Dict[str, Any]]:
+        """Yield a training set's raw export records, paging lazily.
 
         Each record is the backend's export shape (``dataset_item_id``,
         ``dataset_id``, ``reference_id``, ``metadata``, ``image_location``,
         ``pointcloud_location``, ``width``, ``height``). This preserves fields
         (notably ``dataset_id``) that :class:`~nucleus.dataset_item.DatasetItem`
-        cannot hold, so file/media exports use these directly.
+        cannot hold, so file/media exports use these directly. Yielding one
+        record at a time keeps the whole (potentially huge) set from being held
+        in memory at once.
         """
-        accumulated: List[Dict[str, Any]] = []
         offset = 0
+        seen = 0
+        total: Optional[int] = None
         while True:
             route = (
                 f"trainingSets/{training_set_id}/export"
                 f"?limit={limit}&offset={offset}"
             )
             data = self.get(route)
-            items = data.get("items", []) or []
-            total = data.get("total", 0)
-            accumulated.extend(items)
-            # Stop when the server returns an empty page or we've collected the
-            # advertised total (guards against an off-by-one final page).
-            if not items or len(accumulated) >= total:
+            items = data.get(ITEMS_KEY, []) or []
+            if total is None:
+                total = data.get(TOTAL_KEY)
+            yield from items
+            seen += len(items)
+            # A page smaller than the requested limit (or an empty one) is the
+            # last page — the standard terminator, and it does not depend on
+            # ``total`` being present or correct (a missing/zero/stale ``total``
+            # no longer truncates the export or spins forever). ``total``, when
+            # given, is only a secondary early-out.
+            if not items or len(items) < limit:
                 break
-            offset += limit
-        return accumulated
+            # ``total`` is only a secondary early-out, and only when it is a
+            # positive count — a 0 / missing ``total`` alongside real items is a
+            # stale count we must not trust to stop paging.
+            if total and seen >= total:
+                break
+            offset += len(items)
+
+    def export_training_set_records(
+        self,
+        training_set_id: str,
+        *,
+        limit: int = 1000,
+    ) -> List[Dict[str, Any]]:
+        """Return a training set's raw export records as a list.
+
+        Eagerly materializes :meth:`iter_training_set_export_records`; prefer
+        the iterator for large sets.
+        """
+        return list(
+            self.iter_training_set_export_records(training_set_id, limit=limit)
+        )
 
     @staticmethod
     def _training_set_record_to_dataset_item(
@@ -1951,12 +1987,11 @@ class NucleusClient:
         Returns:
             List[:class:`~nucleus.dataset_item.DatasetItem`]: Every member item.
         """
-        records = self._export_training_set_records(
-            training_set_id, limit=limit
-        )
         return [
             self._training_set_record_to_dataset_item(record)
-            for record in records
+            for record in self.iter_training_set_export_records(
+                training_set_id, limit=limit
+            )
         ]
 
     def add_training_set_items(
@@ -2069,12 +2104,24 @@ class NucleusClient:
                 "Provide at least one of item_ids, items, slice_id(s), "
                 "dataset_id(s), or training_set_ids to remove"
             )
-        response = self.make_request(
+        # Return the raw response: a synchronous removal answers 204 / an empty
+        # body, and calling .json() on that raises (as every other DELETE in
+        # this client avoids by passing return_raw_response=True). Only parse a
+        # job_id when there is actually a body to parse.
+        response: Any = self.make_request(
             payload,
             f"trainingSets/{training_set_id}/items",
             requests_command=requests.delete,
+            return_raw_response=True,
         )
-        job_id = response.get(JOB_ID_KEY) if isinstance(response, dict) else None
+        job_id = None
+        if getattr(response, "content", None):
+            try:
+                body = response.json()
+            except ValueError:
+                body = None
+            if isinstance(body, dict):
+                job_id = body.get(JOB_ID_KEY)
         if wait_for_completion and job_id is not None:
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
 
@@ -2105,8 +2152,10 @@ class NucleusClient:
         minor bump; pass ``bump_type="major"`` or explicit ``version_major`` +
         ``version_minor``.
 
-        Like create, this is **asynchronous**: by default it blocks until the
-        seed job finishes and returns the new ``"ready"`` version.
+        Like :meth:`create_training_set`, a large source streams in via a
+        background job whose ``job_id`` is returned and, by default, blocked on
+        until it finishes; a small explicit change applies synchronously. The
+        new version is returned either way.
 
         Parameters:
             training_set_id: Parent training set id to version from.
@@ -2158,12 +2207,6 @@ class NucleusClient:
         job_id = response.get(JOB_ID_KEY)
         if wait_for_completion and job_id is not None:
             self.get_job(job_id).sleep_until_complete(verbose_std_out=verbose)
-        elif wait_for_completion and job_id is None:
-            raise ValueError(
-                "Server did not return a job_id in the create-training-set-"
-                "version response; cannot poll for completion. Pass "
-                "wait_for_completion=False to suppress this error."
-            )
         return self.get_training_set(new_id)
 
     def list_training_set_family(

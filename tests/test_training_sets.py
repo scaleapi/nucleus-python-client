@@ -142,17 +142,32 @@ def test_create_training_set_combines_multiple_sources():
 
 
 def test_create_training_set_accepts_model_object():
-    client = _mock_async_create(NucleusClient(api_key="test"))
-    model = MagicMock()
-    model.id = "prj_99"
-    # isinstance(model, Model) is False for a MagicMock, so pass a real model id
-    # via the .id attribute path by using an actual Model.
     from nucleus.model import Model
 
+    client = _mock_async_create(NucleusClient(api_key="test"))
     real_model = Model("prj_99", "m", "ref", {}, client)
     client.create_training_set("m", model=real_model, item_ids=["di_1"])
     _, route = client.connection.post.call_args[0]
     assert route == "models/prj_99/trainingSet"
+
+
+def test_create_training_set_synchronous_no_job_id_skips_polling():
+    # A small explicit membership applies synchronously: the response has no
+    # job_id, so we must not try to poll — and still return the created set.
+    client = NucleusClient(api_key="test")
+    client.connection.post = MagicMock(
+        return_value={"training_set_id": "ts_1"}  # no job_id
+    )
+    client.get_job = MagicMock()
+    client.get_training_set = MagicMock(
+        return_value=TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    )
+    ts = client.create_training_set(
+        "pedestrians", model="prj_1", item_ids=["di_1"]
+    )
+    client.get_job.assert_not_called()
+    client.get_training_set.assert_called_once_with("ts_1")
+    assert ts.id == "ts_1"
 
 
 def test_create_training_set_requires_a_source():
@@ -233,6 +248,25 @@ def test_create_training_set_version_endpoint_polls_and_refetches():
     assert payload["removed_item_ids"] == ["di_9"]
     assert payload["bump_type"] == "major"
     client.get_job.assert_called_once_with("job_v")
+    client.get_training_set.assert_called_once_with("ts_2")
+    assert new_version.id == "ts_2"
+
+
+def test_create_training_set_version_synchronous_no_job_id():
+    # A small explicit change versions synchronously (no job_id). This must not
+    # raise (it used to) — it returns the new version, consistent with create.
+    client = NucleusClient(api_key="test")
+    client.connection.post = MagicMock(
+        return_value={"training_set_id": "ts_2"}  # no job_id
+    )
+    client.get_job = MagicMock()
+    client.get_training_set = MagicMock(
+        return_value=TrainingSet.from_json(
+            {**_TRAINING_SET_ROW, "training_set_id": "ts_2"}, client
+        )
+    )
+    new_version = client.create_training_set_version("ts_1", item_ids=["di_1"])
+    client.get_job.assert_not_called()
     client.get_training_set.assert_called_once_with("ts_2")
     assert new_version.id == "ts_2"
 
@@ -335,11 +369,30 @@ def test_add_training_set_items_requires_a_source():
         client.add_training_set_items("ts_1")
 
 
+def _raw_response(*, content, json_body=None):
+    """A stand-in for the raw ``requests.Response`` a DELETE returns.
+
+    ``remove_training_set_items`` passes ``return_raw_response=True`` (like
+    every other DELETE in the client), so the double must expose ``.content``
+    and ``.json()`` — a plain dict would let a real ``204``'s empty-body
+    ``.json()`` crash slip through the test, which is exactly the bug this
+    guards against.
+    """
+    response = MagicMock()
+    response.content = content
+    if json_body is None:
+        response.json.side_effect = ValueError("No JSON body")
+    else:
+        response.json.return_value = json_body
+    return response
+
+
 def test_remove_training_set_items_deletes_with_body():
     client = NucleusClient(api_key="test")
-    # A small explicit removal is synchronous: the response carries no job_id.
+    # A small explicit removal is synchronous: the server answers 204 with an
+    # empty body, so there is no job_id to poll (and .json() must not be called).
     client.connection.make_request = MagicMock(
-        return_value={"training_set_id": "ts_1", "status": "ready", "job_id": None}
+        return_value=_raw_response(content=b"")
     )
     client.get_job = MagicMock()
     client.remove_training_set_items("ts_1", ["di_1", "di_2"])
@@ -352,13 +405,12 @@ def test_remove_training_set_items_deletes_with_body():
 
 def test_remove_training_set_items_from_dataset_polls():
     client = NucleusClient(api_key="test")
-    # Removing a whole dataset streams out via a job — the response carries a job_id to poll.
+    # Removing a whole dataset streams out via a job — the response body carries
+    # a job_id to poll.
     client.connection.make_request = MagicMock(
-        return_value={
-            "training_set_id": "ts_1",
-            "status": "building",
-            "job_id": "job_rm",
-        }
+        return_value=_raw_response(
+            content=b'{"job_id": "job_rm"}', json_body={"job_id": "job_rm"}
+        )
     )
     client.get_job = MagicMock()
     client.remove_training_set_items("ts_1", dataset_ids=["ds_1"])
@@ -366,6 +418,18 @@ def test_remove_training_set_items_from_dataset_polls():
     assert args[0] == {"dataset_ids": ["ds_1"]}
     assert args[2] is requests.delete
     client.get_job.assert_called_once_with("job_rm")
+
+
+def test_remove_training_set_items_tolerates_empty_delete_body():
+    client = NucleusClient(api_key="test")
+    # A 204 / empty body must not be fed to .json() (which raises). Regression
+    # test for the DELETE-response-parsing crash.
+    client.connection.make_request = MagicMock(
+        return_value=_raw_response(content=b"")
+    )
+    client.get_job = MagicMock()
+    client.remove_training_set_items("ts_1", ["di_1"])
+    client.get_job.assert_not_called()
 
 
 def test_remove_training_set_items_requires_a_source():
@@ -450,6 +514,84 @@ def test_export_training_set_items_single_page_stops():
     assert len(items) == 1
 
 
+def test_export_pages_when_total_is_missing():
+    # No "total" in the response: paging must not truncate to the first page —
+    # it keeps going until a short/empty page.
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        side_effect=[
+            {"items": [_export_record(0), _export_record(1)]},
+            {"items": [_export_record(2), _export_record(3)]},
+            {"items": [_export_record(4)]},
+        ]
+    )
+    records = client.export_training_set_records("ts_1", limit=2)
+    assert [r["dataset_item_id"] for r in records] == [
+        "di_0",
+        "di_1",
+        "di_2",
+        "di_3",
+        "di_4",
+    ]
+
+
+def test_export_pages_when_total_is_zero_but_items_present():
+    # total=0 (stale/omitted count) must not stop paging after the first page.
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        side_effect=[
+            {"items": [_export_record(0), _export_record(1)], "total": 0},
+            {"items": [_export_record(2)], "total": 0},
+        ]
+    )
+    records = client.export_training_set_records("ts_1", limit=2)
+    assert [r["dataset_item_id"] for r in records] == ["di_0", "di_1", "di_2"]
+
+
+def test_export_advances_offset_by_items_returned():
+    # A short non-final page must not skip items: offset advances by the number
+    # of records actually returned, not by the requested limit.
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        side_effect=[
+            {"items": [_export_record(0), _export_record(1)], "total": 5},
+            # Server returns a full page again after the (implied) gap.
+            {"items": [_export_record(2), _export_record(3)], "total": 5},
+            {"items": [_export_record(4)], "total": 5},
+        ]
+    )
+    records = client.export_training_set_records("ts_1", limit=2)
+    offsets = [call[0][0] for call in client.connection.get.call_args_list]
+    assert offsets == [
+        "trainingSets/ts_1/export?limit=2&offset=0",
+        "trainingSets/ts_1/export?limit=2&offset=2",
+        "trainingSets/ts_1/export?limit=2&offset=4",
+    ]
+    assert [r["dataset_item_id"] for r in records] == [
+        "di_0",
+        "di_1",
+        "di_2",
+        "di_3",
+        "di_4",
+    ]
+
+
+def test_export_stops_at_total_even_if_pages_stay_full():
+    # A stale/over-counting server that keeps returning full pages must not spin
+    # forever: once we have collected the advertised total we stop.
+    client = NucleusClient(api_key="test")
+    client.connection.get = MagicMock(
+        side_effect=[
+            {"items": [_export_record(0), _export_record(1)], "total": 2},
+            # Would loop indefinitely if this were ever requested.
+            {"items": [_export_record(2), _export_record(3)], "total": 2},
+        ]
+    )
+    records = client.export_training_set_records("ts_1", limit=2)
+    assert len(records) == 2
+    client.connection.get.assert_called_once()
+
+
 def test_export_to_file_writes_jsonl_roundtrip(tmp_path):
     import json
 
@@ -482,6 +624,23 @@ def test_export_to_file_writes_jsonl_roundtrip(tmp_path):
     assert rows[1]["image_location"] is None
 
 
+def _patch_media_download(monkeypatch):
+    """Patch the shared model-weights streamer's HTTP GET to yield fake bytes.
+
+    ``download_items`` reuses ``model_weights._stream_weights_to_file``, so the
+    network call happens in that module.
+    """
+    fake_response = MagicMock()
+    fake_response.ok = True
+    fake_response.headers.get.return_value = None  # no Content-Length check
+    fake_response.iter_content.return_value = [b"fake-bytes"]
+    context = MagicMock()
+    context.__enter__.return_value = fake_response
+    fake_get = MagicMock(return_value=context)
+    monkeypatch.setattr("nucleus.model_weights.requests.get", fake_get)
+    return fake_get
+
+
 def test_download_items_streams_media_to_directory(tmp_path, monkeypatch):
     client = NucleusClient(api_key="test")
     client.connection.get = MagicMock(
@@ -491,45 +650,92 @@ def test_download_items_streams_media_to_directory(tmp_path, monkeypatch):
         }
     )
     ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
-
-    fake_response = MagicMock()
-    fake_response.iter_content.return_value = [b"fake-bytes"]
-    fake_response.raise_for_status.return_value = None
-    context = MagicMock()
-    context.__enter__.return_value = fake_response
-    fake_get = MagicMock(return_value=context)
-    monkeypatch.setattr("nucleus.training_set.requests.get", fake_get)
+    _patch_media_download(monkeypatch)
 
     count = ts.download_items(str(tmp_path), progress=False)
 
     assert count == 2
-    files = sorted(p.name for p in tmp_path.iterdir())
+    # Files are namespaced under a per-dataset_id subdirectory.
+    dataset_dir = tmp_path / "ds_1"
+    files = sorted(p.name for p in dataset_dir.iterdir())
     assert files == ["ref_1.jpg", "ref_2.jpg"]
-    assert (tmp_path / "ref_1.jpg").read_bytes() == b"fake-bytes"
+    assert (dataset_dir / "ref_1.jpg").read_bytes() == b"fake-bytes"
     # No leftover .part temp files.
-    assert not any(p.name.endswith(".part") for p in tmp_path.iterdir())
+    assert not any(p.name.endswith(".part") for p in dataset_dir.iterdir())
 
 
-def test_download_items_media_less_record_raises_on_hydration(
+def test_download_items_dedupes_reference_ids_across_datasets(
     tmp_path, monkeypatch
 ):
+    # The same reference_id in two different datasets must not clobber — each
+    # lands under its own dataset_id subdirectory.
     client = NucleusClient(api_key="test")
-    # A member with neither image nor pointcloud location.
-    record = {**_export_record(1), "image_location": None}
-    record["reference_id"] = "ref_nomedia"
+    rec_a = {
+        **_export_record(0),
+        "dataset_id": "ds_a",
+        "reference_id": "frame",
+    }
+    rec_b = {
+        **_export_record(1),
+        "dataset_id": "ds_b",
+        "reference_id": "frame",
+    }
+    client.connection.get = MagicMock(
+        return_value={"items": [rec_a, rec_b], "total": 2}
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    _patch_media_download(monkeypatch)
+
+    count = ts.download_items(str(tmp_path), progress=False)
+
+    assert count == 2
+    assert (tmp_path / "ds_a" / "frame.jpg").exists()
+    assert (tmp_path / "ds_b" / "frame.jpg").exists()
+
+
+def test_download_items_sanitizes_traversing_reference_id(
+    tmp_path, monkeypatch
+):
+    # A user-supplied reference_id like "../escape" must not write outside the
+    # target directory.
+    client = NucleusClient(api_key="test")
+    record = {**_export_record(0), "reference_id": "../escape"}
     client.connection.get = MagicMock(
         return_value={"items": [record], "total": 1}
     )
     ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
-    fake_get = MagicMock()
-    monkeypatch.setattr("nucleus.training_set.requests.get", fake_get)
+    _patch_media_download(monkeypatch)
 
-    # download_items pages export_items(), which hydrates each record into a
-    # DatasetItem; DatasetItem asserts "exactly one media location", so a
-    # media-less record raises before any download is attempted.
-    with pytest.raises(AssertionError):
-        ts.download_items(str(tmp_path), progress=False)
-    fake_get.assert_not_called()
+    target = tmp_path / "out"
+    count = ts.download_items(str(target), progress=False)
+
+    assert count == 1
+    assert (target / "ds_1" / "escape.jpg").exists()
+    # Nothing escaped the target directory.
+    assert not (tmp_path / "escape.jpg").exists()
+
+
+def test_download_items_skips_media_less_record(tmp_path, monkeypatch):
+    client = NucleusClient(api_key="test")
+    # One media-less member alongside one with media: the former is skipped
+    # (matching the docstring), the latter downloads.
+    no_media = {
+        **_export_record(1),
+        "image_location": None,
+        "pointcloud_location": None,
+        "reference_id": "ref_nomedia",
+    }
+    client.connection.get = MagicMock(
+        return_value={"items": [no_media, _export_record(2)], "total": 2}
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    _patch_media_download(monkeypatch)
+
+    count = ts.download_items(str(tmp_path), progress=False)
+
+    assert count == 1
+    assert (tmp_path / "ds_1" / "ref_2.jpg").exists()
+    assert not (tmp_path / "ds_1" / "ref_nomedia.jpg").exists()
 
 
 # --------------------------------------------------------------------------- #

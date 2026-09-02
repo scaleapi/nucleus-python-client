@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import requests
 
@@ -24,6 +24,9 @@ from .prediction import (
     Prediction,
     SegmentationPrediction,
 )
+
+if TYPE_CHECKING:
+    from .training_set import TrainingSet
 
 
 class Model:
@@ -646,7 +649,7 @@ class Model:
         """
         return self._client.delete_model_weights(self)
 
-    def create_training_set(self, name: str, **kwargs):
+    def create_training_set(self, name: str, **kwargs) -> "TrainingSet":
         """Create a training set scoped to this model and attach it.
 
         A training set is a mutable, versioned collection of ``dataset_item``
@@ -665,7 +668,7 @@ class Model:
         return self._client.create_training_set(name, model=self, **kwargs)
 
     @property
-    def training_set(self):
+    def training_set(self) -> "TrainingSet":
         """The training set currently pinned to this model.
 
         See :meth:`NucleusClient.get_model_training_set`.
@@ -675,7 +678,7 @@ class Model:
         """
         return self._client.get_model_training_set(self)
 
-    def repin_training_set(self, training_set_id: str):
+    def repin_training_set(self, training_set_id: str) -> "TrainingSet":
         """Pin this model to a specific training set (version).
 
         See :meth:`NucleusClient.repin_training_set`.

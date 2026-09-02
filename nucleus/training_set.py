@@ -25,23 +25,25 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from urllib.parse import urlparse
-
-import requests
 
 from nucleus.constants import (
     CREATED_AT_KEY,
     CREATED_BY_USER_ID_KEY,
     DATASET_COUNT_KEY,
+    DATASET_ID_KEY,
+    DATASET_ITEM_ID_KEY,
     DESCRIPTION_KEY,
+    IMAGE_LOCATION_KEY,
     ITEM_COUNT_KEY,
     METADATA_KEY,
     MODEL_ID_KEY,
     NAME_KEY,
     PARENT_TRAINING_SET_ID_KEY,
+    POINTCLOUD_LOCATION_KEY,
+    REFERENCE_ID_KEY,
     STATUS_KEY,
     TRAINING_SET_ID_KEY,
     VERSION_LABEL_KEY,
@@ -50,46 +52,14 @@ from nucleus.constants import (
 )
 from nucleus.data_transfer_object.training_set import TrainingSetItemsPage
 
+# Reuse the model-weights streamer: it retries transient failures and rejects a
+# short read against Content-Length (so an interrupted transfer never gets
+# promoted to a complete-looking file) — properties a local copy kept dropping.
+from nucleus.model_weights import _stream_weights_to_file
+
 if TYPE_CHECKING:
     from nucleus import NucleusClient
     from nucleus.dataset_item import DatasetItem
-
-#: Streaming download chunk size (mirrors ``model_weights.DOWNLOAD_CHUNK_BYTES``).
-_DOWNLOAD_CHUNK_BYTES = 8 * 1024 * 1024
-#: Per-request timeout for streaming a media file to disk.
-_DOWNLOAD_TIMEOUT_SEC = 60 * 60
-
-
-def _stream_url_to_file(url: str, path: str) -> None:
-    """Stream ``url`` to ``path`` via a sibling ``.part`` temp file.
-
-    Writes into a temp file and renames on completion so an interrupted
-    transfer never leaves a truncated artifact at ``path``.
-    """
-    parent = os.path.dirname(os.path.abspath(path))
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    handle_fd, partial_path = tempfile.mkstemp(
-        dir=parent or None,
-        prefix=f"{os.path.basename(path)}.",
-        suffix=".part",
-    )
-    try:
-        with os.fdopen(handle_fd, "wb") as handle:
-            with requests.get(
-                url, stream=True, timeout=_DOWNLOAD_TIMEOUT_SEC
-            ) as response:
-                response.raise_for_status()
-                for chunk in response.iter_content(
-                    chunk_size=_DOWNLOAD_CHUNK_BYTES
-                ):
-                    if chunk:
-                        handle.write(chunk)
-        os.replace(partial_path, path)
-    except BaseException:
-        if os.path.exists(partial_path):
-            os.remove(partial_path)
-        raise
 
 
 @dataclass
@@ -256,25 +226,17 @@ class TrainingSet:
             raise RuntimeError(
                 "TrainingSet has no client; use NucleusClient.get_training_set."
             )
-        records = self._client._export_training_set_records(
-            self.id, limit=limit
-        )
         directory = os.path.dirname(path)
         os.makedirs(directory or ".", exist_ok=True)
         count = 0
-        with open(path, "w") as file_pointer:
-            for record in records:
-                row = {
-                    "dataset_item_id": record.get("dataset_item_id"),
-                    "dataset_id": record.get("dataset_id"),
-                    "reference_id": record.get("reference_id"),
-                    "metadata": record.get("metadata"),
-                    "image_location": record.get("image_location"),
-                    "pointcloud_location": record.get("pointcloud_location"),
-                    "width": record.get("width"),
-                    "height": record.get("height"),
-                }
-                file_pointer.write(json.dumps(row) + "\n")
+        # Stream records straight to disk so an arbitrarily large training set
+        # is never fully resident in memory. The backend export record already
+        # carries exactly the documented fields, so write it verbatim.
+        with open(path, "w", encoding="utf-8") as file_pointer:
+            for record in self._client.iter_training_set_export_records(
+                self.id, limit=limit
+            ):
+                file_pointer.write(json.dumps(record) + "\n")
                 count += 1
         return count
 
@@ -283,10 +245,16 @@ class TrainingSet:
     ) -> int:
         """Download each member's media file into ``directory``.
 
-        Streams each item's ``image_location`` (or ``pointcloud_location`` for
-        lidar members) to disk. Files are named by ``reference_id`` (falling
-        back to ``dataset_item_id``) plus the media URL's extension. Items with
-        no media URL are skipped.
+        Streams each member's ``image_location`` (or ``pointcloud_location``
+        for lidar members) to disk. ``reference_id`` is unique only *within* a
+        dataset and a training set spans datasets, so files are written under a
+        per-``dataset_id`` subdirectory and named by a sanitized
+        ``reference_id`` (falling back to ``dataset_item_id``) plus the media
+        URL's extension — colliding names in different datasets no longer
+        clobber one another. Members with no media URL are skipped.
+
+        Records are paged lazily, so an arbitrarily large training set is never
+        fully resident in memory.
 
         Parameters:
             directory: Destination directory (created if missing).
@@ -300,26 +268,42 @@ class TrainingSet:
             raise RuntimeError(
                 "TrainingSet has no client; use NucleusClient.get_training_set."
             )
-        items = self.export_items(limit=limit)
         os.makedirs(directory, exist_ok=True)
 
-        iterator: Any = items
+        records: Any = self._client.iter_training_set_export_records(
+            self.id, limit=limit
+        )
         if progress:
             from tqdm import tqdm
 
-            iterator = tqdm(items, desc="Downloading training set items")
+            records = tqdm(records, desc="Downloading training set items")
 
         count = 0
-        for item in iterator:
-            url = item.image_location or item.pointcloud_location
+        for record in records:
+            url = record.get(IMAGE_LOCATION_KEY) or record.get(
+                POINTCLOUD_LOCATION_KEY
+            )
             if not url:
                 continue
-            name = item.reference_id or item.dataset_item_id
+            name = record.get(REFERENCE_ID_KEY) or record.get(
+                DATASET_ITEM_ID_KEY
+            )
             if not name:
                 continue
+            # reference_id is user-supplied and unique only within a dataset;
+            # strip any path components (so "../x" can't escape ``directory``)
+            # and namespace by dataset_id (so equal names across datasets don't
+            # overwrite each other).
             extension = os.path.splitext(urlparse(url).path)[1]
-            filename = f"{name}{extension}"
-            _stream_url_to_file(url, os.path.join(directory, filename))
+            filename = f"{os.path.basename(str(name))}{extension}"
+            dataset_id = record.get(DATASET_ID_KEY)
+            subdir = (
+                os.path.join(directory, os.path.basename(str(dataset_id)))
+                if dataset_id
+                else directory
+            )
+            os.makedirs(subdir, exist_ok=True)
+            _stream_weights_to_file(url, os.path.join(subdir, filename))
             count += 1
         return count
 
