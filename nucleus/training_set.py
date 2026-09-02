@@ -270,6 +270,11 @@ class TrainingSet:
         download never silently overwrites an earlier member. Members with no
         media URL are skipped.
 
+        A destination path that already exists on disk (e.g. from a previous
+        call) is overwritten: downloading the same training set into the same
+        directory is idempotent. Point at a fresh directory to avoid clobbering
+        unrelated files.
+
         Records are paged lazily, so an arbitrarily large training set is never
         fully resident in memory.
 
