@@ -322,13 +322,21 @@ class TrainingSet:
                 else directory
             )
             path = os.path.join(subdir, f"{name}{extension}")
-            # Guarantee no member silently overwrites another: on any collision
-            # fall back to the globally-unique dataset_item_id.
-            if path in used_paths and dataset_item_id:
-                path = os.path.join(
-                    subdir,
-                    f"{_safe_filename_component(dataset_item_id)}{extension}",
+            # Guarantee no member silently overwrites another. On a collision,
+            # disambiguate with the globally-unique dataset_item_id, then a
+            # numeric suffix as a last resort (in case that fallback path is
+            # itself already taken), until the path is unused.
+            if path in used_paths:
+                stem = (
+                    _safe_filename_component(dataset_item_id)
+                    if dataset_item_id
+                    else name
                 )
+                path = os.path.join(subdir, f"{stem}{extension}")
+                suffix = 1
+                while path in used_paths:
+                    path = os.path.join(subdir, f"{stem}_{suffix}{extension}")
+                    suffix += 1
             used_paths.add(path)
             os.makedirs(subdir, exist_ok=True)
             _stream_weights_to_file(url, path)

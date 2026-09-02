@@ -723,6 +723,41 @@ def test_download_items_distinct_reference_ids_sharing_basename(
     assert files == ["camera_a_frame.jpg", "camera_b_frame.jpg"]
 
 
+def test_download_items_suffixes_when_fallback_path_also_taken(
+    tmp_path, monkeypatch
+):
+    # Pathological: a member's reference-derived name equals another member's
+    # dataset_item_id, so even the fallback path is already taken. The numeric
+    # suffix must keep both files rather than overwrite.
+    client = NucleusClient(api_key="test")
+    # rec1 writes ds_1/di_2.jpg (from its reference_id).
+    rec1 = {
+        **_export_record(0),
+        "dataset_id": "ds_1",
+        "dataset_item_id": "di_1",
+        "reference_id": "di_2",
+    }
+    # rec2's reference_id "di_2" collides -> fallback stem is its own
+    # dataset_item_id "di_2" -> ds_1/di_2.jpg is ALSO taken -> _1 suffix.
+    rec2 = {
+        **_export_record(1),
+        "dataset_id": "ds_1",
+        "dataset_item_id": "di_2",
+        "reference_id": "di_2",
+    }
+    client.connection.get = MagicMock(
+        return_value={"items": [rec1, rec2], "total": 2}
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    _patch_media_download(monkeypatch)
+
+    count = ts.download_items(str(tmp_path), progress=False)
+
+    assert count == 2
+    files = sorted(p.name for p in (tmp_path / "ds_1").iterdir())
+    assert files == ["di_2.jpg", "di_2_1.jpg"]
+
+
 def test_download_items_falls_back_to_item_id_on_name_collision(
     tmp_path, monkeypatch
 ):
