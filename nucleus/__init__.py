@@ -305,6 +305,31 @@ def _evaluation_v2_config_payload(
     return payload
 
 
+def _training_set_item_pairs(
+    items: Optional[List[Dict[str, str]]],
+) -> Optional[List[Dict[str, str]]]:
+    """Map documented ``{dataset_id, reference_id}`` item pairs to the backend's
+    ``{datasetId, refId}`` shape.
+
+    The training-set items route validates camelCase ``datasetId`` / ``refId``.
+    The backend deep-camelCases the request body, which turns ``reference_id``
+    into ``referenceId`` (**not** ``refId``), so sending the documented
+    snake_case pair 400s. Emit the exact keys the schema wants here rather than
+    relying on that camelCasing. Already-correct keys (``datasetId`` / ``refId``)
+    pass through unchanged.
+    """
+    if items is None:
+        return None
+    normalized: List[Dict[str, str]] = []
+    for pair in items:
+        dataset_id = pair.get("dataset_id", pair.get("datasetId"))
+        reference_id = pair.get(
+            "reference_id", pair.get("refId", pair.get("ref_id"))
+        )
+        normalized.append({"datasetId": dataset_id, "refId": reference_id})
+    return normalized
+
+
 class NucleusClient:
     """Client to interact with the Nucleus API via Python SDK.
 
@@ -1611,7 +1636,7 @@ class NucleusClient:
         """
         source_fields = {
             ITEM_IDS_KEY: item_ids,
-            ITEMS_KEY: items,
+            ITEMS_KEY: _training_set_item_pairs(items),
             SLICE_ID_KEY: slice_id,
             DATASET_ID_KEY: dataset_id,
             SLICE_IDS_KEY: slice_ids,

@@ -10,7 +10,6 @@ from nucleus import NucleusClient, TrainingSet
 _TRAINING_SET_ROW = {
     "training_set_id": "ts_1",
     "name": "pedestrians",
-    "model_id": "prj_1",
     "description": "desc",
     "metadata": {"team": "av"},
     "created_by_user_id": "u_1",
@@ -28,7 +27,6 @@ def test_training_set_from_json_maps_training_set_id():
     ts = TrainingSet.from_json(_TRAINING_SET_ROW)
     assert ts.id == "ts_1"
     assert ts.name == "pedestrians"
-    assert ts.model_id == "prj_1"
     assert ts.item_count == 10
     assert ts.dataset_count == 2
     assert ts.status == "ready"
@@ -112,9 +110,9 @@ def test_create_training_set_from_items_pairs():
         items=[{"dataset_id": "ds_1", "reference_id": "ref_1"}],
     )
     payload = client.connection.post.call_args[0][0]
-    assert payload["items"] == [
-        {"dataset_id": "ds_1", "reference_id": "ref_1"}
-    ]
+    # The documented snake_case pair is remapped to the backend's camelCase
+    # {datasetId, refId} shape (the items route validates those exact keys).
+    assert payload["items"] == [{"datasetId": "ds_1", "refId": "ref_1"}]
 
 
 def test_create_training_set_from_training_set_ids_source():

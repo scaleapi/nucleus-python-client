@@ -39,7 +39,6 @@ from nucleus.constants import (
     IMAGE_LOCATION_KEY,
     ITEM_COUNT_KEY,
     METADATA_KEY,
-    MODEL_ID_KEY,
     NAME_KEY,
     PARENT_TRAINING_SET_ID_KEY,
     POINTCLOUD_LOCATION_KEY,
@@ -82,8 +81,6 @@ class TrainingSet:
 
     id: str
     name: str
-    #: The model this training set is scoped to.
-    model_id: Optional[str] = None
     description: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     created_by_user_id: Optional[str] = None
@@ -111,7 +108,6 @@ class TrainingSet:
         return cls(
             id=str(payload[TRAINING_SET_ID_KEY]),
             name=str(payload[NAME_KEY]),
-            model_id=payload.get(MODEL_ID_KEY),
             description=payload.get(DESCRIPTION_KEY),
             metadata=payload.get(METADATA_KEY),
             created_by_user_id=payload.get(CREATED_BY_USER_ID_KEY),
