@@ -1,16 +1,18 @@
 """Unit tests for Evaluation V2 presets, cancel/retry, and label-schema
 discovery (no live API)."""
 
+import warnings
 from unittest.mock import MagicMock
 
+import pytest
 import requests
 
 from nucleus import (
-    AllowedLabelMatch,
     EvaluationV2,
     EvaluationV2Preset,
     LabelExclusionRule,
     NucleusClient,
+    RollupGroup,
 )
 from nucleus.dataset import Dataset
 
@@ -25,11 +27,8 @@ def test_list_evaluation_v2_presets():
             {
                 "id": "prev_1",
                 "name": "vehicles",
-                "allowed_label_matches": [
-                    {
-                        "groundTruthLabel": "car",
-                        "modelPredictionLabel": "vehicle",
-                    }
+                "rollup_groups": [
+                    {"class_name": "vehicle", "labels": ["car", "truck"]}
                 ],
                 "exclusion_rules": None,
                 "created_by_user_id": "u_1",
@@ -41,8 +40,8 @@ def test_list_evaluation_v2_presets():
     assert len(presets) == 1
     assert presets[0].id == "prev_1"
     assert presets[0].name == "vehicles"
-    assert presets[0].allowed_label_matches[0] == AllowedLabelMatch(
-        ground_truth_label="car", model_prediction_label="vehicle"
+    assert presets[0].rollup_groups[0] == RollupGroup(
+        class_name="vehicle", labels=["car", "truck"]
     )
 
 
@@ -52,13 +51,13 @@ def test_create_evaluation_v2_preset_payload():
         return_value={
             "id": "prev_1",
             "name": "vehicles",
-            "allowed_label_matches": [],
+            "rollup_groups": [],
             "exclusion_rules": None,
         }
     )
     preset = client.create_evaluation_v2_preset(
         "vehicles",
-        allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
+        rollup_groups=[RollupGroup("vehicle", ["car", "truck"])],
         exclusion_rules=[
             LabelExclusionRule(
                 scope="item", target="prediction", labels=["ignore"]
@@ -68,8 +67,8 @@ def test_create_evaluation_v2_preset_payload():
     payload, route = client.connection.post.call_args[0]
     assert route == "evaluationV2Presets"
     assert payload["name"] == "vehicles"
-    assert payload["allowedLabelMatches"] == [
-        {"ground_truth_label": "car", "model_prediction_label": "vehicle"}
+    assert payload["rollupGroups"] == [
+        {"class_name": "vehicle", "labels": ["car", "truck"]}
     ]
     assert payload["exclusionRules"] == [
         {
@@ -135,7 +134,6 @@ def _eval(client, status="computing"):
     return EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status=status,
         _client=client,
     )
@@ -163,7 +161,6 @@ def test_evaluation_retry_resolves_new_evaluation():
     client.get_evaluation_v2.return_value = EvaluationV2(
         id="evalv2_retry",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="pending",
         _client=client,
     )
@@ -233,21 +230,6 @@ def test_create_evaluation_v2_preset_with_rollup_groups():
     assert preset.rollup_groups[0].class_name == "vehicle"
 
 
-def test_create_evaluation_v2_preset_rollup_and_matches_mutually_exclusive():
-    from nucleus import RollupGroup
-
-    client = NucleusClient(api_key="test")
-    try:
-        client.create_evaluation_v2_preset(
-            "p",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
-            allowed_label_matches=[AllowedLabelMatch("car", "vehicle")],
-        )
-        raise AssertionError("expected ValueError")
-    except ValueError as e:
-        assert "cannot both be set" in str(e)
-
-
 def test_update_evaluation_v2_preset_rollup_groups_and_clear():
     from nucleus import RollupGroup
 
@@ -280,3 +262,18 @@ def test_preset_from_json_parses_rollup_groups_both_casings():
         )
         assert preset.rollup_groups is not None
         assert preset.rollup_groups[0].labels == ["car", "truck"]
+
+
+def test_create_evaluation_v2_preset_rollup_groups_does_not_warn():
+    from nucleus import RollupGroup
+
+    client = NucleusClient(api_key="test")
+    client.connection.post = MagicMock(
+        return_value={"id": "prev_1", "name": "vehicles", "rollup_groups": []}
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        client.create_evaluation_v2_preset(
+            "vehicles",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+        )

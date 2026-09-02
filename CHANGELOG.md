@@ -5,7 +5,13 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.21.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.5) - 2026-08-31
+## [0.23.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.5) - 2026-08-31
+
+### Added
+- **Training sets (DE-8692).** `TrainingSet` — a mutable, versioned, model-scoped collection of `dataset_item` ids spanning one or more datasets. Create and attach one to a model with `NucleusClient.create_training_set(name, model=...)` or `Model.create_training_set(name, ...)`, providing members through any combination of `item_ids`, `(dataset_id, reference_id)` pairs via `items`, `slice_id` / `slice_ids`, `dataset_id` / `dataset_ids`, and the members of other training sets via `training_set_ids`. Fetch/list with `get_training_set()` / `list_training_sets()`; read a model's pinned set via `Model.training_set`.
+- **Mutable membership.** Add sources with `TrainingSet.add_items()` / `NucleusClient.add_training_set_items()` (async, same sources as create), remove with `TrainingSet.remove_items()` / `NucleusClient.remove_training_set_items()`, and page members with `TrainingSet.items()` / `NucleusClient.list_training_set_items(limit=, offset=)`.
+- **Versioning / lineage.** Cut a new version with `TrainingSet.new_version()` / `NucleusClient.create_training_set_version()` (child inherits the parent's items, sources add on top, `removed_item_ids` prune; `parent ∪ added ∖ removed`), or pass `parent_training_set_id` to `create_training_set()`. Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor`. Inspect a set's lineage with `NucleusClient.list_training_set_family()` and repin a model to a specific version with `Model.repin_training_set()` / `NucleusClient.repin_training_set()`. `TrainingSet` exposes `model_id`, `parent_training_set_id`, `version_major`, `version_minor`, and `version_label`.
+- **Training set export / download (DE-8692).** Pull a training set's members back out as fully-hydrated items. `TrainingSet.export_items()` / `NucleusClient.export_training_set_items()` page the whole set and return `DatasetItem`s (media location, `reference_id`, `metadata`, `width` / `height`, and the server-side `dataset_item_id`). `TrainingSet.export_to_file(path)` writes every member to a JSONL file (one raw export record per line — `dataset_item_id`, `dataset_id`, `reference_id`, `metadata`, `image_location`, `pointcloud_location`, `width`, `height`) and returns the count written. `TrainingSet.download_items(directory)` streams each member's media file to disk (named by `reference_id`, falling back to `dataset_item_id`), returning the number downloaded.
 
 ### Changed
 - **Training set membership scales to whole datasets/slices (DE-8692).** Adding or removing a whole dataset, slice, or the members of a large training set now streams asynchronously server-side instead of being resolved in memory, so a training set can span an arbitrarily large source. Small, explicit `item_ids` / `items` changes stay synchronous. When a change kicks off an async build the response carries a `job_id`; `create_training_set()`, `add_training_set_items()`, `remove_training_set_items()`, and `create_training_set_version()` block on it by default (`wait_for_completion=True`). `TrainingSet.status` reads `"building"` while a job is streaming members and `"ready"` otherwise.
@@ -14,17 +20,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - **`scene_ids` on training set add/create.** Training sets resolve dataset items only (there is no scene source, unlike benchmarks); the parameter never had a server-side effect and has been dropped from `add_training_set_items()` / `TrainingSet.add_items()`.
 
-## [0.21.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.4) - 2026-08-27
+
+## [0.22.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.2) - 2026-09-01
 
 ### Added
-- **Training set export / download (DE-8692).** Pull a training set's members back out as fully-hydrated items. `TrainingSet.export_items()` / `NucleusClient.export_training_set_items()` page the whole set and return `DatasetItem`s (media location, `reference_id`, `metadata`, `width` / `height`, and the server-side `dataset_item_id`). `TrainingSet.export_to_file(path)` writes every member to a JSONL file (one raw export record per line — `dataset_item_id`, `dataset_id`, `reference_id`, `metadata`, `image_location`, `pointcloud_location`, `width`, `height`) and returns the count written. `TrainingSet.download_items(directory)` streams each member's media file to disk (named by `reference_id`, falling back to `dataset_item_id`), returning the number downloaded.
+- **`Model.model_runs()`.** Lists the ids of every model run for a model — the model-scoped counterpart to `Dataset.model_runs()`, which only lists a single dataset's runs. Pass `include_versions=True` to union runs across the model's version lineage (its version root and all descendants). Results are scoped server-side to runs on datasets you can read.
 
-## [0.21.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.3) - 2026-08-27
+  ```python
+  run_ids = model.model_runs()
+  ```
+
+> **Server dependency:** requires the `GET /nucleus/model/:modelId/modelRun` route in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
+
+## [0.22.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.1) - 2026-08-31
+
+### Deprecated
+- **`allowed_label_matches` on Evaluation V2.** `create_evaluation_v2_preset()`, `update_evaluation_v2_preset()`, `create_benchmark_evaluation_v2()`, and `Benchmark.create_evaluation_v2()` still accept `allowed_label_matches` / `allowed_label_matches_id` for backwards compatibility, but they now emit a `DeprecationWarning`. Use `rollup_groups` instead. `AllowedLabelMatch` and the corresponding fields on `EvaluationV2` / `EvaluationV2Preset` are likewise marked deprecated.
+
+## [0.22.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.0) - 2026-08-26
 
 ### Added
-- **Training sets (DE-8692).** `TrainingSet` — a mutable, versioned, model-scoped collection of `dataset_item` ids spanning one or more datasets. Create and attach one to a model with `NucleusClient.create_training_set(name, model=...)` or `Model.create_training_set(name, ...)`, providing members through any combination of `item_ids`, `(dataset_id, reference_id)` pairs via `items`, `slice_id` / `slice_ids`, `dataset_id` / `dataset_ids`, and the members of other training sets via `training_set_ids`. Fetch/list with `get_training_set()` / `list_training_sets()`; read a model's pinned set via `Model.training_set`.
-- **Mutable membership.** Add sources with `TrainingSet.add_items()` / `NucleusClient.add_training_set_items()` (async, same sources as create), remove with `TrainingSet.remove_items()` / `NucleusClient.remove_training_set_items()`, and page members with `TrainingSet.items()` / `NucleusClient.list_training_set_items(limit=, offset=)`.
-- **Versioning / lineage.** Cut a new version with `TrainingSet.new_version()` / `NucleusClient.create_training_set_version()` (child inherits the parent's items, sources add on top, `removed_item_ids` prune; `parent ∪ added ∖ removed`), or pass `parent_training_set_id` to `create_training_set()`. Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor`. Inspect a set's lineage with `NucleusClient.list_training_set_family()` and repin a model to a specific version with `Model.repin_training_set()` / `NucleusClient.repin_training_set()`. `TrainingSet` exposes `model_id`, `parent_training_set_id`, `version_major`, `version_minor`, and `version_label`.
+- **Run-free ("model v2") predictions.** Predictions can now be uploaded and read directly against a `Model`, with no `ModelRun` or `Dataset` involved — the concept is `(model, dataset_item) -> prediction`. New methods on `Model`:
+  - `Model.upload_predictions(predictions, update=False, batch_size=5000, ...)` — upserts predictions onto the model (`box` / `polygon` / `cuboid` only), targeting `model/{id}/predictions`, and reusing the existing `PredictionUploader` batching machinery. Synchronous only for now: `asynchronous=True` raises `NotImplementedError`.
+  - `Model.predictions_loc(dataset_item_id)`, `Model.predictions_refloc(reference_id)`, `Model.predictions_iloc(i)` — model-scoped reads returning the same shape as their `Dataset` equivalents.
+  - `Model.copy_predictions_from_run(model_run_id)` — synchronously backfills the run-free store from an existing model run, returning a dict `{model_id, model_run_ids, predictions_copied, predictions_skipped_unsupported}`.
+- **Model-anchored benchmark evaluations.** `NucleusClient.create_benchmark_evaluation_v2()` accepts a `model_id` (a `prj_*` id or a `Model`) as an alternative to `model_run_id`; the model-anchored flow evaluates the model's run-free predictions and ignores model runs. Provide exactly one of the two. `EvaluationV2` now exposes an optional `model_id` field alongside `model_run_id`.
+- **`list_evaluations_v2` accepts a model.** `NucleusClient.list_evaluations_v2()` takes exactly one of `model_run_id` (`run_*`) or `model_id` (`prj_*` or a `Model`). The model-anchored path hits `GET model/{id}/evaluationsV2` and returns that model's run-free evaluations.
+
+### Changed
+- The existing run-based prediction paths (`Dataset.upload_predictions`, `ModelRun.add_predictions`, `create_benchmark_evaluation_v2(model_run_id=...)`) are unchanged and continue to work; the model-centric methods are purely additive.
+
+### Deprecated
+- **Model-run-anchored Evaluation V2 is deprecated** in favor of the run-free (`model_id`) path. `Benchmark.create_evaluation_v2()` gains a `model_id` argument (run-free anchor) to match `create_benchmark_evaluation_v2()`. Passing `model_run_id` to `create_benchmark_evaluation_v2()`, `Benchmark.create_evaluation_v2()`, or `list_evaluations_v2()` now emits a `DeprecationWarning`; all keep working. `EvaluationV2.model_run_id` is documented as deprecated (it is `None` on run-free evaluations). On the leaderboard, `LeaderboardRankingEntry` / `LeaderboardF1CurveEntry` `model_run_id` and `model_run_name` are deprecated and now `Optional` (they are `None` for run-free evaluations — previously `model_run_id` was a required field and would fail to parse), and `collapse="allRuns"` on `leaderboard_ranking()` is discouraged. Prefer anchoring on and identifying evaluations by `model_id`.
+
+### Removed
+- **`allowed_label_matches` removed from the EvaluationV2 surface** (breaking). The run-free (model-source) eval path — the one this SDK now steers toward — rejects `allowedLabelMatches` server-side (400, "use rollupGroups"); it only survives as a legacy fallback on the deprecated model-run path, where `rollupGroups` wins anyway. Removed the `AllowedLabelMatch` class (and its top-level export), the `allowed_label_matches` / `allowed_label_matches_id` arguments from `create_benchmark_evaluation_v2()`, `Benchmark.create_evaluation_v2()`, `create_evaluation_v2_preset()`, and `update_evaluation_v2_preset()`, and the `allowed_label_matches*` fields from `EvaluationV2` and `EvaluationV2Preset`. Use `rollup_groups` (:class:`RollupGroup`) exclusively.
+- **`dataset_id` dropped from the EvaluationV2 surface** (breaking). An evaluation is no longer anchored on a single dataset — a model run now carries a *set* of datasets and a benchmark's items may span several — so the backend no longer returns a denormalized dataset on evaluations or leaderboards. Removed `EvaluationV2.dataset_id`, and `dataset_id` / `dataset_name` from `LeaderboardRankingEntry` and `LeaderboardF1CurveEntry`, matching the current backend responses. Without this, `EvaluationV2.from_json` raised `KeyError: 'dataset_id'` on every model-anchored (run-free) benchmark evaluation, since those payloads never carry a `dataset_id`.
+
+### Fixed
+- `Model.predictions_loc` / `predictions_refloc` / `predictions_iloc` now actually parse their responses. The run-free read endpoints return a flat `{"predictions": [...]}` list (each element carrying its own `"type"`), but `format_prediction_response` only understood the legacy type-keyed `{"annotations": {"box": [...]}}` shape, so these methods returned the raw payload unparsed instead of the documented `{"box": [...], "polygon": [...], "cuboid": [...]}` dict.
 
 ## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 

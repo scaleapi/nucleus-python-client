@@ -2,7 +2,6 @@
 
 __all__ = [
     "AsyncJob",
-    "AllowedLabelMatch",
     "Benchmark",
     "BenchmarkItemsPage",
     "TrainingSet",
@@ -110,7 +109,6 @@ from .benchmark import Benchmark
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
-    ALLOWED_LABEL_MATCHES_CAMEL_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
@@ -153,6 +151,7 @@ from .constants import (
     MESSAGE_KEY,
     METADATA_KEY,
     METRIC_TYPE_KEY,
+    MODEL_ID_KEY,
     MODEL_IDS_KEY,
     MODEL_RUN_ID_KEY,
     MODEL_RUN_IDS_KEY,
@@ -218,10 +217,10 @@ from .errors import (
     NucleusAPIError,
 )
 from .evaluation_v2 import (
-    AllowedLabelMatch,
     EvaluationV2,
     EvaluationV2Status,
     RollupGroup,
+    _warn_model_run_deprecated,
 )
 from .evaluation_v2_exclusions import (
     BoxAreaExclusionRule,
@@ -273,6 +272,27 @@ from .validate import Validate
 # pylint: disable=E1101
 # TODO: refactor to reduce this file to under 1000 lines.
 # pylint: disable=C0302
+
+
+def _evaluation_v2_config_payload(
+    name: Optional[str],
+    rollup_groups: Optional[List[RollupGroup]],
+    exclusion_rules: Optional[List[Union[EvaluationV2ExclusionRule, Dict]]],
+) -> Dict[str, Any]:
+    """Build the optional name/label/exclusion fields of an eval-V2 payload."""
+    payload: Dict[str, Any] = {}
+    if name is not None:
+        payload[NAME_KEY] = name
+    if rollup_groups is not None:
+        payload[ROLLUP_GROUPS_CAMEL_KEY] = [
+            g.to_api_dict() for g in rollup_groups
+        ]
+    if exclusion_rules is not None:
+        payload[EXCLUSION_RULES_CAMEL_KEY] = [
+            rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+            for rule in exclusion_rules
+        ]
+    return payload
 
 
 class NucleusClient:
@@ -568,13 +588,6 @@ class NucleusClient:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Merge several model runs into one new run holding all their predictions.
-
-        A benchmark evaluation names a single model run, and a benchmark's items may
-        span several datasets. A model whose predictions were uploaded as separate runs
-        — one per dataset, or one per inference batch — therefore has no single run
-        covering the benchmark, and every uncovered item scores as a false negative.
-        Merging the runs produces one run that does cover it, which you can then pass to
-        :meth:`create_benchmark_evaluation_v2`.
 
         All source runs must belong to the same model.
 
@@ -1046,16 +1059,42 @@ class NucleusClient:
         data = self.get(f"evaluationsV2/{evaluation_id}")
         return EvaluationV2.from_json(data, self)
 
-    def list_evaluations_v2(self, model_run_id: str) -> List[EvaluationV2]:
-        """List evaluations for a model run (newest first).
+    def list_evaluations_v2(
+        self,
+        model_run_id: Optional[str] = None,
+        *,
+        model_id: Optional[Union[str, Model]] = None,
+    ) -> List[EvaluationV2]:
+        """List evaluations for a run-free model (newest first).
+
+        Provide exactly one of ``model_id`` or ``model_run_id``. The
+        model-anchored path lists run-free evaluations for that model; the
+        ``model_run_id`` path is deprecated.
 
         Parameters:
-            model_run_id: Model run id (``run_*``).
+            model_run_id: Deprecated. Legacy model run id (``run_*``); prefer
+                ``model_id``. Mutually exclusive with ``model_id``.
+            model_id: Model id (``prj_*``) or :class:`Model` to list run-free
+                evaluations. Mutually exclusive with ``model_run_id``.
 
         Returns:
             List of :class:`EvaluationV2`.
         """
-        rows = self.get(f"modelRun/{model_run_id}/evaluationsV2")
+        if model_run_id is not None:
+            _warn_model_run_deprecated()
+        resolved_model_id = (
+            model_id.id if isinstance(model_id, Model) else model_id
+        )
+        if (resolved_model_id is None) == (model_run_id is None):
+            raise ValueError(
+                "Provide exactly one of model_run_id or model_id."
+            )
+        route = (
+            f"model/{resolved_model_id}/evaluationsV2"
+            if resolved_model_id is not None
+            else f"modelRun/{model_run_id}/evaluationsV2"
+        )
+        rows = self.get(route)
         if not isinstance(rows, list):
             raise RuntimeError(
                 f"Unexpected list evaluations V2 response: {rows!r}"
@@ -1080,7 +1119,6 @@ class NucleusClient:
         name: str,
         *,
         rollup_groups: Optional[List[RollupGroup]] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
         exclusion_rules: Optional[
             List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
         ] = None,
@@ -1090,30 +1128,18 @@ class NucleusClient:
         Parameters:
             name: Preset name. Must be non-empty and unique among the user's
                 presets.
-            rollup_groups: Optional rollup classes (the primary label
-                configuration); each :class:`RollupGroup` maps raw labels onto
-                one class name. Mutually exclusive with
-                ``allowed_label_matches``.
-            allowed_label_matches: Optional legacy label pairs to treat as
-                matches. Prefer ``rollup_groups``.
+            rollup_groups: Optional rollup classes (the label configuration);
+                each :class:`RollupGroup` maps raw labels onto one class name.
             exclusion_rules: Optional rules that drop items/annotations (same
                 types accepted by :meth:`create_benchmark_evaluation_v2`).
 
         Returns:
             :class:`EvaluationV2Preset`: The created preset.
         """
-        if rollup_groups is not None and allowed_label_matches is not None:
-            raise ValueError(
-                "rollup_groups and allowed_label_matches cannot both be set"
-            )
         payload: Dict[str, Any] = {NAME_KEY: name}
         if rollup_groups is not None:
             payload[ROLLUP_GROUPS_CAMEL_KEY] = [
                 g.to_api_dict() for g in rollup_groups
-            ]
-        if allowed_label_matches is not None:
-            payload[ALLOWED_LABEL_MATCHES_CAMEL_KEY] = [
-                m.to_api_dict() for m in allowed_label_matches
             ]
         if exclusion_rules is not None:
             payload[EXCLUSION_RULES_CAMEL_KEY] = [
@@ -1129,7 +1155,6 @@ class NucleusClient:
         *,
         name: Any = _UNSET,
         rollup_groups: Any = _UNSET,
-        allowed_label_matches: Any = _UNSET,
         exclusion_rules: Any = _UNSET,
     ) -> EvaluationV2Preset:
         """Update a saved Evaluation V2 preset.
@@ -1142,22 +1167,11 @@ class NucleusClient:
             preset_id: Preset id (``prev_*``). Must be owned by the caller.
             name: Optional new name.
             rollup_groups: Optional new rollup classes, or ``None`` to clear.
-                Mutually exclusive with ``allowed_label_matches``.
-            allowed_label_matches: Optional new legacy label-match list.
             exclusion_rules: Optional new exclusion rules, or ``None`` to clear.
 
         Returns:
             :class:`EvaluationV2Preset`: The updated preset.
         """
-        if (
-            rollup_groups is not _UNSET
-            and rollup_groups is not None
-            and allowed_label_matches is not _UNSET
-            and allowed_label_matches is not None
-        ):
-            raise ValueError(
-                "rollup_groups and allowed_label_matches cannot both be set"
-            )
         payload: Dict[str, Any] = {}
         if name is not _UNSET:
             payload[NAME_KEY] = name
@@ -1166,12 +1180,6 @@ class NucleusClient:
                 None
                 if rollup_groups is None
                 else [g.to_api_dict() for g in rollup_groups]
-            )
-        if allowed_label_matches is not _UNSET:
-            payload[ALLOWED_LABEL_MATCHES_CAMEL_KEY] = (
-                None
-                if allowed_label_matches is None
-                else [m.to_api_dict() for m in allowed_label_matches]
             )
         if exclusion_rules is not _UNSET:
             payload[EXCLUSION_RULES_CAMEL_KEY] = (
@@ -2179,97 +2187,76 @@ class NucleusClient:
     def create_benchmark_evaluation_v2(
         self,
         benchmark_id: str,
-        model_run_id: str,
+        model_run_id: Optional[str] = None,
         *,
+        model_id: Optional[Union[str, Model]] = None,
         name: Optional[str] = None,
         rollup_groups: Optional[List[RollupGroup]] = None,
-        allowed_label_matches: Optional[List[AllowedLabelMatch]] = None,
-        allowed_label_matches_id: Optional[str] = None,
         exclusion_rules: Optional[
             List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
         ] = None,
         preset: Optional[EvaluationV2Preset] = None,
     ) -> EvaluationV2:
-        """Evaluate a model run against a benchmark.
+        """Evaluate a model against a benchmark.
 
-        Every benchmark item is scored: items the model run has no
-        predictions for count as false negatives, keeping scores comparable
-        across runs with different coverage. The evaluation runs in the
-        background — call :meth:`EvaluationV2.wait_for_completion`, then
+        Every benchmark item is scored: items the model has no predictions for
+        count as false negatives, keeping scores comparable across models with
+        different coverage. The evaluation runs in the background — call
+        :meth:`EvaluationV2.wait_for_completion`, then
         :meth:`EvaluationV2.charts` or :meth:`EvaluationV2.examples`.
 
-        The benchmark may span datasets the model run has no predictions in at
-        all. Those members are scored as false negatives like any other
-        uncovered item, so a partial run still ranks comparably rather than
-        being rejected. To give a run predictions across several datasets, use
-        :meth:`Dataset.upload_predictions_for_model_run`.
+        Anchor the evaluation on a model (``model_id``) for the run-free
+        "model v2" flow, which evaluates the model's run-free predictions.
+        The legacy ``model_run_id`` anchor is deprecated. Provide exactly one.
 
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
-            model_run_id: Model run id (``run_*``). It need not cover the
-                benchmark's datasets — coverage may be partial, or empty.
+            model_id: Model id (``prj_*``) or :class:`Model` to anchor the
+                evaluation on the model's run-free predictions. Mutually
+                exclusive with ``model_run_id``.
+            model_run_id: Deprecated. Legacy model run id (``run_*``); prefer
+                ``model_id``. It need not cover the benchmark's datasets —
+                coverage may be partial, or empty. Mutually exclusive with
+                ``model_id``.
             name: Optional display name.
-            rollup_groups: Optional rollup classes (the primary label
-                configuration); each :class:`RollupGroup` maps raw labels
-                onto one class name. Mutually exclusive with the
-                ``allowed_label_matches*`` arguments.
-            allowed_label_matches: Optional legacy label pairs to treat as
-                matches. Prefer ``rollup_groups``.
-            allowed_label_matches_id: Optional id of a saved label-match
-                configuration.
+            rollup_groups: Optional rollup classes (the label configuration);
+                each :class:`RollupGroup` maps raw labels onto one class name.
             exclusion_rules: Optional rules that drop items/annotations
                 before metrics are computed (see
                 :mod:`nucleus.evaluation_v2_exclusions`).
-            preset: Optional :class:`EvaluationV2Preset` whose label
-                configuration and ``exclusion_rules`` seed this evaluation.
-                Explicit arguments take precedence over the preset's values.
+            preset: Optional :class:`EvaluationV2Preset` whose ``rollup_groups``
+                and ``exclusion_rules`` seed this evaluation. Explicit
+                arguments take precedence over the preset's values.
 
         Returns:
             :class:`EvaluationV2`: The created evaluation.
         """
+        if model_run_id is not None:
+            _warn_model_run_deprecated()
+        resolved_model_id = (
+            model_id.id if isinstance(model_id, Model) else model_id
+        )
+        if (resolved_model_id is None) == (model_run_id is None):
+            raise ValueError(
+                "Provide exactly one of model_run_id or model_id."
+            )
         if preset is not None:
-            if (
-                rollup_groups is None
-                and allowed_label_matches is None
-                and allowed_label_matches_id is None
-            ):
+            if rollup_groups is None:
                 rollup_groups = preset.rollup_groups
-                if rollup_groups is None:
-                    allowed_label_matches = preset.allowed_label_matches
             if exclusion_rules is None and preset.exclusion_rules is not None:
                 exclusion_rules = list(preset.exclusion_rules)
-        label_configs = [
-            config
-            for config in (
+        payload: Dict[str, Any] = (
+            {MODEL_ID_KEY: resolved_model_id}
+            if resolved_model_id is not None
+            else {MODEL_RUN_ID_KEY: model_run_id}
+        )
+        payload.update(
+            _evaluation_v2_config_payload(
+                name,
                 rollup_groups,
-                allowed_label_matches,
-                allowed_label_matches_id,
+                exclusion_rules,
             )
-            if config is not None
-        ]
-        if len(label_configs) > 1:
-            raise ValueError(
-                "Set at most one of rollup_groups, allowed_label_matches, "
-                "or allowed_label_matches_id"
-            )
-        payload: Dict[str, Any] = {MODEL_RUN_ID_KEY: model_run_id}
-        if name is not None:
-            payload[NAME_KEY] = name
-        if rollup_groups is not None:
-            payload[ROLLUP_GROUPS_CAMEL_KEY] = [
-                g.to_api_dict() for g in rollup_groups
-            ]
-        if allowed_label_matches is not None:
-            payload["allowed_label_matches"] = [
-                m.to_api_dict() for m in allowed_label_matches
-            ]
-        if allowed_label_matches_id is not None:
-            payload["allowed_label_matches_id"] = allowed_label_matches_id
-        if exclusion_rules is not None:
-            payload[EXCLUSION_RULES_CAMEL_KEY] = [
-                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
-                for rule in exclusion_rules
-            ]
+        )
         result = self.post(payload, f"benchmarks/{benchmark_id}/evaluationsV2")
         eval_id = result.get(EVALUATION_ID_KEY)
         if not eval_id:
@@ -2288,7 +2275,7 @@ class NucleusClient:
         scope: Optional[str] = None,
         collapse: Optional[str] = None,
     ) -> List[LeaderboardRankingEntry]:
-        """Rank model runs on one or more benchmarks by a metric.
+        """Rank models on one or more benchmarks by a metric.
 
         Parameters:
             metric_type: Metric to rank by — one of ``"MAP_50"``,
@@ -2300,8 +2287,8 @@ class NucleusClient:
             model_ids: Optional model ids to restrict the ranking to.
             scope: ``"mine"`` (only the caller's evaluations) or ``"all"``
                 (default).
-            collapse: ``"bestPerModel"`` (default), ``"allRuns"``, or
-                ``"allEvaluations"``.
+            collapse: ``"bestPerModel"`` (default) or ``"allEvaluations"``.
+                ``"allRuns"`` is deprecated (model runs are being phased out).
 
         Returns:
             List of :class:`LeaderboardRankingEntry`, best score first.
@@ -2332,12 +2319,13 @@ class NucleusClient:
         model_ids: Optional[List[str]] = None,
         top_n: int = 5,
     ) -> List[LeaderboardF1CurveEntry]:
-        """Return F1-vs-confidence curves for the top runs on benchmarks.
+        """Return F1-vs-confidence curves for the top models on benchmarks.
 
         Parameters:
             benchmark_ids: Benchmark ids (``bm_*``).
             model_ids: Optional model ids to restrict the curves to.
-            top_n: Number of top-ranked runs to return curves for (default 5).
+            top_n: Number of top-ranked models to return curves for
+                (default 5).
 
         Returns:
             List of :class:`LeaderboardF1CurveEntry`, best F1 first.

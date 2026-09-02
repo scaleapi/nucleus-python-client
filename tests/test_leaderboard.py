@@ -29,8 +29,6 @@ _RANKING_ROW = {
     "model_version_minor": 2,
     "model_version_label": "1.2",
     "parent_model_project_id": None,
-    "dataset_id": "ds_1",
-    "dataset_name": "dataset",
     "score": 0.42,
     "rank": 1,
 }
@@ -82,6 +80,24 @@ def test_leaderboard_ranking_payload_and_parsing():
     assert rows[0].rank == 1
 
 
+def test_leaderboard_ranking_parses_run_free_row():
+    # Run-free evaluations have no model run: model_run_id / model_run_name
+    # arrive absent (or null) and must parse to None, not raise.
+    client = NucleusClient(api_key="test")
+    run_free_row = {
+        "evaluation_id": "evalv2_1",
+        "model_id": "prj_1",
+        "model_name": "model",
+        "score": 0.5,
+        "rank": 1,
+    }
+    client.connection.post = MagicMock(return_value=[run_free_row])
+    rows = client.leaderboard_ranking("MAP_50", ["bm_1"])
+    assert rows[0].model_run_id is None
+    assert rows[0].model_run_name is None
+    assert rows[0].model_id == "prj_1"
+
+
 def test_leaderboard_ranking_minimal_payload():
     client = NucleusClient(api_key="test")
     client.connection.post = MagicMock(return_value=[])
@@ -127,7 +143,6 @@ def test_evaluation_filter_schema_instance_method():
     evaluation = EvaluationV2(
         id="evalv2_1",
         model_run_id="run_1",
-        dataset_id="ds_1",
         status="succeeded",
         _client=client,
     )

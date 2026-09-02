@@ -1,10 +1,14 @@
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import requests
+
+from nucleus.annotation_uploader import PredictionUploader
+from nucleus.utils import format_prediction_response
 
 from .async_job import AsyncJob
 from .constants import (
     METADATA_KEY,
+    MODEL_RUN_ID_KEY,
     MODEL_TAGS_KEY,
     MODEL_TRAINED_SLICE_IDS_KEY,
     NAME_KEY,
@@ -17,6 +21,7 @@ from .prediction import (
     BoxPrediction,
     CuboidPrediction,
     PolygonPrediction,
+    Prediction,
     SegmentationPrediction,
 )
 
@@ -228,6 +233,208 @@ class Model:
         if predictions:
             run.add_predictions(predictions)
         return run
+
+    def upload_predictions(
+        self,
+        predictions: List[Prediction],
+        update: bool = False,
+        asynchronous: bool = False,
+        batch_size: int = 5000,
+        remote_files_per_upload_request: int = 20,
+        local_files_per_upload_request: int = 10,
+    ) -> Dict[str, Any]:
+        """Uploads predictions directly to this model, with no model run.
+
+        This is the run-free ("model v2") prediction path: predictions are tied
+        to the model itself as ``(model, dataset_item) -> prediction`` and are
+        upserted server-side. Each prediction identifies its target item by
+        ``dataset_item_id`` (the ``di_*`` id returned on exported items) or by
+        ``reference_id``, so a single model can hold predictions for items that
+        live in different datasets — no :class:`Dataset` or :class:`ModelRun` is
+        needed. Reads go through :meth:`predictions_loc`,
+        :meth:`predictions_refloc`, and :meth:`predictions_iloc`.
+
+        Only ``box``, ``polygon``, and ``cuboid`` predictions are accepted on
+        this path.
+
+        The legacy run-based path (:meth:`Dataset.upload_predictions` /
+        :meth:`ModelRun.add_predictions`) continues to work unchanged.
+
+        Args:
+            predictions: List of prediction objects to upload.
+            update: If True, existing predictions for the same
+                (reference_id, annotation_id) are overwritten. If False, they
+                are skipped. Default is False.
+            asynchronous: Not yet supported for this path — passing True raises
+                :class:`NotImplementedError`. The upload always runs
+                synchronously.
+            batch_size: Number of predictions processed in each concurrent
+                batch. Default is 5000. If you get timeouts when uploading
+                geometric predictions, you can try lowering this batch size.
+            remote_files_per_upload_request: Number of remote files to upload in
+                each request.
+            local_files_per_upload_request: Number of local files to upload in
+                each request. The maximum is 10.
+
+        Returns:
+            Payload describing the synchronous upload::
+
+                {
+                    "model_id": str,
+                    "predictions_processed": int,
+                    "predictions_ignored": int,
+                }
+        """
+        if asynchronous:
+            raise NotImplementedError(
+                "async is not yet supported for model prediction v2 uploads; "
+                "use asynchronous=False"
+            )
+
+        uploader = PredictionUploader(
+            client=self._client,
+            route=f"model/{self.id}/predictions",
+        )
+        uploader.check_for_duplicate_ids(predictions)
+
+        return uploader.upload(
+            annotations=predictions,
+            batch_size=batch_size,
+            update=update,
+            remote_files_per_upload_request=remote_files_per_upload_request,
+            local_files_per_upload_request=local_files_per_upload_request,
+        )
+
+    def predictions_loc(self, dataset_item_id: str):
+        """Fetches all of this model's predictions for a dataset item by its id.
+
+        Model-scoped counterpart of :meth:`Dataset.prediction_loc` for the
+        run-free prediction path.
+
+        Parameters:
+            dataset_item_id: Internally controlled id for the dataset item
+                (``di_*``).
+
+        Returns:
+            Dictionary mapping prediction type to a list of prediction objects
+            for this model::
+
+                {
+                    "box": List[BoxPrediction],
+                    "polygon": List[PolygonPrediction],
+                    "cuboid": List[CuboidPrediction],
+                }
+        """
+        return format_prediction_response(
+            self._client.make_request(
+                payload=None,
+                route=f"model/{self.id}/predictions/loc/{dataset_item_id}",
+                requests_command=requests.get,
+            )
+        )
+
+    def predictions_refloc(self, reference_id: str):
+        """Fetches all of this model's predictions for a dataset item by its reference id.
+
+        Model-scoped counterpart of :meth:`Dataset.predictions_refloc` for the
+        run-free prediction path.
+
+        Parameters:
+            reference_id: User-defined reference id of the dataset item.
+
+        Returns:
+            Dictionary mapping prediction type to a list of prediction objects
+            for this model::
+
+                {
+                    "box": List[BoxPrediction],
+                    "polygon": List[PolygonPrediction],
+                    "cuboid": List[CuboidPrediction],
+                }
+        """
+        return format_prediction_response(
+            self._client.make_request(
+                payload=None,
+                route=f"model/{self.id}/predictions/refloc/{reference_id}",
+                requests_command=requests.get,
+            )
+        )
+
+    def predictions_iloc(self, i: int):
+        """Fetches all of this model's predictions for a dataset item by its index.
+
+        Model-scoped counterpart of :meth:`Dataset.predictions_iloc` for the
+        run-free prediction path.
+
+        Parameters:
+            i: Absolute index of the dataset item.
+
+        Returns:
+            Dictionary mapping prediction type to a list of prediction objects
+            for this model::
+
+                {
+                    "box": List[BoxPrediction],
+                    "polygon": List[PolygonPrediction],
+                    "cuboid": List[CuboidPrediction],
+                }
+        """
+        return format_prediction_response(
+            self._client.make_request(
+                payload=None,
+                route=f"model/{self.id}/predictions/iloc/{i}",
+                requests_command=requests.get,
+            )
+        )
+
+    def copy_predictions_from_run(self, model_run_id: str) -> Dict[str, Any]:
+        """Copies predictions from a legacy v1 model run onto this model.
+
+        Backfills the run-free ("model v2") prediction store for this model from
+        an existing :class:`ModelRun`, so predictions previously uploaded via the
+        run-based path become readable through :meth:`predictions_loc` and
+        friends. The source run is left untouched.
+
+        Runs synchronously server-side and returns once the copy completes.
+
+        Args:
+            model_run_id: Source model run id (``run_*``) to copy predictions
+                from.
+
+        Returns:
+            Payload describing the copy::
+
+                {
+                    "model_id": str,
+                    "model_run_ids": List[str],
+                    "predictions_copied": int,
+                    "predictions_skipped_unsupported": int,
+                }
+        """
+        return self._client.make_request(
+            {MODEL_RUN_ID_KEY: model_run_id},
+            route=f"model/{self.id}/predictions/copyFromRun",
+            requests_command=requests.post,
+        )
+
+    def model_runs(self, include_versions: bool = False) -> List[str]:
+        """List the ids of every model run for this model. ::
+
+            run_ids = model.model_runs()
+
+        Args:
+            include_versions: Also include runs from other versions in this
+                model's lineage — its version root and all descendants. Defaults
+                to False, returning only runs whose ``model_id`` is this model.
+
+        Returns:
+            The model run ids (``run_*``). Scoped server-side to runs on datasets
+            you can read, so a run on a dataset you can't access is omitted.
+        """
+        route = f"model/{self.id}/modelRun"
+        if include_versions:
+            route += "?family=true"
+        return self._client.make_request({}, route, requests.get)
 
     def evaluate(self, scenario_test_names: List[str]) -> AsyncJob:
         """Evaluates this on the specified Unit Tests. ::
