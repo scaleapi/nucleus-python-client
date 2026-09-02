@@ -693,6 +693,67 @@ def test_download_items_dedupes_reference_ids_across_datasets(
     assert (tmp_path / "ds_b" / "frame.jpg").exists()
 
 
+def test_download_items_distinct_reference_ids_sharing_basename(
+    tmp_path, monkeypatch
+):
+    # Distinct reference_ids in the SAME dataset that share a basename
+    # ("camera_a/frame" vs "camera_b/frame") must not collide — separators are
+    # flattened, not stripped, so both files survive.
+    client = NucleusClient(api_key="test")
+    rec_a = {
+        **_export_record(0),
+        "dataset_id": "ds_1",
+        "reference_id": "camera_a/frame",
+    }
+    rec_b = {
+        **_export_record(1),
+        "dataset_id": "ds_1",
+        "reference_id": "camera_b/frame",
+    }
+    client.connection.get = MagicMock(
+        return_value={"items": [rec_a, rec_b], "total": 2}
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    _patch_media_download(monkeypatch)
+
+    count = ts.download_items(str(tmp_path), progress=False)
+
+    assert count == 2
+    files = sorted(p.name for p in (tmp_path / "ds_1").iterdir())
+    assert files == ["camera_a_frame.jpg", "camera_b_frame.jpg"]
+
+
+def test_download_items_falls_back_to_item_id_on_name_collision(
+    tmp_path, monkeypatch
+):
+    # Two distinct reference_ids that sanitize to the SAME name must still both
+    # land on disk — the collision falls back to the unique dataset_item_id.
+    client = NucleusClient(api_key="test")
+    rec_a = {
+        **_export_record(0),
+        "dataset_item_id": "di_a",
+        "reference_id": "a/b",
+    }
+    rec_b = {
+        **_export_record(1),
+        "dataset_item_id": "di_b",
+        "reference_id": "a_b",  # sanitizes to the same "a_b" as "a/b"
+    }
+    client.connection.get = MagicMock(
+        return_value={"items": [rec_a, rec_b], "total": 2}
+    )
+    ts = TrainingSet.from_json(_TRAINING_SET_ROW, client)
+    _patch_media_download(monkeypatch)
+
+    count = ts.download_items(str(tmp_path), progress=False)
+
+    assert count == 2
+    files = sorted(p.name for p in (tmp_path / "ds_1").iterdir())
+    assert len(files) == 2
+    assert "a_b.jpg" in files
+    assert "di_b.jpg" in files  # collided member disambiguated by item id
+
+
 def test_download_items_sanitizes_traversing_reference_id(
     tmp_path, monkeypatch
 ):
@@ -710,9 +771,13 @@ def test_download_items_sanitizes_traversing_reference_id(
     count = ts.download_items(str(target), progress=False)
 
     assert count == 1
-    assert (target / "ds_1" / "escape.jpg").exists()
-    # Nothing escaped the target directory.
+    # The single file stays inside the per-dataset subdirectory...
+    dataset_dir = target / "ds_1"
+    written = list(dataset_dir.iterdir())
+    assert len(written) == 1
+    # ...and nothing escaped the target directory.
     assert not (tmp_path / "escape.jpg").exists()
+    assert not (target / "escape.jpg").exists()
 
 
 def test_download_items_skips_media_less_record(tmp_path, monkeypatch):

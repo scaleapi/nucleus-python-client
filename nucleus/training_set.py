@@ -62,6 +62,20 @@ if TYPE_CHECKING:
     from nucleus.dataset_item import DatasetItem
 
 
+def _safe_filename_component(value: str) -> str:
+    """Turn a member id into a single safe filename component.
+
+    ``reference_id`` is user-supplied and unique only *within* a dataset, so it
+    may contain path separators (``camera_a/frame`` vs ``camera_b/frame``) or
+    traversal (``../x``). Collapse every separator to ``_`` (which keeps two
+    distinct reference ids distinct instead of ``basename`` mapping them to the
+    same name) and drop leading/trailing dots, yielding a component that cannot
+    escape its parent directory.
+    """
+    flattened = str(value).replace("\\", "/").replace("/", "_")
+    return flattened.strip().strip(".")
+
+
 @dataclass
 class TrainingSet:
     """A training set: a mutable, versioned, model-scoped set of dataset items."""
@@ -246,12 +260,15 @@ class TrainingSet:
         """Download each member's media file into ``directory``.
 
         Streams each member's ``image_location`` (or ``pointcloud_location``
-        for lidar members) to disk. ``reference_id`` is unique only *within* a
-        dataset and a training set spans datasets, so files are written under a
-        per-``dataset_id`` subdirectory and named by a sanitized
-        ``reference_id`` (falling back to ``dataset_item_id``) plus the media
-        URL's extension — colliding names in different datasets no longer
-        clobber one another. Members with no media URL are skipped.
+        for lidar members) to disk. Files are written under a per-``dataset_id``
+        subdirectory and named by a sanitized ``reference_id`` (falling back to
+        the globally-unique ``dataset_item_id``) plus the media URL's extension.
+        Because ``reference_id`` is user-supplied and unique only *within* a
+        dataset, any two members that would otherwise resolve to the same path
+        (colliding ``reference_id``s within a dataset, or names that sanitize to
+        the same string) are disambiguated with ``dataset_item_id`` so a
+        download never silently overwrites an earlier member. Members with no
+        media URL are skipped.
 
         Records are paged lazily, so an arbitrarily large training set is never
         fully resident in memory.
@@ -279,31 +296,42 @@ class TrainingSet:
             records = tqdm(records, desc="Downloading training set items")
 
         count = 0
+        used_paths: set = set()
         for record in records:
             url = record.get(IMAGE_LOCATION_KEY) or record.get(
                 POINTCLOUD_LOCATION_KEY
             )
             if not url:
                 continue
-            name = record.get(REFERENCE_ID_KEY) or record.get(
-                DATASET_ITEM_ID_KEY
+            dataset_item_id = record.get(DATASET_ITEM_ID_KEY)
+            reference_id = record.get(REFERENCE_ID_KEY)
+            name = (
+                _safe_filename_component(reference_id) if reference_id else ""
+            ) or (
+                _safe_filename_component(dataset_item_id)
+                if dataset_item_id
+                else ""
             )
             if not name:
                 continue
-            # reference_id is user-supplied and unique only within a dataset;
-            # strip any path components (so "../x" can't escape ``directory``)
-            # and namespace by dataset_id (so equal names across datasets don't
-            # overwrite each other).
             extension = os.path.splitext(urlparse(url).path)[1]
-            filename = f"{os.path.basename(str(name))}{extension}"
             dataset_id = record.get(DATASET_ID_KEY)
             subdir = (
-                os.path.join(directory, os.path.basename(str(dataset_id)))
+                os.path.join(directory, _safe_filename_component(dataset_id))
                 if dataset_id
                 else directory
             )
+            path = os.path.join(subdir, f"{name}{extension}")
+            # Guarantee no member silently overwrites another: on any collision
+            # fall back to the globally-unique dataset_item_id.
+            if path in used_paths and dataset_item_id:
+                path = os.path.join(
+                    subdir,
+                    f"{_safe_filename_component(dataset_item_id)}{extension}",
+                )
+            used_paths.add(path)
             os.makedirs(subdir, exist_ok=True)
-            _stream_weights_to_file(url, os.path.join(subdir, filename))
+            _stream_weights_to_file(url, path)
             count += 1
         return count
 
