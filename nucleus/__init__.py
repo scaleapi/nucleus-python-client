@@ -326,6 +326,12 @@ def _training_set_item_pairs(
         reference_id = pair.get(
             "reference_id", pair.get("refId", pair.get("ref_id"))
         )
+        if dataset_id is None or reference_id is None:
+            raise ValueError(
+                "Each training-set item pair requires both a dataset id "
+                "('dataset_id'/'datasetId') and a reference id "
+                f"('reference_id'/'refId'/'ref_id'); got {pair!r}"
+            )
         normalized.append({"datasetId": dataset_id, "refId": reference_id})
     return normalized
 
