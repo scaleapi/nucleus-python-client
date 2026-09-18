@@ -8,10 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.22.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.3) - 2026-09-18
 
 ### Added
-- **Benchmark taxonomy rollup on `create_benchmark` / `update_benchmark`.** You can now set a benchmark's class taxonomy when creating it via `rollup_groups`, an existing `allowed_label_matches_id`, or `class_agnostic=True` (the three are mutually exclusive). `update_benchmark` accepts the same fields to set/replace a **draft's** rollups (pass `allowed_label_matches_id=None` to clear it). `Benchmark` now surfaces `allowed_label_matches_id` and `class_agnostic` on read.
 
-### Fixed
-- **Benchmark taxonomy exclusivity** now counts every field that will be sent. `update_benchmark(..., rollup_groups=..., allowed_label_matches_id=None)` and `class_agnostic=False` mixed with another taxonomy used to pass the client check and then get rejected by the backend.
+- **Benchmark taxonomy rollup on `create_benchmark` / `update_benchmark`.** You can now set a benchmark's class taxonomy when creating it via `rollup_groups`, an existing `allowed_label_matches_id`, or `class_agnostic=True` (the three are mutually exclusive). `update_benchmark` accepts the same fields to set/replace a **draft's** rollups (pass `allowed_label_matches_id=None` to clear it). `Benchmark` now surfaces `allowed_label_matches_id` and `class_agnostic` on read.
 
   ```python
   benchmark = client.create_benchmark(
@@ -21,9 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   )
   ```
 
+### Fixed
+
+- **Benchmark taxonomy exclusivity** now counts every field that will be sent. `update_benchmark(..., rollup_groups=..., allowed_label_matches_id=None)` and `class_agnostic=False` mixed with another taxonomy used to pass the client check and then get rejected by the backend.
+
 ## [0.22.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.2) - 2026-09-01
 
 ### Added
+
 - **`Model.model_runs()`.** Lists the ids of every model run for a model — the model-scoped counterpart to `Dataset.model_runs()`, which only lists a single dataset's runs. Pass `include_versions=True` to union runs across the model's version lineage (its version root and all descendants). Results are scoped server-side to runs on datasets you can read.
 
   ```python
@@ -33,11 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.22.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.1) - 2026-08-31
 
 ### Deprecated
+
 - **`allowed_label_matches` on Evaluation V2.** `create_evaluation_v2_preset()`, `update_evaluation_v2_preset()`, `create_benchmark_evaluation_v2()`, and `Benchmark.create_evaluation_v2()` still accept `allowed_label_matches` / `allowed_label_matches_id` for backwards compatibility, but they now emit a `DeprecationWarning`. Use `rollup_groups` instead. `AllowedLabelMatch` and the corresponding fields on `EvaluationV2` / `EvaluationV2Preset` are likewise marked deprecated.
 
 ## [0.22.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.0) - 2026-08-26
 
 ### Added
+
 - **Run-free ("model v2") predictions.** Predictions can now be uploaded and read directly against a `Model`, with no `ModelRun` or `Dataset` involved — the concept is `(model, dataset_item) -> prediction`. New methods on `Model`:
   - `Model.upload_predictions(predictions, update=False, batch_size=5000, ...)` — upserts predictions onto the model (`box` / `polygon` / `cuboid` only), targeting `model/{id}/predictions`, and reusing the existing `PredictionUploader` batching machinery. Synchronous only for now: `asynchronous=True` raises `NotImplementedError`.
   - `Model.predictions_loc(dataset_item_id)`, `Model.predictions_refloc(reference_id)`, `Model.predictions_iloc(i)` — model-scoped reads returning the same shape as their `Dataset` equivalents.
@@ -46,30 +51,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`list_evaluations_v2` accepts a model.** `NucleusClient.list_evaluations_v2()` takes exactly one of `model_run_id` (`run_*`) or `model_id` (`prj_*` or a `Model`). The model-anchored path hits `GET model/{id}/evaluationsV2` and returns that model's run-free evaluations.
 
 ### Changed
+
 - The existing run-based prediction paths (`Dataset.upload_predictions`, `ModelRun.add_predictions`, `create_benchmark_evaluation_v2(model_run_id=...)`) are unchanged and continue to work; the model-centric methods are purely additive.
 
 ### Deprecated
+
 - **Model-run-anchored Evaluation V2 is deprecated** in favor of the run-free (`model_id`) path. `Benchmark.create_evaluation_v2()` gains a `model_id` argument (run-free anchor) to match `create_benchmark_evaluation_v2()`. Passing `model_run_id` to `create_benchmark_evaluation_v2()`, `Benchmark.create_evaluation_v2()`, or `list_evaluations_v2()` now emits a `DeprecationWarning`; all keep working. `EvaluationV2.model_run_id` is documented as deprecated (it is `None` on run-free evaluations). On the leaderboard, `LeaderboardRankingEntry` / `LeaderboardF1CurveEntry` `model_run_id` and `model_run_name` are deprecated and now `Optional` (they are `None` for run-free evaluations — previously `model_run_id` was a required field and would fail to parse), and `collapse="allRuns"` on `leaderboard_ranking()` is discouraged. Prefer anchoring on and identifying evaluations by `model_id`.
 
 ### Removed
+
 - **`allowed_label_matches` removed from the EvaluationV2 surface** (breaking). The run-free (model-source) eval path — the one this SDK now steers toward — rejects `allowedLabelMatches` server-side (400, "use rollupGroups"); it only survives as a legacy fallback on the deprecated model-run path, where `rollupGroups` wins anyway. Removed the `AllowedLabelMatch` class (and its top-level export), the `allowed_label_matches` / `allowed_label_matches_id` arguments from `create_benchmark_evaluation_v2()`, `Benchmark.create_evaluation_v2()`, `create_evaluation_v2_preset()`, and `update_evaluation_v2_preset()`, and the `allowed_label_matches*` fields from `EvaluationV2` and `EvaluationV2Preset`. Use `rollup_groups` (:class:`RollupGroup`) exclusively.
-- **`dataset_id` dropped from the EvaluationV2 surface** (breaking). An evaluation is no longer anchored on a single dataset — a model run now carries a *set* of datasets and a benchmark's items may span several — so the backend no longer returns a denormalized dataset on evaluations or leaderboards. Removed `EvaluationV2.dataset_id`, and `dataset_id` / `dataset_name` from `LeaderboardRankingEntry` and `LeaderboardF1CurveEntry`, matching the current backend responses. Without this, `EvaluationV2.from_json` raised `KeyError: 'dataset_id'` on every model-anchored (run-free) benchmark evaluation, since those payloads never carry a `dataset_id`.
+- **`dataset_id` dropped from the EvaluationV2 surface** (breaking). An evaluation is no longer anchored on a single dataset — a model run now carries a _set_ of datasets and a benchmark's items may span several — so the backend no longer returns a denormalized dataset on evaluations or leaderboards. Removed `EvaluationV2.dataset_id`, and `dataset_id` / `dataset_name` from `LeaderboardRankingEntry` and `LeaderboardF1CurveEntry`, matching the current backend responses. Without this, `EvaluationV2.from_json` raised `KeyError: 'dataset_id'` on every model-anchored (run-free) benchmark evaluation, since those payloads never carry a `dataset_id`.
 
 ### Fixed
+
 - `Model.predictions_loc` / `predictions_refloc` / `predictions_iloc` now actually parse their responses. The run-free read endpoints return a flat `{"predictions": [...]}` list (each element carrying its own `"type"`), but `format_prediction_response` only understood the legacy type-keyed `{"annotations": {"box": [...]}}` shape, so these methods returned the raw payload unparsed instead of the documented `{"box": [...], "polygon": [...], "cuboid": [...]}` dict.
 
 ## [0.21.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.2) - 2026-08-17
 
 ### Added
+
 - **Benchmark versioning / lineage.** `create_benchmark()` accepts `parent_benchmark_id` to create a new **version** downstream of an existing benchmark: the child inherits the parent's items, the source arguments add on top, and `removed_item_ids` prune inherited items (`parent ∪ added ∖ removed`). Version defaults to a minor bump; pass `bump_type="major"` or explicit `version_major` + `version_minor` (must exceed the parent's). `Benchmark` now exposes `parent_benchmark_id`, `version_major`, `version_minor`, and `version_label`.
 - **Draft benchmarks.** `create_benchmark(..., draft=True)` creates a mutable draft (sources optional). Add items across many calls with `Benchmark.add_items()` / `NucleusClient.add_benchmark_items()` (async, same sources as create), remove with `Benchmark.remove_items()` / `NucleusClient.remove_benchmark_items()`, then freeze with `Benchmark.finalize()` / `NucleusClient.finalize_benchmark()`. A draft cannot be evaluated until finalized; a finalized benchmark is immutable (make a new version instead).
 
 ### Changed
+
 - `Benchmark.status` can now be `"draft"` (in addition to `"building"` / `"ready"` / `"failed"`). A draft benchmark cannot be evaluated until finalized.
 
 ## [0.21.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-15
 
 ### Added
+
 - **`NucleusClient.merge_model_runs()`.** Merges two or more model runs into one new run holding the union of their predictions, leaving the sources untouched. A benchmark evaluation names a single model run and a benchmark's items may span datasets, so a model uploaded as several runs previously had no single run covering the benchmark — every uncovered item scored as a false negative. Merge first, wait for the copy to finish, then pass the new run to `create_benchmark_evaluation_v2()`. All source runs must belong to the same model.
 
   The copy runs asynchronously: the call returns `{"model_run_id", "dataset_ids", "job"}` immediately, but the new run is empty until the `job` completes — call `job.sleep_until_complete()` before evaluating. The merge is a full union: predictions are copied, never deduplicated, and colliding `annotation_id`s are rewritten rather than dropped. Copy counts (`predictions_copied`, `predictions_ignored`, `annotation_ids_rewritten`) are reported on the job.
@@ -77,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.21.0) - 2026-08-19
 
 ### Added
+
 - **`Model.create_run(name)` + `ModelRun.add_predictions(predictions, ...)`.** Create a model run with just a name, then attach predictions — no dataset needed up front:
   ```python
   run = model.create_run(name="my-run")
@@ -87,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Per-prediction target.** Every prediction type (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `scene_category`, `segmentation`) emits its `dataset_item_id` in `to_payload` (as `item_id`) when set, which is how the dataset-less upload route resolves each item.
 
 ### Changed
+
 - **`reference_id` is now optional on predictions.** A prediction can be constructed from its `dataset_item_id` alone (at least one of `reference_id` / `dataset_item_id` is required). Annotations still require `reference_id`. Existing prediction code that passes `reference_id` is unaffected.
 
 > **Server dependency:** requires the `POST /nucleus/model/:modelId/modelRun/create` and `POST /nucleus/modelRun/:modelRunId/uploadPredictions` routes in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
@@ -94,17 +108,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.20.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.2) - 2026-08-18
 
 ### Added
+
 - **`dataset_item_id` on exported items and objects.** Batch exports now carry the Nucleus-internal dataset item id (`di_*`) everywhere `reference_id` already appeared: on `DatasetItem`, and on every exported annotation and prediction (`box`, `line`, `polygon`, `keypoints`, `cuboid`, `category`, `multicategory`, `segmentation`). Video/scene exports carry it on each track frame. Previously only `reference_id` was returned, so keying predictions back to items required a second lookup. The field is server-assigned and read-only: it is populated by `from_json`, left `None` on objects you construct locally, excluded from `__eq__`, passed keyword-only on constructors, and never sent in `to_payload`. Exports from an older backend that does not return it simply leave it `None`.
-- **Multi-dataset model runs.** `Dataset.upload_predictions_for_model_run(model_run_id, predictions, ...)` uploads predictions for an existing run against *this* dataset, adding the dataset to the run's set if it isn't there already. This is what lets a single model run be scored against a benchmark whose items span several datasets. Supports the same `update` / `asynchronous` / `batch_size` / file-batching / `trained_slice_id` arguments as `upload_predictions`.
+- **Multi-dataset model runs.** `Dataset.upload_predictions_for_model_run(model_run_id, predictions, ...)` uploads predictions for an existing run against _this_ dataset, adding the dataset to the run's set if it isn't there already. This is what lets a single model run be scored against a benchmark whose items span several datasets. Supports the same `update` / `asynchronous` / `batch_size` / file-batching / `trained_slice_id` arguments as `upload_predictions`.
   - A run's dataset set only ever grows — a later upload never removes a dataset, so it cannot widen who can read the run.
   - Access: write on this dataset **and** on every dataset the run already covers. Runs are visible only to users who can read all of their datasets, so adding one can remove the run from a collaborator's view.
   - `Dataset.upload_predictions` is unchanged and still cannot widen a run: it identifies the run by `(dataset, model)`, so it finds the run already on this dataset or creates a new one.
 
 ### Changed
+
 - **Benchmark evaluations no longer require the run to cover the benchmark's datasets.** `create_benchmark_evaluation_v2` previously failed when the benchmark contained items outside the model run's dataset. Those members are now scored as false negatives like any other uncovered item, so a partial run ranks comparably instead of being rejected. Docstrings on `create_benchmark_evaluation_v2` and `Benchmark.create_evaluation_v2` updated accordingly.
 - `PredictionUploader` accepts `dataset_id` together with `model_run_id` to select the new endpoint. Previously that combination was rejected by an assertion. The other two forms — `(dataset_id, model_id)` and `model_run_id` alone — route exactly as before.
 
 ### Deprecated
+
 - `ModelRun.predict()` (already deprecated with the rest of `ModelRun`) infers its target dataset from the run, so it fails for a run spanning several datasets. Use `Dataset.upload_predictions_for_model_run` instead.
 
 > **Server dependency:** requires the `POST /nucleus/dataset/:datasetId/modelRun/:modelRunId/uploadPredictions` route and the multi-dataset model-run work in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
@@ -112,20 +129,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.20.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.1) - 2026-08-13
 
 ### Added
+
 - **Model weights.** Attach a raw weights artifact (any binary, no format constraints) to a model and fetch it back: `NucleusClient.upload_model_weights(model, path)`, `download_model_weights(model, path)`, `get_model_weights(model)`, and `delete_model_weights(model)`, plus `Model.upload_weights()` / `download_weights()` / `weights()` / `delete_weights()` and the new `ModelWeights` metadata type (`present`, `status`, `size_bytes`, `original_filename`, `content_type`, `download_url`). Artifacts up to 10 GB are supported; uploading requires edit access on the model, downloading is available to anyone who can see it.
 - Large artifacts are handled without any extra work on the caller's part: transfers stream directly to/from storage, show a `tqdm` progress bar by default (pass `progress=False` to silence it), and automatically retry transient storage failures (network blips, 429s, 5xx) with exponential backoff.
 
 ## [0.20.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.20.0) - 2026-08-11
 
 ### Added
+
 - **Multi-source `create_benchmark()`.** Members can now come from any combination of `item_ids`, `(dataset_id, ref_id)` `items`, one or more slices (`slice_id` / `slice_ids`), and one or more datasets (`dataset_id` / `dataset_ids`) — unioned and de-duplicated server-side. At least one source is required (previously exactly one).
 
 ### Changed
+
 - **`create_benchmark()` is now asynchronous.** The server creates the benchmark in a `"building"` state and streams its members in via a background job (removing the previous item-count ceiling on slice/dataset-sourced benchmarks). `create_benchmark()` blocks on that job by default and returns the completed `"ready"` benchmark — the return type is unchanged, so existing blocking callers are unaffected. Pass `wait_for_completion=False` to return the `"building"` benchmark immediately and poll it yourself via `Benchmark.refresh()` (checking the new `Benchmark.status` field). A failed build job raises `JobError`. `Benchmark` now exposes `status` (`"building"` / `"ready"` / `"failed"`).
 
 ## [0.19.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.1) - 2026-08-07
 
 ### Added
+
 - **Benchmarks.** Full support for benchmark-paradigm evaluation: `NucleusClient.create_benchmark()` (members from `item_ids`, `(dataset_id, ref_id)` `items` pairs, a `slice_id`, or a `dataset_id`; membership frozen at creation), `list_benchmarks()`, `get_benchmark()`, `update_benchmark()`, `delete_benchmark()`, and `list_benchmark_items()`, plus the new `Benchmark` resource with `refresh()` / `update()` / `delete()` / `items()` / `create_evaluation_v2()`.
 - **Benchmark evaluations.** `create_benchmark_evaluation_v2(benchmark_id, model_run_id, ...)` evaluates a model run against every benchmark item (uncovered items score as false negatives, keeping leaderboard scores comparable). Accepts `rollup_groups`, legacy `allowed_label_matches` / `allowed_label_matches_id`, `exclusion_rules`, and `preset`. Benchmark evaluations are the only creation surface — dataset/slice-scoped evaluation creation is deprecated platform-wide and was never shipped in this SDK.
 - **Rollup groups.** The new `RollupGroup` type (`class_name` + `labels`) is the primary label configuration: each group evaluates a set of raw labels as one class. Presets support it end to end — `create_evaluation_v2_preset()` / `update_evaluation_v2_preset()` accept `rollup_groups` (mutually exclusive with `allowed_label_matches`), and `EvaluationV2Preset` exposes the field.
@@ -142,10 +163,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.19.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.19.0) - 2026-07-07
 
 ### Changed
+
 - **Breaking:** `dataset.append()` now always uses the async pipeline and returns an `AsyncJob`. The `asynchronous` and `batch_size` parameters are deprecated and ignored. All uploads (local and remote) go through the async Step Function pipeline, which handles phash computation, image optimization, and NLS search indexing.
 - `dataset.add_items_from_dir()` now returns the `AsyncJob` for the upload (or `None` when no items are found) instead of blocking. Call `job.sleep_until_complete()` to wait until items are queryable and to surface upload errors.
 
 ### Removed
+
 - Synchronous upload paths for images and videos. All uploads now use the async pipeline. Use `job.sleep_until_complete()` to block until processing finishes.
 - `UploadResponse` class — `append()` now returns `AsyncJob`.
 - `construct_append_payload()` and `construct_append_scenes_payload()` functions.
@@ -156,22 +179,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.8](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.8) - 2026-06-17
 
 ### Fixed
+
 - Build macOS wheels as native `arm64` wheels on the CircleCI Apple Silicon runner instead of requesting `universal2`, which produced an `arm64` wheel that cibuildwheel then tried to test under `x86_64`.
 
 ### Tooling / CI
+
 - Pin `cibuildwheel` in release wheel jobs, run the Linux wheel builder from a compatible Python host, and select a Python 3.11+ Windows host interpreter so the Python 3.10 through 3.14 wheel matrix is deterministic.
 
 ## [0.18.7](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.7) - 2026-06-17
 
 ### Fixed
+
 - Renamed the custom Poetry build hook so it no longer shadows the PyPI `build` package imported by `cibuildwheel` during macOS and Windows wheel builds.
 
 ## [0.18.6](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.6) - 2026-06-15
 
 ### Added
+
 - Native C acceleration for `deduplicate_by_phash`. When the compiled extension is available, all threshold values are handled in native code: thresholds `0` through `11` use the chunked Hamming index, thresholds `12` through `63` use a native linear scan, and threshold `64` uses the keep-first fast path. The public Python API is unchanged and falls back to the pure-Python implementation when the native extension is unavailable.
 
 ### Tooling / CI
+
 - Publish Linux `x86_64`, macOS `universal2`, and Windows `amd64` wheels for Python 3.10 through 3.14 using `cibuildwheel`, alongside the source distribution.
 
 ## [0.18.5](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.5) - 2026-05-28
@@ -183,6 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.4) - 2026-06-08
 
 ### Added
+
 - `deduplicate_by_phash` local utility for deduplicating `DatasetItem` objects or `items_and_annotation_generator()` rows by `DatasetItem.phash` without making API calls. The utility supports Hamming-distance thresholds from 0 to 64 and returns the surviving input objects, their `DatasetItem`s, reference IDs, and `DeduplicationStats`.
 
 ## [0.18.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.18.3) - 2026-05-18
