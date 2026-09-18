@@ -12,6 +12,7 @@ from nucleus import (
     NucleusClient,
     RollupGroup,
 )
+from nucleus.evaluation_v2_preset import _UNSET
 
 _BENCHMARK_ROW = {
     "benchmark_id": "bm_1",
@@ -162,6 +163,107 @@ def test_create_benchmark_combines_multiple_sources():
     assert payload["item_ids"] == ["di_3"]
     assert payload["slice_ids"] == ["slc_1", "slc_2"]
     assert payload["dataset_ids"] == ["ds_1", "ds_2"]
+
+
+def test_create_benchmark_with_rollup_groups():
+    client = _mock_async_create(NucleusClient(api_key="test"))
+    client.create_benchmark(
+        "typed",
+        slice_id="slc_1",
+        rollup_groups=[RollupGroup("vehicle", ["car", "truck"])],
+    )
+    payload = client.connection.post.call_args[0][0]
+    # Inner keys stay snake_case (to_api_dict); the backend camelCases the body.
+    assert payload["rollupGroups"] == [
+        {"class_name": "vehicle", "labels": ["car", "truck"]}
+    ]
+
+
+def test_create_benchmark_with_allowed_label_matches_id():
+    client = _mock_async_create(NucleusClient(api_key="test"))
+    client.create_benchmark(
+        "typed", slice_id="slc_1", allowed_label_matches_id="almc_1"
+    )
+    payload = client.connection.post.call_args[0][0]
+    assert payload["allowed_label_matches_id"] == "almc_1"
+
+
+def test_create_benchmark_class_agnostic():
+    client = _mock_async_create(NucleusClient(api_key="test"))
+    client.create_benchmark("agnostic", slice_id="slc_1", class_agnostic=True)
+    payload = client.connection.post.call_args[0][0]
+    assert payload["class_agnostic"] is True
+
+
+def test_create_benchmark_taxonomies_are_mutually_exclusive():
+    client = NucleusClient(api_key="test")
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        client.create_benchmark(
+            "typed",
+            slice_id="slc_1",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+            class_agnostic=True,
+        )
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        client.create_benchmark(
+            "typed",
+            slice_id="slc_1",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+            allowed_label_matches_id="almc_1",
+        )
+
+
+def test_update_benchmark_sends_draft_taxonomy():
+    client = NucleusClient(api_key="test")
+    client.connection.patch = MagicMock(return_value=dict(_BENCHMARK_ROW))
+    client.update_benchmark(
+        "bm_1", rollup_groups=[RollupGroup("vehicle", ["car"])]
+    )
+    payload = client.connection.patch.call_args[0][0]
+    assert payload == {
+        "rollupGroups": [{"class_name": "vehicle", "labels": ["car"]}]
+    }
+
+
+def test_update_benchmark_clears_taxonomy_with_explicit_none():
+    client = NucleusClient(api_key="test")
+    client.connection.patch = MagicMock(return_value=dict(_BENCHMARK_ROW))
+    # Explicit None clears the draft's taxonomy (sent as null); omitting it
+    # entirely (the _UNSET default) leaves it unchanged.
+    client.update_benchmark("bm_1", allowed_label_matches_id=None)
+    assert client.connection.patch.call_args[0][0] == {
+        "allowed_label_matches_id": None
+    }
+    client.connection.patch.reset_mock()
+    client.update_benchmark("bm_1", name="renamed")
+    assert "allowed_label_matches_id" not in (
+        client.connection.patch.call_args[0][0]
+    )
+
+
+def test_update_benchmark_taxonomies_are_mutually_exclusive():
+    client = NucleusClient(api_key="test")
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        client.update_benchmark(
+            "bm_1",
+            rollup_groups=[RollupGroup("vehicle", ["car"])],
+            allowed_label_matches_id="almc_1",
+        )
+
+
+def test_benchmark_from_json_parses_taxonomy_fields():
+    b = Benchmark.from_json(_BENCHMARK_ROW)
+    assert b.allowed_label_matches_id is None
+    assert b.class_agnostic is None
+    typed = Benchmark.from_json(
+        {
+            **_BENCHMARK_ROW,
+            "allowed_label_matches_id": "almc_1",
+            "class_agnostic": False,
+        }
+    )
+    assert typed.allowed_label_matches_id == "almc_1"
+    assert typed.class_agnostic is False
 
 
 def test_list_benchmarks():
@@ -359,7 +461,13 @@ def test_benchmark_instance_methods_delegate_to_client():
     )
     benchmark.update(name="renamed")
     client.update_benchmark.assert_called_once_with(
-        "bm_1", name="renamed", description=None, metadata=None
+        "bm_1",
+        name="renamed",
+        description=None,
+        metadata=None,
+        rollup_groups=None,
+        allowed_label_matches_id=_UNSET,
+        class_agnostic=None,
     )
     assert benchmark.name == "renamed"
 

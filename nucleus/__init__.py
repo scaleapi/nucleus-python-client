@@ -107,6 +107,7 @@ from .benchmark import Benchmark
 from .camera_params import CameraParams
 from .connection import Connection
 from .constants import (
+    ALLOWED_LABEL_MATCHES_ID_KEY,
     ANNOTATION_METADATA_SCHEMA_KEY,
     ANNOTATIONS_IGNORED_KEY,
     ANNOTATIONS_PROCESSED_KEY,
@@ -114,6 +115,7 @@ from .constants import (
     BENCHMARK_ID_KEY,
     BENCHMARK_IDS_KEY,
     BUMP_TYPE_KEY,
+    CLASS_AGNOSTIC_KEY,
     COLLAPSE_KEY,
     CONFIDENCE_THRESHOLD_KEY,
     DATASET_ID_KEY,
@@ -1215,6 +1217,9 @@ class NucleusClient:
         version_label: Optional[str] = None,
         removed_item_ids: Optional[List[str]] = None,
         draft: bool = False,
+        rollup_groups: Optional[List[RollupGroup]] = None,
+        allowed_label_matches_id: Optional[str] = None,
+        class_agnostic: Optional[bool] = None,
         wait_for_completion: bool = True,
         verbose: bool = True,
     ) -> Benchmark:
@@ -1272,6 +1277,19 @@ class NucleusClient:
                 parent's set. Only valid with ``parent_benchmark_id``.
             draft: Create a mutable draft (sources optional) instead of a
                 one-shot build.
+            rollup_groups: Inline label rollup defining the benchmark's class
+                taxonomy — each :class:`RollupGroup` maps raw ground-truth /
+                prediction labels onto one canonical class name. Mutually
+                exclusive with ``allowed_label_matches_id`` and
+                ``class_agnostic``. On a version cut (``parent_benchmark_id``)
+                the parent's taxonomy is inherited when all three are omitted.
+            allowed_label_matches_id: Id of an existing rollup-only
+                ``allowed_label_matches`` config to attach as the taxonomy.
+                Mutually exclusive with ``rollup_groups`` and
+                ``class_agnostic``.
+            class_agnostic: When ``True``, evaluations on this benchmark ignore
+                class labels. Mutually exclusive with ``rollup_groups`` and
+                ``allowed_label_matches_id``.
             wait_for_completion: Block until the build/seed job finishes and
                 return the resulting benchmark (default). If ``False``, return
                 immediately. Ignored for an empty draft (no job is started).
@@ -1307,6 +1325,24 @@ class NucleusClient:
                 "removed_item_ids is only valid together with "
                 "parent_benchmark_id"
             )
+        # rollup_groups / allowed_label_matches_id / class_agnostic are three
+        # mutually exclusive ways to set the benchmark's class taxonomy; the
+        # backend rejects any combination, so fail fast client-side too.
+        if (
+            sum(
+                (
+                    rollup_groups is not None,
+                    allowed_label_matches_id is not None,
+                    bool(class_agnostic),
+                )
+            )
+            > 1
+        ):
+            raise ValueError(
+                "At most one of rollup_groups, allowed_label_matches_id, or "
+                "class_agnostic may be set — they are mutually exclusive "
+                "benchmark taxonomies"
+            )
         payload: Dict[str, Any] = {NAME_KEY: name}
         optional_fields = {
             DESCRIPTION_KEY: description,
@@ -1333,6 +1369,16 @@ class NucleusClient:
         )
         if draft:
             payload[DRAFT_KEY] = True
+        # Taxonomy (at most one, enforced above). Sent as inline rollup groups,
+        # an existing config id, or the class-agnostic flag.
+        if rollup_groups is not None:
+            payload[ROLLUP_GROUPS_CAMEL_KEY] = [
+                g.to_api_dict() for g in rollup_groups
+            ]
+        if allowed_label_matches_id is not None:
+            payload[ALLOWED_LABEL_MATCHES_ID_KEY] = allowed_label_matches_id
+        if class_agnostic is not None:
+            payload[CLASS_AGNOSTIC_KEY] = class_agnostic
 
         # Async: the server responds 202 with {benchmark_id, job_id}. The
         # benchmark row already exists (in 'building', or 'draft'); the build /
@@ -1384,21 +1430,53 @@ class NucleusClient:
         name: Optional[str] = None,
         description: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        rollup_groups: Optional[List[RollupGroup]] = None,
+        allowed_label_matches_id: Any = _UNSET,
+        class_agnostic: Optional[bool] = None,
     ) -> Benchmark:
-        """Update a benchmark's name, description, or metadata.
+        """Update a benchmark's name, description, metadata, or draft taxonomy.
 
         Only the arguments you pass are changed. Benchmark membership is
         frozen at creation and cannot be updated.
+
+        The taxonomy fields (``rollup_groups``, ``allowed_label_matches_id``,
+        ``class_agnostic``) are only accepted while the benchmark is a
+        ``"draft"`` — a ``"ready"`` benchmark freezes its taxonomy, so cut a new
+        version to change it. They are mutually exclusive, just like at create.
 
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
             name: Optional new display name.
             description: Optional new description.
             metadata: Optional new metadata dict.
+            rollup_groups: Replacement inline label rollup for a draft. A
+                non-empty list replaces the draft's taxonomy; ``None`` (the
+                default) leaves it unchanged. To *clear* an existing rollup,
+                pass ``allowed_label_matches_id=None``.
+            allowed_label_matches_id: Replacement rollup-only config id for a
+                draft. Pass ``None`` to clear the draft's taxonomy; omit to
+                leave it unchanged.
+            class_agnostic: Replacement class-agnostic flag for a draft.
 
         Returns:
             :class:`Benchmark`: The updated benchmark.
         """
+        if (
+            sum(
+                (
+                    rollup_groups is not None,
+                    allowed_label_matches_id is not _UNSET
+                    and allowed_label_matches_id is not None,
+                    bool(class_agnostic),
+                )
+            )
+            > 1
+        ):
+            raise ValueError(
+                "At most one of rollup_groups, allowed_label_matches_id, or "
+                "class_agnostic may be set — they are mutually exclusive "
+                "benchmark taxonomies"
+            )
         payload: Dict[str, Any] = {}
         if name is not None:
             payload[NAME_KEY] = name
@@ -1406,6 +1484,15 @@ class NucleusClient:
             payload[DESCRIPTION_KEY] = description
         if metadata is not None:
             payload[METADATA_KEY] = metadata
+        if rollup_groups is not None:
+            payload[ROLLUP_GROUPS_CAMEL_KEY] = [
+                g.to_api_dict() for g in rollup_groups
+            ]
+        # _UNSET => leave unchanged; None => explicitly clear (sent as null).
+        if allowed_label_matches_id is not _UNSET:
+            payload[ALLOWED_LABEL_MATCHES_ID_KEY] = allowed_label_matches_id
+        if class_agnostic is not None:
+            payload[CLASS_AGNOSTIC_KEY] = class_agnostic
         data = self.patch(payload, f"benchmarks/{benchmark_id}")
         return Benchmark.from_json(data, self)
 

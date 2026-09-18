@@ -5,6 +5,21 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.3) - 2026-09-18
+
+### Added
+- **Benchmark rollup taxonomy on `create_benchmark` / `update_benchmark`.** You can now set a benchmark's class taxonomy when creating it — pass inline `rollup_groups`, an existing `allowed_label_matches_id`, or `class_agnostic=True` (the three are mutually exclusive). `update_benchmark` accepts the same fields to set/replace a **draft's** taxonomy (pass `allowed_label_matches_id=None` to clear it). `Benchmark` now surfaces `allowed_label_matches_id` and `class_agnostic` on read.
+
+  ```python
+  benchmark = client.create_benchmark(
+      "city-streets-v1",
+      slice_id="slc_...",
+      rollup_groups=[RollupGroup("vehicle", ["car", "truck"])],
+  )
+  ```
+
+> **Server dependency:** requires the benchmark rollup-taxonomy support added to scaleapi (`POST`/`PATCH /nucleus/benchmarks`). Unit tests pass regardless; live calls ignore the taxonomy until that deploys.
+
 ## [0.22.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.2) - 2026-09-01
 
 ### Added
