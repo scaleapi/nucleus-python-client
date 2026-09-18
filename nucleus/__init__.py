@@ -290,17 +290,18 @@ def _raise_if_multiple_benchmark_taxonomies(
     allowed_label_matches_id: Any,
     class_agnostic: Optional[bool],
 ) -> None:
-    """Fail if more than one of the mutually exclusive taxonomy args is set.
+    """Fail if more than one taxonomy field will be sent.
 
-    ``class_agnostic is not None`` (not ``bool``) so ``False`` counts as set,
-    matching the payload builders that send the flag.
+    Counts the same values the payload builders send: ``class_agnostic is not
+    None`` (so ``False`` counts) and ``allowed_label_matches_id is not
+    _UNSET`` (so an explicit ``None`` clear on update counts). Create's
+    omitted default is ``None``; that call site remaps it to ``_UNSET``.
     """
     if (
         sum(
             (
                 rollup_groups is not None,
-                allowed_label_matches_id is not _UNSET
-                and allowed_label_matches_id is not None,
+                allowed_label_matches_id is not _UNSET,
                 class_agnostic is not None,
             )
         )
@@ -1355,9 +1356,14 @@ class NucleusClient:
             )
         # rollup_groups / allowed_label_matches_id / class_agnostic are three
         # mutually exclusive ways to set the benchmark's class taxonomy; the
-        # backend rejects combinations.
+        # backend rejects combinations. None is create's omit-default and is
+        # not sent, so treat it as _UNSET for the exclusivity count.
         _raise_if_multiple_benchmark_taxonomies(
-            rollup_groups, allowed_label_matches_id, class_agnostic
+            rollup_groups,
+            _UNSET
+            if allowed_label_matches_id is None
+            else allowed_label_matches_id,
+            class_agnostic,
         )
         payload: Dict[str, Any] = {NAME_KEY: name}
         optional_fields = {

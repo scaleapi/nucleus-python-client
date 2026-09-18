@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Benchmark taxonomy rollup on `create_benchmark` / `update_benchmark`.** You can now set a benchmark's class taxonomy when creating it via `rollup_groups`, an existing `allowed_label_matches_id`, or `class_agnostic=True` (the three are mutually exclusive). `update_benchmark` accepts the same fields to set/replace a **draft's** rollups (pass `allowed_label_matches_id=None` to clear it). `Benchmark` now surfaces `allowed_label_matches_id` and `class_agnostic` on read.
 
+### Fixed
+- **Benchmark taxonomy exclusivity** now counts every field that will be sent. `update_benchmark(..., rollup_groups=..., allowed_label_matches_id=None)` and `class_agnostic=False` mixed with another taxonomy used to pass the client check and then get rejected by the backend.
+
   ```python
   benchmark = client.create_benchmark(
       "city-streets-v1",
