@@ -31,7 +31,9 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from nucleus.constants import (
+    ALLOWED_LABEL_MATCHES_ID_KEY,
     BENCHMARK_ID_KEY,
+    CLASS_AGNOSTIC_KEY,
     CREATED_AT_KEY,
     CREATED_BY_USER_ID_KEY,
     DATASET_COUNT_KEY,
@@ -52,7 +54,7 @@ from nucleus.evaluation_v2 import (
     RollupGroup,
 )
 from nucleus.evaluation_v2_exclusions import EvaluationV2ExclusionRule
-from nucleus.evaluation_v2_preset import EvaluationV2Preset
+from nucleus.evaluation_v2_preset import _UNSET, EvaluationV2Preset
 
 if TYPE_CHECKING:
     from nucleus import NucleusClient
@@ -83,6 +85,11 @@ class Benchmark:
     version_minor: Optional[int] = None
     #: Optional human-readable version label (e.g. ``"rc1"``, ``"holdout-v2"``).
     version_label: Optional[str] = None
+    #: Class taxonomy: id of the attached rollup-only ``allowed_label_matches``
+    #: config (``None`` when the benchmark is class-agnostic or untyped).
+    allowed_label_matches_id: Optional[str] = None
+    #: When ``True``, evaluations on this benchmark ignore class labels.
+    class_agnostic: Optional[bool] = None
     _client: Optional["NucleusClient"] = field(repr=False, default=None)
 
     @classmethod
@@ -108,6 +115,8 @@ class Benchmark:
             version_major=payload.get(VERSION_MAJOR_KEY),
             version_minor=payload.get(VERSION_MINOR_KEY),
             version_label=payload.get(VERSION_LABEL_KEY),
+            allowed_label_matches_id=payload.get(ALLOWED_LABEL_MATCHES_ID_KEY),
+            class_agnostic=payload.get(CLASS_AGNOSTIC_KEY),
             _client=client,
         )
 
@@ -131,11 +140,17 @@ class Benchmark:
         name: Optional[str] = None,
         description: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        rollup_groups: Optional[List[RollupGroup]] = None,
+        allowed_label_matches_id: Any = _UNSET,
+        class_agnostic: Optional[bool] = None,
     ) -> "Benchmark":
-        """Update this benchmark's name, description, or metadata.
+        """Update this benchmark's name, description, metadata, or draft taxonomy.
 
         Only the arguments you pass are changed. Benchmark membership is
-        frozen at creation and cannot be updated.
+        frozen at creation and cannot be updated. The taxonomy fields
+        (``rollup_groups`` / ``allowed_label_matches_id`` / ``class_agnostic``)
+        are accepted only while the benchmark is a draft and are mutually
+        exclusive — see :meth:`NucleusClient.update_benchmark`.
 
         Returns:
             self, with updated fields.
@@ -147,6 +162,9 @@ class Benchmark:
             name=name,
             description=description,
             metadata=metadata,
+            rollup_groups=rollup_groups,
+            allowed_label_matches_id=allowed_label_matches_id,
+            class_agnostic=class_agnostic,
         )
         self.__dict__.update(updated.__dict__)
         return self

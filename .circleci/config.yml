@@ -20,8 +20,17 @@ jobs:
           name: Install Basic Environment Dependencies
           command: | # install dependencies
             echo $PWD
-            apt-get update
-            apt-get -y install curl libgeos-dev
+            # Only libgeos-dev (for shapely) is actually needed. `curl` already ships in the
+            # python:3.10-bullseye base image; installing it here only forced a curl/libcurl4
+            # upgrade to the latest security point release, which 404s whenever the Debian mirror
+            # has rotated that exact .deb out of its pool. Clear the cached lists for a fresh index
+            # and retry so a transient mirror hiccup on libgeos self-heals.
+            for i in $(seq 1 5); do
+              rm -rf /var/lib/apt/lists/* && apt-get update && apt-get -y install libgeos-dev && break
+              echo "apt attempt $i failed; retrying in 10s"
+              sleep 10
+            done
+            apt-get -y install libgeos-dev
             pip install --upgrade pip
             pip install poetry
       - python/install-packages:

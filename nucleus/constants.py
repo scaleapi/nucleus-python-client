@@ -189,6 +189,7 @@ ALLOWED_LABEL_MATCHES_KEY = "allowed_label_matches"
 ALLOWED_LABEL_MATCHES_CAMEL_KEY = "allowedLabelMatches"
 ALLOWED_LABEL_MATCHES_ID_KEY = "allowed_label_matches_id"
 ALLOWED_LABEL_MATCHES_NAME_KEY = "allowed_label_matches_name"
+CLASS_AGNOSTIC_KEY = "class_agnostic"
 BENCHMARK_ID_KEY = "benchmark_id"
 BENCHMARK_IDS_KEY = "benchmark_ids"
 # Benchmark lineage / versioning + draft. Sent snake_case (the backend camelCases request
