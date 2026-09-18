@@ -20,7 +20,15 @@ jobs:
           name: Install Basic Environment Dependencies
           command: | # install dependencies
             echo $PWD
-            apt-get update
+            # Retry apt: the Debian security mirror periodically rotates a point release out of the
+            # pool while its index still lists it, 404-ing the curl/libcurl4 upgrade. Re-running
+            # update+install hits a fresh CDN backend and clears the transient index/pool mismatch;
+            # the final install surfaces a genuinely persistent failure with a real exit code.
+            for i in $(seq 1 5); do
+              apt-get update && apt-get -y install curl libgeos-dev && break
+              echo "apt attempt $i failed (transient Debian mirror 404?); retrying in 10s"
+              sleep 10
+            done
             apt-get -y install curl libgeos-dev
             pip install --upgrade pip
             pip install poetry
