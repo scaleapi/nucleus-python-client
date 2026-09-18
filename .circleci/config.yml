@@ -20,16 +20,17 @@ jobs:
           name: Install Basic Environment Dependencies
           command: | # install dependencies
             echo $PWD
-            # Retry apt: the Debian security mirror periodically rotates a point release out of the
-            # pool while its index still lists it, 404-ing the curl/libcurl4 upgrade. Re-running
-            # update+install hits a fresh CDN backend and clears the transient index/pool mismatch;
-            # the final install surfaces a genuinely persistent failure with a real exit code.
+            # Only libgeos-dev (for shapely) is actually needed. `curl` already ships in the
+            # python:3.10-bullseye base image; installing it here only forced a curl/libcurl4
+            # upgrade to the latest security point release, which 404s whenever the Debian mirror
+            # has rotated that exact .deb out of its pool. Clear the cached lists for a fresh index
+            # and retry so a transient mirror hiccup on libgeos self-heals.
             for i in $(seq 1 5); do
-              apt-get update && apt-get -y install curl libgeos-dev && break
-              echo "apt attempt $i failed (transient Debian mirror 404?); retrying in 10s"
+              rm -rf /var/lib/apt/lists/* && apt-get update && apt-get -y install libgeos-dev && break
+              echo "apt attempt $i failed; retrying in 10s"
               sleep 10
             done
-            apt-get -y install curl libgeos-dev
+            apt-get -y install libgeos-dev
             pip install --upgrade pip
             pip install poetry
       - python/install-packages:
