@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.22.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.3) - 2026-09-18
 
 ### Added
-- **Benchmark rollup taxonomy on `create_benchmark` / `update_benchmark`.** You can now set a benchmark's class taxonomy when creating it — pass inline `rollup_groups`, an existing `allowed_label_matches_id`, or `class_agnostic=True` (the three are mutually exclusive). `update_benchmark` accepts the same fields to set/replace a **draft's** taxonomy (pass `allowed_label_matches_id=None` to clear it). `Benchmark` now surfaces `allowed_label_matches_id` and `class_agnostic` on read.
+- **Benchmark taxonomy rollup on `create_benchmark` / `update_benchmark`.** You can now set a benchmark's class taxonomy when creating it via `rollup_groups`, an existing `allowed_label_matches_id`, or `class_agnostic=True` (the three are mutually exclusive). `update_benchmark` accepts the same fields to set/replace a **draft's** rollups (pass `allowed_label_matches_id=None` to clear it). `Benchmark` now surfaces `allowed_label_matches_id` and `class_agnostic` on read.
 
   ```python
   benchmark = client.create_benchmark(
@@ -18,8 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   )
   ```
 
-> **Server dependency:** requires the benchmark rollup-taxonomy support added to scaleapi (`POST`/`PATCH /nucleus/benchmarks`). Unit tests pass regardless; live calls ignore the taxonomy until that deploys.
-
 ## [0.22.2](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.2) - 2026-09-01
 
 ### Added
@@ -28,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```python
   run_ids = model.model_runs()
   ```
-
-> **Server dependency:** requires the `GET /nucleus/model/:modelId/modelRun` route in scaleapi. Unit tests pass regardless; live calls 404 until that deploys.
 
 ## [0.22.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.1) - 2026-08-31
 

@@ -188,27 +188,39 @@ def test_create_benchmark_with_allowed_label_matches_id():
     assert payload["allowed_label_matches_id"] == "almc_1"
 
 
-def test_create_benchmark_class_agnostic():
+@pytest.mark.parametrize("class_agnostic", [True, False])
+def test_create_benchmark_class_agnostic(class_agnostic):
     client = _mock_async_create(NucleusClient(api_key="test"))
-    client.create_benchmark("agnostic", slice_id="slc_1", class_agnostic=True)
+    client.create_benchmark(
+        "agnostic", slice_id="slc_1", class_agnostic=class_agnostic
+    )
     payload = client.connection.post.call_args[0][0]
-    assert payload["class_agnostic"] is True
+    assert payload["class_agnostic"] is class_agnostic
 
 
 def test_create_benchmark_taxonomies_are_mutually_exclusive():
     client = NucleusClient(api_key="test")
+    groups = [RollupGroup("vehicle", ["car"])]
+    for class_agnostic in (True, False):
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            client.create_benchmark(
+                "typed",
+                slice_id="slc_1",
+                rollup_groups=groups,
+                class_agnostic=class_agnostic,
+            )
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            client.create_benchmark(
+                "typed",
+                slice_id="slc_1",
+                allowed_label_matches_id="almc_1",
+                class_agnostic=class_agnostic,
+            )
     with pytest.raises(ValueError, match="mutually exclusive"):
         client.create_benchmark(
             "typed",
             slice_id="slc_1",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
-            class_agnostic=True,
-        )
-    with pytest.raises(ValueError, match="mutually exclusive"):
-        client.create_benchmark(
-            "typed",
-            slice_id="slc_1",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
+            rollup_groups=groups,
             allowed_label_matches_id="almc_1",
         )
 
@@ -243,11 +255,39 @@ def test_update_benchmark_clears_taxonomy_with_explicit_none():
 
 def test_update_benchmark_taxonomies_are_mutually_exclusive():
     client = NucleusClient(api_key="test")
+    groups = [RollupGroup("vehicle", ["car"])]
+    for class_agnostic in (True, False):
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            client.update_benchmark(
+                "bm_1",
+                rollup_groups=groups,
+                class_agnostic=class_agnostic,
+            )
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            client.update_benchmark(
+                "bm_1",
+                allowed_label_matches_id="almc_1",
+                class_agnostic=class_agnostic,
+            )
     with pytest.raises(ValueError, match="mutually exclusive"):
         client.update_benchmark(
             "bm_1",
-            rollup_groups=[RollupGroup("vehicle", ["car"])],
+            rollup_groups=groups,
             allowed_label_matches_id="almc_1",
+        )
+    # Explicit None is sent as null to clear the draft taxonomy, so it
+    # counts as a taxonomy field the same way a replacement id does.
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        client.update_benchmark(
+            "bm_1",
+            rollup_groups=groups,
+            allowed_label_matches_id=None,
+        )
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        client.update_benchmark(
+            "bm_1",
+            class_agnostic=True,
+            allowed_label_matches_id=None,
         )
 
 

@@ -285,6 +285,34 @@ def _evaluation_v2_config_payload(
     return payload
 
 
+def _raise_if_multiple_benchmark_taxonomies(
+    rollup_groups: Optional[List[RollupGroup]],
+    allowed_label_matches_id: Any,
+    class_agnostic: Optional[bool],
+) -> None:
+    """Fail if more than one of the mutually exclusive taxonomy args is set.
+
+    ``class_agnostic is not None`` (not ``bool``) so ``False`` counts as set,
+    matching the payload builders that send the flag.
+    """
+    if (
+        sum(
+            (
+                rollup_groups is not None,
+                allowed_label_matches_id is not _UNSET
+                and allowed_label_matches_id is not None,
+                class_agnostic is not None,
+            )
+        )
+        > 1
+    ):
+        raise ValueError(
+            "At most one of rollup_groups, allowed_label_matches_id, or "
+            "class_agnostic may be set — they are mutually exclusive "
+            "benchmark taxonomies"
+        )
+
+
 class NucleusClient:
     """Client to interact with the Nucleus API via Python SDK.
 
@@ -1327,22 +1355,10 @@ class NucleusClient:
             )
         # rollup_groups / allowed_label_matches_id / class_agnostic are three
         # mutually exclusive ways to set the benchmark's class taxonomy; the
-        # backend rejects any combination, so fail fast client-side too.
-        if (
-            sum(
-                (
-                    rollup_groups is not None,
-                    allowed_label_matches_id is not None,
-                    bool(class_agnostic),
-                )
-            )
-            > 1
-        ):
-            raise ValueError(
-                "At most one of rollup_groups, allowed_label_matches_id, or "
-                "class_agnostic may be set — they are mutually exclusive "
-                "benchmark taxonomies"
-            )
+        # backend rejects combinations.
+        _raise_if_multiple_benchmark_taxonomies(
+            rollup_groups, allowed_label_matches_id, class_agnostic
+        )
         payload: Dict[str, Any] = {NAME_KEY: name}
         optional_fields = {
             DESCRIPTION_KEY: description,
@@ -1461,22 +1477,9 @@ class NucleusClient:
         Returns:
             :class:`Benchmark`: The updated benchmark.
         """
-        if (
-            sum(
-                (
-                    rollup_groups is not None,
-                    allowed_label_matches_id is not _UNSET
-                    and allowed_label_matches_id is not None,
-                    bool(class_agnostic),
-                )
-            )
-            > 1
-        ):
-            raise ValueError(
-                "At most one of rollup_groups, allowed_label_matches_id, or "
-                "class_agnostic may be set — they are mutually exclusive "
-                "benchmark taxonomies"
-            )
+        _raise_if_multiple_benchmark_taxonomies(
+            rollup_groups, allowed_label_matches_id, class_agnostic
+        )
         payload: Dict[str, Any] = {}
         if name is not None:
             payload[NAME_KEY] = name
