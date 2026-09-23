@@ -5,6 +5,26 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.4) - 2026-09-22
+
+### Added
+- **Benchmark-owned exclusion rules on `create_benchmark` / `update_benchmark`.** You can now attach exclusion rules to a benchmark itself — pass `exclusion_rules=[...]` (the same rule objects as `nucleus.evaluation_v2_exclusions`, or plain dicts) when creating it. Benchmark exclusions define the benchmark's canonical scored content and are applied to *every* evaluation computed against it, so all runs score the same set. `update_benchmark` accepts the same field to set/replace a **draft's** exclusions (pass `exclusion_rules=[]` to clear them). On a version cut (`parent_benchmark_id`) the parent's rules are inherited when omitted; pass `[]` to drop them. `Benchmark` now surfaces `exclusion_rules` on read.
+
+  ```python
+  from nucleus.evaluation_v2_exclusions import LabelExclusionRule, MetadataExclusionRule
+
+  benchmark = client.create_benchmark(
+      "city-streets-v1",
+      slice_id="slc_...",
+      exclusion_rules=[
+          LabelExclusionRule(scope="annotation", target="groundTruth", labels=["ignore"]),
+          MetadataExclusionRule(key="is_dark", op="EQ", value=True),
+      ],
+  )
+  ```
+
+  Note: because a benchmark's exclusions must not depend on the model being evaluated, an item-scope label/box-area rule targeting `"prediction"` is rejected by the server.
+
 ## [0.22.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.3) - 2026-09-18
 
 ### Added

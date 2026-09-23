@@ -38,6 +38,7 @@ from nucleus.constants import (
     CREATED_BY_USER_ID_KEY,
     DATASET_COUNT_KEY,
     DESCRIPTION_KEY,
+    EXCLUSION_RULES_KEY,
     ITEM_COUNT_KEY,
     METADATA_KEY,
     NAME_KEY,
@@ -52,6 +53,7 @@ from nucleus.data_transfer_object.evaluation_v2 import BenchmarkItemsPage
 from nucleus.evaluation_v2 import (
     EvaluationV2,
     RollupGroup,
+    _parse_json_field,
 )
 from nucleus.evaluation_v2_exclusions import EvaluationV2ExclusionRule
 from nucleus.evaluation_v2_preset import _UNSET, EvaluationV2Preset
@@ -90,6 +92,11 @@ class Benchmark:
     allowed_label_matches_id: Optional[str] = None
     #: When ``True``, evaluations on this benchmark ignore class labels.
     class_agnostic: Optional[bool] = None
+    #: Benchmark-owned exclusion rules (same shape as evaluation-V2 exclusion
+    #: rules) that define the benchmark's canonical scored content — they are
+    #: applied to every evaluation computed against this benchmark. ``None`` when
+    #: the benchmark has no exclusions.
+    exclusion_rules: Optional[List[Dict[str, Any]]] = None
     _client: Optional["NucleusClient"] = field(repr=False, default=None)
 
     @classmethod
@@ -117,6 +124,9 @@ class Benchmark:
             version_label=payload.get(VERSION_LABEL_KEY),
             allowed_label_matches_id=payload.get(ALLOWED_LABEL_MATCHES_ID_KEY),
             class_agnostic=payload.get(CLASS_AGNOSTIC_KEY),
+            exclusion_rules=_parse_json_field(
+                payload.get(EXCLUSION_RULES_KEY)
+            ),
             _client=client,
         )
 
@@ -143,14 +153,19 @@ class Benchmark:
         rollup_groups: Optional[List[RollupGroup]] = None,
         allowed_label_matches_id: Any = _UNSET,
         class_agnostic: Optional[bool] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
     ) -> "Benchmark":
-        """Update this benchmark's name, description, metadata, or draft taxonomy.
+        """Update this benchmark's name, description, metadata, draft taxonomy,
+        or draft exclusion rules.
 
         Only the arguments you pass are changed. Benchmark membership is
         frozen at creation and cannot be updated. The taxonomy fields
         (``rollup_groups`` / ``allowed_label_matches_id`` / ``class_agnostic``)
-        are accepted only while the benchmark is a draft and are mutually
-        exclusive — see :meth:`NucleusClient.update_benchmark`.
+        and ``exclusion_rules`` are accepted only while the benchmark is a
+        draft — see :meth:`NucleusClient.update_benchmark`. Pass
+        ``exclusion_rules=[]`` to clear a draft's exclusions.
 
         Returns:
             self, with updated fields.
@@ -165,6 +180,7 @@ class Benchmark:
             rollup_groups=rollup_groups,
             allowed_label_matches_id=allowed_label_matches_id,
             class_agnostic=class_agnostic,
+            exclusion_rules=exclusion_rules,
         )
         self.__dict__.update(updated.__dict__)
         return self

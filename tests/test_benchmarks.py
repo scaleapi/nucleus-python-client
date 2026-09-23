@@ -306,6 +306,85 @@ def test_benchmark_from_json_parses_taxonomy_fields():
     assert typed.class_agnostic is False
 
 
+def test_create_benchmark_with_exclusion_rules():
+    client = _mock_async_create(NucleusClient(api_key="test"))
+    client.create_benchmark(
+        "excluded",
+        slice_id="slc_1",
+        exclusion_rules=[
+            LabelExclusionRule(
+                scope="annotation", target="groundTruth", labels=["ignore"]
+            ),
+            # A plain dict passes through unchanged.
+            {"type": "labels", "scope": "item", "target": "groundTruth"},
+        ],
+    )
+    payload = client.connection.post.call_args[0][0]
+    # Rule objects serialize via to_api_dict; the backend camelCases the body.
+    assert payload["exclusionRules"] == [
+        {
+            "type": "labels",
+            "scope": "annotation",
+            "target": "groundTruth",
+            "labels": ["ignore"],
+        },
+        {"type": "labels", "scope": "item", "target": "groundTruth"},
+    ]
+
+
+def test_create_benchmark_without_exclusion_rules_omits_field():
+    client = _mock_async_create(NucleusClient(api_key="test"))
+    client.create_benchmark("plain", slice_id="slc_1")
+    # Omitting the field leaves it out entirely (backend inherits on a version
+    # cut) rather than sending an empty list.
+    assert "exclusionRules" not in client.connection.post.call_args[0][0]
+
+
+def test_update_benchmark_sets_and_clears_exclusion_rules():
+    client = NucleusClient(api_key="test")
+    client.connection.patch = MagicMock(return_value=dict(_BENCHMARK_ROW))
+    client.update_benchmark(
+        "bm_1",
+        exclusion_rules=[
+            LabelExclusionRule(
+                scope="annotation", target="groundTruth", labels=["ignore"]
+            )
+        ],
+    )
+    assert client.connection.patch.call_args[0][0] == {
+        "exclusionRules": [
+            {
+                "type": "labels",
+                "scope": "annotation",
+                "target": "groundTruth",
+                "labels": ["ignore"],
+            }
+        ]
+    }
+    # An explicit empty list clears a draft's exclusions.
+    client.connection.patch.reset_mock()
+    client.update_benchmark("bm_1", exclusion_rules=[])
+    assert client.connection.patch.call_args[0][0] == {"exclusionRules": []}
+    # Omitting it leaves the exclusions unchanged (field absent).
+    client.connection.patch.reset_mock()
+    client.update_benchmark("bm_1", name="renamed")
+    assert "exclusionRules" not in client.connection.patch.call_args[0][0]
+
+
+def test_benchmark_from_json_parses_exclusion_rules():
+    assert Benchmark.from_json(_BENCHMARK_ROW).exclusion_rules is None
+    rules = [
+        {
+            "type": "labels",
+            "scope": "annotation",
+            "target": "groundTruth",
+            "labels": ["ignore"],
+        }
+    ]
+    b = Benchmark.from_json({**_BENCHMARK_ROW, "exclusion_rules": rules})
+    assert b.exclusion_rules == rules
+
+
 def test_list_benchmarks():
     client = NucleusClient(api_key="test")
     client.connection.get = MagicMock(return_value=[dict(_BENCHMARK_ROW)])
@@ -508,6 +587,7 @@ def test_benchmark_instance_methods_delegate_to_client():
         rollup_groups=None,
         allowed_label_matches_id=_UNSET,
         class_agnostic=None,
+        exclusion_rules=None,
     )
     assert benchmark.name == "renamed"
 

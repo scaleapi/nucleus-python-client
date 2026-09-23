@@ -1249,6 +1249,9 @@ class NucleusClient:
         rollup_groups: Optional[List[RollupGroup]] = None,
         allowed_label_matches_id: Optional[str] = None,
         class_agnostic: Optional[bool] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
         wait_for_completion: bool = True,
         verbose: bool = True,
     ) -> Benchmark:
@@ -1319,6 +1322,15 @@ class NucleusClient:
             class_agnostic: When ``True``, evaluations on this benchmark ignore
                 class labels. Mutually exclusive with ``rollup_groups`` and
                 ``allowed_label_matches_id``.
+            exclusion_rules: Benchmark-owned exclusion rules (same shape as the
+                evaluation-V2 rules in :mod:`nucleus.evaluation_v2_exclusions`)
+                that define the benchmark's canonical scored content — they are
+                applied to *every* evaluation computed against the benchmark, so
+                all runs score the same set. Because they must not depend on the
+                model being evaluated, an item-scope label/box-area rule
+                targeting ``"prediction"`` is rejected. On a version cut
+                (``parent_benchmark_id``) the parent's rules are inherited when
+                this is omitted; pass ``[]`` to drop the inherited exclusions.
             wait_for_completion: Block until the build/seed job finishes and
                 return the resulting benchmark (default). If ``False``, return
                 immediately. Ignored for an empty draft (no job is started).
@@ -1401,6 +1413,15 @@ class NucleusClient:
             payload[ALLOWED_LABEL_MATCHES_ID_KEY] = allowed_label_matches_id
         if class_agnostic is not None:
             payload[CLASS_AGNOSTIC_KEY] = class_agnostic
+        # Benchmark-owned exclusions. Omitting the field inherits the parent's
+        # rules on a version cut; an explicit list sets them, and an explicit
+        # empty list clears inherited exclusions. Rule objects serialize via
+        # to_api_dict; plain dicts pass through unchanged.
+        if exclusion_rules is not None:
+            payload[EXCLUSION_RULES_CAMEL_KEY] = [
+                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+                for rule in exclusion_rules
+            ]
 
         # Async: the server responds 202 with {benchmark_id, job_id}. The
         # benchmark row already exists (in 'building', or 'draft'); the build /
@@ -1455,16 +1476,21 @@ class NucleusClient:
         rollup_groups: Optional[List[RollupGroup]] = None,
         allowed_label_matches_id: Any = _UNSET,
         class_agnostic: Optional[bool] = None,
+        exclusion_rules: Optional[
+            List[Union[EvaluationV2ExclusionRule, Dict[str, Any]]]
+        ] = None,
     ) -> Benchmark:
-        """Update a benchmark's name, description, metadata, or draft taxonomy.
+        """Update a benchmark's name, description, metadata, draft taxonomy, or
+        draft exclusion rules.
 
         Only the arguments you pass are changed. Benchmark membership is
         frozen at creation and cannot be updated.
 
         The taxonomy fields (``rollup_groups``, ``allowed_label_matches_id``,
-        ``class_agnostic``) are only accepted while the benchmark is a
-        ``"draft"`` — a ``"ready"`` benchmark freezes its taxonomy, so cut a new
-        version to change it. They are mutually exclusive, just like at create.
+        ``class_agnostic``) and ``exclusion_rules`` are only accepted while the
+        benchmark is a ``"draft"`` — a ``"ready"`` benchmark freezes its
+        taxonomy and exclusions, so cut a new version to change them. The
+        taxonomy fields are mutually exclusive, just like at create.
 
         Parameters:
             benchmark_id: Benchmark id (``bm_*``).
@@ -1479,6 +1505,10 @@ class NucleusClient:
                 draft. Pass ``None`` to clear the draft's taxonomy; omit to
                 leave it unchanged.
             class_agnostic: Replacement class-agnostic flag for a draft.
+            exclusion_rules: Replacement benchmark-owned exclusion rules for a
+                draft (same shape as :mod:`nucleus.evaluation_v2_exclusions`). A
+                non-empty list replaces the draft's exclusions; ``[]`` clears
+                them; ``None`` (the default) leaves them unchanged.
 
         Returns:
             :class:`Benchmark`: The updated benchmark.
@@ -1502,6 +1532,13 @@ class NucleusClient:
             payload[ALLOWED_LABEL_MATCHES_ID_KEY] = allowed_label_matches_id
         if class_agnostic is not None:
             payload[CLASS_AGNOSTIC_KEY] = class_agnostic
+        # None => leave unchanged (field omitted); a list sets it, and an empty
+        # list clears the draft's exclusions.
+        if exclusion_rules is not None:
+            payload[EXCLUSION_RULES_CAMEL_KEY] = [
+                rule.to_api_dict() if hasattr(rule, "to_api_dict") else rule
+                for rule in exclusion_rules
+            ]
         data = self.patch(payload, f"benchmarks/{benchmark_id}")
         return Benchmark.from_json(data, self)
 
