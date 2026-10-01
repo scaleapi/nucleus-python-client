@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   Note: because a benchmark's exclusions must not depend on the model being evaluated, an item-scope label/box-area rule targeting `"prediction"` is rejected by the server.
 
+## [0.22.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.4) - 2026-10-01
+
+### Fixed
+
+- `EvaluationV2.from_json` now reads `rollup_groups` / `exclusion_rules` from camelCase API payloads, so `get_evaluation_v2` no longer returns `None` for them.
+
 ## [0.22.3](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.3) - 2026-09-18
 
 ### Added
