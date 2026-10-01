@@ -18,6 +18,7 @@ from nucleus.constants import (
     CREATED_AT_KEY,
     ERROR_MESSAGE_KEY,
     EVALUATION_ID_KEY,
+    EXCLUSION_RULES_CAMEL_KEY,
     EXCLUSION_RULES_KEY,
     EXCLUSION_STATS_KEY,
     FILTERS_KEY,
@@ -31,6 +32,7 @@ from nucleus.constants import (
     NAME_KEY,
     OFFSET_KEY,
     QUERY_KEY,
+    ROLLUP_GROUPS_CAMEL_KEY,
     ROLLUP_GROUPS_KEY,
     SLICE_ID_KEY,
     SORT_BY_KEY,
@@ -188,12 +190,18 @@ class EvaluationV2:
             error_message=payload.get(ERROR_MESSAGE_KEY),
             created_at=payload.get(CREATED_AT_KEY),
             rollup_groups=_parse_rollup_groups(
-                _parse_json_field(payload.get(ROLLUP_GROUPS_KEY))
+                _parse_json_field(
+                    payload.get(ROLLUP_GROUPS_KEY)
+                    if payload.get(ROLLUP_GROUPS_KEY) is not None
+                    else payload.get(ROLLUP_GROUPS_CAMEL_KEY)
+                )
             ),
             benchmark_id=payload.get(BENCHMARK_ID_KEY),
             slice_id=payload.get(SLICE_ID_KEY),
             exclusion_rules=_parse_json_field(
                 payload.get(EXCLUSION_RULES_KEY)
+                if payload.get(EXCLUSION_RULES_KEY) is not None
+                else payload.get(EXCLUSION_RULES_CAMEL_KEY)
             ),
             exclusion_stats=_parse_json_field(
                 payload.get(EXCLUSION_STATS_KEY)
