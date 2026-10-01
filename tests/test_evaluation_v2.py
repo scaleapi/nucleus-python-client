@@ -416,3 +416,32 @@ def test_evaluation_v2_from_json_benchmark_fields_absent():
     )
     assert ev.benchmark_id is None
     assert ev.rollup_groups is None
+
+
+def test_evaluation_v2_from_json_rollup_groups_and_exclusions_camel_case():
+    ev = EvaluationV2.from_json(
+        {
+            "id": "evalv2_1",
+            "model_run_id": "run_1",
+            "status": "succeeded",
+            "rollupGroups": [{"className": "vehicle", "labels": ["car"]}],
+            "exclusionRules": [
+                {
+                    "type": "labels",
+                    "scope": "item",
+                    "target": "prediction",
+                    "labels": ["ignore"],
+                }
+            ],
+        }
+    )
+    assert ev.rollup_groups is not None
+    assert ev.rollup_groups[0].class_name == "vehicle"
+    assert ev.exclusion_rules == [
+        {
+            "type": "labels",
+            "scope": "item",
+            "target": "prediction",
+            "labels": ["ignore"],
+        }
+    ]
