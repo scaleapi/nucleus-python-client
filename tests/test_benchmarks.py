@@ -306,6 +306,30 @@ def test_benchmark_from_json_parses_taxonomy_fields():
     assert typed.class_agnostic is False
 
 
+def test_benchmark_from_json_parses_exclusion_rules_camel_case():
+    b = Benchmark.from_json(
+        {
+            **_BENCHMARK_ROW,
+            "exclusionRules": [
+                {
+                    "type": "labels",
+                    "scope": "annotation",
+                    "target": "groundTruth",
+                    "labels": ["ignore"],
+                }
+            ],
+        }
+    )
+    assert b.exclusion_rules == [
+        {
+            "type": "labels",
+            "scope": "annotation",
+            "target": "groundTruth",
+            "labels": ["ignore"],
+        }
+    ]
+
+
 def test_create_benchmark_with_exclusion_rules():
     client = _mock_async_create(NucleusClient(api_key="test"))
     client.create_benchmark(

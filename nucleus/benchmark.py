@@ -38,6 +38,7 @@ from nucleus.constants import (
     CREATED_BY_USER_ID_KEY,
     DATASET_COUNT_KEY,
     DESCRIPTION_KEY,
+    EXCLUSION_RULES_CAMEL_KEY,
     EXCLUSION_RULES_KEY,
     ITEM_COUNT_KEY,
     METADATA_KEY,
@@ -126,6 +127,8 @@ class Benchmark:
             class_agnostic=payload.get(CLASS_AGNOSTIC_KEY),
             exclusion_rules=_parse_json_field(
                 payload.get(EXCLUSION_RULES_KEY)
+                if payload.get(EXCLUSION_RULES_KEY) is not None
+                else payload.get(EXCLUSION_RULES_CAMEL_KEY)
             ),
             _client=client,
         )
