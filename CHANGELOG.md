@@ -5,6 +5,14 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.23.0) - 2026-11-02
+
+### Removed
+- **Dropped support for Python 3.10**, which reached end of life in October 2026. `scale-nucleus` now requires Python 3.11+, and wheels are no longer built for `cp310`.
+
+### Changed
+- **Pillow is now required at `>=13`** (was `>=12.2.0,<13`). Pillow 13 fixes the current critical Pillow CVEs, so installs of `scale-nucleus` no longer get flagged by vulnerability scans. Pillow 13 itself requires Python 3.11+.
+
 ## [0.22.4](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.22.4) - 2026-09-22
 
 ### Added
