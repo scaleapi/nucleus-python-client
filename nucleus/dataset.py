@@ -51,6 +51,7 @@ from .constants import (
     EMBEDDINGS_URL_KEY,
     EXPORT_FOR_TRAINING_KEY,
     EXPORTED_ROWS,
+    FORMAT_KEY,
     FRAME_RATE_KEY,
     GLOB_SIZE_THRESHOLD_CHECK,
     ITEM_KEY,
@@ -894,6 +895,26 @@ class Dataset:
             {}, f"dataset/{self.id}/loc/{dataset_item_id}", requests.get
         )
         return format_dataset_item_response(response)
+
+    @sanitize_string_args
+    def get_item_image_bytes(self, dataset_item_id: str) -> bytes:
+        """Downloads the image file of a dataset item.
+
+        Parameters:
+            dataset_item_id: Nucleus-generated dataset item ID (starts with ``di_``).
+
+        Returns:
+            The raw bytes of the item's image file. The server does not report
+            the image format, so check the leading bytes (for example, PNG files
+            start with ``b"\\x89PNG\\r\\n\\x1a\\n"``).
+        """
+        response = self._client.make_request(
+            {},
+            f"dataset/{self.id}/loc/{dataset_item_id}?{FORMAT_KEY}=image",
+            requests.get,
+            return_raw_response=True,
+        )
+        return response.content
 
     def ground_truth_loc(self, reference_id: str, annotation_id: str):
         """Fetches a single ground truth annotation by ID.

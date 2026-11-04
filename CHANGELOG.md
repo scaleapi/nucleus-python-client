@@ -5,6 +5,11 @@ All notable changes to the [Nucleus Python Client](https://github.com/scaleapi/n
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.1](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.23.1) - 2026-11-04
+
+### Added
+- `Dataset.get_item_image_bytes(dataset_item_id)` downloads a dataset item's image file and returns its raw bytes. The server does not report the image format, so check the leading bytes to tell PNG from JPEG or TIFF.
+
 ## [0.23.0](https://github.com/scaleapi/nucleus-python-client/releases/tag/v0.23.0) - 2026-11-02
 
 ### Removed
