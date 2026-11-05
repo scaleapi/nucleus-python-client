@@ -174,6 +174,7 @@ class CuboidPrecision(CuboidMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        use_2d_iou: bool = False,
     ):
         """Initializes CuboidIOU object.
 
@@ -191,11 +192,13 @@ class CuboidPrecision(CuboidMetric):
                 predicates. The innermost structures each describe a single column predicate. The list of inner predicates is
                 interpreted as a conjunction (AND), forming a more selective and multiple column predicate.
                 Finally, the most outer list combines these filters as a disjunction (OR).
+            use_2d_iou: whether to use 2D or 3D IOU for precision calculation.
         """
         assert (
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
         self.iou_threshold = iou_threshold
+        self.use_2d_iou = use_2d_iou
         super().__init__(
             enforce_label_match=enforce_label_match,
             confidence_threshold=confidence_threshold,
@@ -212,6 +215,7 @@ class CuboidPrecision(CuboidMetric):
             predictions,
             annotations,
             threshold_in_overlap_ratio=self.iou_threshold,
+            use_2d=self.use_2d_iou,
         )
         weight = stats["tp_sum"] + stats["fp_sum"]
         precision = stats["tp_sum"] / max(weight, sys.float_info.epsilon)
@@ -233,6 +237,7 @@ class CuboidRecall(CuboidMetric):
         prediction_filters: Optional[
             Union[ListOfOrAndFilters, ListOfAndFilters]
         ] = None,
+        use_2d_iou: bool = False,
     ):
         """Initializes CuboidIOU object.
 
@@ -240,11 +245,13 @@ class CuboidRecall(CuboidMetric):
             enforce_label_match: whether to enforce that annotation and prediction labels must match. Defaults to True
             iou_threshold: IOU threshold to consider detection as valid. Must be in [0, 1]. Default 0.0
             confidence_threshold: minimum confidence threshold for predictions. Must be in [0, 1]. Default 0.0
+            use_2d_iou: whether to use 2D or 3D IOU for calculation.
         """
         assert (
             0 <= iou_threshold <= 1
         ), "IoU threshold must be between 0 and 1."
         self.iou_threshold = iou_threshold
+        self.use_2d_iou = use_2d_iou
         super().__init__(
             enforce_label_match=enforce_label_match,
             confidence_threshold=confidence_threshold,
@@ -261,6 +268,7 @@ class CuboidRecall(CuboidMetric):
             predictions,
             annotations,
             threshold_in_overlap_ratio=self.iou_threshold,
+            use_2d_iou=self.use_2d_iou
         )
         weight = stats["tp_sum"] + stats["fn_sum"]
         recall = stats["tp_sum"] / max(weight, sys.float_info.epsilon)
