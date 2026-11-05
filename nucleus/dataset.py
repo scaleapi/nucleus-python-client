@@ -12,6 +12,7 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 
 import requests
@@ -908,11 +909,14 @@ class Dataset:
             the image format, so check the leading bytes (for example, PNG files
             start with ``b"\\x89PNG\\r\\n\\x1a\\n"``).
         """
-        response = self._client.make_request(
-            {},
-            f"dataset/{self.id}/loc/{dataset_item_id}?{FORMAT_KEY}=image",
-            requests.get,
-            return_raw_response=True,
+        response = cast(
+            requests.Response,
+            self._client.make_request(
+                {},
+                f"dataset/{self.id}/loc/{dataset_item_id}?{FORMAT_KEY}=image",
+                requests.get,
+                return_raw_response=True,
+            ),
         )
         return response.content
 
