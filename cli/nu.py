@@ -37,6 +37,15 @@ nu.add_command(reference)  # type: ignore
 nu.add_command(slices)  # type: ignore
 nu.add_command(tests)  # type: ignore
 
+# Local EvaluationV2 (`nu evalv2 run`). Guarded so `nu` still works if the optional evalv2-core
+# dependency isn't installed yet (ships from a private index; see pyproject wiring).
+try:
+    from nucleus.evalv2.cli import evalv2
+
+    nu.add_command(evalv2)  # type: ignore
+except ImportError:
+    pass
+
 if __name__ == "__main__":
     """To debug, run this script followed by request command tree e.g. `cli/nu.py datasets list`"""
     nu()
